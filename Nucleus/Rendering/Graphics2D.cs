@@ -282,19 +282,13 @@ namespace Nucleus.Core
 			}
 			__texture = new() {
 				Id = tex.GetTextureHandle(),
-				Width = tex.Width,
-				Height = tex.Height,
-				Format = tex.Format,
+				Width = tex.GetWidth(),
+				Height = tex.GetHeight(),
+				Format = tex.GetFormat(),
 				Mipmaps = tex.GetMipmapCount()
 			};
 			__textureFlippedY = tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV);
 		}
-
-		/// <summary>
-		/// This will go in a future Nucleus update when texture management is more uniform!!
-		/// </summary>
-		/// <param name="tex"></param>
-		public static void SetTexture(RenderTexture2D tex) { __texture = tex.Texture; __textureFlippedY = true; }
 
 		public static void SetBlendMode(BlendMode mode) => Rlgl.SetBlendMode(mode);
 
@@ -480,57 +474,29 @@ namespace Nucleus.Core
 			Raylib.DrawRing(AFV2ToSNV2(center), innerRadius, outerRadius, startAngle, endAngle, segments, __drawColor);
 		}
 
-		public static RenderTexture2D CreateRenderTarget(float wF, float hF, ImageFormat pixelFormat = ImageFormat.R8G8B8A8, int mipmaps = 1) {
-			int w = (int)wF;
-			int h = (int)hF;
+		public static IRenderTexture CreateRenderTarget(float wF, float hF, ImageFormat pixelFormat = ImageFormat.R8G8B8A8, int mipmaps = 1)
+			=> new RenderTexture(null, new RenderTextureDesc((int)wF, (int)hF, samples: 1, depth: true, colorFormat: pixelFormat));
 
-			RenderTexture2D target = new();
-			target.Id = Rlgl.LoadFramebuffer(w, h);
-			if (target.Id > 0) {
-				Rlgl.EnableFramebuffer(target.Id);
-				unsafe {
-					target.Texture.Id = Rlgl.LoadTexture(null, w, h, pixelFormat, mipmaps);
-					target.Texture.Width = w;
-					target.Texture.Height = h;
-					target.Texture.Format = pixelFormat;
-					target.Texture.Mipmaps = mipmaps;
+		public static void DestroyRenderTarget(IRenderTexture target) => target.Dispose();
 
-					target.Depth.Id = Rlgl.LoadTextureDepth(w, h, true);
-					target.Texture.Width = w;
-					target.Texture.Height = h;
-					target.Texture.Format = ImageFormat.PVRT_RGBA;
-					target.Texture.Mipmaps = mipmaps;
-
-					Rlgl.FramebufferAttach(target.Id, target.Texture.Id, FramebufferAttachType.RL_ATTACHMENT_COLOR_CHANNEL0, FramebufferAttachTextureType.RL_ATTACHMENT_TEXTURE2D, 0);
-					Rlgl.FramebufferAttach(target.Id, target.Depth.Id, FramebufferAttachType.RL_ATTACHMENT_DEPTH, FramebufferAttachTextureType.RL_ATTACHMENT_RENDERBUFFER, 0);
-
-					Rlgl.DisableFramebuffer();
-				}
-			}
-			else
-				Logs.Warn("Rendertarget failed to initialize");
-
-			return target;
-		}
-		public static void DestroyRenderTarget(RenderTexture2D target) => Raylib.UnloadRenderTexture(target);
-
-		public static void BeginRenderTarget(RenderTexture2D texture) {
+		public static void BeginRenderTarget(IRenderTexture texture) {
 			// https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBlendFunc.xhtml
 			// https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBlendEquation.xhtml
 
-			EngineCore.Window.BeginTextureMode(texture);
+			texture.Begin();
 			Surface.Clear(0, 0, 0, 0);
 			Rlgl.SetBlendFactorsSeparate(GLEnum.SRC_ALPHA, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.ONE, GLEnum.ONE_MINUS_SRC_ALPHA, GLEnum.FUNC_ADD, GLEnum.FUNC_ADD);
 			SetBlendMode(BlendMode.CustomSeparate);
 		}
 
-		public static void EndRenderTarget() {
-			EngineCore.Window.EndTextureMode();
+		public static void EndRenderTarget(IRenderTexture texture) {
+			texture.End();
+			SetBlendMode(BlendMode.Alpha);
 		}
 
 		public static void CalculateUVCoordinatesFromRects(ITexture tex, in RectangleF source, in RectangleF dest, out float sU, out float sV, out float eU, out float eV){
-			float texW = tex.Width;
-			float texH = tex.Height;
+			float texW = tex.GetWidth();
+			float texH = tex.GetHeight();
 
 			sU = source.X / texW;
 			sV = source.Y / texH;

@@ -185,21 +185,21 @@ public abstract class BaseTimelineView : View
 
 		// Setup buttons
 		{
-			Button jumpStart = new(Buttons); SetupButton(jumpStart, true, true, false); SetButtonImage(jumpStart, Level.Textures.LoadTextureFromFile("models/jumpStart.png"));
-			Button jumpPrevious = new(Buttons); SetupButton(jumpPrevious, true, false, true); SetButtonImage(jumpPrevious, Level.Textures.LoadTextureFromFile("models/jumpPrevious.png"));
-			Button playBackward = new(Buttons); SetupButton(playBackward, false, true, false); var playBackwardImg = SetButtonImage(playBackward, Level.Textures.LoadTextureFromFile("models/playBackward.png"));
-			Button playForward = new(Buttons); SetupButton(playForward, false, false, true); var playForwardImg = SetButtonImage(playForward, Level.Textures.LoadTextureFromFile("models/playForward.png"));
-			Button jumpNext = new(Buttons); SetupButton(jumpNext, true, true, false); SetButtonImage(jumpNext, Level.Textures.LoadTextureFromFile("models/jumpNext.png"));
-			Button jumpEnd = new(Buttons); SetupButton(jumpEnd, true, false, true); SetButtonImage(jumpEnd, Level.Textures.LoadTextureFromFile("models/jumpEnd.png"));
-			Button loop = new(Buttons); SetupButton(loop, true, true, true); SetButtonImage(loop, Level.Textures.LoadTextureFromFile("models/loop.png"));
+			Button jumpStart = new(Buttons); SetupButton(jumpStart, true, true, false); SetButtonImage(jumpStart, textures.LoadTextureFromFile("models/jumpStart.png"));
+			Button jumpPrevious = new(Buttons); SetupButton(jumpPrevious, true, false, true); SetButtonImage(jumpPrevious, textures.LoadTextureFromFile("models/jumpPrevious.png"));
+			Button playBackward = new(Buttons); SetupButton(playBackward, false, true, false); var playBackwardImg = SetButtonImage(playBackward, textures.LoadTextureFromFile("models/playBackward.png"));
+			Button playForward = new(Buttons); SetupButton(playForward, false, false, true); var playForwardImg = SetButtonImage(playForward, textures.LoadTextureFromFile("models/playForward.png"));
+			Button jumpNext = new(Buttons); SetupButton(jumpNext, true, true, false); SetButtonImage(jumpNext, textures.LoadTextureFromFile("models/jumpNext.png"));
+			Button jumpEnd = new(Buttons); SetupButton(jumpEnd, true, false, true); SetButtonImage(jumpEnd, textures.LoadTextureFromFile("models/jumpEnd.png"));
+			Button loop = new(Buttons); SetupButton(loop, true, true, true); SetButtonImage(loop, textures.LoadTextureFromFile("models/loop.png"));
 
 			playBackward.Thinking += (s) => {
 				var timeline = ModelEditor.Active.File.Timeline;
 
 				playBackwardImg.
 				Texture = timeline.PlayingBackwards
-							? Level.Textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingForwards
-							? Level.Textures.LoadTextureFromFile("models/backReset.png") : Level.Textures.LoadTextureFromFile("models/playBackward.png");
+							? textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingForwards
+							? textures.LoadTextureFromFile("models/backReset.png") : textures.LoadTextureFromFile("models/playBackward.png");
 
 				s.SetBgColor(timeline.PlayingBackwards ? Color.SkyBlue : GetScheme()?.GetColor("Nucleus.Background") ?? DefaultBackgroundColor);
 			};
@@ -209,8 +209,8 @@ public abstract class BaseTimelineView : View
 
 				playForwardImg.
 				Texture = timeline.PlayingForwards
-							? Level.Textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingBackwards
-							? Level.Textures.LoadTextureFromFile("models/forwardReset.png") : Level.Textures.LoadTextureFromFile("models/playForward.png");
+							? textures.LoadTextureFromFile("models/stop.png") : timeline.PlayingBackwards
+							? textures.LoadTextureFromFile("models/forwardReset.png") : textures.LoadTextureFromFile("models/playForward.png");
 				s.SetBgColor(timeline.PlayingForwards ? Color.SkyBlue : GetScheme()?.GetColor("Nucleus.Background") ?? DefaultBackgroundColor);
 			};
 
@@ -356,7 +356,7 @@ public abstract class BaseTimelineView : View
 		button.		Size = new(32);
 		button.		DockMargin = RectangleF.TLRB(2, 0, 0, 2);
 		button.		Text = "";
-		var img = SetButtonImage(button, Level.Textures.LoadTextureFromFile(icon));
+		var img = SetButtonImage(button, textures.LoadTextureFromFile(icon));
 		img.		ImageOrientation = ImageOrientation.Zoom;
 		img.		ImagePadding = new(4);
 		button.BorderSize = 1;
@@ -577,7 +577,7 @@ public abstract class BaseTimelineView : View
 				header.SetTextPadding(new(48, 0));
 				header.				TextSize = 16;
 				var boneImg = new Nucleus.UI.Elements.Image(header);
-				boneImg.				Texture = Level.Textures.LoadTextureFromFile("models/bone.png");
+				boneImg.				Texture = textures.LoadTextureFromFile("models/bone.png");
 				boneImg.				ImageOrientation = ImageOrientation.Centered;
 				boneImg.SetPassthru(true);
 				boneImg.				Dock = Dock.Left;
@@ -643,7 +643,7 @@ public abstract class BaseTimelineView : View
 			KeyframeProperty.Slot_Attachment => new(8),
 			_ => new(6)
 		};
-		headerImg.		Texture = Level.Textures.LoadTextureFromFile($"models/{property switch {
+		headerImg.		Texture = textures.LoadTextureFromFile($"models/{property switch {
 			KeyframeProperty.Bone_Rotation => "rotate_color",
 			KeyframeProperty.Bone_Translation => "translate_color",
 			KeyframeProperty.Bone_Scale => "scale_color",

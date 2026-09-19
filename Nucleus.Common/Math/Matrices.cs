@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Nucleus;
 
@@ -46,8 +43,6 @@ public static partial class NMath
 		public ref float M11 { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => ref m.M43; }
 		public ref float M15 { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => ref m.M44; }
 
-
-
 		public ref float m0 { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => ref m.M11; }
 		public ref float m4 { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => ref m.M12; }
 		public ref float m8 { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => ref m.M13; }
@@ -69,15 +64,22 @@ public static partial class NMath
 		public ref float m15 { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => ref m.M44; }
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] static float asinf(float x) => MathF.Asin(x);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] static float atan2f(float x, float y) => MathF.Atan2(x, y);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] private static float asinf(float x) => MathF.Asin(x);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] private static float atan2f(float x, float y) => MathF.Atan2(x, y);
 }
+
 public static partial class NMath
 {
+	public static Matrix4x4 MatrixScale(float x, float y, float z) => new(
+		x, 0.0f, 0.0f, 0.0f,
+		0.0f, y, 0.0f, 0.0f,
+		0.0f, 0.0f, z, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f
+	);
 
 	public static Matrix4x4 MatrixTranslate(float x, float y, float z) => new(
-		1.0f, 0.0f, 0.0f, x,
+			1.0f, 0.0f, 0.0f, x,
 		0.0f, 1.0f, 0.0f, y,
 		0.0f, 0.0f, 1.0f, z,
 		0.0f, 0.0f, 0.0f, 1.0f
@@ -135,10 +137,4 @@ public static partial class NMath
 
 		return result;
 	}
-	public static Matrix4x4 MatrixScale(float x, float y, float z) => new(
-		x, 0.0f, 0.0f, 0.0f,
-		0.0f, y, 0.0f, 0.0f,
-		0.0f, 0.0f, z, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f
-	);
 }

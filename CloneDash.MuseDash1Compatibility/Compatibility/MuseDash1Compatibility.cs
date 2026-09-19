@@ -19,6 +19,7 @@ using Nucleus.Audio;
 using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
+using Nucleus.Common.Images;
 using Nucleus.Common.Models;
 using Nucleus.Engine;
 using Nucleus.Files;
@@ -80,8 +81,8 @@ namespace CloneDash.Compatibility.MuseDash
 		public ITexture GetTexture() => GpuTexture!;
 		ReadOnlySpan<char> IModelAtlasPage.GetName() => Name;
 		public bool SetName(ReadOnlySpan<char> name) { Name = new(name); return true; }
-		public void GetSize(out int w, out int h) { w = GpuTexture?.Width ?? 0; h = GpuTexture?.Height ?? 0; }
-		public ImageFormat GetFormat() => GpuTexture?.Format ?? ImageFormat.None;
+		public void GetSize(out int w, out int h) { w = GpuTexture?.GetWidth() ?? 0; h = GpuTexture?.GetHeight() ?? 0; }
+		public ImageFormat GetFormat() => GpuTexture?.GetFormat() ?? ImageFormat.None;
 		public void GetFilter(out TextureFilter min, out TextureFilter max) { min = TextureFilter.Bilinear; max = TextureFilter.Bilinear; }
 		public bool SetFilter(TextureFilter min, TextureFilter max) => false;
 		public TextureWrap GetWrap() => default;
@@ -332,7 +333,7 @@ namespace CloneDash.Compatibility.MuseDash
 		[ConCommand(Name: "ibmscodes", Help: "Dumps the IBMSCode enum to console.")]
 		public static void DumpIBMSCodes() {
 			Span<char> tempWrite = stackalloc char[13];
-			foreach (var mbr in Enum.GetValuesAsUnderlyingType(typeof(IBMSCode))) 
+			foreach (var mbr in Enum.GetValuesAsUnderlyingType(typeof(IBMSCode)))
 				Logs.Print($"{Enum.GetName(typeof(IBMSCode), mbr)}: {mbr} ({NumberToBase36String((int)mbr, tempWrite)})");
 		}
 
@@ -392,6 +393,7 @@ namespace CloneDash.Compatibility.MuseDash
 							EnterDirection = EntityEnterDirection.RightSide,
 							HitTime = tick_hit,
 							ShowTime = tick_show,
+							Dt = (double)s.dt,
 
 							Fever = s.noteData.fever,
 							Damage = s.noteData.damage,
@@ -430,6 +432,7 @@ namespace CloneDash.Compatibility.MuseDash
 						IBMSCode.BossFar2End => EventType.BossFar2End,
 						IBMSCode.BossFar2To1 => EventType.BossFar2To1,
 
+						IBMSCode.BossShow => EventType.BossShow,
 						IBMSCode.BossHide => EventType.BossHide,
 
 						IBMSCode.AirSpeed1 => EventType.AirSpeed1,
@@ -452,6 +455,12 @@ namespace CloneDash.Compatibility.MuseDash
 						IBMSCode.ToggleScene8 => EventType.SceneChange,
 						IBMSCode.ToggleScene9 => EventType.SceneChange,
 						IBMSCode.ToggleScene10 => EventType.SceneChange,
+
+						IBMSCode.SceneShow => EventType.ShowBackground,
+						IBMSCode.SceneHide => EventType.HideBackground,
+
+						IBMSCode.NoteShow => EventType.ShowNotes,
+						IBMSCode.NoteHide => EventType.HideNotes,
 
 						IBMSCode.CanvasUpScroll => EventType.ScreenScrollUp,
 						IBMSCode.CanvasDownScroll => EventType.ScreenScrollDown,
@@ -482,6 +491,14 @@ namespace CloneDash.Compatibility.MuseDash
 						IBMSCode.FilmGrainOff => EventType.FilmGrainOff,
 						IBMSCode.AutoPlayOn => EventType.AutoPlayOn,
 						IBMSCode.AutoPlayOff => EventType.AutoPlayOff,
+						IBMSCode.FlashbangColorWhite => EventType.FlashbangColorWhite,
+						IBMSCode.FlashbangColorBlack => EventType.FlashbangColorBlack,
+						IBMSCode.FlashbangColorRed => EventType.FlashbangColorRed,
+						IBMSCode.FlashbangColorGreen => EventType.FlashbangColorGreen,
+						IBMSCode.FlashbangColorBlue => EventType.FlashbangColorBlue,
+						IBMSCode.FlashbangColorCyan => EventType.FlashbangColorCyan,
+						IBMSCode.FlashbangColorMagenta => EventType.FlashbangColorMagenta,
+						IBMSCode.FlashbangColorYellow => EventType.FlashbangColorYellow,
 
 						_ => EventType.NotApplicable
 					};
@@ -489,19 +506,7 @@ namespace CloneDash.Compatibility.MuseDash
 					if (eventType != EventType.NotApplicable) {
 						if (eventType == EventType.SceneChange) {
 							gamemodeData.SceneChanges.Add(new ChartSceneChange() {
-								SceneUID = "scene/musedash1/scene_" + $"{ib.Code switch {
-									IBMSCode.ToggleScene1 => 1,
-									IBMSCode.ToggleScene2 => 2,
-									IBMSCode.ToggleScene3 => 3,
-									IBMSCode.ToggleScene4 => 4,
-									IBMSCode.ToggleScene5 => 5,
-									IBMSCode.ToggleScene6 => 6,
-									IBMSCode.ToggleScene7 => 7,
-									IBMSCode.ToggleScene8 => 8,
-									IBMSCode.ToggleScene9 => 9,
-									IBMSCode.ToggleScene10 => 10,
-									_ => 1
-								}}".PadLeft(2, '0'),
+								SceneUID = "scene/musedash1/scene_" + MuseDash1Compatibility.GetSceneIndexFromIBMSCode(ib.Code).ToString().PadLeft(2, '0'),
 								Time = tick_hit,
 								Value = null
 							});
@@ -612,6 +617,7 @@ namespace CloneDash.Compatibility.MuseDash
 								EnterDirection = dir,
 								HitTime = tick_hit,
 								ShowTime = tick_show,
+								Dt = (double)s.dt,
 								Flipped = flipped,
 
 								Fever = s.noteData.fever,
@@ -646,6 +652,22 @@ namespace CloneDash.Compatibility.MuseDash
 			Logs.Info($"STOPWATCH: ConvertAssetBundleToDashSheet: Translated Muse Dash level to DashSheet in {measureFunctionTime.Elapsed.TotalSeconds} seconds");
 			return gamemodeData;
 		}
+
+		public static int GetSceneIndexFromIBMSString(string ibms_id) => GetSceneIndexFromIBMSCode((IBMSCode)Base36StringToNumber(ibms_id));
+		private static int GetSceneIndexFromIBMSCode(IBMSCode code) => code switch {
+			IBMSCode.ToggleScene1 => 1,
+			IBMSCode.ToggleScene2 => 2,
+			IBMSCode.ToggleScene3 => 3,
+			IBMSCode.ToggleScene4 => 4,
+			IBMSCode.ToggleScene5 => 5,
+			IBMSCode.ToggleScene6 => 6,
+			IBMSCode.ToggleScene7 => 7,
+			IBMSCode.ToggleScene8 => 8,
+			IBMSCode.ToggleScene9 => 9,
+			IBMSCode.ToggleScene10 => 10,
+			_ => 1
+		};
+
 
 		public static List<MuseDash1Album> Albums { get; private set; } = [];
 		public static List<MD1_Song> Songs { get; private set; }
@@ -789,10 +811,11 @@ namespace CloneDash.Compatibility.MuseDash
 			return true;
 		}
 
-		public static Nucleus.ManagedMemory.Texture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
-			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib(), flipV: false);
-			Nucleus.ManagedMemory.Texture ntex = new Nucleus.ManagedMemory.Texture(level.Textures, Raylib.LoadTextureFromImage(img), true);
+		public static ITexture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
+			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib());
+			ITexture ntex = textures.CreateTexture((Image)img);
 			ntex.SetFilter(TextureFilter.Bilinear);
+			ntex.SetWrap(TextureWrap.Clamp);
 			ntex.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
 			return ntex;
 		}
@@ -842,8 +865,8 @@ namespace CloneDash.Compatibility.MuseDash
 				switch (buildStep) {
 					case MDAtlasBuildStep.ReadyForPage:
 						var imageName = Path.ChangeExtension(line, null);
-						var index = images.IndexOf(x => x.m_Name == imageName);
-						atlasBuilder.StartPage(line).Texture = new(images[index].ToRaylib(), flipV: false);
+						var index = images.IndexOf(x => x != null && x.m_Name == imageName);
+						atlasBuilder.StartPage(line).Texture = new(images[index].ToRaylib());
 						buildStep = MDAtlasBuildStep.ReadingPage;
 
 						atlasBuilder.WorkingPage.StraightAlpha = ((string)materials[index].ToType()["m_ShaderKeywords"]!).Contains("_STRAIGHT_ALPHA_INPUT");
@@ -880,9 +903,9 @@ namespace CloneDash.Compatibility.MuseDash
 				var page = pageKVP.Value;
 				page.CheckSizing();
 
-				var tex = Raylib.LoadTextureFromImage(page.Texture);
-				Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
-				page.GpuTexture = new Nucleus.ManagedMemory.Texture(EngineCore.Level.Textures, tex, true);
+				page.GpuTexture = textures.CreateTexture(page.Texture);
+				page.GpuTexture.SetFilter(TextureFilter.Bilinear);
+				page.GpuTexture.SetWrap(TextureWrap.Clamp);
 				page.GpuTexture.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
 			}
 
@@ -1523,13 +1546,45 @@ public static class MuseDash1ModelConverter
 			}
 		}
 
-		for (int drawI = 0, drawOrder = skeleton.MD_ReadVarInt(true); drawI < drawOrder; drawI++) {
-			skeleton.MD_ReadFloat();
-			int count = skeleton.MD_ReadVarInt(true);
-			for (int i2 = 0; i2 < count; i2++) {
-				skeleton.MD_ReadVarInt(true);
-				skeleton.MD_ReadVarInt(true);
+		int drawOrderFrames = skeleton.MD_ReadVarInt(true);
+		if (drawOrderFrames > 0) {
+			int slotCount = nucleusModelData.SlotDatas.Count;
+			DrawOrderTimeline drawTimeline = new();
+			drawTimeline.NewCurves();
+
+			for (int drawI = 0; drawI < drawOrderFrames; drawI++) {
+				float time = skeleton.MD_ReadFloat();
+				int offsetCount = skeleton.MD_ReadVarInt(true);
+
+				int[] drawOrder = new int[slotCount];
+				for (int i2 = 0; i2 < slotCount; i2++)
+					drawOrder[i2] = -1;
+
+				int[] unchanged = new int[slotCount - offsetCount];
+				int originalIndex = 0, unchangedIndex = 0;
+
+				for (int i2 = 0; i2 < offsetCount; i2++) {
+					int slotIndex = skeleton.MD_ReadVarInt(true);
+					int offset = skeleton.MD_ReadVarInt(true);
+
+					while (originalIndex != slotIndex)
+						unchanged[unchangedIndex++] = originalIndex++;
+
+					drawOrder[originalIndex + offset] = originalIndex++;
+				}
+
+				while (originalIndex < slotCount)
+					unchanged[unchangedIndex++] = originalIndex++;
+
+				for (int i2 = slotCount - 1; i2 >= 0; i2--)
+					if (drawOrder[i2] == -1)
+						drawOrder[i2] = unchanged[--unchangedIndex];
+
+				drawTimeline.Curve(0).AddKeyframe(new(time, drawOrder) { Interpolation = Nucleus.Models.KeyframeInterpolation.Constant });
 			}
+
+			animation.Timelines.Add(drawTimeline);
+			animation.Duration = Math.Max(animation.Duration, drawTimeline.Curve(0)?.Last?.Time ?? 0);
 		}
 
 		for (int eventIndex = 0, events = skeleton.MD_ReadVarInt(true); eventIndex < events; eventIndex++) {
@@ -1836,6 +1891,16 @@ public static class MuseDash1ModelConverter
 					defaultSkin.AddSkin(hexie);
 				break;
 		}
+
+		// This feels kinda... ehh...
+		// I will allow it for now, but in the future, we should figure out
+		// what would merge these skins under normal conditions.
+		if (defaultSkin != null)
+			foreach (var skin in md_data.Skins) {
+				if (skin == defaultSkin) continue;
+				if (skin.Name is "origin" or "hexie") continue;
+				defaultSkin.AddSkin(skin);
+			}
 
 		return md_data;
 	}

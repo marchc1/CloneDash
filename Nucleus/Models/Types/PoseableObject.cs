@@ -56,7 +56,8 @@ namespace Nucleus.Models
 
 		protected Transformation worldTransform;
 
-		[JsonIgnore] public Transformation WorldTransform {
+		[JsonIgnore]
+		public Transformation WorldTransform {
 			get {
 				if (!WorldTransformValid) {
 					var parent = GetParent();
@@ -65,7 +66,7 @@ namespace Nucleus.Models
 						SetupRotation + Rotation,
 						SetupScale * Scale,
 						SetupShear + Shear,
-						transformMode ?? setupTransformMode, 
+						transformMode ?? setupTransformMode,
 						parent == null ? null : parent.WorldTransform
 					);
 					WorldTransformValid = true;
@@ -74,6 +75,7 @@ namespace Nucleus.Models
 				return worldTransform;
 			}
 		}
+
 		[JsonIgnore] public bool WorldTransformValid { get; protected set; }
 
 		/// <summary>
@@ -82,6 +84,7 @@ namespace Nucleus.Models
 		/// </summary>
 		/// <returns>The objects parent.</returns>
 		public abstract PoseableObject? GetParent();
+
 		/// <summary>
 		/// Needed for internal calculations. Just point this towards the classes children.
 		/// <br></br>

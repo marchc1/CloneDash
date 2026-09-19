@@ -9,12 +9,13 @@ This is what I'd consider "vertical slice 1" of the project - almost everything 
 ## Screenshots & Videos
 
 [![Clone Dash Preview Video](https://img.youtube.com/vi/3hFUoRz_uuk/0.jpg)](https://www.youtube.com/watch?v=3hFUoRz_uuk)
-![image](https://github.com/user-attachments/assets/e87b782b-3a25-4000-acc4-b4b0f3a12877)
-![image](https://github.com/user-attachments/assets/96cb2dd6-6d88-481c-8e37-2ed1fbb19d3c)
-![image](https://github.com/user-attachments/assets/bd1d2f4a-c198-4ec5-92a9-33e5605e9103)
-![image](https://github.com/user-attachments/assets/5ba660e7-eec5-4361-b367-4aa6471c0390)
-![image](https://github.com/user-attachments/assets/992a5a89-3c25-4568-98ae-2fb4190e81ed)
-![image](https://github.com/user-attachments/assets/55139795-eb76-4bed-9a28-984203332c55)
+<img width="1920" height="1017" alt="image" src="https://github.com/user-attachments/assets/6377aad0-d194-408c-a372-b6ddaf9b308f" />
+<img width="1920" height="1017" alt="image" src="https://github.com/user-attachments/assets/234ea460-8ef5-4ce2-923a-bab2523695a3" />
+<img width="1920" height="1017" alt="image" src="https://github.com/user-attachments/assets/d25c1ecf-ecc3-4ef0-b76a-724833d33ade" />
+<img width="1920" height="1017" alt="image" src="https://github.com/user-attachments/assets/0fffe3f7-3fe8-4624-8b0a-3db23d737f60" />
+<img width="1920" height="1017" alt="image" src="https://github.com/user-attachments/assets/a95cddbc-47ca-47e0-9f87-e62b5ca2ee8f" />
+<img width="1920" height="1017" alt="image" src="https://github.com/user-attachments/assets/4fe36608-597a-4553-a9a0-c682bd14731d" />
+
 
 
 ## Notes

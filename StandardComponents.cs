@@ -2,7 +2,9 @@
 using Nucleus.Common.Audio;
 using Nucleus.Common.Engine;
 using Nucleus.Common.FileSystem;
+using Nucleus.Common.Graphics;
 using Nucleus.Files;
+using Nucleus.ManagedMemory;
 using Nucleus.NewEngine;
 
 namespace Nucleus;
@@ -17,6 +19,7 @@ public static class StandardComponents {
 			return api
 					.WithComponent<IFileSystem, FileSystem>()
 					.WithComponent<IAudioSystem, RaylibAudioSystem>()
+					.WithComponent<ITextureManager, TextureManager>()
 					;
 		}
 	}

@@ -95,7 +95,7 @@ public class StatisticsPanel : Panel
 		victory.Render();
 		EngineCore.Window.EndMode2D();
 
-		var chart = (MD1_SongChart?)this.chart;
+		var chart = this.chart;
 		if (chart == null) return;
 		if (stats == null) return;
 
@@ -104,14 +104,16 @@ public class StatisticsPanel : Panel
 		var fs = 24;
 		var y = 0;
 
-		Match boldRegexMatch = Util.BoldRegex.Match(chart.Song.FetchMetadata().Name);
+		var metadata = chart.GetSong().FetchMetadata(HumanLanguage.GetCurrentLanguage());
+
+		Match boldRegexMatch = Util.BoldRegex.Match(metadata.Name);
 		Graphics2D.DrawText(16, 16 + y,
-							boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : chart.Song.FetchMetadata().Name,
+							boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : metadata.Name,
 							boldRegexMatch.Success ? Graphics2D.UI_MONO_BOLD_FONT_NAME : Graphics2D.UI_CN_JP_FONT_NAME,
 							fs);
 		y += fs + 4;
 
-		RenderOneLine($"      Rating: {chart.Rating}", fs, ref y);
+		RenderOneLine($"      Rating: {chart.GetRatingNumber()}", fs, ref y);
 		RenderOneLine($"      Grade: {stats.Grade}", fs, ref y);
 		RenderOneLine($"      Accuracy: {stats.Accuracy}", fs, ref y);
 		RenderOneLine($"      Score: {stats.Score}", fs, ref y);
@@ -307,8 +309,8 @@ public class TextImageRenderItem
 
 	public bool IsOver(double curtime) => curtime >= (StartTime + Length);
 	public void Dispose() {
-		if (textRT.HasValue)
-			Graphics2D.DestroyRenderTarget(textRT.Value);
+		if (textRT != null)
+			Graphics2D.DestroyRenderTarget(textRT);
 	}
 	float FontResolution = 90;
 	public float BorderSize = 2.6f;
@@ -344,22 +346,22 @@ public class TextImageRenderItem
 			Graphics2D.SetTexture(Texture);
 			if (TopLeftAligned) {
 				if (Worldspace)
-					Graphics2D.DrawTexturedRectangle(new Vector2F(0, 0), new Vector2F(Texture.Width / FontResolution, Texture.Height / FontResolution));
+					Graphics2D.DrawTexturedRectangle(new Vector2F(0, 0), new Vector2F(Texture.GetWidth() / FontResolution, Texture.GetHeight() / FontResolution));
 				else
-					Graphics2D.DrawTexturedRectangle(new Vector2F(0, 0), new Vector2F(Texture.Width, Texture.Height));
+					Graphics2D.DrawTexturedRectangle(new Vector2F(0, 0), new Vector2F(Texture.GetWidth(), Texture.GetHeight()));
 			}
 			else {
 				if (Worldspace)
-					Graphics2D.DrawTexturedRectangle(new Vector2F(Texture.Width / -FontResolution / 2, Texture.Height / -FontResolution / 2), new Vector2F(Texture.Width / FontResolution, Texture.Height / FontResolution));
+					Graphics2D.DrawTexturedRectangle(new Vector2F(Texture.GetWidth() / -FontResolution / 2, Texture.GetHeight() / -FontResolution / 2), new Vector2F(Texture.GetWidth() / FontResolution, Texture.GetHeight() / FontResolution));
 				else
-					Graphics2D.DrawTexturedRectangle(new Vector2F(Texture.Width / -2, Texture.Height / -2), new Vector2F(Texture.Width, Texture.Height));
+					Graphics2D.DrawTexturedRectangle(new Vector2F(Texture.GetWidth() / -2, Texture.GetHeight() / -2), new Vector2F(Texture.GetWidth(), Texture.GetHeight()));
 			}
 			Rlgl.DrawRenderBatchActive();
 			Rlgl.PopMatrix();
 		}
 	}
 
-	RenderTexture2D? textRT;
+	IRenderTexture? textRT;
 	public Vector2F GetTextSize() {
 		Vector2F textSize = Graphics2D.GetTextSize(Text!, Font!, FontResolution);
 		int pad = RTPadding;
@@ -367,29 +369,29 @@ public class TextImageRenderItem
 		int rtH = (int)textSize.Y + pad * 2;
 		return new(rtW, rtH);
 	}
-	public RenderTexture2D? DetermineRenderTexture() {
+	public IRenderTexture? DetermineRenderTexture() {
 		if (Text == null || Font == null)
 			return null;
 
 		var rtSize = GetTextSize();
 		ulong textHash = Text.Hash(invariant: false);
 		ulong fontHash = Font.Hash(invariant: false);
-		bool requiresRedraw = !textRT.HasValue || (textHash != lastTextHash || fontHash != lastFontHash);
-		bool requiresResize = !textRT.HasValue || (textRT.Value.Texture.Width < rtSize.W || textRT.Value.Texture.Height < rtSize.H);
+		bool requiresRedraw = textRT == null || (textHash != lastTextHash || fontHash != lastFontHash);
+		bool requiresResize = textRT == null || (textRT.GetWidth() < rtSize.W || textRT.GetHeight() < rtSize.H);
 		if (requiresResize) {
-			if (textRT.HasValue) {
-				Graphics2D.DestroyRenderTarget(textRT.Value);
+			if (textRT != null) {
+				Graphics2D.DestroyRenderTarget(textRT);
 				textRT = null;
 			}
 		}
 
-		if (!textRT.HasValue) {
+		if (textRT == null) {
 			textRT = Graphics2D.CreateRenderTarget(rtSize.W, rtSize.H);
-			Raylib.SetTextureFilter(textRT!.Value.Texture, TextureFilter.Bilinear);
+			textRT.SetFilter(TextureFilter.Bilinear);
 		}
 
 		if (requiresRedraw) {
-			RenderTexture2D rt = textRT.Value;
+			IRenderTexture rt = textRT;
 
 			int pad = RTPadding;
 			Graphics2D.BeginRenderTarget(rt);
@@ -398,23 +400,23 @@ public class TextImageRenderItem
 			Graphics2D.SetDrawColor(255, 255, 255);
 			Graphics2D.DrawText(pad, pad, Text!, Font!, FontResolution);
 			Rlgl.DrawRenderBatchActive();
-			Graphics2D.EndRenderTarget();
+			Graphics2D.EndRenderTarget(rt);
 
 			lastTextHash = textHash;
 			lastFontHash = fontHash;
 		}
 
-		return textRT.Value;
+		return textRT;
 	}
 	void RenderStyledText(Vector2F position, Vector2F scale, float rotation, Color color, Color? borderColor, IShader? shader) {
 		float alpha = color.A / 255f;
 		var rtN = textRT;
-		if (!rtN.HasValue) return;
+		if (rtN == null) return;
 
-		var rt = rtN.Value;
+		var rt = rtN;
 		var rtSize = GetTextSize();
-		var rtW = rt.Texture.Width;
-		var rtH = rt.Texture.Height;
+		var rtW = rt.GetWidth();
+		var rtH = rt.GetHeight();
 
 		Rlgl.PushMatrix();
 		Rlgl.Translatef(position.x, -position.y, 0);
@@ -715,7 +717,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		DrawUI(width, height);
 	}
 
-	Vector2F GetTextureSize(ITexture? tex) => tex == null ? default : new(tex.Width, tex.Height);
+	Vector2F GetTextureSize(ITexture? tex) => tex == null ? default : new(tex.GetWidth(), tex.GetHeight());
 	public void DrawSliderLight(ITexture? stencilMask, Vector2F stencilSize, float progress, float alpha, Vector2F offset, Color sliderColor) {
 		sliderColor.A = (byte)(int)(255 * Math.Clamp(alpha, 0, 1));
 		Vector2F drawRectPos = new(-(stencilSize.W / 2) + offset.X, -stencilSize.H + offset.Y);
@@ -929,14 +931,14 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		Graphics2D.DrawText(new(0, -(fontSize * 0.85f)), $"{Math.Round(HP)}/{MaxHP}", "Noto Sans Bold", fontSize, Anchor.Center);
 		if (Fever != null) {
 			Graphics2D.SetTexture(Fever);
-			Graphics2D.DrawTexturedRectangle(new Vector2F(300, -38f), new Vector2F(Fever.Width, Fever.Height));
+			Graphics2D.DrawTexturedRectangle(new Vector2F(300, -38f), new Vector2F(Fever.GetWidth(), Fever.GetHeight()));
 		}
 		if (hp_icon != null) {
 			Graphics2D.SetTexture(hp_icon);
 			float lastHitTime = Math.Clamp((float)(Time - LastHitTime) * 1, 0, 1);
 			float size = (float)NMath.Remap(lastHitTime, 0, 0.3, 1, 1.15, clampInput: true);
 
-			Vector2F sizeOfHeart = new(hp_icon.Width * size, hp_icon.Height * size);
+			Vector2F sizeOfHeart = new(hp_icon.GetWidth() * size, hp_icon.GetHeight() * size);
 			Graphics2D.DrawTexturedRectangle(new(-328, -38f), sizeOfHeart, origin: sizeOfHeart / 2);
 		}
 	}

@@ -6,6 +6,19 @@ using System.Runtime.InteropServices;
 
 namespace Nucleus.Util;
 
+public interface ISymbolTable
+{
+	UtlSymId_t AddString(ReadOnlySpan<char> str);
+
+	UtlSymId_t Find(ReadOnlySpan<char> str);
+
+	nint GetNumStrings();
+
+	void RemoveAll();
+
+	string? String(UtlSymId_t symbol);
+}
+
 public static class HashingUtils
 {
 	public static unsafe ulong Hash(this ReadOnlySpan<char> str, bool invariant = true) {
@@ -49,21 +62,11 @@ public static class HashingUtils
 	}
 }
 
-public interface ISymbolTable
-{
-	UtlSymId_t AddString(ReadOnlySpan<char> str);
-	UtlSymId_t Find(ReadOnlySpan<char> str);
-	string? String(UtlSymId_t symbol);
-	nint GetNumStrings();
-	void RemoveAll();
-}
-
 public class UtlSymbolTable(bool caseInsensitive = false) : ISymbolTable
 {
-	readonly Dictionary<UtlSymId_t, string> Symbols = [];
+	private readonly Dictionary<UtlSymId_t, string> Symbols = [];
 
 	public int Count => Symbols.Count;
-	public void Clear() => Symbols.Clear();
 
 	public UtlSymId_t AddString(ReadOnlySpan<char> str) {
 		UtlSymId_t hash = str.Hash(invariant: caseInsensitive);
@@ -72,6 +75,8 @@ public class UtlSymbolTable(bool caseInsensitive = false) : ISymbolTable
 		return hash;
 	}
 
+	public void Clear() => Symbols.Clear();
+
 	public UtlSymId_t Find(ReadOnlySpan<char> str) {
 		UtlSymId_t hash = str.Hash(invariant: caseInsensitive);
 		if (Symbols.ContainsKey(hash))
@@ -79,19 +84,20 @@ public class UtlSymbolTable(bool caseInsensitive = false) : ISymbolTable
 		return 0;
 	}
 
+	public virtual nint GetNumStrings() => Symbols.Count;
+
+	public virtual void RemoveAll() => Symbols.Clear();
+
 	public string? String(UtlSymId_t symbol) {
 		if (Symbols.TryGetValue(symbol, out string? str))
 			return str;
 		return null;
 	}
-
-	public virtual nint GetNumStrings() => Symbols.Count;
-	public virtual void RemoveAll() => Symbols.Clear();
 }
 
 public class UtlSymbolTableMT(bool caseInsensitive = false) : ISymbolTable
 {
-	readonly ConcurrentDictionary<UtlSymId_t, string> Symbols = [];
+	private readonly ConcurrentDictionary<UtlSymId_t, string> Symbols = [];
 
 	public UtlSymId_t AddString(ReadOnlySpan<char> str) {
 		UtlSymId_t hash = str.Hash(invariant: caseInsensitive);
@@ -108,11 +114,13 @@ public class UtlSymbolTableMT(bool caseInsensitive = false) : ISymbolTable
 		return 0;
 	}
 
+	public nint GetNumStrings() => Symbols.Count;
+
+	public void RemoveAll() => Symbols.Clear();
+
 	public string? String(UtlSymId_t symbol) {
 		if (Symbols.TryGetValue(symbol, out string? str))
 			return str;
 		return null;
 	}
-	public nint GetNumStrings() => Symbols.Count;
-	public void RemoveAll() => Symbols.Clear();
 }

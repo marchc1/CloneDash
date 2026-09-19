@@ -82,20 +82,6 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 	}
 
 	Button back;
-	public List<ISong> RefreshLocalSongs() {
-		List<ISong> ret = [];
-
-		foreach (var file in filesystem.FindFiles("charts", "*.mdm", SearchOption.AllDirectories)) {
-			try {
-				ret.Add(new MD1_CustomChartsSong("charts", file));
-			}
-			catch (Exception ex) {
-				Logs.Warn($"The .mdm file '{file}' failed: {ex.Message}");
-			}
-		}
-
-		return ret;
-	}
 
 	public MainMenuPanel(Element? parent) : base(parent) {
 		BorderSize = 0;
@@ -104,54 +90,28 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		SetPassthru(true);
 
 		back = new Button(this);
-		back.		Origin = Anchor.Center;
+		back.Origin = Anchor.Center;
 		back.BorderSize = 0;
 		back.SetBgColor(new Color(0, 0));
 		back.OnButtonClick += (_, _) => DestroyNavigationMenu(); ;
 
 		Image backImage = new(back);
-		backImage.Texture = Level.Textures.LoadTextureFromFile("ui/back.png");
+		backImage.Texture = textures.LoadTextureFromFile("ui/back.png");
 		backImage.ImageOrientation = ImageOrientation.Zoom;
 		backImage.Dock = Dock.Fill;
 
 		CreateNavigationMenu();
 
-		MakeNavigationButton(
-			"Play", "Play your installed charts.", 200,
-			"icons/play.png", menu => {
-				var source = ChartMod.GetChartSongProviderByName("Muse Dash");
-				if (source == null) {
-					UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
-					return;
-				}
+		foreach (var provider in ChartMod.GetAll()) {
+			if (!provider.IsEnabled())
+				continue;
 
-				var selector = menu.PushActiveElement(new SongSelector(Level.Content));
-				selector.SetSource(source.NewState());
+			IChartSongProvider.NavigationButtonInstructions instructions = provider.GetNavigationButtonInstructions();
+			MakeNavigationButton(instructions.Name, instructions.Description, instructions.Hue, instructions.Icon, menu => {
+				var selector = menu.PushActiveElement(new SongSelector(Level.Content, provider));
+				selector.SetSource(provider.NewState());
 			});
-
-		MakeNavigationButton(
-			"Play Custom Charts", "Play a custom chart (.mdm format).", 310,
-			"icons/orange-slice.png", menu => {
-				var source = ChartMod.GetChartSongProviderByName("Custom Albums");
-				if (source == null) {
-					UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
-					return;
-				}
-
-				var selector = menu.PushActiveElement(new SongSelector(Level.Content));
-				selector.SetSource(source.NewState());
-			});
-
-		MakeNavigationButton("Browse mdmc.moe Charts", "Download new charts from the Muse Dash Modding Community.", 340,
-			"icons/globe-hemisphere-west.png", (menu) => {
-				var source = ChartMod.GetChartSongProviderByName("MDMC");
-				if (source == null) {
-					UI.DialogOK("Source Error", "The source from ChartMod.GetChartSongProviderByName returned null.");
-					return;
-				}
-
-				menu.PushActiveElement(new SongSelector(Level.Content)).SetSource(source.NewState());
-			});
+		}
 
 		MakeNavigationButton(
 			"Change Character", "Select a character to play as.", 20,
@@ -202,7 +162,11 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 			btn.
 			Position = new Vector2F(width * .75f, height / 2f + y * (MainMenuButton.Height + MainMenuButton.Spacing));
-			btn.			Origin = Anchor.Center;
+			btn.Origin = Anchor.Center;
 		}
 	}
+
+	IMainMenuLevel mainMenu = null!;
+	public IMainMenuLevel GetMainMenu() => mainMenu;
+	public void SetMainMenu(IMainMenuLevel level) => mainMenu = level;
 }

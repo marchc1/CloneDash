@@ -2,6 +2,8 @@
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
+using Nucleus.Common.Audio;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
 
 namespace CloneDash.Common.Gamemodes.MuseDash.V1.Data;
@@ -22,6 +24,9 @@ public class MD1_GamemodeData
 	public readonly List<ChartSceneChange> SceneChanges = [];
 	public string? InitialScene;
 	public double StartOffset;
+
+	public ITexture? BackgroundTextureOverride;
+	public float BackgroundTextureOpacity;
 }
 
 /// <summary>
@@ -79,4 +84,7 @@ public class MD1_SongChart : ISongChart
 			},
 		};
 	}
+
+	public IAudioClip GetAudioTrack() => Song.GetAudioTrack();
+	public int GetRatingNumber() => RatingNumber;
 }

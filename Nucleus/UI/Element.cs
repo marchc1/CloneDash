@@ -1,6 +1,7 @@
 ﻿#define SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
 
 using Nucleus.Commands;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Common.UI;
@@ -141,7 +142,7 @@ public class Element : IValidatable
 	IScheme? lastAppliedScheme;
 
 	private bool __usesRenderTarget = false;
-	private RenderTexture2D? __RT1 = null;
+	private IRenderTexture? __RT1 = null;
 	private RectangleF? __lastRTSize = null;
 
 	// TODO: make private
@@ -242,7 +243,14 @@ public class Element : IValidatable
 	/// <summary>
 	/// The <see cref="UserInterface"/> the element belongs to.
 	/// </summary>
-	public UserInterface UI { get; internal set; } = null!;
+	public UserInterface UI{
+		get => field;
+		set {
+			field = value;
+			foreach (var child in GetChildren())
+				child.UI = value;
+		}
+	}
 
 	/// <summary>
 	/// The position of this element, relative to its parent.
@@ -919,8 +927,7 @@ public class Element : IValidatable
 
 		__usesRenderTarget = value;
 		if (value == false) {
-			if (__RT1.HasValue)
-				Raylib.UnloadRenderTexture(__RT1.Value);
+			__RT1?.Dispose();
 
 			__RT1 = null;
 			__lastRTSize = null;
@@ -1053,17 +1060,18 @@ public class Element : IValidatable
 	};
 
 	~Element() {
-		if (__RT1.HasValue) {
-			MainThread.RunASAP(() => {
-				Raylib.UnloadRenderTexture(__RT1.Value);
-			});
-		}
+		__RT1?.Dispose();
 		//OnRemoval();
 	}
 
 	public virtual void PreRenderRT() { }
 	public virtual void PostRenderRT() { }
 	public virtual bool PostRenderChildRT(Element element) => true;
+
+	public delegate void PaintRenderTargetOverrideDelegate(Element self, IRenderTexture texture, in RectangleF renderBounds);
+	public event PaintRenderTargetOverrideDelegate? PaintRenderTargetOverride;
+	public bool HasPaintRenderTargetOverride => PaintRenderTargetOverride != null;
+	public void InvokePaintRenderTargetOverride(IRenderTexture texture, in RectangleF renderBounds) => PaintRenderTargetOverride?.Invoke(this, texture, renderBounds);
 
 	public virtual void SetVisible(bool visible) {
 		if (Visible == visible)
@@ -1079,20 +1087,20 @@ public class Element : IValidatable
 		return Visible;
 	}
 
-	public bool IsRenderTargetAvailable(out RenderTexture2D rt) {
+	public bool IsRenderTargetAvailable(out IRenderTexture rt) {
 		if (!__lastRTSize.HasValue || GetRenderBounds() != __lastRTSize) {
-			if (__RT1.HasValue) Raylib.UnloadRenderTexture(__RT1.Value);
+			__RT1?.Dispose();
 
 			__RT1 = Graphics2D.CreateRenderTarget(GetRenderBounds().W, GetRenderBounds().H);
 			__lastRTSize = GetRenderBounds();
 		}
 
-		if (!__RT1.HasValue) {
-			rt = default;
+		if (__RT1 == null) {
+			rt = null!;
 			return false;
 		}
 
-		rt = __RT1.Value;
+		rt = __RT1;
 		return true;
 	}
 
@@ -1378,14 +1386,14 @@ public class Element : IValidatable
 	public virtual bool ShouldPaintChild(Element child) {
 		if (!clipping) return true;
 		// otherwise, make sure rect in rect
-		// TODO: Make this not suck
+
 		RectangleF parent = GetRenderBounds();
 		RectangleF childRect = child.GetRenderBounds();
+
 		childRect.Pos += ChildRenderOffset;
-		return childRect.X < parent.W &&
-		   childRect.X + childRect.W > 0 &&
-		   childRect.Y < parent.H &&
-		   childRect.Y + childRect.H > 0;
+
+		RectangleF localParentBounds = RectangleF.XYWH(0, 0, parent.W, parent.H);
+		return RectangleF.IsRectangleInsideRectangle(localParentBounds, childRect, true);
 	}
 
 	public virtual bool HoverTest(RectangleF bounds, Vector2F mousePos) => bounds.ContainsPoint(mousePos);

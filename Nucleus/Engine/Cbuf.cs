@@ -1,8 +1,5 @@
 ﻿using Nucleus.Common.Commands;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 
 namespace Nucleus.Engine;
 
@@ -26,22 +23,23 @@ public class CommandBuffer
 		public Command? Next;
 	}
 
-	readonly char[] Buffer = new char[ARGS_BUFFER_LENGTH];
-	readonly LinkedList<Command> Commands = [];
+	private readonly char[] Buffer = new char[ARGS_BUFFER_LENGTH];
+	private readonly LinkedList<Command> Commands = [];
 
-	int WritePos;
-	int ReadPos;
-	int UsedSpace;
-	bool ProcessingCommands;
+	private int WritePos;
+	private int ReadPos;
+	private int UsedSpace;
+	private bool ProcessingCommands;
 
-	TokenizedCommand CurrentCommand;
+	private TokenizedCommand CurrentCommand;
 
 	public int GetCapacity() => ARGS_BUFFER_LENGTH;
+
 	public int GetFreeSpace() => ARGS_BUFFER_LENGTH - UsedSpace;
+
 	public int GetUsedSpace() => UsedSpace;
 
 	public bool IsProcessingCommands() => ProcessingCommands;
-
 
 	public void BeginProcessingCommands() {
 		Debug.Assert(!ProcessingCommands);
@@ -54,7 +52,6 @@ public class CommandBuffer
 	}
 
 	public ref TokenizedCommand GetCommand() => ref CurrentCommand;
-
 
 	public ReadOnlySpan<char> FirstTextSlice(ReadOnlySpan<char> message) {
 		int indexOf = message.IndexOf(';'); // command delimiter

@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualBasic;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.UI;
 using Nucleus.Core;
@@ -70,15 +71,26 @@ public class ElementInputSystem
 		state.Hovered = null;
 
 		Vector2F mousePos = frameState.Mouse.MousePos;
-		state.Hovered = SolveTraverse(element, ref state, frameState, element.GetRenderBounds(), mousePos)?.GetMouseElement();
+		RectangleF unbounded = RectangleF.FromPosAndSize(new(-1e9f, -1e9f), new(2e9f, 2e9f));
+		state.Hovered = SolveTraverse(element, ref state, frameState, element.GetRenderBounds(), unbounded, mousePos)?.GetMouseElement();
 		// Logs.Info($"{mousePos}, {state.Hovered}");
 	}
 
-	private Element? SolveTraverse(Element? element, ref ElementSolveState state, FrameState frameState, RectangleF globalSpaceBounds, Vector2F mousePos) {
+	static RectangleF IntersectRects(RectangleF a, RectangleF b) {
+		float x1 = Math.Max(a.X, b.X);
+		float y1 = Math.Max(a.Y, b.Y);
+		float x2 = Math.Min(a.X + a.Width, b.X + b.Width);
+		float y2 = Math.Min(a.Y + a.Height, b.Y + b.Height);
+		return RectangleF.FromPosAndSize(new(x1, y1), new(Math.Max(0, x2 - x1), Math.Max(0, y2 - y1)));
+	}
+
+	private Element? SolveTraverse(Element? element, ref ElementSolveState state, FrameState frameState, RectangleF globalSpaceBounds, RectangleF clipBounds, Vector2F mousePos) {
 		if (!IValidatable.IsValid(element)) return null;
 
-		bool selfHovered = element.HoverTest(globalSpaceBounds, mousePos);
+		bool selfHovered = element.HoverTest(globalSpaceBounds, mousePos) && clipBounds.ContainsPoint(mousePos);
 		if (element.IsVisible()) {
+			RectangleF childClip = element.Clipping ? IntersectRects(clipBounds, globalSpaceBounds) : clipBounds;
+
 			var children = element.GetChildren();
 			// If this element contains a modal, only process that modal.
 			// Also, process popups first here too.
@@ -87,9 +99,10 @@ public class ElementInputSystem
 				bool modal = child.IsModal(), popup = child.IsPopup();
 
 				if (modal || popup) {
-					// Only traverse this modal child
+					// Modals/popups escape ancestor clipping, so they get an unbounded clip.
 					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetRenderBounds().Pos + element.ChildRenderOffset, child.GetRenderBounds().Size);
-					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, mousePos);
+					RectangleF popupClip = RectangleF.FromPosAndSize(new(-1e9f, -1e9f), new(2e9f, 2e9f));
+					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, popupClip, mousePos);
 
 					if (modal) {
 						if (!IValidatable.IsValid(subElementHovered))
@@ -109,19 +122,7 @@ public class ElementInputSystem
 				bool modal = child.IsModal(), popup = child.IsPopup();
 				if (!modal && !popup) {
 					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetRenderBounds().Pos + element.ChildRenderOffset, child.GetRenderBounds().Size);
-					if (element.Clipping) {
-						// might not be right (this should just be a RectangleF function...)
-						float x1 = Math.Max(childGlobalBounds.X, globalSpaceBounds.X);
-						float y1 = Math.Max(childGlobalBounds.Y, globalSpaceBounds.Y);
-						float x2 = Math.Min(childGlobalBounds.X + childGlobalBounds.Width, globalSpaceBounds.X + globalSpaceBounds.Width);
-						float y2 = Math.Min(childGlobalBounds.Y + childGlobalBounds.Height, globalSpaceBounds.Y + globalSpaceBounds.Height);
-
-						childGlobalBounds = RectangleF.FromPosAndSize(
-							new(x1, y1),
-							new(Math.Max(0, x2 - x1), Math.Max(0, y2 - y1))
-						);
-					}
-					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, mousePos);
+					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, childClip, mousePos);
 					if (IValidatable.IsValid(subElementHovered))
 						return subElementHovered;
 				}
@@ -295,13 +296,13 @@ public class ElementPaintSystem
 
 		if (element.IsUsingRenderTarget()) {
 			// quick check if needing to create a new RT
-			if (element.IsRenderTargetAvailable(out RenderTexture2D rt)) {
+			if (element.IsRenderTargetAvailable(out IRenderTexture rt)) {
 				var offset = Graphics2D.Offset;             // Store the offset so it can be restored later
 				Graphics2D.ResetDrawingOffset();
 				{
 					Graphics2D.BeginRenderTarget(rt);
 					PaintElement(element, ref state, skipPopups);
-					Graphics2D.EndRenderTarget();
+					Graphics2D.EndRenderTarget(rt);
 				}
 				Graphics2D.OffsetDrawing(offset);           // Reset the offset now that rendering is complete
 
@@ -311,10 +312,19 @@ public class ElementPaintSystem
 						Graphics2D.OffsetDrawing(renderBounds.Pos);
 						{
 							element.PreRenderRT();
-							var t = (byte)Math.Clamp(element.Opacity * 255, 0, 255);
-							Graphics2D.SetDrawColor(t, t, t, t);
-							Graphics2D.SetTexture(rt);
-							Graphics2D.DrawTexturedRectangle(0, 0, renderBounds.W, renderBounds.H);
+							if (element.HasPaintRenderTargetOverride) {
+								var globalBounds = RectangleF.FromPosAndSize(element.GetGlobalPosition(), renderBounds.Size);
+								var savedOffset = Graphics2D.Offset;
+								Graphics2D.ResetDrawingOffset();
+								element.InvokePaintRenderTargetOverride(rt, globalBounds);
+								Graphics2D.OffsetDrawing(savedOffset);
+							}
+							else {
+								var t = (byte)Math.Clamp(element.Opacity * 255, 0, 255);
+								Graphics2D.SetDrawColor(t, t, t, t);
+								Graphics2D.SetTexture(rt);
+								Graphics2D.DrawTexturedRectangle(0, 0, renderBounds.W, renderBounds.H);
+							}
 							element.PostRenderRT();
 						}
 						Graphics2D.OffsetDrawing(-renderBounds.Pos);

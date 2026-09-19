@@ -1,26 +1,32 @@
 ﻿using Nucleus.Commands;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
 
 namespace Nucleus.Common.Commands;
 
 public interface IConVar : IConCommandBase
 {
-	double GetDouble();
-	int GetInt();
-	ReadOnlySpan<char> GetString();
-	ReadOnlySpan<char> GetSaveString();
+	void AddFlags(FCvar flag);
+
 	bool GetBool();
-	void SetValue(ReadOnlySpan<char> str);
-	void SetValue(int i);
-	void SetValue(double d);
-	void SetValue(bool b);
+
+	double GetDouble();
+
+	int GetInt();
+
+	ReadOnlySpan<char> GetSaveString();
+
+	ReadOnlySpan<char> GetString();
 
 	bool IsFlagSet(FCvar flag);
-	void AddFlags(FCvar flag);
-	void RemoveFlags(FCvar flag);
 
 	bool IsLocked();
+
+	void RemoveFlags(FCvar flag);
+
+	void SetValue(ReadOnlySpan<char> str);
+
+	void SetValue(int i);
+
+	void SetValue(double d);
+
+	void SetValue(bool b);
 }

@@ -1,19 +1,18 @@
-﻿using Nucleus.Core;
-using Nucleus.Engine;
+﻿using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
-using Raylib_cs;
 
 namespace Nucleus.Entities
 {
-
 	public class ModelEntity : Entity
 	{
 		protected Dictionary<string, float> shaderlocs_float = [];
+
 		public void SetShaderUniform(string name, float value) {
 			shaderlocs_float[name] = value;
 		}
+
 		protected ModelInstance? __model;
 		protected readonly AnimationHandler __anim = new();
 
@@ -43,6 +42,7 @@ namespace Nucleus.Entities
 			entity.__anim.SetModel(entity.__model);
 			return entity;
 		}
+
 		public static ModelEntity Create(string pathID, string model) {
 			ModelEntity entity = new ModelEntity();
 			entity.Level = EngineCore.Level;
@@ -62,6 +62,7 @@ namespace Nucleus.Entities
 		public IShader? Shader { get; set; }
 
 		public override void Render(FrameState frameState) => Render();
+
 		public double AnimationSpeed = 1;
 
 		public virtual void Render() {

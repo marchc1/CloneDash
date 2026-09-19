@@ -3,6 +3,8 @@
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Audio;
+using Nucleus.Common.Graphics;
+using Nucleus.Common.Images;
 using Nucleus.ManagedMemory;
 
 using Raylib_cs;
@@ -101,7 +103,7 @@ public struct MDMCChart
 
 	public int GetLikes() => Analytics.Likes.Length;
 
-	public Texture? GetCoverAsTexture() {
+	public ITexture? GetCoverAsTexture() {
 		string coverURL = CoverURL;
 		var task = Task.Run(() => MDMCWebAPI.Http.GetAsync(coverURL));
 		task.Wait();
@@ -110,17 +112,16 @@ public struct MDMCChart
 		if (!response.IsSuccessStatusCode)
 			return null;
 		else {
-			using (Raylib.ImageRef img = new(".png", response.Content.ReadAsStream())) {
-				var tex2d = Raylib.LoadTextureFromImage(img);
-				Raylib.SetTextureFilter(tex2d, TextureFilter.Bilinear);
-				Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
+			using (Raylib.ImageRef img = new(response.Content.ReadAsStream())) {
+				ITexture tex = textures.CreateTexture((Image)img);
+				tex.SetFilter(TextureFilter.Bilinear);
 				return tex;
 			}
 
 		}
 	}
 
-	public void GetCoverAsTextureAsync(Action<Texture?> callback) {
+	public void GetCoverAsTextureAsync(Action<ITexture?> callback) {
 		string coverURL = CoverURL;
 		Task.Run(async () => {
 			var response = await MDMCWebAPI.Http.GetAsync(coverURL);
@@ -130,11 +131,10 @@ public struct MDMCChart
 					callback?.Invoke(null);
 				});
 			else {
-				Raylib.ImageRef img = new(".png", response.Content.ReadAsStream());
+				Raylib.ImageRef img = new(response.Content.ReadAsStream());
 				MainThread.RunASAP(() => {
-					var tex2d = Raylib.LoadTextureFromImage(img);
-					Raylib.SetTextureFilter(tex2d, TextureFilter.Bilinear);
-					Texture tex = new Texture(EngineCore.Level.Textures, tex2d, true);
+					ITexture tex = textures.CreateTexture((Image)img);
+					tex.SetFilter(TextureFilter.Bilinear);
 					callback?.Invoke(tex);
 					img.Dispose();
 				});

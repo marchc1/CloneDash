@@ -215,6 +215,8 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, MuseDash
 
 	public void Reset() {
 		isActivatedComeOut = false;
+		backgroundAnimator?.ResetTime();
+		backgroundAnimator?.Rebind();
 	}
 
 	public void Think() {

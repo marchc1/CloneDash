@@ -1,4 +1,5 @@
 ﻿using CloneDash.Game;
+using Nucleus;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -47,7 +48,7 @@ public enum FlashbangParam : sbyte
 {
 	Start = 0,
 	High = 1,
-	End = 0
+	End = 2
 }
 
 public enum FocusLineMode : sbyte
@@ -65,8 +66,9 @@ public class ScreenspaceEffectEvent(MuseDash1Game game, ScreenspaceEffectType ty
 	public ScreenspaceEffectType Type = type;
 	public double TargetValue = targetValue;
 	public virtual double? GetLengthOfEffect() => null;
+	public virtual Func<double, double>? GetEasing() => null;
 	public override void Activate() {
-		Game.TriggerScreenspaceEffectStart(Type, TargetValue, GetLengthOfEffect() ?? Length);
+		Game.TriggerScreenspaceEffectStart(Type, TargetValue, GetLengthOfEffect() ?? Length, GetEasing());
 	}
 }
 
@@ -74,6 +76,7 @@ public class ScreenScrollEffect(MuseDash1Game game, ScreenScrollDirection direct
 
 	public override void Activate() {
 		Game.TriggerScreenspaceEffectStart(Type, (int)direction, 0);
+		Game.ResetScreenScroll();
 	}
 	public override double? GetLengthOfEffect() => 0;
 }
@@ -84,9 +87,16 @@ public class ChromaticAberrationEffect(MuseDash1Game game, bool active) : Screen
 }
 public class VignetteEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Vignette, active ? 1 : 0){
 	public override double? GetLengthOfEffect() => 0.4;
+	public override Func<double, double>? GetEasing() => active ? null : NMath.Ease.OutCubic;
 }
 public class TVStaticEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.TVStatic, active ? 1 : 0);
-public class FlashbangEffect(MuseDash1Game game, FlashbangParam parameter) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Flashbang, (double)parameter);
+public class FlashbangEffect(MuseDash1Game game, FlashbangParam parameter) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Flashbang, parameter switch {
+	FlashbangParam.Start => 0,
+	FlashbangParam.High => 1,
+	FlashbangParam.End => 0,
+}) {
+	public readonly FlashbangParam Type = parameter;
+}
 public class NoteFreezeEvent(MuseDash1Game game, bool freeze) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.NoteFreeze, freeze ? 1 : 0);
 public class BgFreezeEvent(MuseDash1Game game, bool freeze) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.BgFreeze, freeze ? 1 : 0);
 public class MosaicEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.Mosaic, active ? 1 : 0){
@@ -102,9 +112,28 @@ public class FilmGrainEffect(MuseDash1Game game, bool active) : ScreenspaceEffec
 {
 	public override double? GetLengthOfEffect() => 0.2;
 }
-public class FlashBangEffectColorChange(MuseDash1Game game, FlashbangColor color) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.FlashbangColor, (double)color);
-
+public class FlashBangEffectColorChange(MuseDash1Game game, FlashbangColor color) : ScreenspaceEffectEvent(game, ScreenspaceEffectType.FlashbangColor, (double)color){
+	public override void Activate() {
+		game.SetFlashbangColor(color);
+	}
+}
 public class AutoPlayEvent(MuseDash1Game game, bool active) : DashEvent(game)
 {
 	public bool Active = active;
+
+}
+
+public class NoteVisibilityEvent(MuseDash1Game game, bool visible) : DashEvent(game)
+{
+	public bool Visible = visible;
+	public override void Activate() {
+		Game.SetNoteVisibleFx(Visible);
+	}
+}
+public class BackgroundVisibilityEvent(MuseDash1Game game, bool visible) : DashEvent(game)
+{
+	public bool Visible = visible;
+	public override void Activate() {
+		Game.SetBackgroundVisibleFx(Visible);
+	}
 }

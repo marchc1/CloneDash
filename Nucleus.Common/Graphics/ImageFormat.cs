@@ -73,6 +73,9 @@ public static class ImageFormatExts
 				case ImageFormat.BPTC_UNORM_RGBA:
 					return 8;
 
+				case ImageFormat.None:
+					return 0;
+
 				default:
 					throw new ArgumentOutOfRangeException(nameof(format), format, null);
 			}
@@ -84,8 +87,10 @@ public static class ImageFormatExts
 public enum ImageFormat
 {
 	None,
+
 	// Uncompressed Raylib formats
 	Grayscale = 1,
+
 	GrayAlpha,
 
 	R5G6B5,
@@ -102,6 +107,7 @@ public enum ImageFormat
 
 	// Compressed Raylib formats
 	DXT1_RGB,
+
 	DXT1_RGBA,
 	DXT3_RGBA,
 	DXT5_RGBA,

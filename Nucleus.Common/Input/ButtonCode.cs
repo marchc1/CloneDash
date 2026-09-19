@@ -1,35 +1,5 @@
 ﻿namespace Nucleus.Common.Input;
 
-/// <summary>
-/// Enumeration for generic key types. Can be used as a bitfield, if necessary.
-/// </summary>
-public enum CharacterType
-{
-	NoAction = 0,
-	VisibleCharacter = 1 << 0,
-	Delete = 1 << 1,
-	DeleteBackwards = 1 << 2,
-	DeleteForwards = 1 << 3,
-	Enter = 1 << 4,
-	Arrow = 1 << 5,
-	Tab = 1 << 6,
-	Control = 1 << 7,
-	Shift = 1 << 8,
-	Alt = 1 << 9,
-	FunctionNumber = 1 << 10,
-	Function = 1 << 11,
-	Super = 1 << 12
-}
-
-public record struct ButtonAction(CharacterType Type, string? Extra = null)
-{
-	public static readonly ButtonAction Empty = new(0, null);
-
-	public static implicit operator ButtonAction(CharacterType t) => new(t);
-	public static implicit operator ButtonAction(string s) => new(CharacterType.VisibleCharacter, s);
-	public static implicit operator string(ButtonAction s) => s.Extra ?? "?";
-}
-
 public enum ButtonCode : short
 {
 	Invalid = -1,
@@ -169,9 +139,40 @@ public enum ButtonCode : short
 	MouseCount = MouseLast - MouseFirst + 1,
 }
 
+/// <summary>
+/// Enumeration for generic key types. Can be used as a bitfield, if necessary.
+/// </summary>
+public enum CharacterType
+{
+	NoAction = 0,
+	VisibleCharacter = 1 << 0,
+	Delete = 1 << 1,
+	DeleteBackwards = 1 << 2,
+	DeleteForwards = 1 << 3,
+	Enter = 1 << 4,
+	Arrow = 1 << 5,
+	Tab = 1 << 6,
+	Control = 1 << 7,
+	Shift = 1 << 8,
+	Alt = 1 << 9,
+	FunctionNumber = 1 << 10,
+	Function = 1 << 11,
+	Super = 1 << 12
+}
+
+public record struct ButtonAction(CharacterType Type, string? Extra = null)
+{
+	public static readonly ButtonAction Empty = new(0, null);
+
+	public static implicit operator ButtonAction(CharacterType t) => new(t);
+	public static implicit operator ButtonAction(string s) => new(CharacterType.VisibleCharacter, s);
+	public static implicit operator string(ButtonAction s) => s.Extra ?? "?";
+}
+
 public static class ButtonCodeExtensions
 {
-	extension(int integer){
+	extension(int integer)
+	{
 		public ButtonCode ToButtonCode() => (ButtonCode)integer;
 	}
 
@@ -398,6 +399,5 @@ public static class ButtonCodeExtensions
 
 			return CharacterType.NoAction;
 		}
-
 	}
 }

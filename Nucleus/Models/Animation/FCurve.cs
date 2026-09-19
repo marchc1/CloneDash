@@ -8,12 +8,14 @@ namespace Nucleus.Models
 	{
 		public List<Keyframe<T>> Keyframes { get; set; } = [];
 		public int Count => Keyframes.Count;
+
 		public IEnumerable<Keyframe<T>> GetKeyframes() {
 			Recompute();
 
 			foreach (var keyframe in Keyframes)
 				yield return keyframe;
 		}
+
 		public void ScaleTime(double scale) {
 			foreach (var kf in Keyframes) {
 				kf.SetTime(kf.GetTime() * scale);
@@ -130,8 +132,9 @@ namespace Nucleus.Models
 			return start;
 		}
 
-		Keyframe<T>? __first;
-		Keyframe<T>? __last;
+		private Keyframe<T>? __first;
+		private Keyframe<T>? __last;
+
 		public void Recompute() {
 			if (valid == false) {
 				Keyframes.Sort(static (x, y) => x.Time.CompareTo(y.Time));
@@ -151,6 +154,7 @@ namespace Nucleus.Models
 
 			return Keyframe<T>.GetPercentage(time, curframe, Keyframes[frameIdx + 1]);
 		}
+
 		public int DetermineIndexAtTime(double time, KeyframeInterpolation? interpolationOverride = null) {
 			Recompute();
 
@@ -168,6 +172,7 @@ namespace Nucleus.Models
 					return start;
 			}
 		}
+
 		public T? DetermineValueAtTime(double time, KeyframeInterpolation? interpolationOverride = null) {
 			Recompute();
 
@@ -185,6 +190,7 @@ namespace Nucleus.Models
 					return Keyframe<T>.DetermineValue(time, Keyframes[start], Keyframes[start + 1], interpolationOverride);
 			}
 		}
+
 		public T? DetermineValueAtTime(double time, int index, KeyframeInterpolation? interpolationOverride = null) {
 			Recompute();
 

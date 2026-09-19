@@ -49,13 +49,29 @@ public class SongSelector : Panel, IMainMenuPanel
 		});
 	}
 
+
+	IMainMenuLevel mainMenu = null!;
+	public IMainMenuLevel GetMainMenu() => mainMenu;
+	public void SetMainMenu(IMainMenuLevel level) => mainMenu = level;
+
 	#endregion
 
 	SongSearchBar SearchBar = null!;
 	SongLabel FilterResults = null!;
 	SongSearchDialog? ActiveDialog;
 	IChartSongFilter? SearchFilter;
+	bool IsFirst = true;
 
+	/// <summary>
+	/// Triggers IsFirst to false, which causes previous convars storing state to be
+	/// completely ignored; used for drag n drop
+	/// </summary>
+	public void IgnorePreviousState() {
+		IsFirst = false;
+	}
+
+	readonly IChartSongProvider Provider;
+	public IChartSongProvider GetProvider() => Provider;
 	ISongSourceState? Source;
 	public void SetSource(ISongSourceState source) {
 		Source = source;
@@ -76,8 +92,6 @@ public class SongSelector : Panel, IMainMenuPanel
 	}
 
 	public void TriggerUserSubmittedSearch() {
-		KeyboardFocus();
-
 		if (Source == null) return;
 		if (!IValidatable.IsValid(ActiveDialog)) return;
 
@@ -87,7 +101,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		}
 
 		Source = ActiveDialog.Apply(Source, SearchFilter);
-
+		Provider.UpdateSavedFilter(Source.NewFilter());
 		ClearSongs();
 	}
 
@@ -100,11 +114,6 @@ public class SongSelector : Panel, IMainMenuPanel
 	protected override void OnThink() {
 		base.OnThink();
 		ThinkDiscs();
-	}
-	protected override bool OnLosingKeyboardFocus(Element? newFocus) {
-		if (newFocus == null || newFocus.IsIndirectChildOf(this))
-			return false;
-		return base.OnLosingKeyboardFocus(newFocus);
 	}
 	public bool IsFiltered => Source?.GetParentSource() != null;
 	public int SongCountFiltered => Source?.GetSongCount() ?? 0;
@@ -127,6 +136,7 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	public void ClearFilter() {
 		Source = Source?.GetRootSource();
+		Provider.UpdateSavedFilter(null);
 		UpdateFilterText();
 	}
 
@@ -201,10 +211,16 @@ public class SongSelector : Panel, IMainMenuPanel
 			return;
 		if (finished.Movement == 0)
 			return;
+
 		DiscAnimationOffset.ResetTo(finished.Movement);
+
 		ResetDiskTrack();
 		InvalidateLayout();
 		UpdateFilterText();
+
+		// Commit updates to the source
+		if (!IsFirst)
+			Provider.UpdateSavedSong(GetDiscSong(GetActiveDisc()));
 	}
 
 	public static int GetButtonLocalIndex(SongDiscButton discButton) => discButton.GetTag<int>("localDiscIndex");
@@ -260,12 +276,16 @@ public class SongSelector : Panel, IMainMenuPanel
 
 		if (!Source.IsBusy() && wasBusy) {
 			wasBusy = false;
+
 			InvalidateLayout();
 			UpdateFilterText();
 		}
 
 		if (doNotTryToGetTrackAgain)
 			return;
+
+		// The source has loaded, so we can prepare our filters...
+		LoadLastStateIfApplicable();
 
 		// Should play track?
 		if (Math.Abs(DiscAnimationOffset.Out) < 0.3) {
@@ -309,6 +329,21 @@ public class SongSelector : Panel, IMainMenuPanel
 		InvalidateLayout();
 	}
 
+	public void NavigateToSong(ISong? song, bool animated = true) {
+		if (Source == null)
+			return;
+
+		// Get the song index
+		int index = Source.Index(song);
+		if (index == -1)
+			return;
+
+		Source.Select(song, CommitMove);
+		if (!animated)
+			DiscAnimationOffset.ResetTo(0);
+
+	}
+
 	public void NavigateToDisc(Button disc) {
 		var idx = -1;
 		for (int i = 0; i < Discs.Length; i++) {
@@ -347,17 +382,28 @@ public class SongSelector : Panel, IMainMenuPanel
 		ChildRenderOffset = new(0, (float)NMath.Ease.InCirc(1 - Math.Clamp(Lifetime, 0, 0.5) / 0.5) * (width / 2));
 
 		// Hack... but no better way right now
-		if (Math.Abs(DiscAnimationOffset.Value) < 0.05f && this.IsKeyboardFocused()) {
+		if (Math.Abs(DiscAnimationOffset.Value) < 0.05f && GetMainMenu().IsHoldingSelectorKeys()) {
 			ref KeyboardState keyboard = ref Level.FrameState.Keyboard;
-			if ((keyboard.IsKeyDown(ButtonCode.KeyLeft) && !keyboard.WasKeyPressed(ButtonCode.KeyLeft)) || (keyboard.IsKeyDown(ButtonCode.KeyA) && !keyboard.WasKeyPressed(ButtonCode.KeyA))) {
+			if (GetMainMenu().IsHoldingLeftSelector()) {
 				MoveLeft();
 				InvalidateLayout();
 			}
-			else if ((keyboard.IsKeyDown(ButtonCode.KeyRight) && !keyboard.WasKeyPressed(ButtonCode.KeyRight)) || (keyboard.IsKeyDown(ButtonCode.KeyD) && !keyboard.WasKeyPressed(ButtonCode.KeyD))) {
+			else if (GetMainMenu().IsHoldingRightSelector()) {
 				MoveRight();
 				InvalidateLayout();
 			}
 		}
+
+		for (int i = 0; i < GetMainMenu().MoveLeftsThisFrame(); i++) {
+			MoveLeft();
+			InvalidateLayout();
+		}
+
+		for (int i = 0; i < GetMainMenu().MoveRightsThisFrame(); i++) {
+			MoveRight();
+			InvalidateLayout();
+		}
+
 
 		if (FlyAwaySOS.Update(FlyAway) > 0.001f || ChildRenderOffset.Y > 0) {
 			InvalidateLayout();
@@ -459,25 +505,23 @@ public class SongSelector : Panel, IMainMenuPanel
 			if (song == null)
 				continue;
 
-			disc.
-			Size = new(discWidth, discWidth);
+			disc.Size = new(discWidth, discWidth);
 
 			CalculateDiscPos(width, height, i, out float x, out float y, out float rot);
 			disc.SetImageRotation(rot);
 			disc.Position = new(x, y);
-			disc.Text = "";
 		}
 
 		var heightDiv2 = height / 2;
 
 		CurrentTrackName.
 		Origin = Anchor.Center;
-		CurrentTrackName.		Anchor = Anchor.Center;
+		CurrentTrackName.Anchor = Anchor.Center;
 		CurrentTrackName.SetAutoSize(true);
 
 		CurrentTrackAuthor.
 		Origin = Anchor.Center;
-		CurrentTrackAuthor.		Anchor = Anchor.Center;
+		CurrentTrackAuthor.Anchor = Anchor.Center;
 		CurrentTrackAuthor.SetAutoSize(true);
 
 		CurrentTrackName.
@@ -496,31 +540,54 @@ public class SongSelector : Panel, IMainMenuPanel
 		}
 	}
 
+	private void LoadLastStateIfApplicable() {
+		if (!IsFirst)
+			return;
+		IsFirst = false;
+
+		ISong? lastSong = Provider.GetSavedSong();
+		IChartSongFilter? lastFilter = Provider.GetSavedFilter();
+
+		if (lastFilter != null) {
+			if (Source == null) return;
+
+			SearchFilter = lastFilter;
+			Source = Source.GetRootSource().ProduceNewSource(SearchFilter);
+			ClearSongs();
+		}
+
+		if (lastSong != null)
+			NavigateToSong(lastSong, false);
+	}
+
 	public static int VisibleDiscs => 5;
 
 	public readonly int IntegerMidpoint;
 
-	public SongSelector(Element? parent) : base(parent) {
+	public SongSelector(Element? parent, IChartSongProvider provider) : base(parent) {
+		Provider = provider;
 		SetPaintBackgroundEnabled(false);
 		SetPaintBorderEnabled(false);
 
 		Discs = new SongDiscButton[VisibleDiscs];
 		IntegerMidpoint = Discs.Length / 2;
-		for (int i = 0; i < VisibleDiscs; i++)
+		for (int i = 0; i < VisibleDiscs; i++) {
 			Discs[i] = new(this, i);
+			Discs[i].Text = "";
+		}
 
 		CurrentTrackName = new(this);
 		CurrentTrackAuthor = new(this);
 		SearchBar = new(this);
 		FilterResults = new(this);
-		FilterResults.		Anchor = Anchor.TopCenter;
-		FilterResults.		Origin = Anchor.Center;
+		FilterResults.Anchor = Anchor.TopCenter;
+		FilterResults.Origin = Anchor.Center;
 
 		SearchBar.OnButtonClick += SearchBar_MouseReleaseEvent;
 
 		Loading = new(this);
-		Loading.		Anchor = Anchor.Center;
-		Loading.		Origin = Anchor.Center;
+		Loading.Anchor = Anchor.Center;
+		Loading.Origin = Anchor.Center;
 		Loading.Text = "LOADING";
 		Loading.TextSize = 100;
 		Loading.SetAutoSize(true);
@@ -529,7 +596,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		for (int i = 0; i < Discs.Length; i++) {
 			var disc = Discs[i];
 			disc.SetVisible(false);
-			disc.			Origin = Anchor.Center;
+			disc.Origin = Anchor.Center;
 			disc.SetTag("localDiscIndex", i - Discs.Length / 2);
 
 			disc.OnButtonClick += (s, _) => {
@@ -541,8 +608,6 @@ public class SongSelector : Panel, IMainMenuPanel
 			disc.SetBgColor(new Color(0, 0, 0, 0));
 			disc.SetImageColor(i == IntegerMidpoint ? new Color(255) : new Color(155));
 		}
-
-		KeyboardFocus();
 	}
 
 	private void SearchBar_MouseReleaseEvent(Button self, ButtonCode button) {
@@ -551,7 +616,6 @@ public class SongSelector : Panel, IMainMenuPanel
 
 	protected override bool MouseClick(FrameState state, ButtonCode button) {
 		base.MouseClick(state, button);
-		KeyboardFocus();
 		return true;
 	}
 
@@ -563,19 +627,6 @@ public class SongSelector : Panel, IMainMenuPanel
 		FilterResults.Position = new(0, height * .1f + height * 0.06f + height * 0.00f);
 		FilterResults.TextSize = height / 30f;
 		FilterResults.SetAutoSize(true);
-	}
-
-	protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
-		base.KeyPressed(in keyboardState, key);
-		if (key == ButtonCode.KeyLeft || key == ButtonCode.KeyA) {
-			MoveLeft();
-			InvalidateLayout();
-		}
-		else if (key == ButtonCode.KeyRight || key == ButtonCode.KeyD) {
-			MoveRight();
-			InvalidateLayout();
-		}
-		return true;
 	}
 
 	public bool InterceptEscape() {

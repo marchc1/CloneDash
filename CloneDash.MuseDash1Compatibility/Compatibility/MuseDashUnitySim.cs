@@ -321,7 +321,7 @@ public class SceneSpriteRenderer : SceneRenderer
 		if (tex2d == null) return;
 
 		texture = ((BaseMuseDash1UnitySimScene)Object.Scene).LoadTexture(tex2d);
-		atlasW = (int)texture.Width; atlasH = (int)texture.Height;
+		atlasW = (int)texture.GetWidth(); atlasH = (int)texture.GetHeight();
 		texRectX = sprite.m_RD.textureRect.x; texRectY = sprite.m_RD.textureRect.y;
 		texRectW = sprite.m_RD.textureRect.width; texRectH = sprite.m_RD.textureRect.height;
 
@@ -423,7 +423,7 @@ public class SceneSpriteRenderer : SceneRenderer
 		var tex2d = sprite.m_RD.GetTexture();
 		if (tex2d == null) return;
 		texture = scene.LoadTexture(tex2d);
-		atlasW = (int)texture.Width; atlasH = (int)texture.Height;
+		atlasW = (int)texture.GetWidth(); atlasH = (int)texture.GetHeight();
 		texRectX = sprite.m_RD.textureRect.x; texRectY = sprite.m_RD.textureRect.y;
 		texRectW = sprite.m_RD.textureRect.width; texRectH = sprite.m_RD.textureRect.height;
 		float ppu = sprite.m_PixelsToUnits;

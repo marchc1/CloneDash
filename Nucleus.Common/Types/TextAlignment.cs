@@ -10,13 +10,15 @@ public enum TextAlignment : byte
 	Bottom = 2
 }
 
-public struct TextAlignment2D {
+public struct TextAlignment2D
+{
 	public TextAlignment Horizontal;
 	public TextAlignment Vertical;
 
-	public TextAlignment2D(TextAlignment horizontal, TextAlignment vertical){
+	public TextAlignment2D(TextAlignment horizontal, TextAlignment vertical) {
 		Horizontal = horizontal;
 		Vertical = vertical;
 	}
+
 	public readonly Anchor ToAnchor() => (Anchor)(1 + ((int)Vertical * 3) + (int)Horizontal);
 }

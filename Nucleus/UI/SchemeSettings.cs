@@ -10,12 +10,145 @@ namespace Nucleus.UI;
 public class SchemeSettings : IScheme
 {
 	readonly Dictionary<UtlSymId_t, SchemeSettingGeneric> BaseSettings = [];
-	readonly Dictionary<UtlSymId_t, SchemeSettingFontStyle> FontStyles = [];
 	readonly Dictionary<UtlSymId_t, Color> Colors = [];
 	readonly Dictionary<UtlSymId_t, SchemeSettingCustomFont> CustomFonts = [];
-
+	readonly Dictionary<UtlSymId_t, SchemeSettingFontStyle> FontStyles = [];
 	public SchemeSettings(ReadOnlySpan<char> filepath, ReadOnlySpan<char> pathID = "resource") {
 		ParseFile(filepath, pathID);
+	}
+
+	public Color GetColor(ReadOnlySpan<char> key, Color defaultValue = default)
+		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
+			? value.Color
+			: Colors.TryGetValue(new UtlSymbol(key), out var value2)
+				? value2
+				: new(0, 0, 0, 255);
+
+	public float GetFloat(ReadOnlySpan<char> key, float defaultValue = default)
+		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
+			? value.Float
+			: 0;
+
+	public SchemeSettingFontStyle GetFontStyle(ReadOnlySpan<char> key)
+		=> FontStyles.TryGetValue(new UtlSymbol(key), out var value)
+			? value
+			: FontStyles.TryGetValue(new UtlSymbol("Nucleus.Default"), out value)
+				? value
+				: default;
+
+	public int GetInt(ReadOnlySpan<char> key, int defaultValue = default)
+		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
+			? value.Integer
+			: 0;
+
+	public ReadOnlySpan<char> GetString(ReadOnlySpan<char> key, ReadOnlySpan<char> defaultValue = default)
+		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
+			? value.String
+			: null;
+
+	static Color ApplyWithModifier(Color color, ReadOnlySpan<char> modifier) {
+		var braceStart = modifier.IndexOf('{');
+		var braceEnd = modifier.LastIndexOf('}');
+		if (braceStart == -1 || braceEnd == -1) return color;
+
+		var inner = modifier[(braceStart + 1)..braceEnd];
+
+		byte r = color.R, g = color.G, b = color.B, a = color.A;
+
+		foreach (var assignment in new CommaTokenizer(inner)) {
+			var trimmed = assignment.Trim();
+			var eqIdx = trimmed.IndexOf('=');
+			if (eqIdx == -1) continue;
+
+			var field = trimmed[..eqIdx].Trim();
+			var valSpan = trimmed[(eqIdx + 1)..].Trim();
+
+			if (!byte.TryParse(valSpan, out var val)) continue;
+
+			if (field.Length == 1) {
+				switch (field[0]) {
+					case 'R' or 'r': r = val; break;
+					case 'G' or 'g': g = val; break;
+					case 'B' or 'b': b = val; break;
+					case 'A' or 'a': a = val; break;
+				}
+			}
+		}
+
+		return new Color(r, g, b, a);
+	}
+
+	static bool IsHex(ReadOnlySpan<char> s) {
+		foreach (var c in s)
+			if (!char.IsAsciiHexDigit(c)) return false;
+		return true;
+	}
+
+	static SchemeSettingGeneric ParseBaseSetting(string raw) {
+		if (raw.StartsWith('#') && raw.Contains(':'))
+			return new(raw);
+
+		if (int.TryParse(raw, out var i))
+			return new(i);
+
+		if (float.TryParse(raw, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
+			return new(f);
+
+		if (TryParseColor(raw, out var color))
+			return new(color);
+
+		return new(raw);
+	}
+
+	static Color ParseColor(string raw) {
+		TryParseColor(raw, out var color);
+		return color;
+	}
+
+	static bool TryParseColor(string raw, out Color color) {
+		color = default;
+		var s = raw.AsSpan().Trim();
+
+		if (s.Length > 0 && s[0] == '#')
+			s = s[1..];
+
+		if ((s.Length == 6 || s.Length == 8) && IsHex(s)) {
+			byte r = byte.Parse(s[0..2], System.Globalization.NumberStyles.HexNumber);
+			byte g = byte.Parse(s[2..4], System.Globalization.NumberStyles.HexNumber);
+			byte b = byte.Parse(s[4..6], System.Globalization.NumberStyles.HexNumber);
+			byte a = s.Length == 8
+				? byte.Parse(s[6..8], System.Globalization.NumberStyles.HexNumber)
+				: (byte)255;
+
+			color = new Color(r, g, b, a);
+			return true;
+		}
+
+		Span<byte> components = stackalloc byte[4];
+		int count = 0;
+
+		Span<char> buf = stackalloc char[s.Length];
+		s.CopyTo(buf);
+		for (int i = 0; i < buf.Length; i++)
+			if (buf[i] == ',') buf[i] = ' ';
+
+		foreach (var token in new SpanTokenizer(buf)) {
+			if (count >= 4) return false;
+			if (!byte.TryParse(token, out components[count]))
+				return false;
+			count++;
+		}
+
+		if (count == 3) {
+			color = new Color(components[0], components[1], components[2], (byte)255);
+			return true;
+		}
+		if (count == 4) {
+			color = new Color(components[0], components[1], components[2], components[3]);
+			return true;
+		}
+
+		return false;
 	}
 
 	void ParseFile(ReadOnlySpan<char> filepath, ReadOnlySpan<char> pathID) {
@@ -147,47 +280,14 @@ public class SchemeSettings : IScheme
 				return new(raw);
 		}
 	}
-
-	static Color ApplyWithModifier(Color color, ReadOnlySpan<char> modifier) {
-		var braceStart = modifier.IndexOf('{');
-		var braceEnd = modifier.LastIndexOf('}');
-		if (braceStart == -1 || braceEnd == -1) return color;
-
-		var inner = modifier[(braceStart + 1)..braceEnd];
-
-		byte r = color.R, g = color.G, b = color.B, a = color.A;
-
-		foreach (var assignment in new CommaTokenizer(inner)) {
-			var trimmed = assignment.Trim();
-			var eqIdx = trimmed.IndexOf('=');
-			if (eqIdx == -1) continue;
-
-			var field = trimmed[..eqIdx].Trim();
-			var valSpan = trimmed[(eqIdx + 1)..].Trim();
-
-			if (!byte.TryParse(valSpan, out var val)) continue;
-
-			if (field.Length == 1) {
-				switch (field[0]) {
-					case 'R' or 'r': r = val; break;
-					case 'G' or 'g': g = val; break;
-					case 'B' or 'b': b = val; break;
-					case 'A' or 'a': a = val; break;
-				}
-			}
-		}
-
-		return new Color(r, g, b, a);
-	}
-
 	ref struct CommaTokenizer
 	{
 		ReadOnlySpan<char> _remaining;
 
 		public CommaTokenizer(ReadOnlySpan<char> span) => _remaining = span;
-		public CommaTokenizer GetEnumerator() => this;
 		public ReadOnlySpan<char> Current { get; private set; }
 
+		public CommaTokenizer GetEnumerator() => this;
 		public bool MoveNext() {
 			while (_remaining.Length > 0 && _remaining[0] == ',')
 				_remaining = _remaining[1..];
@@ -206,117 +306,14 @@ public class SchemeSettings : IScheme
 			return true;
 		}
 	}
-
-	static SchemeSettingGeneric ParseBaseSetting(string raw) {
-		if (raw.StartsWith('#') && raw.Contains(':'))
-			return new(raw);
-
-		if (int.TryParse(raw, out var i))
-			return new(i);
-
-		if (float.TryParse(raw, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
-			return new(f);
-
-		if (TryParseColor(raw, out var color))
-			return new(color);
-
-		return new(raw);
-	}
-
-	static Color ParseColor(string raw) {
-		TryParseColor(raw, out var color);
-		return color;
-	}
-
-	static bool TryParseColor(string raw, out Color color) {
-		color = default;
-		var s = raw.AsSpan().Trim();
-
-		if (s.Length > 0 && s[0] == '#')
-			s = s[1..];
-
-		if ((s.Length == 6 || s.Length == 8) && IsHex(s)) {
-			byte r = byte.Parse(s[0..2], System.Globalization.NumberStyles.HexNumber);
-			byte g = byte.Parse(s[2..4], System.Globalization.NumberStyles.HexNumber);
-			byte b = byte.Parse(s[4..6], System.Globalization.NumberStyles.HexNumber);
-			byte a = s.Length == 8
-				? byte.Parse(s[6..8], System.Globalization.NumberStyles.HexNumber)
-				: (byte)255;
-
-			color = new Color(r, g, b, a);
-			return true;
-		}
-
-		Span<byte> components = stackalloc byte[4];
-		int count = 0;
-
-		Span<char> buf = stackalloc char[s.Length];
-		s.CopyTo(buf);
-		for (int i = 0; i < buf.Length; i++)
-			if (buf[i] == ',') buf[i] = ' ';
-
-		foreach (var token in new SpanTokenizer(buf)) {
-			if (count >= 4) return false;
-			if (!byte.TryParse(token, out components[count]))
-				return false;
-			count++;
-		}
-
-		if (count == 3) {
-			color = new Color(components[0], components[1], components[2], (byte)255);
-			return true;
-		}
-		if (count == 4) {
-			color = new Color(components[0], components[1], components[2], components[3]);
-			return true;
-		}
-
-		return false;
-	}
-
-	static bool IsHex(ReadOnlySpan<char> s) {
-		foreach (var c in s)
-			if (!char.IsAsciiHexDigit(c)) return false;
-		return true;
-	}
-
-	public ReadOnlySpan<char> GetString(ReadOnlySpan<char> key, ReadOnlySpan<char> defaultValue = default)
-		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
-			? value.String
-			: null;
-
-	public int GetInt(ReadOnlySpan<char> key, int defaultValue = default)
-		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
-			? value.Integer
-			: 0;
-
-	public float GetFloat(ReadOnlySpan<char> key, float defaultValue = default)
-		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
-			? value.Float
-			: 0;
-
-	public Color GetColor(ReadOnlySpan<char> key, Color defaultValue = default)
-		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
-			? value.Color
-			: Colors.TryGetValue(new UtlSymbol(key), out var value2)
-				? value2
-				: new(0, 0, 0, 255);
-
-	public SchemeSettingFontStyle GetFontStyle(ReadOnlySpan<char> key)
-		=> FontStyles.TryGetValue(new UtlSymbol(key), out var value)
-			? value
-			: FontStyles.TryGetValue(new UtlSymbol("Nucleus.Default"), out value)
-				? value
-				: default;
-
 	ref struct SpanTokenizer
 	{
 		ReadOnlySpan<char> _remaining;
 
 		public SpanTokenizer(ReadOnlySpan<char> span) => _remaining = span;
-		public SpanTokenizer GetEnumerator() => this;
 		public ReadOnlySpan<char> Current { get; private set; }
 
+		public SpanTokenizer GetEnumerator() => this;
 		public bool MoveNext() {
 			while (_remaining.Length > 0 && char.IsWhiteSpace(_remaining[0]))
 				_remaining = _remaining[1..];

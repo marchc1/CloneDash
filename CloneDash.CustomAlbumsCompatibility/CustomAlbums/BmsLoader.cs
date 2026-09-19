@@ -1,6 +1,8 @@
-﻿using CloneDash.Common.Data;
+﻿using AssetStudio;
+using CloneDash.Common.Data;
 using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 using Nucleus;
 
@@ -211,9 +213,6 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 
 				if (MuseDash1Compatibility.UIDToNote.TryGetValue(newNote.configData.note_uid, out var newNoteData)) {
 					newNote.noteData = newNoteData;
-					// todo; static scrollspeed
-					// this works to cope with that for now...
-					newNote.dt = newNoteData.speed;
 				}
 
 				MusicDataManager.Add(newNote);
@@ -263,7 +262,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				MusicDataManager.Set(i, mData);
 
 				if (mData.noteData.GetNoteType() != NoteType.Monster && mData.noteData.GetNoteType() != NoteType.Hide)
-				 	continue;
+					continue;
 
 				if (geminiCache.TryGetValue(mData.tick, out var geminiList)) {
 					var isNoteGemini = Bms.BmsIds[mData.noteData.ibms_id ?? "00"] == Bms.BmsId.Gemini;
@@ -402,9 +401,62 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 		};
 		public static bool IsBossNote(this MusicData mData) => !string.IsNullOrEmpty(mData.noteData?.boss_action) && mData.noteData?.boss_action != "0";
 
+		static readonly Dictionary<string, Decimal> delayCache = [];
+
+		internal static void ProcessDelay(Bms bms) {
+			var scene = bms.Info["GENRE"]?.GetValue<string>() ?? string.Empty;
+			var sceneIndex = int.TryParse(scene.Split('_')[1], out int i1) ? i1 : 0;
+
+			for (var i = 0; i < MusicDataManager.Data.Count; i++) {
+				var mData = MusicDataManager.Data[i];
+				if (!string.IsNullOrEmpty(mData.noteData?.ibms_id)) { // This shouldnt be null... wtf
+					var type = mData.noteData.GetNoteType();
+					if (type == NoteType.SceneChange)
+						sceneIndex = MuseDash1Compatibility.GetSceneIndexFromIBMSString(mData.noteData.ibms_id);
+
+					var prefabName = mData.noteData.prefab_name;
+					if (!string.IsNullOrEmpty(prefabName)) {
+						// If not a pickup type, convert to most recent scene
+						if (type != NoteType.Hp && type != NoteType.Music) {
+							var prefix = prefabName[..2];
+							switch (prefix){
+								case "00":
+								case "em":
+								case "bo":
+									prefabName = prefabName.Remove(0, 2).Insert(0, $"{sceneIndex:D2}");
+									break;
+							}
+						}
+
+						if (!delayCache.ContainsKey(prefabName)) {
+							GameObject? gameObject = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(prefabName);
+
+							if (gameObject != null) {
+								var actionController = gameObject!.GetMonoBehaviorByScriptName("SpineActionController")!;
+								MonoBehaviourReader reader = new MonoBehaviourReader(actionController);
+								delayCache[prefabName] = (Decimal)reader.GetAny<float>("startDelay");
+							}
+						}
+
+						if (delayCache.TryGetValue(prefabName, out var delay)) {
+							mData.dt = delay;
+							MusicDataManager.Set(i, mData);
+						}
+					}
+				}
+
+				var showTick = mData.tick - mData.dt;
+				_delay = showTick < _delay ? showTick : _delay;
+			}
+
+			// Round delay
+			_delay = Decimal.Round(_delay, 3);
+			Logs.Info("Processed delay!");
+		}
+
 		internal static void ProcessBossData(Bms bms) {
 			var bossData = MusicDataManager.Data.Where(mData => mData.IsBossNote()).ToList();
-			if (bossData.Count == 0) 
+			if (bossData.Count == 0)
 				return;
 
 			// TODO: Add a boss exit animation if it is missing.
@@ -523,7 +575,8 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			LoadMusicData(noteData); Interlude.Spin(submessage: "Reading Custom Albums chart...");
 			MusicDataManager.Sort(); Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
-			ProcessBossData(bms);
+			ProcessBossData(bms); Interlude.Spin(submessage: "Reading Custom Albums chart...");
+			ProcessDelay(bms); Interlude.Spin(submessage: "Reading Custom Albums chart...");
 			MusicDataManager.Sort(); Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
 			ProcessGeminis(); Interlude.Spin(submessage: "Reading Custom Albums chart...");

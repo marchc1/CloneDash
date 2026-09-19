@@ -7,6 +7,7 @@ public struct DebugRecordState
 	public int MaxValueSize;
 	public int LargestKeyIdx;
 	public int LargestValueIdx;
+
 	public static DebugRecordState Max(in DebugRecordState state1, in DebugRecordState state2) {
 		return new() {
 			MaxKeySize = Math.Max(state1.MaxKeySize, state2.MaxKeySize),

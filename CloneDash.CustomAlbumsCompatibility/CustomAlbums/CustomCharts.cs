@@ -9,6 +9,8 @@ using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Audio;
 using Nucleus.Common.FileSystem;
+using Nucleus.Common.Graphics;
+using Nucleus.Core;
 using Nucleus.Files;
 using Raylib_cs;
 using SixLabors.ImageSharp;
@@ -76,6 +78,8 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				AddLocalizedJSONInfo(Common.HumanLanguage.English, webChart.TitleRomanized, null);
 			}
 
+			public override ReadOnlySpan<char> GetUUID() => UsesWebChart ? $"song/musedash1customs/{WebChart.ID}" : $"song/musedash1customs/{Filepath}";
+
 			public MD1_CustomChartsSong(string filepath) : base() {
 				Filepath = filepath;
 				string? ext = Path.GetExtension(filepath);
@@ -117,7 +121,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 
 			~MD1_CustomChartsSong() {
 				MainThread.RunASAP(() => {
-					if (CoverTexture != null && Raylib.IsTextureValid(CoverTexture.Texture)) Raylib.UnloadTexture(CoverTexture.Texture);
+					if (CoverTexture?.Texture != null && CoverTexture.Texture.IsValid()) CoverTexture.Texture.Dispose();
 
 				});
 			}
@@ -141,15 +145,11 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			protected override void ProduceCover(ChartCoverAvailableToMainThreadFn callback) {
 				if (Archive != null) {
 					var coverBytes = GetByteArray(Archive, "cover.png");
-					Raylib.ImageRef img = new(".png", coverBytes);
 
 					MainThread.RunASAP(() => {
-						var tex = Raylib.LoadTextureFromImage(img);
-						Raylib.SetTextureFilter(tex, TextureFilter.Bilinear);
 						callback(new() {
-							Texture = new Nucleus.ManagedMemory.Texture(EngineCore.Level.Textures, tex, true)
+							Texture = textures.CreateTexture(coverBytes)
 						});
-						img.Dispose();
 					});
 				}
 				else {
@@ -344,7 +344,31 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 
 				// We should be able to pass the transmuted data into this and not have to re-invent the wheel just for customs!
-				return MuseDash1Compatibility.ConvertStageInfoToMD1GamemodeData(this, stageInfo, newChanges);
+				MD1_GamemodeData data = MuseDash1Compatibility.ConvertStageInfoToMD1GamemodeData(this, stageInfo, newChanges);
+
+				// Inject Cinema mod if applicable
+				if (Archive != null && Archive.Exists("cinema.json")) {
+					// Load the json
+					using Stream cinemaJsonStream = Archive.Open("cinema.json", FileAccess.Read, FileMode.Open)!;
+					using StreamReader reader = new StreamReader(cinemaJsonStream, leaveOpen: true);
+					CinemaJson? cinemaJson = JSON.Deserialize<CinemaJson>(reader.ReadToEnd());
+					if (cinemaJson != null) {
+						// Check difficulties...
+						if (cinemaJson.Difficulties == null || cinemaJson.Difficulties.Contains((int)caChart.Difficulty)) {
+							using Stream videoStream = Archive.Open(cinemaJson.VideoName, FileAccess.Read, FileMode.Open)!;
+							// Load the stream in memory now 
+							MemoryStream memoryVideoStream = new MemoryStream();
+							videoStream.CopyTo(memoryVideoStream);
+							memoryVideoStream.Position = 0; // reset position for the background generator
+							CinemaBackgroundGenerator generator = new(memoryVideoStream, disposeStream: true); // < flag is bc they are the only owner and we want to clear the handle after
+							ITexture tex = textures.CreateProcedural(generator.Width, generator.Height, ImageFormat.R8G8B8A8, generator);
+							data.BackgroundTextureOverride = tex;
+							data.BackgroundTextureOpacity = cinemaJson.Opacity;
+						}
+					}
+				}
+
+				return data;
 			}
 		}
 	}

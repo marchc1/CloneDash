@@ -53,7 +53,9 @@ namespace Nucleus.Core
 		public string NiceKeybindString;
 		public bool MustBePure = false;
 		public int Complexity => RequiredKeys.Count;
-		internal Keybind() { }
+
+		internal Keybind() {
+		}
 
 		public bool Test(KeyboardState state) {
 			foreach (var key in RequiredKeys) {

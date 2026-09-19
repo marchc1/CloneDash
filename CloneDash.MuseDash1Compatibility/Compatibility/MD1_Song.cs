@@ -11,6 +11,8 @@ using Newtonsoft.Json;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Audio;
+using Nucleus.Common.Graphics;
+using Nucleus.Common.Images;
 using Nucleus.Types;
 using OdinSerializer;
 using Raylib_cs;
@@ -240,12 +242,12 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 		};
 	}
 
-	public ReadOnlySpan<char> GetUUID() => $"song/musedash1/{Info?.Music}";
+	public virtual ReadOnlySpan<char> GetUUID() => $"song/musedash1/{GetInfo()?.Music}";
 
 	~MD1_Song() {
 		MainThread.RunASAP(() => {
-			if (__gotCover && CoverTexture != null)
-				Raylib.UnloadTexture(CoverTexture.Texture);
+			if (__gotCover && CoverTexture?.Texture != null)
+				CoverTexture.Texture.Dispose();
 
 			if (AudioTrack != null) audiosystem.DestroyAudioClip(AudioTrack);
 			if (DemoTrack != null) audiosystem.DestroyAudioClip(DemoTrack);
@@ -349,12 +351,12 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 			// var start = new Stopwatch();
 			// start.Start();
 
-			var tex = Raylib.LoadTextureFromImage(img);
-			Raylib.GenTextureMipmaps(ref tex);
-			Raylib.SetTextureFilter(tex, TextureFilter.Trilinear);
-			Raylib.UnloadImage(img);
+			var tex = textures.CreateTexture(img);
+			// tex.GenerateMipmaps();
+			// tex.SetFilter(TextureFilter.Trilinear);
+			Image.UnloadImage(img);
 			CoverTexture = new() {
-				Texture = new(EngineCore.Level.Textures, tex, true),
+				Texture = tex,
 				Flipped = true
 			};
 			// start.Stop();
@@ -426,9 +428,23 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 
 	int IHasLowToHighDifficulties.GetLowestDifficulty() => throw new NotImplementedException();
 	int IHasLowToHighDifficulties.GetHighestDifficulty() => throw new NotImplementedException();
-	int IHasLowToHighDifficulties.GetDifficultyCount() => Difficulties.Count;
+	int IHasLowToHighDifficulties.GetDifficultyCount() {
+		int count = 0;
+		for (int i = 1; i <= 5; i++)
+			if (TryGetDifficultyInteger(i, out _))
+				count++;
+		return count;
+	}
 	bool IHasLowToHighDifficulties.GetDifficulties(Span<int> difficulties) {
-		return Difficulties.AsSpan().TryCopyTo(difficulties);
+		int count = 0;
+		for (int i = 1; i <= 5; i++) {
+			if (!TryGetDifficultyInteger(i, out int d))
+				continue;
+			if (count >= difficulties.Length)
+				return false;
+			difficulties[count++] = d;
+		}
+		return true;
 	}
 
 	public IEnumerable<MuseDashSongInfoJSON> GetAvailableInfo() {

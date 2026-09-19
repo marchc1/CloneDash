@@ -384,7 +384,13 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			var speedGround = speedAir;
 
 			var objectId = 1;
+
+			// Track which note indices have been consumed as hold-note endpoints
+			var consumedIndices = new HashSet<int>();
+
 			for (var i = 0; i < Notes.Count; i++) {
+				if (consumedIndices.Contains(i)) continue;
+
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				var note = Notes[i];
 				if (note is null) continue;
@@ -454,6 +460,8 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 						holdLength = 0.001M;
 					else
 						for (var j = i + 1; j < Notes.Count; j++) {
+							if (consumedIndices.Contains(j)) continue;
+
 							var holdEndNote = Notes[j];
 							var holdEndTime = Convert.ToDecimal(holdEndNote["time"].GetValue<float>());
 							var holdEndBmsKey = holdEndNote?["value"]?.GetValue<string>() ?? string.Empty;
@@ -461,7 +469,8 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 
 							if (holdEndBmsKey != bmsKey || holdEndChannel != channel) continue;
 							holdLength = holdEndTime - time;
-							Notes[j]!["value"] = "";
+
+							consumedIndices.Add(j);
 							break;
 						}
 				}

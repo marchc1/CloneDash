@@ -1,6 +1,7 @@
 ﻿namespace Nucleus.Models
 {
-	public enum BlendMode {
+	public enum BlendMode
+	{
 		Normal,
 		Additive,
 		Multiply,

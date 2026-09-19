@@ -41,7 +41,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Color = Nucleus.Common.Types.Color;
-using Texture = Nucleus.ManagedMemory.Texture;
 using Texture2D = AssetStudio.Texture2D;
 using Transform = AssetStudio.Transform;
 
@@ -575,6 +574,13 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		RoadBodySustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_body"));
 		RoadUpSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_note_up"));
 		RoadDownSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_note_down"));
+
+		AirBodySustainTexture.SetWrap(TextureWrap.Repeat);
+		AirUpSustainTexture.SetWrap(TextureWrap.Repeat);
+		AirDownSustainTexture.SetWrap(TextureWrap.Repeat);
+		RoadBodySustainTexture.SetWrap(TextureWrap.Repeat);
+		RoadUpSustainTexture.SetWrap(TextureWrap.Repeat);
+		RoadDownSustainTexture.SetWrap(TextureWrap.Repeat);
 
 		string bossID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSS}";
 		string gearAirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GEARS}_air";
@@ -1133,7 +1139,13 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		}
 	}
 
-	public void Activate(IMuseDash1SceneInstance? transitioningTo) { }
+	public void Activate(IMuseDash1SceneInstance? transitioningTo) {
+		// Reset animations, since Muse Dash does that too I guess
+		foreach (var animator in animators) {
+			animator.ResetTime();
+			animator.Rebind();
+		}
+	}
 	public void Deactivate(IMuseDash1SceneInstance? transitioningFrom) { }
 	public int GetSceneArrayIndex() => arrayIndex;
 	public void SetSceneArrayIndex(int idx) => arrayIndex = idx;

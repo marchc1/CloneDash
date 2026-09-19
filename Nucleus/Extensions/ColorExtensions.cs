@@ -1,6 +1,5 @@
 ﻿using Nucleus.Common.Types;
 using Raylib_cs;
-using System.Globalization;
 using System.Numerics;
 
 namespace Nucleus.Extensions;
@@ -15,7 +14,7 @@ public static class ColorExtensions
 			? throw new FormatException(new string(error))
 			: color;
 	}
-	
+
 	public static Vector4 ToVector(this Color color) {
 		return new Vector4(color.R / 255f, color.G / 255f, color.B / 255f, color.A / 255f);
 	}
@@ -26,19 +25,23 @@ public static class ColorExtensions
 		Convert.ToByte(vec.Z * 255f),
 		Convert.ToByte(vec.W * 255f)
 	);
-	
+
 	public static Vector3 RGBubToHSVf(this Color color) {
 		return Raylib.ColorToHSV(color);
 	}
+
 	public static int RGBubToInt(this Color color) {
 		return Raylib.ColorToInt(color);
 	}
+
 	public static Color HSVfToRGBub(this Vector3 value, float alpha = 1) {
 		var c = Raylib.ColorFromHSV(value.X, value.Y, value.Z);
 		c.A = (byte)Math.Clamp(alpha * 255, 0, 255);
 		return c;
 	}
+
 	public static Color Adjust(this Color color, double hue, double saturation, double value, bool bleed = true) => color.Adjust((float)hue, (float)saturation, (float)value, bleed);
+
 	public static Color Adjust(this Color color, float hue, float saturation, float value, bool bleed = true) {
 		var hsv = color.RGBubToHSVf();
 		hsv.X += hue;
@@ -89,26 +92,31 @@ public static class ColorExtensions
 				G = tv;
 				B = pv;
 				break;
+
 			case 1:
 				R = qv;
 				G = V;
 				B = pv;
 				break;
+
 			case 2:
 				R = pv;
 				G = V;
 				B = tv;
 				break;
+
 			case 3:
 				R = pv;
 				G = qv;
 				B = V;
 				break;
+
 			case 4:
 				R = tv;
 				G = pv;
 				B = V;
 				break;
+
 			case 5:
 			case -1:
 				R = V;
@@ -134,7 +142,7 @@ public static class ColorExtensions
 
 		if (hex[0] == '#') hex = hex[1..];
 
-		if (hex.Length < 6){
+		if (hex.Length < 6) {
 			error = "Expected string with length greater than or equal to 6 characters";
 			return false;
 		}

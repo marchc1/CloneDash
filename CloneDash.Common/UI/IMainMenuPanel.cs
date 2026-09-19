@@ -12,10 +12,19 @@ public interface IMainMenuLevel
 
 	void PopActiveElement();
 	Panel? GetSelectedSongPanel();
+
+	bool IsHoldingSelectorKeys();
+	bool IsHoldingLeftSelector();
+	bool IsHoldingRightSelector();
+	int MoveRightsThisFrame();
+	int MoveLeftsThisFrame();
 }
 
 public interface IMainMenuPanel
 {
+	IMainMenuLevel GetMainMenu();
+	void SetMainMenu(IMainMenuLevel level);
+
 	string Name { get; }
 	string ColorScheme => "Accent";
 

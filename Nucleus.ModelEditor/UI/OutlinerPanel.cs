@@ -24,13 +24,13 @@ namespace Nucleus.ModelEditor
 			public override void Paint(float width, float height) {
 				Graphics2D.SetDrawColor(255, 255, 255);
 
-				Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile("models/viseye.png"));
+				Graphics2D.SetTexture(textures.LoadTextureFromFile("models/viseye.png"));
 				Graphics2D.DrawTexturedRectangle(new Vector2F(4, 4), new(16));
 
-				Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile("models/keyframe.png"));
+				Graphics2D.SetTexture(textures.LoadTextureFromFile("models/keyframe.png"));
 				Graphics2D.DrawTexturedRectangle(new Vector2F(4 + 23, 4), new(16));
 
-				Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile("models/tree.png"));
+				Graphics2D.SetTexture(textures.LoadTextureFromFile("models/tree.png"));
 				Graphics2D.DrawTexturedRectangle(new Vector2F(4 + 46, 4), new(16));
 				
 				Graphics2D.SetDrawColor(parent.GetFgColor());
@@ -429,7 +429,7 @@ namespace Nucleus.ModelEditor
 			}
 			node.			Text = text;
 			if (icon != null)
-				node.ImageTexture = panel.UI.Level.Textures.LoadTextureFromFile(icon);
+				node.ImageTexture = textures.LoadTextureFromFile(icon);
 
 			node.OnButtonClick += (_, btn) => {
 				panel.NodeClicked?.Invoke(panel, node, btn);
