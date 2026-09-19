@@ -4,6 +4,7 @@ using CloneDash.Common.Songs;
 using CloneDash.Common.UI;
 using CloneDash.Common.UI.Binding;
 using CloneDash.Compatibility.MDMC;
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
 using CloneDash.Menu;
 using CloneDash.Menu.Character;
@@ -150,6 +151,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 	public override void OnUnload() {
 		base.OnUnload();
+		MuseDash1Compatibility.StreamingAssets?.UnloadAll();
 		MDMCWebAPI.CancelPendingRequests();
 	}
 
@@ -200,6 +202,8 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	protected override UserInterface CreateUI() => new CloneDashUI();
 
 	public override void Initialize(params object[] args) {
+		MuseDash1Compatibility.StreamingAssets?.UnloadAll();
+
 		var charPanel = new Panel(RootPanel);
 		charPanel.BorderSize = 0;
 		charPanel.DynamicallySized = true;
