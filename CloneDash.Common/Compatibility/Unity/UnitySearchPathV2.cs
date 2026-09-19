@@ -490,14 +490,12 @@ public class UnitySearchAsset : UnitySearchBase
 	public override bool IsDirectory => false;
 
 	public readonly object DependencyKey;
-	public readonly string Container;
 	public readonly string Name;
 	public readonly CatalogResourceType Type;
 	readonly object sync = new();
 
-	public UnitySearchAsset(object dependencyKey, string container, string name, CatalogResourceType type, AddressablesCatalog catalog) {
+	public UnitySearchAsset(object dependencyKey, string name, CatalogResourceType type, AddressablesCatalog catalog) {
 		DependencyKey = dependencyKey;
-		Container = container;
 		Name = name;
 		Type = type;
 		Catalog = catalog;
@@ -566,11 +564,13 @@ public class UnitySearchDirectory : UnitySearchBase
 	public readonly Dictionary<UtlSymbol, UnitySearchAsset> Files = [];
 	public readonly Dictionary<UtlSymbol, UnitySearchDirectory> Directories = [];
 	public readonly UnitySearchDirectory? Parent;
-	public readonly string FullyQualifiedPath = "";
+	public string FullyQualifiedPath {
+		get => field ??= Parent == null ? null! : Parent.FullyQualifiedPath + Name + "/";
+	}
 	public readonly string? Name;
 
 	public UnitySearchDirectory(string? name, AddressablesCatalog catalog) { Name = name; Catalog = catalog; }
-	public UnitySearchDirectory(string name, AddressablesCatalog catalog, UnitySearchDirectory parent) { Name = name; Catalog = catalog; Parent = parent; FullyQualifiedPath = parent.FullyQualifiedPath + Name + "/"; }
+	public UnitySearchDirectory(string name, AddressablesCatalog catalog, UnitySearchDirectory parent) { Name = name; Catalog = catalog; Parent = parent; }
 
 	public UnitySearchDirectory? GetDirectory(ReadOnlySpan<char> dir) {
 		UtlSymbol symbol = new(dir);
@@ -594,7 +594,7 @@ public class UnitySearchDirectory : UnitySearchBase
 		if (Files.TryGetValue(symbol, out var ret))
 			return null;
 
-		ret = Files[symbol] = new(dependencyKey, FullyQualifiedPath, pk, type, Catalog);
+		ret = Files[symbol] = new(dependencyKey, pk, type, Catalog);
 		return ret;
 	}
 }
