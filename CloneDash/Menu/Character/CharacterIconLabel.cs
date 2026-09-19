@@ -1,4 +1,5 @@
 using CloneDash.Common.UI;
+using Nucleus;
 using Nucleus.Common.Types;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -40,13 +41,13 @@ namespace CloneDash.Menu.Character
 			Clipping = false;
 
 			_image = new Image(this);
-			_image.Texture = parent.Level.Textures.LoadTextureFromFile(texture);
-			_image.			Anchor = Anchor.CenterLeft;
-			_image.			Origin = Anchor.CenterLeft;
+			_image.Texture = textures.LoadTextureFromFile(texture);
+			_image.Anchor = Anchor.CenterLeft;
+			_image.Origin = Anchor.CenterLeft;
 
 			_label = new Label(this);
-			_label.			Anchor = Anchor.CenterLeft;
-			_label.			Origin = Anchor.CenterLeft;
+			_label.Anchor = Anchor.CenterLeft;
+			_label.Origin = Anchor.CenterLeft;
 			_label.SetTextAlignment(Anchor.CenterLeft);
 			_label.SetAutoSize(true);
 		}

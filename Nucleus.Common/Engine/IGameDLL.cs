@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Nucleus.Common.Engine;
+﻿namespace Nucleus.Common.Engine;
 
 /// <summary>
 /// Functions the client exposes to the engine.
@@ -10,5 +6,6 @@ namespace Nucleus.Common.Engine;
 public interface IGameDLL
 {
 	void Init();
+
 	public void PreStaticInitialize() { }
 }

@@ -1,6 +1,9 @@
 ﻿#if COMPILED_WINDOWS
+
 using Microsoft.Win32;
+
 #endif
+
 using System.Reflection;
 
 namespace Nucleus;
@@ -8,7 +11,6 @@ namespace Nucleus;
 public static partial class Platform
 {
 	public static void RegisterFileAssociation(string extension, string progId, string description, string? openWith = null) {
-
 #if COMPILED_WINDOWS
 		// TODO: if the folder path contains .dll this doesn't work... fix that
 		bool wasOpenWithEmpty = openWith == null;
@@ -17,19 +19,19 @@ public static partial class Platform
 			extension = "." + extension;
 
 		try {
-			using (var extKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{extension}")) 
-				if (extKey != null) 
-					extKey.SetValue("", progId); 
-				
+			using (var extKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{extension}"))
+				if (extKey != null)
+					extKey.SetValue("", progId);
+
 			using (var progIdKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{progId}")) {
 				if (progIdKey != null) {
 					progIdKey.SetValue("", description);
 
-					using (var defaultIconKey = progIdKey.CreateSubKey("DefaultIcon")) 
+					using (var defaultIconKey = progIdKey.CreateSubKey("DefaultIcon"))
 						defaultIconKey?.SetValue("", $"{appPath},0");
-					
-					using (var shellKey = progIdKey.CreateSubKey(@"shell\open\command")) 
-						shellKey?.SetValue("", $"\"{appPath}\" \"%1\""); 
+
+					using (var shellKey = progIdKey.CreateSubKey(@"shell\open\command"))
+						shellKey?.SetValue("", $"\"{appPath}\" \"%1\"");
 				}
 			}
 
@@ -50,6 +52,7 @@ public static partial class Platform
 	}
 
 #if COMPILED_WINDOWS
+
 	private static void RefreshExplorer() {
 		try {
 			SHChangeNotify(0x08000000, 0x0000, IntPtr.Zero, IntPtr.Zero);
@@ -62,5 +65,6 @@ public static partial class Platform
 
 	[System.Runtime.InteropServices.DllImport("Shell32.dll")]
 	private static extern void SHChangeNotify(uint wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
+
 #endif
 }

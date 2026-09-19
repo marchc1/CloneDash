@@ -32,6 +32,7 @@ public class EngineBuilder(ICommandLine cmdLine) : ServiceCollection
 
 		return this;
 	}
+
 	public EngineBuilder WithComponent<I, T>() where T : class, I where I : class {
 		PreInject<T>(this);
 		this.AddSingleton<I, T>();
@@ -49,8 +50,9 @@ public class EngineBuilder(ICommandLine cmdLine) : ServiceCollection
 		return this;
 	}
 
-	HashSet<Type> injectedTypelist = [];
-	void PreInject<T>(IServiceCollection services) {
+	private HashSet<Type> injectedTypelist = [];
+
+	private void PreInject<T>(IServiceCollection services) {
 		if (injectedTypelist.Add(typeof(T))) {
 			Type t = typeof(T);
 			var preInject = t.GetMethod("DLLInit", BindingFlags.Public | BindingFlags.Static)?.CreateDelegate<PreInject>();
@@ -59,7 +61,7 @@ public class EngineBuilder(ICommandLine cmdLine) : ServiceCollection
 		}
 	}
 
-	readonly List<MemberInfo> filledDependencies = [];
+	private readonly List<MemberInfo> filledDependencies = [];
 
 	/// <summary>
 	/// Nulls out all automatic references the EngineBuilder previously created for the EngineAPI.
@@ -122,7 +124,7 @@ public class EngineBuilder(ICommandLine cmdLine) : ServiceCollection
 			// They are then injected into the service collection.
 			foreach (var typeKVP in assembly.GetTypesWithAttribute<EngineComponentAttribute>()) {
 				populateLookups(typeKVP.Key);
-				if (typeKVP.Key.IsAbstract && typeKVP.Key.IsSealed) 
+				if (typeKVP.Key.IsAbstract && typeKVP.Key.IsSealed)
 					continue; // Just wants to get dependencies. Do not add to the singleton list. Usually this is done for globals.
 
 				this.AddSingleton(typeKVP.Key);
@@ -153,9 +155,11 @@ public class EngineBuilder(ICommandLine cmdLine) : ServiceCollection
 				case FieldInfo field:
 					field.SetValue(null, getService(depAttr.GetUnderlyingType() ?? field.FieldType, depAttr));
 					break;
+
 				case PropertyInfo prop:
 					prop.SetValue(null, getService(depAttr.GetUnderlyingType() ?? prop.PropertyType, depAttr));
 					break;
+
 				default: // don't add a dependency for junk
 					return;
 			}

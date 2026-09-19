@@ -87,13 +87,13 @@ namespace CloneDash.Game.Entities
 			var ypos = -game.GetPathway(Pathway).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
 
-			var w = tex.Width * MuseDash1Game.GlobalScale;
-			var h = tex.Height * MuseDash1Game.GlobalScale;
+			var w = tex.GetWidth() * MuseDash1Game.GlobalScale;
+			var h = tex.GetHeight() * MuseDash1Game.GlobalScale;
 
 			if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
-				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, -tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
+				Raylib.DrawTexturePro(tex.ToRaylibTexture(), new(0, 0, tex.GetWidth(), -tex.GetHeight()), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
 			else
-				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
+				Raylib.DrawTexturePro(tex.ToRaylibTexture(), new(0, 0, tex.GetWidth(), tex.GetHeight()), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
 		}
 		private void drawEndQuad(MuseDash1Game game, ref FrameState fs, float x) {
 			x -= (float)InputSettings.VisualOffset;
@@ -104,13 +104,13 @@ namespace CloneDash.Game.Entities
 			var ypos = -game.GetPathway(Pathway).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
 
-			var w = tex.Width * MuseDash1Game.GlobalScale;
-			var h = tex.Height * MuseDash1Game.GlobalScale;
+			var w = tex.GetWidth() * MuseDash1Game.GlobalScale;
+			var h = tex.GetHeight() * MuseDash1Game.GlobalScale;
 
 			if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
-				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, -tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
+				Raylib.DrawTexturePro(tex.ToRaylibTexture(), new(0, 0, tex.GetWidth(), -tex.GetHeight()), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
 			else
-				Raylib.DrawTexturePro((Texture)tex, new(0, 0, tex.Width, tex.Height), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
+				Raylib.DrawTexturePro(tex.ToRaylibTexture(), new(0, 0, tex.GetWidth(), tex.GetHeight()), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
 		}
 
 		private SecondOrderSystem sosFail = new(2, 1, 1, 0);
@@ -124,15 +124,15 @@ namespace CloneDash.Game.Entities
 			var xMid = HeldState ? game.GetPathway(Pathway).Position.X : xStart;
 			var xEnd = (float)XPosFromTimeOffset((float)Length + voffset);
 			var ypos = -game.GetPathway(Pathway).Position.Y + yOffset;
-			var height = tex.Height * MuseDash1Game.GlobalScale;
+			var height = tex.GetHeight() * MuseDash1Game.GlobalScale;
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.DisableBackfaceCulling();
 
 			Rlgl.Color4ub(255, 255, 255, beamAlpha);
 
-			var maxLength = (xEnd - xStart) / (tex.Width * MuseDash1Game.GlobalScale * 2);
-			var length = maxLength - ((xEnd - xMid) / (tex.Width * MuseDash1Game.GlobalScale * 2));
+			var maxLength = (xEnd - xStart) / (tex.GetWidth() * MuseDash1Game.GlobalScale * 2);
+			var length = maxLength - ((xEnd - xMid) / (tex.GetWidth() * MuseDash1Game.GlobalScale * 2));
 
 			xMid = xMid + xOffset;
 			Rlgl.SetTexture(tex.GetTextureHandle());

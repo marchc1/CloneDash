@@ -3,6 +3,7 @@ using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using Nucleus;
 using Nucleus.Commands;
+using Nucleus.Common.Models;
 using Nucleus.Core;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
@@ -218,6 +219,7 @@ public class MD_ModelViewerWindow : Window
 		return "misc";
 	}
 
+
 	void BuildUI() {
 		var topBar = new Panel(this);
 		topBar.Dock = Dock.Top;
@@ -324,7 +326,7 @@ public class MD_ModelViewerWindow : Window
 				row * (THUMB_SIZE + THUMB_PADDING + 20) + THUMB_PADDING
 			);
 			card.Size = new(THUMB_SIZE, THUMB_SIZE + 20);
-			card.Setup(entry);
+			card.Setup(entry, RightPanel.MainPanel);
 			card.OnButtonClick += (_, _) => OpenDetailWindow(entry);
 		}
 	}
@@ -342,6 +344,8 @@ public class MD_ModelThumbnailCard : Button
 	double AnimTime;
 	int CurrentAnimIndex;
 	bool animating;
+	Element? Viewport;
+	const int PREFETCH_MARGIN = 140;
 
 	public MD_ModelThumbnailCard(Element? parent) : base(parent) {
 		BorderSize = 1;
@@ -351,12 +355,23 @@ public class MD_ModelThumbnailCard : Button
 		SetTextAlignment(Anchor.BottomCenter);
 	}
 
-	public void Setup(SkeletonEntry entry) {
+	public void Setup(SkeletonEntry entry, Element? viewport) {
 		Entry = entry;
 		Text = entry.Name;
+		Viewport = viewport;
+	}
+
+	bool IsVisibleInViewport() {
+		if (Viewport == null) return true;
+		var viewportPos = Viewport.GetGlobalPosition() - Viewport.ChildRenderOffset;
+		var viewportRect = RectangleF.FromPosAndSize(viewportPos, Viewport.GetRenderBounds().Size);
+		viewportRect = viewportRect + new RectangleF(-PREFETCH_MARGIN, -PREFETCH_MARGIN, PREFETCH_MARGIN * 2, PREFETCH_MARGIN * 2);
+		var cardRect = RectangleF.FromPosAndSize(GetGlobalPosition(), GetRenderBounds().Size);
+		return RectangleF.IsRectangleInsideRectangle(viewportRect, cardRect, allowPartial: true);
 	}
 
 	protected override void OnThink() {
+		if (!IsVisibleInViewport()) return;
 		base.OnThink();
 		if (Entry == null) return;
 		var instance = Entry.EnsureInstance();
@@ -375,6 +390,7 @@ public class MD_ModelThumbnailCard : Button
 	}
 
 	public override void Paint(float width, float height) {
+		if (!IsVisibleInViewport()) return;
 		base.Paint(width, height);
 
 		if (Entry == null) return;
@@ -877,7 +893,34 @@ public class MD_ModelDetailWindow : Window
 		if (Instance != null) {
 			Logs.Info($"  DrawOrder: {Instance.DrawOrder.Count} slots");
 			foreach (var slot in Instance.DrawOrder)
-				Logs.Info($"    Slot: {slot.Data.Name} attachment={slot.Attachment?.Name ?? "NULL"} color={slot.Color} blend={slot.BlendMode}");
+				Logs.Info($"    Slot: {slot.Data.Name} attachment={slot.Attachment?.Name ?? "NULL"} color={slot.Color} dark={(slot.DarkColor.HasValue ? slot.DarkColor.Value.ToString() : "none")} blend={slot.BlendMode}");
+		}
+
+		Logs.Info("  --- Attachment atlas regions ---");
+		foreach (var skin in data.Skins) {
+			foreach (var kvp in skin.Attachments) {
+				var att = kvp.Value;
+				IModelAtlasRegion? region = att switch {
+					RegionAttachment ra => ra.Region,
+					MeshAttachment ma => ma.Region,
+					_ => null
+				};
+				string path = att switch {
+					RegionAttachment ra => ra.Path,
+					MeshAttachment ma => ma.Path,
+					_ => "-"
+				};
+				if (region == null) {
+					Logs.Info($"    [{skin.Name}] {att.Name} (path={path}) type={att.GetType().Name} REGION=NULL");
+					continue;
+				}
+				region.GetBounds(out int rx, out int ry, out int rw, out int rh);
+				region.GetOffsets(out int ox, out int oy, out int origW, out int origH);
+				var page = region.GetPage();
+				page.GetSize(out int pw, out int ph);
+				var tex = region.GetTexture();
+				Logs.Info($"    [{skin.Name}] {att.Name} (path={path}) type={att.GetType().Name} region={region.GetName().ToString()} page={page.GetName().ToString()} pageSize={pw}x{ph} tex={tex?.GetWidth() ?? 0}x{tex?.GetHeight() ?? 0} bounds=({rx},{ry},{rw},{rh}) orig={origW}x{origH} offset=({ox},{oy}) rot={region.GetRotation()} pma={page.GetPreMultipliedAlpha()}");
+			}
 		}
 	}
 

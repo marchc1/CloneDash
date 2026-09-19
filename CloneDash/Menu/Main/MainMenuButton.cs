@@ -35,7 +35,7 @@ public class MainMenuButton : Button
 		image.Clipping = false;
 		image.		Anchor = Anchor.CenterLeft;
 		image.		Origin = Anchor.CenterLeft;
-		image.Texture = Level.Textures.LoadTextureFromFile(icon);
+		image.Texture = textures.LoadTextureFromFile(icon);
 	}
 
 	protected override void OnThink() {

@@ -9,11 +9,19 @@ using System.Threading.Tasks;
 
 namespace Nucleus.UI.Elements;
 
-public class DropdownSelector<T>(Element? parent, ReadOnlySpan<char> name = default) : Button(parent, text: "", name: name)
+public class DropdownSelector<T> : Button
 {
 	public T? Selected { get; set; } = default;
 	public List<T> Items { get; } = [];
 	public bool Editable { get; set; } = false;
+
+	public DropdownSelector(Element? parent) : base(parent, text: "") {
+
+	}
+
+	public DropdownSelector(Element? parent, ReadOnlySpan<char> name = default) : base(parent, text: "", name: name) {
+
+	}
 
 	public static DropdownSelector<ET> FromEnum<ET>(Element parent, ET v) where ET : Enum {
 		DropdownSelector<ET> selector = new DropdownSelector<ET>(parent);

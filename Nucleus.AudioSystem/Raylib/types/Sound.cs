@@ -1,12 +1,12 @@
 using System.Runtime.InteropServices;
 
-namespace Raylib_cs;
+namespace Nucleus.AudioSystem.Raylib;
 
 /// <summary>
 /// Sound source type
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-public partial struct Sound
+internal partial struct Sound
 {
     /// <summary>
     /// Audio stream

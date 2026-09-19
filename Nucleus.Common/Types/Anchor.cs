@@ -54,21 +54,7 @@ public static class AnchorTools
 
 		throw new NotImplementedException();
 	}
-	public static TextAlignment2D ToTextAlignment(this Anchor anchor) {
-		switch (anchor) {
-			case Anchor.TopLeft: return new(TextAlignment.Left, TextAlignment.Top);
-			case Anchor.TopCenter: return new(TextAlignment.Center, TextAlignment.Top);
-			case Anchor.TopRight: return new(TextAlignment.Right, TextAlignment.Top);
-			case Anchor.CenterLeft: return new(TextAlignment.Left, TextAlignment.Center);
-			case Anchor.Center: return new(TextAlignment.Center, TextAlignment.Center);
-			case Anchor.CenterRight: return new(TextAlignment.Right, TextAlignment.Center);
-			case Anchor.BottomLeft: return new(TextAlignment.Left, TextAlignment.Bottom);
-			case Anchor.BottomCenter: return new(TextAlignment.Center, TextAlignment.Bottom);
-			case Anchor.BottomRight: return new(TextAlignment.Right, TextAlignment.Bottom);
-		}
 
-		throw new NotImplementedException();
-	}
 	public static Vector2F CornerEdgeOffset(this Anchor anchor, Vector2F textPadding) {
 		var offset = Vector2F.Zero;
 		switch (anchor.GetHorizontalRatio()) {
@@ -82,15 +68,6 @@ public static class AnchorTools
 		return offset;
 	}
 
-	public static Vector2F GetPositionGivenAlignment(this Anchor alignment, RectangleF bounds, Vector2F padding) {
-		Vector2F drawPos = alignment.CalculatePosition(bounds.Pos, bounds.Size);
-		var offset = CornerEdgeOffset(alignment, padding);
-
-		return drawPos + offset;
-	}
-	
-	public static Vector2F GetPositionGivenAlignment(this Anchor alignment, Vector2F bounds, Vector2F padding) => GetPositionGivenAlignment(alignment, RectangleF.FromPosAndSize(new(0), bounds), padding);
-	
 	public static float GetHorizontalRatio(this Anchor anchor) {
 		switch (anchor) {
 			case Anchor.TopLeft: return 0f;
@@ -106,6 +83,15 @@ public static class AnchorTools
 		throw new NotImplementedException();
 	}
 
+	public static Vector2F GetPositionGivenAlignment(this Anchor alignment, RectangleF bounds, Vector2F padding) {
+		Vector2F drawPos = alignment.CalculatePosition(bounds.Pos, bounds.Size);
+		var offset = CornerEdgeOffset(alignment, padding);
+
+		return drawPos + offset;
+	}
+
+	public static Vector2F GetPositionGivenAlignment(this Anchor alignment, Vector2F bounds, Vector2F padding) => GetPositionGivenAlignment(alignment, RectangleF.FromPosAndSize(new(0), bounds), padding);
+
 	public static float GetVerticalRatio(this Anchor anchor) {
 		switch (anchor) {
 			case Anchor.TopLeft: return 0f;
@@ -118,6 +104,22 @@ public static class AnchorTools
 			case Anchor.BottomCenter: return 1f;
 			case Anchor.BottomRight: return 1f;
 		}
+		throw new NotImplementedException();
+	}
+
+	public static TextAlignment2D ToTextAlignment(this Anchor anchor) {
+		switch (anchor) {
+			case Anchor.TopLeft: return new(TextAlignment.Left, TextAlignment.Top);
+			case Anchor.TopCenter: return new(TextAlignment.Center, TextAlignment.Top);
+			case Anchor.TopRight: return new(TextAlignment.Right, TextAlignment.Top);
+			case Anchor.CenterLeft: return new(TextAlignment.Left, TextAlignment.Center);
+			case Anchor.Center: return new(TextAlignment.Center, TextAlignment.Center);
+			case Anchor.CenterRight: return new(TextAlignment.Right, TextAlignment.Center);
+			case Anchor.BottomLeft: return new(TextAlignment.Left, TextAlignment.Bottom);
+			case Anchor.BottomCenter: return new(TextAlignment.Center, TextAlignment.Bottom);
+			case Anchor.BottomRight: return new(TextAlignment.Right, TextAlignment.Bottom);
+		}
+
 		throw new NotImplementedException();
 	}
 

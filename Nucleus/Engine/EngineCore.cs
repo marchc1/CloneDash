@@ -9,16 +9,14 @@ using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.Files;
 using Nucleus.Input;
+using Nucleus.ManagedMemory;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
 using Nucleus.Util;
 using Raylib_cs;
-using SDL;
 using System.Diagnostics;
-using System.Globalization;
-using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -30,7 +28,7 @@ namespace Nucleus;
 public static class EngineCore
 {
 	[ConCommand(Help: "Performs an immediate GC collection of all generations")]
-	static void gc_collect() {
+	private static void gc_collect() {
 		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
 		GC.WaitForPendingFinalizers();
 		var status = GC.WaitForFullGCComplete();
@@ -42,11 +40,15 @@ public static class EngineCore
 			case GCNotificationStatus.Canceled: Logs.Info("GC: Collection cancelled."); break;
 		}
 	}
-	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: false)")] static void exit() => Close(false);
-	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: true)")] static void quit() => Close(true);
-	[ConCommand(Help: "Unloads the current level")] static void unload() => MainThread.RunASAP(UnloadLevel, ThreadExecutionTime.AfterFrame);
+
+	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: false)")] private static void exit() => Close(false);
+
+	[ConCommand(Help: "Exits the engine via EngineCore.Close(forced: true)")] private static void quit() => Close(true);
+
+	[ConCommand(Help: "Unloads the current level")] private static void unload() => MainThread.RunASAP(UnloadLevel, ThreadExecutionTime.AfterFrame);
+
 	[ConCommand(Help: "Tries to create a new level with the first argument. Will not work if the level requires initialization parameters.")]
-	static void level(in TokenizedCommand args) {
+	private static void level(in TokenizedCommand args) {
 		var level = args[1];
 		var listOfLevels = (
 			from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
@@ -97,10 +99,10 @@ public static class EngineCore
 	// Level storing & state
 	// ------------------------------------------------------------------------------------------ //
 
-	static Level? NextFrameLevel;
-	static object[]? NextFrameArgs;
-	static TimeSpan LastTimeToUpdate;
-	static TimeSpan LastTimeToRender;
+	private static Level? NextFrameLevel;
+	private static object[]? NextFrameArgs;
+	private static TimeSpan LastTimeToUpdate;
+	private static TimeSpan LastTimeToRender;
 
 	public static ConVar snd_volume = new("snd_volume", "1.0", FCvar.Saved, "Overall sound volume.", 0, 2f, (cv, o, n) => audiosystem.SetMasterVolume(cv.GetFloat()));
 
@@ -110,6 +112,7 @@ public static class EngineCore
 	/// The current level; if null, you'll get a big red complaint
 	/// </summary>
 	public static Level Level { get; private set; } = null!;
+
 	/// <summary>
 	/// Is the engine core currently loading a level. This overrides everything else; level frame's dont get called when this is turned on.
 	/// </summary>
@@ -128,16 +131,20 @@ public static class EngineCore
 				case TraceLogLevel.LOG_NONE:
 					Logs.Print(message);
 					break;
+
 				case TraceLogLevel.LOG_TRACE:
 				case TraceLogLevel.LOG_DEBUG:
 					Logs.Debug(message);
 					break;
+
 				case TraceLogLevel.LOG_INFO:
 					Logs.Info(message);
 					break;
+
 				case TraceLogLevel.LOG_WARNING:
 					Logs.Warn(message);
 					break;
+
 				case TraceLogLevel.LOG_ERROR:
 				case TraceLogLevel.LOG_FATAL:
 					Logs.Error(message);
@@ -194,7 +201,9 @@ public static class EngineCore
 			y += 18 + 4;
 		}
 	}
+
 	private const float BAR_BASELINE = 1000f / 60f; // 60 fps/ups
+
 	private static void DrawBar(string text, Color color, float width, float y, double ms) {
 		float ratio = (float)ms / BAR_BASELINE;
 		const float rectPadding = 4;
@@ -235,7 +244,7 @@ public static class EngineCore
 	private static object GameThread_GLLock = new();
 	public static Action? GameThreadInitializationProcedure;
 
-	static void MakeWindowCurrent(OSWindow window) {
+	private static void MakeWindowCurrent(OSWindow window) {
 		Rlgl.SetFramebufferWidth((int)window.Size.W);
 		Rlgl.SetFramebufferHeight((int)window.Size.H);
 		window.ActivateGL();
@@ -277,15 +286,18 @@ public static class EngineCore
 
 		StartGameThread();
 	}
+
 	private static string? prgIcon;
 
-	static ConVar borderless = new(nameof(borderless), "0", FCvar.Saved, "Hide window decorations", min: 0, max: 1, callback: borderlessChange);
+	private static ConVar borderless = new(nameof(borderless), "0", FCvar.Saved, "Hide window decorations", min: 0, max: 1, callback: borderlessChange);
+
 	private static void borderlessChange(ConVar self, ReadOnlySpan<char> old, double oldD) {
 		if (Window != null)
 			Window.Undecorated = self.GetBool();
 	}
 
-	static ConVar fullscreen = new(nameof(fullscreen), "0", FCvar.Saved, "Fullscreen mode", min: 0, max: 1, callback: fullscreenChange);
+	private static ConVar fullscreen = new(nameof(fullscreen), "0", FCvar.Saved, "Fullscreen mode", min: 0, max: 1, callback: fullscreenChange);
+
 	private static void fullscreenChange(ConVar self, ReadOnlySpan<char> old, double oldD) {
 		if (Window != null)
 			Window.Fullscreen = self.GetBool();
@@ -396,7 +408,7 @@ public static class EngineCore
 	}
 
 	// Specific things that need to get called (because a level usually calls these like hittesting)
-	static void ResetWindowLevelSpecificEnv(OSWindow window) {
+	private static void ResetWindowLevelSpecificEnv(OSWindow window) {
 		window.DisableHitTest();
 	}
 
@@ -440,10 +452,9 @@ public static class EngineCore
 		//GC.WaitForPendingFinalizers();
 	}
 
-
-
 	public static bool Started { get; private set; } = false;
 	public static bool InLevelFrame { get; private set; } = false;
+
 	public static void LoadLevel(OSWindow window, Level level, params object[] args) {
 		if (InLevelFrame || !Started) {
 			NextFrameLevel = level;
@@ -453,7 +464,9 @@ public static class EngineCore
 		else
 			__loadLevel(window, level, args);
 	}
+
 	public static void LoadLevel(Level level, params object[] args) => LoadLevel(Window, level, args);
+
 	public static void UnloadLevel() {
 		LoadingLevel = true;
 
@@ -480,6 +493,7 @@ public static class EngineCore
 	}
 
 	public delegate void ShouldEngineCloseD();
+
 	/// <summary>
 	/// Returning true means that the engine close is blocked. False will not block the engine closure.
 	/// </summary>
@@ -526,6 +540,7 @@ public static class EngineCore
 
 		return new(BorderlessScreenPadding);
 	}
+
 	public static double TargetFrameTime { get; set; }
 	public static double CurrentAppTime { get; set; }
 	public static double PreviousAppTime { get; set; }
@@ -535,26 +550,30 @@ public static class EngineCore
 
 	public static readonly ConVar developer = new("developer", "0", FCvar.None, "Enables/disables developer prints and overlays.", null);
 
-	static bool? devoverlay_override;
+	private static bool? devoverlay_override;
+
 	public static void SetDeveloperOverlayOverride(bool? ovr) {
 		devoverlay_override = ovr;
 	}
+
 	public static bool ShouldShowDeveloperOverlays() {
 		return devoverlay_override ?? developer.GetInt() >= 1;
 	}
-
 
 	/// <summary>
 	/// How long did the last update-frame take?
 	/// </summary>
 	/// <returns></returns>
 	public static TimeSpan GetTimeToUpdate() => LastTimeToUpdate;
+
 	/// <summary>
 	/// How long did the last render-frame take?
 	/// </summary>
 	/// <returns></returns>
 	public static TimeSpan GetTimeToRender() => LastTimeToRender;
+
 	internal static void SetTimeToUpdate(TimeSpan value) => LastTimeToUpdate = value;
+
 	internal static void SetTimeToRender(TimeSpan value) => LastTimeToRender = value;
 
 	private const int FPS_CAPTURE_FRAMES_COUNT = 30;
@@ -584,12 +603,14 @@ public static class EngineCore
 			return MathF.Round(1.0f / fps_average);
 		}
 	}
+
 	public static ConVar fps_max = new("fps_max", "300", FCvar.Saved, "Default frames per second.", 0, 10000, (cv, _, _) => LimitFramerate(cv.GetInt()));
 	public static ConVar r_renderat = new("renderrate", "60", FCvar.Saved, "Separate control over how often rendering functions in particular are ran.", 0, 10000);
 	public static ConVar gc_collectperframe = new("gc_collectperframe", "0", FCvar.Saved, "If set to 1, Nucleus will perform a forced gen-0 garbage collection after every frame. This is an experiment, mileage may vary.", 0, 1);
 	public static double RenderRate => r_renderat.GetDouble() == 0 ? 0 : 1d / r_renderat.GetDouble();
 
 	private static string WorkConsole = "";
+
 	public static void Frame() {
 		WaitForGameThread();
 		NucleusSingleton.Spin();
@@ -628,7 +649,8 @@ public static class EngineCore
 			FrameTime += waitTime;
 		}
 	}
-	static void PerWindowFrame() {
+
+	private static void PerWindowFrame() {
 		NProfiler.Reset();
 
 		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
@@ -655,7 +677,6 @@ public static class EngineCore
 				LoadingScreen.Frame();
 			}
 		}
-
 
 		if (IValidatable.IsValid(Level))
 			Level.Frame();
@@ -718,11 +739,13 @@ public static class EngineCore
 						Cbuf.AddText(WorkConsole);
 						WorkConsole = "";
 						break;
+
 					case CharacterType.DeleteBackwards:
 						if (WorkConsole.Length > 0) {
 							WorkConsole = WorkConsole.Substring(0, WorkConsole.Length - 1);
 						}
 						break;
+
 					case CharacterType.VisibleCharacter:
 						WorkConsole += action.Extra;
 						break;
@@ -758,10 +781,12 @@ public static class EngineCore
 	public static bool Maximized => Window.Maximized;
 	public static bool Minimized => Window.Minimized;
 	public static bool Focused => Window.InputFocused;
+
 	public static bool InFullscreen {
 		get => Window.Fullscreen;
 		set => Window.Fullscreen = value;
 	}
+
 	public static bool IsUndecorated => Window.Undecorated;
 
 	public static void Maximize() {
@@ -771,6 +796,7 @@ public static class EngineCore
 		}
 		Window.Maximized = true;
 	}
+
 	public static void Unmaximize() {
 		if (!Maximized)
 			return;
@@ -778,6 +804,7 @@ public static class EngineCore
 		Window.Maximized = false;
 		Window.Visible = true;
 	}
+
 	public static void Minimize() {
 		if (Minimized) {
 			Unminimize();
@@ -785,6 +812,7 @@ public static class EngineCore
 		}
 		Window.Minimized = true;
 	}
+
 	public static void Unminimize() {
 		if (!Minimized)
 			return;
@@ -842,9 +870,11 @@ public static class EngineCore
 	}
 
 	private static readonly Mutex GameThreadMutex = new();
+
 	public static void WaitForGameThread() {
 		GameThreadMutex.WaitOne();
 	}
+
 	public static void ReleaseGameThread() {
 		GameThreadMutex.ReleaseMutex();
 	}
@@ -867,8 +897,11 @@ public static class EngineCore
 	public static Vector2F GetWindowSize() => Window.Size;
 
 	public static float GetWindowWidth() => Window.Size.W;
+
 	public static float GetWindowHeight() => Window.Size.H;
+
 	public static void SetWindowPosition(Vector2F pos) => Window.Position = pos;
+
 	public static void SetWindowTitle(string title) => Window.Title = title;
 
 	public static void StopSound() => audiosystem.StopAllSounds();

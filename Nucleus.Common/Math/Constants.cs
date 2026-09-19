@@ -1,6 +1,5 @@
-﻿namespace Nucleus
+﻿namespace Nucleus;
+
+public static partial class NMath
 {
-    public static partial class NMath
-    {
-    }
 }

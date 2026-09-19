@@ -3,6 +3,6 @@
 /// <summary>
 /// Functions the engine exposes to the client.
 /// </summary>
-public interface IEngineClient {
-
+public interface IEngineClient
+{
 }

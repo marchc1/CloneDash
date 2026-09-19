@@ -3,6 +3,7 @@ using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.Extensions;
+using Nucleus.ManagedMemory;
 using Nucleus.ModelEditor.UI;
 using Nucleus.Rendering;
 using Nucleus.Types;
@@ -710,13 +711,13 @@ namespace Nucleus.ModelEditor
 			}
 
 			if (bone.Length > 0) {
-				boneTex = Level.Textures.LoadTextureFromFile("models/lengthbonetex.png");
-				var innerRing = Level.Textures.LoadTextureFromFile("models/bonering.png");
+				boneTex = textures.LoadTextureFromFile("models/lengthbonetex.png");
+				var innerRing = textures.LoadTextureFromFile("models/bonering.png");
 				var lengthMul = (float)NMath.Remap(bone.Length, 40, 150, 0.38, 1, true) * 6;
-				Raylib.DrawTexturePro(innerRing, new(0, 0, innerRing.Width, innerRing.Height), new(wt.X - (lengthMul / 2), wt.Y - (lengthMul / 2), lengthMul, lengthMul), new(0), 0, color);
+				Raylib.DrawTexturePro(innerRing.ToRaylibTexture(), new(0, 0, innerRing.GetWidth(), innerRing.GetHeight()), new(wt.X - (lengthMul / 2), wt.Y - (lengthMul / 2), lengthMul, lengthMul), new(0), 0, color);
 			}
 			else
-				boneTex = Level.Textures.LoadTextureFromFile("models/lengthlessbonetex.png");
+				boneTex = textures.LoadTextureFromFile("models/lengthlessbonetex.png");
 
 			bone.GetTexCoords(byHowMuch, out var baseBottom, out var baseTop, out var tipBottom, out var tipTop, out var lengthLimit);
 
@@ -725,7 +726,7 @@ namespace Nucleus.ModelEditor
 
 				Rlgl.Color4ub(color.R, color.G, color.B, color.A);
 
-				Rlgl.SetTexture(((Texture2D)boneTex).Id);
+				Rlgl.SetTexture(boneTex.GetTextureHandle());
 				Rlgl.TexCoord2f(0, 0); Rlgl.Vertex3f(tipTop.X, tipTop.Y, 0);
 				Rlgl.TexCoord2f(1, 1); Rlgl.Vertex3f(baseBottom.X, baseBottom.Y, 0);
 				Rlgl.TexCoord2f(1, 0); Rlgl.Vertex3f(tipBottom.X, tipBottom.Y, 0);
@@ -758,8 +759,8 @@ namespace Nucleus.ModelEditor
 				Rlgl.Translatef(wps.X, wps.Y, 0);
 				Rlgl.Rotatef(rot, 0, 0, 1);
 				Raylib.DrawTexturePro(
-					boneTex,
-					new(0, 0, boneTex.Width, boneTex.Height),
+					boneTex.ToRaylibTexture(),
+					new(0, 0, boneTex.GetWidth(), boneTex.GetHeight()),
 					new(-size / 2f, -size / 2f, size, size),
 					new(0),
 					0,

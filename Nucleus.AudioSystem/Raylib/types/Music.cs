@@ -1,13 +1,13 @@
 using System.Runtime.InteropServices;
 
-namespace Raylib_cs;
+namespace Nucleus.AudioSystem.Raylib;
 
 /// <summary>
 /// Music stream type (audio file streaming from memory)<br/>
 /// NOTE: Anything longer than ~10 seconds should be streamed
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-public unsafe partial struct Music
+internal unsafe partial struct Music
 {
     /// <summary>
     /// Audio stream

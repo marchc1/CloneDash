@@ -1,7 +1,7 @@
 ﻿namespace Nucleus.ManagedMemory;
 
 /// <summary>
-/// Represents the multiplier to convert a value of Data Unit into bits. 
+/// Represents the multiplier to convert a value of Data Unit into bits.
 /// <br></br>
 /// So Bit == 1, Byte == 8, etc...
 /// </summary>

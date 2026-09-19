@@ -1,10 +1,6 @@
 ﻿using Nucleus.Common.Commands;
 using Nucleus.Common.Types;
-using Nucleus.Core;
-using System;
-using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 
 namespace Nucleus.Commands;
 
@@ -13,8 +9,8 @@ public class Cvar : ICvar
 {
 	public static ConCommandBase? ConCommandList;
 
-	static readonly List<ChangeCallback> GlobalChangeCallbacks = [];
-	static readonly List<IConsoleDisplayFunc> DisplayFuncs = [];
+	private static readonly List<ChangeCallback> GlobalChangeCallbacks = [];
+	private static readonly List<IConsoleDisplayFunc> DisplayFuncs = [];
 
 	public void CallGlobalChangeCallbacks(ConVar var, scoped ReadOnlySpan<char> oldString, double oldDouble) {
 		foreach (var c in GlobalChangeCallbacks)
@@ -58,6 +54,7 @@ public class Cvar : ICvar
 	}
 
 	public ConCommandBase? GetCommands() => ConCommandList;
+
 	public IEnumerable<ConCommandBase> GetCommandEnumerable() {
 		ConCommandBase? b = ConCommandList;
 		while (b != null) {
@@ -95,7 +92,6 @@ public class Cvar : ICvar
 				ConVar childVar = (ConVar)commandBase;
 				ConVar parentVar = (ConVar)other;
 
-
 				childVar.Parent = parentVar.Parent;
 				parentVar.Flags |= childVar.Flags;
 			}
@@ -125,6 +121,5 @@ public class Cvar : ICvar
 	}
 
 	public void SetAssemblyIdentifier(Assembly assembly) {
-
 	}
 }

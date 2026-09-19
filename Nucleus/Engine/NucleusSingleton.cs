@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.IO;
+﻿using System.Collections.Concurrent;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Nucleus.Engine
 {
@@ -25,7 +21,7 @@ namespace Nucleus.Engine
 			return Path.Combine(basePath, $"{name}.lock");
 		}
 
-		static string pipeName(string name) {
+		private static string pipeName(string name) {
 			return $"nucleus_singleton_{name}";
 		}
 
@@ -65,7 +61,9 @@ namespace Nucleus.Engine
 		}
 
 		public static event OnProcessRedirect? Redirect;
-		static ConcurrentQueue<string> argQueue = [];
+
+		private static ConcurrentQueue<string> argQueue = [];
+
 		public static void Spin() {
 			if (!isDesktop())
 				return;
@@ -74,7 +72,7 @@ namespace Nucleus.Engine
 				Redirect?.Invoke(args);
 		}
 
-		static async Task redirectListener(string pipeName, CancellationToken token) {
+		private static async Task redirectListener(string pipeName, CancellationToken token) {
 			while (!token.IsCancellationRequested) {
 				using var server = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
 				try {
@@ -92,10 +90,11 @@ namespace Nucleus.Engine
 			}
 		}
 
-		static string escapeNulls(string s) => s.Replace("\0", "\\0");
-		static string unescapeNulls(string s) => s.Replace("\\0", "\0");
+		private static string escapeNulls(string s) => s.Replace("\0", "\\0");
 
-		static bool isDesktop() {
+		private static string unescapeNulls(string s) => s.Replace("\\0", "\0");
+
+		private static bool isDesktop() {
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				return true;
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))

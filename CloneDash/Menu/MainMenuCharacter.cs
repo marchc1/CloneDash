@@ -113,8 +113,7 @@ public class MainMenuCharacter : Panel
 				float alphaTweenOut = (float)NMath.Remap(Level.Curtime, endTime - 0.2, endTime, 0, 1, true);
 				float alphaTween = NMath.Ease.InCirc(alphaTweenIn) - NMath.Ease.OutQuad(alphaTweenOut);
 
-				ExpressionLabel.
-				Opacity = alphaTween;
+				ExpressionLabel.Opacity = alphaTween;
 				ExpressionLabel.Text = ExpressionText;
 				ExpressionLabel.SetVisible(true);
 

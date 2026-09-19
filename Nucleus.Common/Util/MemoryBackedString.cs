@@ -10,11 +10,13 @@ namespace Nucleus.Util;
 /// </summary>
 public struct MemoryBackedString
 {
-	char[]? stringBacking;
-	int stringLength;
+	private const int MAX_BYTES_PER_CONCAT_SPANFORMATTABLE = 2048;
 
-	public readonly long MemorySize => stringBacking?.LongLength ?? 0;
-	public readonly int Length => stringLength;
+	/// <summary> Grow the array by this amount each time no matter what </summary>
+	private const int MIN_GROW_SIZE = 128;
+
+	private char[]? stringBacking;
+	private int stringLength;
 
 	public MemoryBackedString(int initialSize) {
 		stringBacking = new char[initialSize];
@@ -24,8 +26,12 @@ public struct MemoryBackedString
 		stringBacking = new char[initialSize];
 	}
 
-	public readonly Span<char> ToSpan() => stringBacking == null ? default : stringBacking.AsSpan()[..stringLength];
-	public readonly ReadOnlySpan<char> ToReadOnlySpan() => stringBacking == null ? default : stringBacking.AsSpan()[..stringLength];
+	public readonly int Length => stringLength;
+	public readonly long MemorySize => stringBacking?.LongLength ?? 0;
+
+	public void Clear() {
+		stringLength = 0;
+	}
 
 	/// <summary>
 	/// Concatenates text on the left hand of the string
@@ -44,6 +50,16 @@ public struct MemoryBackedString
 		stringLength += textLength;
 	}
 
+	public bool ConcatLefthand<T>(in T t, ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) where T : ISpanFormattable {
+		Span<char> copyBuffer = stackalloc char[MAX_BYTES_PER_CONCAT_SPANFORMATTABLE];
+		if (!t.TryFormat(copyBuffer, out int charsWritten, format, formatProvider)) {
+			Logs.Warn($"{nameof(ConcatLefthand)}<{typeof(T).FullName}> failed (likely formatting would require more than {((ulong)MAX_BYTES_PER_CONCAT_SPANFORMATTABLE).NiceBytes()} of stack space, try upgrading this function)");
+			return false;
+		}
+		ConcatLefthand(copyBuffer[..charsWritten]);
+		return true;
+	}
+
 	/// <summary>
 	/// Concatenates text on the right hand of the string
 	/// </summary>
@@ -56,18 +72,6 @@ public struct MemoryBackedString
 
 		text.CopyTo(stringBacking.AsSpan()[stringLength..]);
 		stringLength += textLength;
-	}
-
-	const int MAX_BYTES_PER_CONCAT_SPANFORMATTABLE = 2048;
-
-	public bool ConcatLefthand<T>(in T t, ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) where T : ISpanFormattable {
-		Span<char> copyBuffer = stackalloc char[MAX_BYTES_PER_CONCAT_SPANFORMATTABLE];
-		if (!t.TryFormat(copyBuffer, out int charsWritten, format, formatProvider)) {
-			Logs.Warn($"{nameof(ConcatLefthand)}<{typeof(T).FullName}> failed (likely formatting would require more than {((ulong)MAX_BYTES_PER_CONCAT_SPANFORMATTABLE).NiceBytes()} of stack space, try upgrading this function)");
-			return false;
-		}
-		ConcatLefthand(copyBuffer[..charsWritten]);
-		return true;
 	}
 
 	public bool ConcatRighthand<T>(in T t, ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) where T : ISpanFormattable {
@@ -90,13 +94,9 @@ public struct MemoryBackedString
 		ConcatRighthand(in t, format, formatProvider);
 	}
 
+	public readonly ReadOnlySpan<char> ToReadOnlySpan() => stringBacking == null ? default : stringBacking.AsSpan()[..stringLength];
 
-	public void Clear() {
-		stringLength = 0;
-	}
-
-	/// <summary> Grow the array by this amount each time no matter what </summary>
-	const int MIN_GROW_SIZE = 128;
+	public readonly Span<char> ToSpan() => stringBacking == null ? default : stringBacking.AsSpan()[..stringLength];
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	[MemberNotNull(nameof(stringBacking))]

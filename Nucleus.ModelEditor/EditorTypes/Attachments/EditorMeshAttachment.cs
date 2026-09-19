@@ -808,17 +808,17 @@ namespace Nucleus.ModelEditor
 			region?.GetBounds(out regX, out regY, out regW, out regH);
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
-			Rlgl.SetTexture(((Texture2D)tex).Id);
+			Rlgl.SetTexture(tex.GetTextureHandle());
 
 			var color = (byte)(ShouldDim ? 90 : 255);
 			Rlgl.Color4ub(color, color, color, 255);
 
 			float uStart, uEnd, vStart, vEnd;
-			uStart = (float)regX / (float)tex.Width;
-			uEnd = uStart + ((float)regW / (float)tex.Width);
+			uStart = (float)regX / (float)tex.GetWidth();
+			uEnd = uStart + ((float)regW / (float)tex.GetWidth());
 
-			vStart = ((float)regY / (float)tex.Height);
-			vEnd = vStart + ((float)regH / (float)tex.Height);
+			vStart = ((float)regY / (float)tex.GetHeight());
+			vEnd = vStart + ((float)regH / (float)tex.GetHeight());
 
 			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(BL.X, BL.Y, 0);
 			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(TR.X, TR.Y, 0);
@@ -866,7 +866,7 @@ namespace Nucleus.ModelEditor
 			Texture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : Texture.MISSING;
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
-			Rlgl.SetTexture(((Texture2D)tex).Id);
+			Rlgl.SetTexture(tex.GetTextureHandle());
 
 			var color = Slot.GetColor();
 
@@ -881,11 +881,11 @@ namespace Nucleus.ModelEditor
 			Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 			if (triangles.Count > 0) {
 				float uStart, uEnd, vStart, vEnd;
-				uStart = (float)regX / (float)tex.Width;
-				uEnd = uStart + ((float)regW / (float)tex.Width);
+				uStart = (float)regX / (float)tex.GetWidth();
+				uEnd = uStart + ((float)regW / (float)tex.GetWidth());
 
-				vStart = ((float)regY / (float)tex.Height);
-				vEnd = vStart + ((float)regH / (float)tex.Height);
+				vStart = ((float)regY / (float)tex.GetHeight());
+				vEnd = vStart + ((float)regH / (float)tex.GetHeight());
 
 				bool block = false;
 				foreach (var tri in triangles) {

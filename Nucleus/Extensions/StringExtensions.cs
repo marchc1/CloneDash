@@ -5,6 +5,7 @@ namespace Nucleus.Extensions;
 public static class StringExtensions
 {
 	public static string FormatNumberByThousands(int n) => $"{n:n0}";
+
 	public static string FormatNumberByThousands(double n) => n % 1 == 0 ? $"{n:n0}" : $"{n:n}";
 
 	// todo: test

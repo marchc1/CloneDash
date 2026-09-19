@@ -1,6 +1,4 @@
-﻿using Nucleus.Common.Util;
-
-namespace Poly2Tri;
+﻿namespace Poly2Tri;
 
 internal struct SweepBasin
 {

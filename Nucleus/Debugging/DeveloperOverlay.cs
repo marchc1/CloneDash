@@ -2,7 +2,6 @@
 using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
-using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements.Visual;
@@ -23,7 +22,6 @@ public struct DeveloperOverlaySettings
 	public Element? Parent;
 }
 
-
 [MarkForStaticConstruction]
 public class DeveloperOverlay(Level level)
 {
@@ -35,6 +33,7 @@ public class DeveloperOverlay(Level level)
 
 	// Update only every 250ms because this whole class is a LOT of string allocations
 	public static readonly ConVar developer_overlay_update_interval = new ConVar(nameof(developer_overlay_update_interval), "250", FCvar.Saved, "Minimum milliseconds between developer overlay string updates");
+
 	private static double _throttledUpdater = 0;
 
 	public Level Level { get; } = level;
@@ -65,9 +64,9 @@ public class DeveloperOverlay(Level level)
 		DebugRecords.EnterScope();
 		{
 			DebugRecords.Write("Window Size", Level.FrameState.WindowSize);
-			DebugRecords.Write("Textures", Level.Textures.Count);
-			DebugRecords.Write("Texture Memory (CPU)", (Level.Textures.UsedBits_CPU >> 3).NiceBytes());
-			DebugRecords.Write("Texture Memory (GPU)", (Level.Textures.UsedBits >> 3).NiceBytes());
+			DebugRecords.Write("Textures", textures.GetTextureCount());
+			DebugRecords.Write("Texture Memory (CPU)", (textures.GetTotalBits(MemoryRealm.CPU) >> 3).NiceBytes());
+			DebugRecords.Write("Texture Memory (GPU)", (textures.GetTotalBits(MemoryRealm.GPU) >> 3).NiceBytes());
 			DebugRecords.Write("Font Memory (GPU)", Graphics2D.FontManager.GetUsedGPUBits().NiceBytes());
 		}
 		DebugRecords.ExitScope();
@@ -94,7 +93,6 @@ public class DeveloperOverlay(Level level)
 		}
 		DebugRecords.ExitScope();
 
-
 		// Only prints the class name right now anyway, so I commented it out
 
 		// DebugRecords.Write("Input");
@@ -108,24 +106,24 @@ public class DeveloperOverlay(Level level)
 
 	internal void SetUpDebugOverlays() {
 		UpdateGraph = new PerformanceGraph(Level.RootPanel);
-		UpdateGraph.		Anchor = Anchor.BottomRight;
-		UpdateGraph.		Origin = Anchor.BottomRight;
-		UpdateGraph.		Position = new Vector2F(-8, -8 + -52 + -16);
-		UpdateGraph.		Size = new Vector2F(400, 26);
+		UpdateGraph.Anchor = Anchor.BottomRight;
+		UpdateGraph.Origin = Anchor.BottomRight;
+		UpdateGraph.Position = new Vector2F(-8, -8 + -52 + -16);
+		UpdateGraph.Size = new Vector2F(400, 26);
 		UpdateGraph.Mode = (PerformanceGraph.GraphMode.CpuUpdateTime);
 
 		RenderGraph = new PerformanceGraph(Level.RootPanel);
-		RenderGraph.		Anchor = Anchor.BottomRight;
-		RenderGraph.		Origin = Anchor.BottomRight;
-		RenderGraph.		Position = new Vector2F(-8, -8 + -26 + -8);
-		RenderGraph.		Size = new Vector2F(400, 26);
+		RenderGraph.Anchor = Anchor.BottomRight;
+		RenderGraph.Origin = Anchor.BottomRight;
+		RenderGraph.Position = new Vector2F(-8, -8 + -26 + -8);
+		RenderGraph.Size = new Vector2F(400, 26);
 		RenderGraph.Mode = (PerformanceGraph.GraphMode.CpuRenderTime);
 
 		MemGraph = new PerformanceGraph(Level.RootPanel);
-		MemGraph.		Anchor = Anchor.BottomRight;
-		MemGraph.		Origin = Anchor.BottomRight;
-		MemGraph.		Position = new Vector2F(-8, -8);
-		MemGraph.		Size = new Vector2F(400, 26);
+		MemGraph.Anchor = Anchor.BottomRight;
+		MemGraph.Origin = Anchor.BottomRight;
+		MemGraph.Position = new Vector2F(-8, -8);
+		MemGraph.Size = new Vector2F(400, 26);
 		MemGraph.Mode = (PerformanceGraph.GraphMode.RamUsage);
 
 		EvaluatePerfGraphVisibility();
@@ -169,7 +167,7 @@ public class DeveloperOverlay(Level level)
 
 		switch (alignment.Vertical) {
 			case TextAlignment.Top: textY = offset.Y; break;
-			case TextAlignment.Center: textY = (Level.FrameState.WindowHeight / 2) - ((totalFields *  (lineHeight + separation)) / 2) + offset.Y; break;
+			case TextAlignment.Center: textY = (Level.FrameState.WindowHeight / 2) - ((totalFields * (lineHeight + separation)) / 2) + offset.Y; break;
 			case TextAlignment.Bottom: textY = (Level.FrameState.WindowHeight + offset.Y) - (totalFields * (lineHeight + separation)); break;
 			default: textY = 0; break;
 		}
@@ -183,17 +181,17 @@ public class DeveloperOverlay(Level level)
 
 		UpdateGraph.
 		Anchor = settings.PerfGraphAnchor;
-		UpdateGraph.		Origin = settings.PerfGraphAnchor;
-		UpdateGraph.		Position = offset + new Vector2F(0, (-8 + -52 + -16));
+		UpdateGraph.Origin = settings.PerfGraphAnchor;
+		UpdateGraph.Position = offset + new Vector2F(0, (-8 + -52 + -16));
 
 		RenderGraph.
 		Anchor = settings.PerfGraphAnchor;
-		RenderGraph.		Origin = settings.PerfGraphAnchor;
-		RenderGraph.		Position = offset + new Vector2F(0, -8 + -26 + -8);
+		RenderGraph.Origin = settings.PerfGraphAnchor;
+		RenderGraph.Position = offset + new Vector2F(0, -8 + -26 + -8);
 
 		MemGraph.
 		Anchor = settings.PerfGraphAnchor;
-		MemGraph.		Origin = settings.PerfGraphAnchor;
-		MemGraph.		Position = offset + new Vector2F(0, -8);
+		MemGraph.Origin = settings.PerfGraphAnchor;
+		MemGraph.Position = offset + new Vector2F(0, -8);
 	}
 }

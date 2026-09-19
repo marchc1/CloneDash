@@ -1,124 +1,126 @@
 ﻿using System.Numerics;
 
-namespace Nucleus.Types
+namespace Nucleus.Types;
+
+public enum TransformOrder
 {
-    public enum TransformOrder
-    {
-        PosRotScale,
-        ScaleRotPos,
-        RotScalePos,
-        RotPosScale
-    }
-    public struct TransformVQV
-    {
-        private Vector3 __position = Vector3.Zero;
-        private Quaternion __rotation = Quaternion.Identity;
-        private Vector3 __scaling = Vector3.Zero;
-        private bool __dirty = true;
-        private Matrix4x4 __cachedTransformMatrix = Matrix4x4.Identity;
+	PosRotScale,
+	ScaleRotPos,
+	RotScalePos,
+	RotPosScale
+}
 
-        public Vector3 Position {
-            get {
-                return __position;
-            }
-            set {
-                __position = value;
-                __dirty = true;
-            }
-        }
-        public Quaternion Rotation {
-            get {
-                return __rotation;
-            }
-            set {
-                __rotation = value;
-                __dirty = true;
-            }
-        }
-        public Vector3 Scale {
-            get {
-                return __scaling;
-            }
-            set {
-                __scaling = value;
-                __dirty = true;
-            }
-        }
+public struct TransformVQV
+{
+	private Matrix4x4 __cachedTransformMatrix = Matrix4x4.Identity;
+	private bool __dirty = true;
+	private Vector3 __position = Vector3.Zero;
+	private Quaternion __rotation = Quaternion.Identity;
+	private Vector3 __scaling = Vector3.Zero;
 
-        public TransformVQV() {
-            Position = Vector3.Zero;
-            Rotation = Quaternion.Identity;
-            Scale = Vector3.One;
-        }
+	public TransformVQV() {
+		Position = Vector3.Zero;
+		Rotation = Quaternion.Identity;
+		Scale = Vector3.One;
+	}
 
-        public TransformVQV(Vector3? pos = null, Quaternion? rot = null, Vector3? scale = null, TransformOrder? transformOrder = null) {
-            Position = pos ?? Vector3.Zero;
-            Rotation = rot ?? Quaternion.Identity;
-            Scale = scale ?? Vector3.One;
-            TransformOrder = transformOrder ?? TransformOrder.PosRotScale;
-        }
+	public TransformVQV(Vector3? pos = null, Quaternion? rot = null, Vector3? scale = null, TransformOrder? transformOrder = null) {
+		Position = pos ?? Vector3.Zero;
+		Rotation = rot ?? Quaternion.Identity;
+		Scale = scale ?? Vector3.One;
+		TransformOrder = transformOrder ?? TransformOrder.PosRotScale;
+	}
 
-        public static TransformVQV FromTQS(float[] translation, float[] quatrotation, float[] scale) {
-            TransformVQV ret = new();
+	public Matrix4x4 Matrix => AsMatrix();
 
-            ret.Position = new(translation[0], translation[1], translation[2]);
-            ret.Rotation = new(quatrotation[0], quatrotation[1], quatrotation[2], quatrotation[3]);
-            ret.Scale = new(scale[0], scale[1], scale[2]);
+	public Vector3 Position {
+		get {
+			return __position;
+		}
+		set {
+			__position = value;
+			__dirty = true;
+		}
+	}
 
-            return ret;
-        }
+	public Quaternion Rotation {
+		get {
+			return __rotation;
+		}
+		set {
+			__rotation = value;
+			__dirty = true;
+		}
+	}
 
-        public TransformOrder TransformOrder { get; set; } = TransformOrder.PosRotScale;
+	public Vector3 RotationEuler {
+		get {
+			var ret = NMath.QuaternionToEuler(Rotation);
 
-        private Matrix4x4 AsMatrix() {
-            if (!__dirty)
-                return __cachedTransformMatrix;
+			ret *= NMath.RAD2DEG;
+			return ret;
+		}
+	}
 
-            Vector3 pos = Position, scale = Scale;
-            Quaternion rot = Rotation;
+	public Vector3 Scale {
+		get {
+			return __scaling;
+		}
+		set {
+			__scaling = value;
+			__dirty = true;
+		}
+	}
 
-            var finalTranslation = NMath.MatrixTranslate(pos.X, pos.Y, pos.Z);
-            var finalRotation = NMath.QuaternionToMatrix(rot);
-            var finalScaling = NMath.MatrixScale(scale.X, scale.Z, scale.Y);
+	public TransformOrder TransformOrder { get; set; } = TransformOrder.PosRotScale;
 
-            switch (TransformOrder) {
-                case TransformOrder.PosRotScale: __cachedTransformMatrix = finalTranslation * finalRotation * finalScaling; break;
-                case TransformOrder.ScaleRotPos: __cachedTransformMatrix = finalScaling * finalRotation * finalTranslation; break;
-                case TransformOrder.RotScalePos: __cachedTransformMatrix = finalRotation * finalScaling * finalTranslation; break;
-                case TransformOrder.RotPosScale: __cachedTransformMatrix = finalRotation * finalTranslation * finalScaling; break;
-                default:
-                    throw new NotImplementedException();
-            }
-            __cachedTransformMatrix = __cachedTransformMatrix;
+	public static TransformVQV DecomposeMatrix(Matrix4x4 value) {
+		Vector3 pos;
+		Quaternion rot;
+		Vector3 scale;
 
-            return __cachedTransformMatrix;
-        }
+		Matrix4x4.Decompose(value, out scale, out rot, out pos);
 
-        public Matrix4x4 Matrix => AsMatrix();
+		rot *= -1;
+		scale = new(scale.X, scale.Z, scale.Y);
+		return new TransformVQV(pos, rot, scale);
+	}
 
-        public Vector3 RotationEuler {
-            get {
-                var ret = NMath.QuaternionToEuler(Rotation);
+	public static TransformVQV FromTQS(float[] translation, float[] quatrotation, float[] scale) {
+		TransformVQV ret = new();
 
-                ret *= NMath.RAD2DEG;
-                return ret;
-            }
-        }
+		ret.Position = new(translation[0], translation[1], translation[2]);
+		ret.Rotation = new(quatrotation[0], quatrotation[1], quatrotation[2], quatrotation[3]);
+		ret.Scale = new(scale[0], scale[1], scale[2]);
 
-        public override string ToString() {
-            return $"Transform V,V,V [pos: {Position}, ang: {Rotation} scale: {Scale}]";
-        }
+		return ret;
+	}
 
-        public static TransformVQV DecomposeMatrix(Matrix4x4 value) {
-            Vector3 pos;
-            Quaternion rot;
-            Vector3 scale;
+	public override string ToString() {
+		return $"Transform V,V,V [pos: {Position}, ang: {Rotation} scale: {Scale}]";
+	}
 
-            Matrix4x4.Decompose(value, out scale, out rot, out pos);
+	private Matrix4x4 AsMatrix() {
+		if (!__dirty)
+			return __cachedTransformMatrix;
 
-            rot *= -1;
-            scale = new(scale.X, scale.Z, scale.Y);
-            return new TransformVQV(pos, rot, scale);
-        }
-    }
+		Vector3 pos = Position, scale = Scale;
+		Quaternion rot = Rotation;
+
+		var finalTranslation = NMath.MatrixTranslate(pos.X, pos.Y, pos.Z);
+		var finalRotation = NMath.QuaternionToMatrix(rot);
+		var finalScaling = NMath.MatrixScale(scale.X, scale.Z, scale.Y);
+
+		switch (TransformOrder) {
+			case TransformOrder.PosRotScale: __cachedTransformMatrix = finalTranslation * finalRotation * finalScaling; break;
+			case TransformOrder.ScaleRotPos: __cachedTransformMatrix = finalScaling * finalRotation * finalTranslation; break;
+			case TransformOrder.RotScalePos: __cachedTransformMatrix = finalRotation * finalScaling * finalTranslation; break;
+			case TransformOrder.RotPosScale: __cachedTransformMatrix = finalRotation * finalTranslation * finalScaling; break;
+			default:
+				throw new NotImplementedException();
+		}
+		__cachedTransformMatrix = __cachedTransformMatrix;
+
+		return __cachedTransformMatrix;
+	}
 }

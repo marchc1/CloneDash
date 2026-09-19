@@ -1,5 +1,5 @@
-﻿namespace Raylib_cs;
-// (todo: fix namespace!)
+﻿namespace Nucleus.Common.Graphics;
+
 /// <summary>
 /// Texture parameters: filter mode<br/>
 /// NOTE 1: Filtering considers mipmaps if available in the texture<br/>

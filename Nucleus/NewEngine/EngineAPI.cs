@@ -1,25 +1,20 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Nucleus.Commands;
-using Nucleus.Common.Commands;
-using Nucleus.Common.Engine;
+﻿using Nucleus.Common.Engine;
 using Nucleus.Types;
-using System;
-using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
-using System.Text;
 
 namespace Nucleus.NewEngine;
 
 public class EngineAPI(IServiceProvider services) : IEngineAPI, IDisposable
 {
 	public StartupInfo StartupInfo;
+
 	public WindowInitialState WindowInitialState = new() {
 		Width = 1600,
 		Height = 900
 	};
+
 	internal List<MemberInfo>? filledDependencies = null;
+
 	public object? GetService(Type serviceType) => services.GetService(serviceType);
 
 	public void Dispose() {
@@ -38,9 +33,11 @@ public class EngineAPI(IServiceProvider services) : IEngineAPI, IDisposable
 	}
 
 	public ref readonly StartupInfo GetStartupInfo() => ref StartupInfo;
+
 	public void SetStartupInfo(in StartupInfo info) {
 		StartupInfo = info; // copy off
 	}
+
 	public void SetWindowInitialState(in WindowInitialState info) {
 		WindowInitialState = info;
 	}

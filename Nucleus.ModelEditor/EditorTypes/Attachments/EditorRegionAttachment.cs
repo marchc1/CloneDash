@@ -14,12 +14,14 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Nucleus.Common.Models;
+using Nucleus.Common.Images;
+using Nucleus.Common.Graphics;
 
 namespace Nucleus.ModelEditor
 {
 	public struct QuadPoints
 	{
-		public Texture Texture;
+		public ITexture Texture;
 		public IModelAtlasRegion? Region;
 		public Vector2F TL;
 		public Vector2F TR;
@@ -93,7 +95,7 @@ namespace Nucleus.ModelEditor
 
 			float width = regionH, height = regionW;
 			float widthDiv2 = width / 2, heightDiv2 = height / 2;
-			Texture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : Texture.MISSING;
+			ITexture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : textures.GetErrorTexture();
 
 			Vector2F TL = localized ? WorldTransform.LocalToWorld(-heightDiv2, -widthDiv2) : new(-heightDiv2, -widthDiv2);
 			Vector2F TR = localized ? WorldTransform.LocalToWorld(heightDiv2, -widthDiv2) : new(heightDiv2, -widthDiv2);
@@ -166,14 +168,14 @@ namespace Nucleus.ModelEditor
 			var quadpoints = this.QuadPoints();
 
 			IModelAtlasRegion? region = quadpoints.Region;
-			Texture tex = quadpoints.Texture;
+			ITexture tex = quadpoints.Texture;
 			Vector2F BL = quadpoints.TL, BR = quadpoints.TR, TL = quadpoints.BL, TR = quadpoints.BR;
 
 			int regX = 0, regY = 0, regW = 512, regH = 512;
 			region?.GetBounds(out regX, out regY, out regW, out regH);
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
-			Rlgl.SetTexture(((Texture2D)tex).Id);
+			Rlgl.SetTexture(tex.GetTextureHandle());
 
 			var c = Slot.GetColor();
 			float srM = c.R / 255f, sgM = c.G / 255f, sbM = c.B / 255f, saM = c.A / 255f;
@@ -182,11 +184,11 @@ namespace Nucleus.ModelEditor
 			Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
 
 			float uStart, uEnd, vStart, vEnd;
-			uStart = (float)regX / (float)tex.Width;
-			uEnd = uStart + ((float)regW / (float)tex.Width);
+			uStart = (float)regX / (float)tex.GetWidth();
+			uEnd = uStart + ((float)regW / (float)tex.GetWidth());
 
-			vStart = ((float)regY / (float)tex.Height);
-			vEnd = vStart + ((float)regH / (float)tex.Height);
+			vStart = ((float)regY / (float)tex.GetHeight());
+			vEnd = vStart + ((float)regH / (float)tex.GetHeight());
 
 			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(BL.X, BL.Y, 0);
 			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(TR.X, TR.Y, 0);
@@ -205,23 +207,6 @@ namespace Nucleus.ModelEditor
 			return gridPos.TestPointInQuad(quadpoints.TL, quadpoints.TR, quadpoints.BL, quadpoints.BR);
 		}
 
-		// TEMPORARY: Find a better home for these methods - after restructure-tests
-		public static Color GetPixelColor(Image image, Vector2F pos) {
-			// sanity checking
-			if (pos.X < 0) return Color.Blank;
-			if (pos.Y < 0) return Color.Blank;
-			if (pos.X >= image.Width) return Color.Blank;
-			if (pos.Y >= image.Height) return Color.Blank;
-
-			var size = Raylib.GetPixelDataSize(image.Width, image.Height, image.Format);
-			var sizePerPixel = size / (image.Width * image.Height);
-			nint src = nint.Add(image.GetDataSemiSafe(), sizePerPixel * (((int)pos.Y * image.Width) + (int)pos.X));
-			return Raylib.GetPixelColor(src, image.Format);
-		}
-
-		public bool IsTransparent(Image image, Vector2F pos) => GetPixelColor(image, pos).A <= 0;
-
-
 		public bool DidPassOpacity { get; private set; } = false;
 		/// <summary>
 		/// Tests the opacity of the image. Should only be called when you 
@@ -234,7 +219,7 @@ namespace Nucleus.ModelEditor
 			// Should only be called when the quad test passes, so if no image available,
 			// just return true and throw an assert for debugging
 			// Debug.Assert(quadpoints.Texture.HasCPUImage, "No CPU image available!");
-			if (!quadpoints.Texture.HasCPUImage) {
+			if (!quadpoints.Texture.HasCPUImage()) {
 				DidPassOpacity = true;
 				return true;
 			}
@@ -253,7 +238,7 @@ namespace Nucleus.ModelEditor
 			float trueX = (float)NMath.Remap(localPos.X, -regionWidth / 2, regionWidth / 2, regX, regX + regionWidth);
 			float trueY = (float)NMath.Remap(localPos.Y, regionHeight / 2, -regionHeight / 2, regY, regY + regionHeight);
 
-			bool alphatest = !IsTransparent(image, new(trueX, trueY));
+			bool alphatest = !image.IsTransparent(new(trueX, trueY));
 
 			// don't waste debugoverlay calls
 			/*

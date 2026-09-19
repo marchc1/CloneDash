@@ -17,6 +17,6 @@ public static class MemoryExtensions
 	}
 	extension(IManagedMemoryUnit inf)
 	{
-		public string NiceBytes() => NiceBytes(inf.UsedBytes);
+		public string NiceBytes(MemoryRealm realm) => NiceBytes(inf.GetUsedBytes(realm));
 	}
 }

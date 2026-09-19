@@ -28,7 +28,7 @@ public class CvarUtilities
 			return true;
 		}
 
-		if (var.IsFlagSet(FCvar.AlwaysDefault)){
+		if (var.IsFlagSet(FCvar.AlwaysDefault)) {
 			Logs.Warn($"Can't change {var.GetName()} while locked to its default value");
 			return true;
 		}
@@ -83,7 +83,7 @@ public class CvarUtilities
 			bool alwaysDefault = var.IsFlagSet(FCvar.AlwaysDefault);
 			if (save) {
 				ConVar convar = (ConVar)var;
-				if(allVars || strcmp(convar.GetSaveString(), convar.GetDefault()) != 0)
+				if (allVars || strcmp(convar.GetSaveString(), convar.GetDefault()) != 0)
 					writer.WriteLine($"{var.GetName()} \"{convar.GetSaveString()}\"");
 			}
 		}

@@ -27,6 +27,7 @@ public class MD1_SongChartEntity
 	public double HitTime;
 	public double ShowTime;
 	public double Length;
+	public double Dt;
 
 	/// <summary>
 	/// How much fever this entity can give to the palyer.

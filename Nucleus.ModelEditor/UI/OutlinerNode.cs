@@ -282,7 +282,7 @@ namespace Nucleus.ModelEditor
 		private void Expander_PaintOverride(Element self, float width, float height) {
 			var c = self.IsDepressed() ? 100 : self.IsHovered() ? 220 : 170;
 			Graphics2D.SetDrawColor(c, c, c);
-			Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile(Expanded ? "models/expanded.png" : "models/collapsed.png"));
+			Graphics2D.SetTexture((ITexture)UI.textures.LoadTextureFromFile(Expanded ? "models/expanded.png" : "models/collapsed.png"));
 			var s = 16;
 			Graphics2D.DrawTexturedRectangle(new Vector2F(width - 19, (height / 2) - (s / 2) - 1), new Vector2F(s), 0, new Vector2F(0.5f));
 		}
@@ -311,7 +311,7 @@ namespace Nucleus.ModelEditor
 			color = MixColorBasedOnMouseState(self, color, new(0, .6f, 1.2f, 1), new(0, 1, .5f, 1));
 
 			Graphics2D.SetDrawColor(color);
-			Graphics2D.SetTexture((ITexture)Level.Textures.LoadTextureFromFile("models/keyframe.png"));
+			Graphics2D.SetTexture((ITexture)textures.LoadTextureFromFile("models/keyframe.png"));
 			Graphics2D.DrawTexturedRectangle(RectangleF.FromPosAndSize(new(2), new(height - 4)));
 		}
 
@@ -323,7 +323,7 @@ namespace Nucleus.ModelEditor
 				var visColor = attachment.Slot.GetActiveAttachment() == attachment ? 185 : 80;
 				var c = self.IsDepressed() ? (visColor / 2) : self.IsHovered() ? (visColor + 35) : visColor;
 				Graphics2D.SetDrawColor(c, c, c);
-				Graphics2D.SetTexture((ITexture)UI.Level.Textures.LoadTextureFromFile("models/paperclip.png"));
+				Graphics2D.SetTexture((ITexture)UI.textures.LoadTextureFromFile("models/paperclip.png"));
 				Graphics2D.DrawTexturedRectangle(RectangleF.XYWH(4, 4, width - 8, height - 8), 0, new(0, 0));
 			}
 			else {
