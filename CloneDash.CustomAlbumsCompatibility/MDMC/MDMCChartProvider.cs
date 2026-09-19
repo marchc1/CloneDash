@@ -206,7 +206,7 @@ public class MDMCChartSongSourceState : BaseSongSource, ISongSourceState
 					}
 
 					var start = MDMCWebAPI.PageIdxToChartIdxStart(pageIdx);
-					for (int i = start; i < start + MDMCWebAPI.MAX_CHARTS_PER_PAGE; i++) {
+					for (int i = start; i < Math.Min(charts.Charts.Length, start + MDMCWebAPI.MAX_CHARTS_PER_PAGE); i++) {
 						ref readonly MDMCChart chart = ref charts.Charts[i - start];
 						if (Songs.Count <= i)
 							AddChartSelector(chart, true);
