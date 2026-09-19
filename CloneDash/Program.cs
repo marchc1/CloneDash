@@ -152,17 +152,22 @@ public class GameDLL : IGameDLL
 		}
 
 		// Initialize UNBEATABLE compat
-		if (UnbeatableWhiteLabelCompatibility.IsEnabled())
+		if (UnbeatableWhiteLabelCompatibility.IsEnabled()) {
+			Interlude.Spin(submessage: "Initializing the UNBEATABLE [white label] compatibility layer...");
 			UnbeatableWhiteLabelCompatibility.InitializeCompatibilityLayer();
+		}
 
 		// Load muse dash fonts
 		{
+			Interlude.Spin(submessage: "fonts: Loading Infinity Font from MD");
 			NucleusRegisterMDFont("Infinity Font", "InfinityFont_midiam_dot");
+			Interlude.Spin(submessage: "fonts: Loading Luckiest Guy from MD");
 			NucleusRegisterMDFont("Luckiest Guy", "LuckiestGuy-Regular");
+			Interlude.Spin(submessage: "fonts: Loading Snaps Taste from MD");
 			NucleusRegisterMDFont("Snaps Taste", "Snaps Taste");
 		}
 
-		Interlude.Spin();
+		Interlude.Spin(submessage: "Initializing Nucleus filesystem paths");
 
 		// This sets up some base directories for the filesystem (default assets at the tail, with custom at the head)
 		DiskSearchPath? musedash = null;
@@ -210,7 +215,7 @@ public class GameDLL : IGameDLL
 			InputSettings.offset_visual.AddFlags(FCvar.AlwaysDefault);
 		}
 
-		Interlude.Spin();
+		Interlude.Spin(submessage: "Ready!");
 		Interlude.End();
 
 		// Add an event listener to the singleton

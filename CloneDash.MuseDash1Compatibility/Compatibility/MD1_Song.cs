@@ -371,8 +371,9 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 		if (DashSheetOverrides.TryGetValue(mapID, out MD1_SongChart? sheet))
 			return sheet;
 
+		Interlude.Spin(submessage: "Producing asset file...");
 		LoadAssetFile();
-		Interlude.Spin();
+		Interlude.Spin(submessage: "Producing asset file...");
 
 		MD1_SongChart chart = new MD1_SongChart(this, mapID);
 		return chart;

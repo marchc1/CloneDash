@@ -94,6 +94,7 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 		};
 		worker.Start();
 
+		string? oldMessage = Interlude.GetCurrentMessage();
 		while (!progress.Done) {
 			Interlude.Spin(progress.Message, progress.SubMessage);
 			Thread.Sleep(16);
@@ -104,6 +105,8 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 
 		if (!HasAvcodec(cache))
 			throw new InvalidOperationException("FFmpeg download completed but no avcodec library was found in " + cache + ".");
+
+		Interlude.Spin(oldMessage, "Loaded FFmpeg");
 
 		FFmpegLoader.FFmpegPath = cache;
 		ffmpegReady = true;
@@ -209,7 +212,7 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 
 	public CinemaBackgroundGenerator(Stream stream, bool disposeStream = true) {
 		EnsureLoaded();
-		Interlude.Spin("Loading Cinema background...");
+		Interlude.Spin(submessage: "Loading Cinema background...");
 		var opts = new MediaOptions {
 			VideoPixelFormat = ImagePixelFormat.Rgba32,
 			StreamsToLoad = MediaMode.Video

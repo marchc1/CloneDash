@@ -102,6 +102,9 @@ public static class Interlude
 		inInterlude = true; Spin();   // render one interlude frame now
 	}
 
+	public static string? GetCurrentMessage() => loadMsg;
+	public static string? GetCurrentSubmessage() => loadSubMsg;
+
 	/// <summary>
 	/// Renders the interlude texture, progress, etc, and swaps the frame buffer.
 	/// It is automatically limited to 30 FPS updates; so you can call this repeatedly with minimal performance loss

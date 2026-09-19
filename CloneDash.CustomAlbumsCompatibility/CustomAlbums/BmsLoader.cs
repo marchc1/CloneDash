@@ -194,7 +194,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 		private static void LoadMusicData(JsonArray noteData) {
 			short noteId = 1;
 			foreach (var node in noteData) {
-				Interlude.Spin(submessage: "Reading Custom Albums chart...");
+				Interlude.Spin(submessage: "Reading Custom Albums chart... loading music data");
 				if (noteId == short.MaxValue) {
 					Logs.Warn($"Cannot process full chart, there are too many objects. Max objects is {short.MaxValue}.");
 					break;
@@ -256,7 +256,6 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			var geminiCache = new Dictionary<decimal, List<MusicData>>();
 
 			for (var i = 1; i < MusicDataManager.Data.Count; i++) {
-				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				var mData = MusicDataManager.Data[i];
 				mData.doubleIdx = -1;
 				MusicDataManager.Set(i, mData);
@@ -265,6 +264,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 					continue;
 
 				if (geminiCache.TryGetValue(mData.tick, out var geminiList)) {
+					Interlude.Spin(submessage: "Reading Custom Albums chart... processing geminis");
 					var isNoteGemini = Bms.BmsIds[mData.noteData.ibms_id ?? "00"] == Bms.BmsId.Gemini;
 					var isTargetGemini = false;
 					var target = new MusicData();
@@ -408,6 +408,8 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			var sceneIndex = int.TryParse(scene.Split('_')[1], out int i1) ? i1 : 0;
 
 			for (var i = 0; i < MusicDataManager.Data.Count; i++) {
+				Interlude.Spin(submessage: "Reading Custom Albums chart... processing delay");
+
 				var mData = MusicDataManager.Data[i];
 				if (!string.IsNullOrEmpty(mData.noteData?.ibms_id)) { // This shouldnt be null... wtf
 					var type = mData.noteData.GetNoteType();
@@ -419,7 +421,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 						// If not a pickup type, convert to most recent scene
 						if (type != NoteType.Hp && type != NoteType.Music) {
 							var prefix = prefabName[..2];
-							switch (prefix){
+							switch (prefix) {
 								case "00":
 								case "em":
 								case "bo":
@@ -467,6 +469,8 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			phaseGearConfig.ibms_id = "";
 
 			for (var i = 0; i < bossData.Count; i++) {
+				Interlude.Spin(submessage: "Reading Custom Albums chart... processing boss data");
+
 				var data = bossData[i]!;
 				var thisNoteData = data.noteData!;
 
@@ -572,18 +576,18 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			var noteData = bms.GetNoteData();
 			Logs.Info("Got note data");
 
-			LoadMusicData(noteData); Interlude.Spin(submessage: "Reading Custom Albums chart...");
-			MusicDataManager.Sort(); Interlude.Spin(submessage: "Reading Custom Albums chart...");
+			LoadMusicData(noteData);
+			Interlude.Spin(submessage: "Reading Custom Albums chart... sorting music data"); MusicDataManager.Sort();
 
-			ProcessBossData(bms); Interlude.Spin(submessage: "Reading Custom Albums chart...");
-			ProcessDelay(bms); Interlude.Spin(submessage: "Reading Custom Albums chart...");
-			MusicDataManager.Sort(); Interlude.Spin(submessage: "Reading Custom Albums chart...");
+			ProcessBossData(bms);
+			ProcessDelay(bms);
+			Interlude.Spin(submessage: "Reading Custom Albums chart... sorting music data"); MusicDataManager.Sort();
 
-			ProcessGeminis(); Interlude.Spin(submessage: "Reading Custom Albums chart...");
+			ProcessGeminis();
 
 			// Process the delay for each MusicData
 			foreach (var mData in MusicDataManager.Data) {
-				Interlude.Spin(submessage: "Reading Custom Albums chart...");
+				Interlude.Spin(submessage: "Reading Custom Albums chart... processing delay");
 				if (mData.configData == null) continue;
 				mData.tick -= _delay;
 				mData.showTick = decimal.Round(mData.tick - mData.dt, 2);
