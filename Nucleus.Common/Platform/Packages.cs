@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Nucleus;
 
 public static class Packages
