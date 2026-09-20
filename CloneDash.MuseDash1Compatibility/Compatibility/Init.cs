@@ -8,6 +8,8 @@ using Nucleus.Core;
 using Nucleus.Files;
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace CloneDash.Compatibility.MuseDash;
 
@@ -29,6 +31,14 @@ public static partial class MuseDash1Compatibility
 	}
 
 	public static char[] CodepointsInUse = null!;
+
+	static T? ReadJSON<T>(ReadOnlySpan<char> path) => JsonSerializer.Deserialize<T>(StreamingAssets.ReadText(path)!, new JsonSerializerOptions {
+		PropertyNameCaseInsensitive = true,
+		AllowTrailingCommas = true,
+		ReadCommentHandling = JsonCommentHandling.Skip,
+		NumberHandling = JsonNumberHandling.AllowReadingFromString,
+		IncludeFields = true
+	});
 
 	public static AppStatus InitializeCompatibilityLayer() {
 		if (Initialized)
@@ -56,9 +66,9 @@ public static partial class MuseDash1Compatibility
 
 		using (StaticSequentialProfiler.StartStackFrame("Parallel Process Critical JSON Files"))
 			Parallel.Invoke(
-				() => NoteDataManager = Filesystem.ReadJSON<List<NoteConfigData>>("musedash", "Assets/Static Resources/Data/Configs/others/notedata.json"),
-				() => Characters = Filesystem.ReadJSON<List<CharacterConfigData>>("musedash", "Assets/Static Resources/Data/Configs/others/character.json"),
-				() => CharactersEN = Filesystem.ReadJSON<List<CharacterLocalizationData>>("musedash", "Assets/Static Resources/Data/Configs/english/character_English.json")
+				() => NoteDataManager = ReadJSON<List<NoteConfigData>>("Assets/Static Resources/Data/Configs/others/notedata.json")!,
+				() => Characters = ReadJSON<List<CharacterConfigData>>("Assets/Static Resources/Data/Configs/others/character.json")!,
+				() => CharactersEN = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/english/character_English.json")!
 			);
 
 		System.Diagnostics.Debug.Assert(Characters.Count == CharactersEN.Count);

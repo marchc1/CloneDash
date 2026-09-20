@@ -683,20 +683,20 @@ namespace CloneDash.Compatibility.MuseDash
 			Stopwatch s = new Stopwatch();
 			s.Start();
 
-			Albums = Filesystem.ReadJSON<List<MuseDash1Album>>("musedash", "Assets/Static Resources/Data/Configs/others/albums.json");
+			Albums = ReadJSON<List<MuseDash1Album>>("Assets/Static Resources/Data/Configs/others/albums.json")!;
 			Albums.RemoveAll(x => x.JsonName == "");
 
 			ConcurrentBag<MD1_Song> workSongs = [];
 			using (StaticSequentialProfiler.StartStackFrame("Parallel Process Dash Structures"))
 				Parallel.ForEach(Albums, (album) => {
-					// var songs_raw = filesystem.ReadAllText("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
-					// var songsEN_raw = filesystem.ReadAllText("musedash", $"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
-					var songs = Filesystem.ReadJSON<List<MuseDashSongInfoJSON>>("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
-					var songsEN = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
-					var songsCN_S = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/chineses/{album.JsonName}_ChineseS.json");
-					var songsCN_T = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/chineset/{album.JsonName}_ChineseT.json");
-					var songsJP = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/japanese/{album.JsonName}_Japanese.json");
-					var songsKO = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/korean/{album.JsonName}_Korean.json");
+					// var songs_raw = filesystem.ReadAllText($"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
+					// var songsEN_raw = filesystem.ReadAllText($"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
+					var songs = ReadJSON<List<MuseDashSongInfoJSON>>($"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
+					var songsEN = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
+					var songsCN_S = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/chineses/{album.JsonName}_ChineseS.json");
+					var songsCN_T = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/chineset/{album.JsonName}_ChineseT.json");
+					var songsJP = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/japanese/{album.JsonName}_Japanese.json");
+					var songsKO = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/korean/{album.JsonName}_Korean.json");
 					// Debug.Assert(songs.Count == songsEN.Length);
 					// if (songs.Count != songsEN.Length) {
 					// 	Logs.Print($"inconsistency: {album.JsonName} songs length! songs ({songs.Count}) != songsEN ({songsEN.Length})");
