@@ -766,7 +766,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.RichPresenceUpdate")) {
 			RichPresenceSystem.SetPresence(new() {
 				Details = "In Game",
-				State = $"Muse Dash 1 - '{(gameParameters.Chart?.GetSong().FetchMetadata(HumanLanguage.GetCurrentLanguage()).Name ?? " <null>")}'"
+				State = $"Muse Dash 1 - '{(gameParameters.Chart == null ? " <null>" : gameParameters.Chart.GetSong().FetchMetadata().Name)}'"
 			});
 		}
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.PrepareShaders")) {
@@ -2026,7 +2026,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			return;
 		}
 
-		LevelTransitions.LoadSongChart($"Loading '{song.FetchMetadata(HumanLanguage.GetCurrentLanguage()).Name}'...", song.GetSheet(map), new() {
+		LevelTransitions.LoadSongChart($"Loading '{song.FetchMetadata().Name}'...", song.GetSheet(map), new() {
 			Autoplay = args.Arg(3, 0) == 1
 		});
 	}

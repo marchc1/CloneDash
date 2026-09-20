@@ -13,7 +13,7 @@ public class BeatmapIndexSong : ISong
 
 	public IAudioClip? PreviewClip;
 
-	public SongMetadata FetchMetadata(HumanLanguage desiredLanguage) {
+	public SongMetadata FetchMetadata() {
 		return new() {
 			Name = Name,
 			Author = "D-Cell Games"

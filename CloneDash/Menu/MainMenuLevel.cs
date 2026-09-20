@@ -172,7 +172,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			// Preload necessary assets.
 			song.GetDemoAudio();
 			song.GetCoverTexture();
-			song.FetchMetadata(HumanLanguage.GetCurrentLanguage());
+			song.FetchMetadata();
 			selector.NavigateToSong(song);
 			LevelTransitions.LoadSongSelector(selector, song);
 			return true;
@@ -495,7 +495,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	internal void LoadChartSelector(SongSelector selector, ISong song) {
 		// Load all slow-to-get info now before the Window loads
 		AudioPlaybackHandle track = selector.ActiveTrack;
-		var info = song.FetchMetadata(HumanLanguage.GetCurrentLanguage());
+		var info = song.FetchMetadata();
 		selector.FlyAway = 1;
 
 		LevelSelectorPanel levelSelector = new LevelSelectorPanel(RootPanel, selector);
@@ -559,7 +559,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		List<LevelSelectorSelectDifficultyButton> btns = [];
 		foreach (var chart in song.GetCharts()) {
-			var chartInfo = chart.FetchMetadata(HumanLanguage.GetCurrentLanguage());
+			var chartInfo = chart.FetchMetadata();
 			var b = CreateDifficulty(difficulties, chart, in chartInfo);
 			if (b != null)
 				btns.Add(b);
@@ -585,7 +585,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 
 	public void LoadChartSheetLevel(ISongChart chart, bool autoplay) {
-		LevelTransitions.LoadSongChart($"Loading '{chart.GetSong().FetchMetadata(HumanLanguage.GetCurrentLanguage()).Name}'...", chart, new() {
+		LevelTransitions.LoadSongChart($"Loading '{chart.GetSong().FetchMetadata().Name}'...", chart, new() {
 			Autoplay = autoplay
 		});
 	}

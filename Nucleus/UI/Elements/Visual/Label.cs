@@ -115,15 +115,16 @@ public class Label : Element, ITextElement
 		ReadOnlySpan<char> font = Font;
 		float curTextSize = TextSize;
 		Span<TextRange> ranges = textRanges.AsSpan();
+		ReadOnlySpan<char> text = localize.Find(Text);
 
 		Vector2F size;
 		if (ranges.Length <= 0) {
-			size = Graphics2D.GetTextSize(Text, font, curTextSize);
+			size = Graphics2D.GetTextSize(text, font, curTextSize);
 		}
 		else {
 			size = default;
 			foreach (var range in ranges) {
-				ReadOnlySpan<char> subtext = range.Truncate ? range.TruncateText : Text[range.Start..range.End];
+				ReadOnlySpan<char> subtext = range.Truncate ? range.TruncateText : text[range.Start..range.End];
 				var rangeSize = Graphics2D.GetTextSize(subtext, font, curTextSize);
 				size = new(Math.Max(size.X, rangeSize.X), size.Y + rangeSize.Y);
 				if (range.Truncate)
@@ -223,7 +224,7 @@ public class Label : Element, ITextElement
 		if (textOverflowMode == TextOverflowMode.None)
 			return;
 
-		ReadOnlySpan<char> text = Text;
+		ReadOnlySpan<char> text = localize.Find(Text);
 		ReadOnlySpan<char> font = Font;
 		float textSize = GetRenderTextSize();
 		TextRange workingRange = new() { };
@@ -355,7 +356,7 @@ public class Label : Element, ITextElement
 
 		Graphics2D.SetDrawColor(textC);
 
-		ReadOnlySpan<char> text = Text;
+		ReadOnlySpan<char> text = localize.Find(Text);
 		ReadOnlySpan<char> font = Font;
 		float textSize = GetRenderTextSize();
 
@@ -373,7 +374,7 @@ public class Label : Element, ITextElement
 		}
 
 		foreach (var range in ranges) {
-			ReadOnlySpan<char> subtext = range.Truncate ? range.TruncateText : Text[range.Start..range.End];
+			ReadOnlySpan<char> subtext = range.Truncate ? range.TruncateText : text[range.Start..range.End];
 			Vector2F drawPos = startDrawingPosition;
 			switch (horizontal) {
 				case TextAlignment.Center: drawPos.X = width / 2; break;

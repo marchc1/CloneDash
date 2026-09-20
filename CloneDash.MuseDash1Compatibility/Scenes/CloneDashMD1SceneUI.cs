@@ -104,13 +104,15 @@ public class StatisticsPanel : Panel
 		var fs = 24;
 		var y = 0;
 
-		var metadata = chart.GetSong().FetchMetadata(HumanLanguage.GetCurrentLanguage());
-
-		Match boldRegexMatch = Util.BoldRegex.Match(metadata.Name);
-		Graphics2D.DrawText(16, 16 + y,
-							boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : metadata.Name,
-							boldRegexMatch.Success ? Graphics2D.UI_MONO_BOLD_FONT_NAME : Graphics2D.UI_CN_JP_FONT_NAME,
-							fs);
+		var metadata = chart.GetSong().FetchMetadata();
+		ReadOnlySpan<char> nameSpan = metadata.Name;
+		var matchEnumerator = Util.BoldRegex.EnumerateMatches(nameSpan);
+		bool isSuccess = matchEnumerator.MoveNext();
+		ReadOnlySpan<char> textToDraw = isSuccess
+			? nameSpan.Slice(matchEnumerator.Current.Index, matchEnumerator.Current.Length)
+			: nameSpan;
+		string fontName = isSuccess ? Graphics2D.UI_MONO_BOLD_FONT_NAME : Graphics2D.UI_CN_JP_FONT_NAME;
+		Graphics2D.DrawText(16, 16 + y, textToDraw, fontName, fs);
 		y += fs + 4;
 
 		RenderOneLine($"      Rating: {chart.GetRatingNumber()}", fs, ref y);

@@ -9,6 +9,7 @@ using Nucleus.UI;
 using Raylib_cs;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Nucleus.Core
@@ -170,7 +171,7 @@ namespace Nucleus.Core
 			public string Font;
 			public Vector2F RelativePos;
 		}
-
+		
 		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize)
 			=> Raylib.DrawTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
 		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize)

@@ -1,4 +1,6 @@
 ﻿using Newtonsoft.Json;
+using System.Collections.Concurrent;
+using System.Globalization;
 
 namespace CloneDash.Compatibility.MuseDash;
 
@@ -9,6 +11,8 @@ public class CharacterLocalizationData
 	[JsonProperty("cosNames")] public string[] CosNames;
 	[JsonProperty("description")] public string Description;
 	[JsonProperty("skill")] public string Skill;
+	[JsonProperty("chipName")] public string ChipName;
+	[JsonProperty("chipDescription")] public string ChipDescription;
 	[JsonProperty("cv")] public string CV;
 	[JsonProperty("cvs")] public string[] CVs;
 	[JsonProperty("expressions")] public string[][] Expressions;
@@ -39,7 +43,7 @@ public class CharacterSkinData
 public class CharacterConfigData
 
 {
-	public Dictionary<string, CharacterLocalizationData> Localization = [];
+	public readonly Dictionary<CultureInfo, CharacterLocalizationData> Localization = [];
 
 	[JsonProperty("characterName")] public string CharacterName { get; set; }
 	[JsonProperty("cosName")] public string CosName { get; set; }
@@ -94,6 +98,29 @@ public class CharacterConfigData
 		splits.MoveNext();
 		splits.MoveNext();
 		return text[splits.Current].Trim();
+	}
+
+
+	internal void PrepareLocalization(){
+		CharacterName = $"#{MainShow}_{nameof(CharacterName)}";
+		CosName = $"#{MainShow}_{nameof(CosName)}";
+		Description = $"#{MainShow}_{nameof(Description)}";
+		Skill = $"#{MainShow}_{nameof(Skill)}";
+		ChipName = $"#{MainShow}_{nameof(ChipName)}";
+		ChipDescription = $"#{MainShow}_{nameof(ChipDescription)}";
+		Cv = $"#{MainShow}_{nameof(Cv)}";
+	}
+
+	internal void AddLocalization(CultureInfo lang, CharacterLocalizationData characterLocalizationData) {
+		Localization[lang] = characterLocalizationData;
+
+		localize.AddString($"#{MainShow}_{nameof(CharacterName)}", characterLocalizationData.CharacterName, lang);
+		localize.AddString($"#{MainShow}_{nameof(CosName)}", characterLocalizationData.CosName, lang);
+		localize.AddString($"#{MainShow}_{nameof(Description)}", characterLocalizationData.Description, lang);
+		localize.AddString($"#{MainShow}_{nameof(Skill)}", characterLocalizationData.Skill, lang);
+		localize.AddString($"#{MainShow}_{nameof(ChipName)}", characterLocalizationData.ChipName, lang);
+		localize.AddString($"#{MainShow}_{nameof(ChipDescription)}", characterLocalizationData.ChipDescription, lang);
+		localize.AddString($"#{MainShow}_{nameof(Cv)}", characterLocalizationData.CV, lang);
 	}
 }
 

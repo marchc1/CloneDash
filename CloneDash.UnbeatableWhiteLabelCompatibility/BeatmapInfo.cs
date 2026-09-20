@@ -22,14 +22,13 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 
 	MD1_GamemodeData? GamemodeData;
 
-	public SongChartMetadata FetchMetadata(HumanLanguage desiredLanguage) {
+	public SongChartMetadata FetchMetadata() {
 		return new() {
 			ChartAuthors = "D-Cell Games",
 			Difficulty = "1",
 			DifficultyName = Difficulty,
 			Color = new Nucleus.Common.Types.Color(115, 55, 55),
 			GamemodeName = "Muse Dash 1",
-			ReturnedLanguage = HumanLanguage.English,
 		};
 	}
 

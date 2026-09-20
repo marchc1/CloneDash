@@ -2,6 +2,7 @@
 using Nucleus.Common.Commands;
 using Nucleus.Common.FileSystem;
 using Nucleus.Common.Graphics;
+using Nucleus.Common.Localization;
 
 namespace Nucleus.Common;
 
@@ -14,6 +15,7 @@ public static class CommonDependencies
 	[Dependency] public static IGraphicsHardwareConfig gfxHardwareConfig = null!;
 	[Dependency] public static GlobalVariablesBase globals = new();
 	[Dependency] public static IFileSystem filesystem = null!;
+	[Dependency] public static ILocalize localize = null!;
 	[Dependency] public static ITextureManager textures = null!;
 #pragma warning restore CA2211 // Non-constant fields should not be visible
 }

@@ -15,28 +15,28 @@ namespace CloneDash.Characters;
 /// </summary>
 public interface ICharacterDescriptor : IUniquelyIdentifiableObject
 {
-	ReadOnlySpan<char> GetName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage);
+	ReadOnlySpan<char> GetName();
 	/// <summary>
 	/// Gets the human-friendly character name
 	/// </summary>
-	ReadOnlySpan<char> GetCharacterName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage);
+	ReadOnlySpan<char> GetCharacterName();
 	/// <summary>
 	/// Gets the human-friendly cosplay name
 	/// </summary>
-	ReadOnlySpan<char> GetCosplayName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage);
+	ReadOnlySpan<char> GetCosplayName();
 	/// <summary>
 	/// Gets the human-friendly character description
 	/// </summary>
-	ReadOnlySpan<char> GetDescription(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage);
+	ReadOnlySpan<char> GetDescription();
 	ITexture? GetThumbnailTexture();
 	/// <summary>
 	/// Gets the human-friendly author name
 	/// </summary>
-	ReadOnlySpan<char> GetAuthor(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage);
+	ReadOnlySpan<char> GetAuthor();
 	/// <summary>
 	/// Gets the human-friendly perk description
 	/// </summary>
-	ReadOnlySpan<char> GetPerk(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage);
+	ReadOnlySpan<char> GetPerk();
 
 	/// <summary>
 	/// Checks if the character supports the provided gamemode.

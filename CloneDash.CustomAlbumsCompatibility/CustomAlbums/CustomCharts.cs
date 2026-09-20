@@ -10,6 +10,7 @@ using Nucleus.Audio;
 using Nucleus.Common.Audio;
 using Nucleus.Common.FileSystem;
 using Nucleus.Common.Graphics;
+using Nucleus.Common.Localization;
 using Nucleus.Core;
 using Nucleus.Files;
 using Raylib_cs;
@@ -74,8 +75,9 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				AddBaseJSONInfo(new() {
 					Name = webChart.Title,
 					Author = webChart.Artist,
-				});
-				AddLocalizedJSONInfo(Common.HumanLanguage.English, webChart.TitleRomanized, null);
+				}, doNotLocalize: true);
+
+				AddLocalizedInfo(ILocalize.English, webChart.TitleRomanized, webChart.Artist);
 			}
 
 			public override ReadOnlySpan<char> GetUUID() => UsesWebChart ? $"song/musedash1customs/{WebChart.ID}" : $"song/musedash1customs/{Filepath}";
@@ -204,7 +206,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 					AddBaseJSONInfo(new() {
 						Name = info.name,
 						Author = info.author
-					});
+					}, doNotLocalize: true);
 
 					MD1_SongInfo ret = new() {
 						BPM = info.bpm,
@@ -300,7 +302,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (bms == null) throw new Exception("BMS parsing exception");
 				var stageInfo = BmsLoader.TransmuteData(bms);
-				stageInfo.mapName = FetchMetadata().Name;
+				stageInfo.mapName = new(FetchMetadata().Name);
 				stageInfo.difficulty = difficulty;
 				stageInfo.scene = bms.Info["GENRE"]?.GetValue<string>() ?? string.Empty;
 				stageInfo.bpm = bms.Bpm;

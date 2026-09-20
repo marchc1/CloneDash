@@ -223,7 +223,7 @@ public class UnbeatableWhiteLabelChartProvider : IChartSongProvider
 	public ISong? FindSongByName(ReadOnlySpan<char> name) {
 		name = name.SliceNullTerminatedString();
 		foreach (var song in UnbeatableWhiteLabelCompatibility.BeatmapIndex.Songs) {
-			if (name.Equals(song.FetchMetadata(HumanLanguage.GetCurrentLanguage()).Name, StringComparison.InvariantCultureIgnoreCase))
+			if (name.Equals(song.FetchMetadata().Name, StringComparison.InvariantCultureIgnoreCase))
 				return song;
 		}
 		return null;

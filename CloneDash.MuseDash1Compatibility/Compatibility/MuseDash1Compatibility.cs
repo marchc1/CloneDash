@@ -20,6 +20,7 @@ using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Images;
+using Nucleus.Common.Localization;
 using Nucleus.Common.Models;
 using Nucleus.Engine;
 using Nucleus.Files;
@@ -34,6 +35,7 @@ using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -241,9 +243,13 @@ namespace CloneDash.Compatibility.MuseDash
 		public static FrozenDictionary<string, NoteConfigData> IBMSToNote { get; private set; } = null!;
 		public static FrozenDictionary<string, NoteConfigData> UIDToNote { get; private set; } = null!;
 
-		public static List<CharacterConfigData> Characters { get; set; }
-		public static List<CharacterLocalizationData> CharactersEN { get; set; }
-		public static List<NoteConfigData> NoteDataManager { get; set; }
+		public static List<CharacterConfigData> Characters { get; set; } = null!;
+		public static List<CharacterLocalizationData> CharactersEN { get; set; } = [];
+		public static List<CharacterLocalizationData> CharactersZHCN { get; set; } = [];
+		public static List<CharacterLocalizationData> CharactersZHTW { get; set; } = [];
+		public static List<CharacterLocalizationData> CharactersJP { get; set; } = [];
+		public static List<CharacterLocalizationData> CharactersKO { get; set; } = [];
+		public static List<NoteConfigData> NoteDataManager { get; set; } = null!;
 
 		public static string BuildTarget { get; private set; }
 		public static string StandalonePlatform { get; private set; }
@@ -687,6 +693,7 @@ namespace CloneDash.Compatibility.MuseDash
 			Albums.RemoveAll(x => x.JsonName == "");
 
 			ConcurrentBag<MD1_Song> workSongs = [];
+			ConcurrentBag<HashSet<char>> workCharCodepoints = [];
 			using (StaticSequentialProfiler.StartStackFrame("Parallel Process Dash Structures"))
 				Parallel.ForEach(Albums, (album) => {
 					// var songs_raw = filesystem.ReadAllText($"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
@@ -697,29 +704,31 @@ namespace CloneDash.Compatibility.MuseDash
 					var songsCN_T = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/chineset/{album.JsonName}_ChineseT.json");
 					var songsJP = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/japanese/{album.JsonName}_Japanese.json");
 					var songsKO = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/korean/{album.JsonName}_Korean.json");
-					// Debug.Assert(songs.Count == songsEN.Length);
-					// if (songs.Count != songsEN.Length) {
-					// 	Logs.Print($"inconsistency: {album.JsonName} songs length! songs ({songs.Count}) != songsEN ({songsEN.Length})");
-					// 	for (int i = 0; i < songs.Count; i++) Logs.Print($"    song   #{i}: {songs[i].Name}");
-					// 	for (int i = 0; i < songsEN.Length; i++) Logs.Print($"    songEN #{i}: {songsEN[i].name}");
-					// }
+
 					var songsFinal = new MD1_Song[songs.Count];
 
 					for (int i = 0; i < songs.Count; i++) {
 						PatchSong(songs, i);
 						var song = new MD1_Song();
 						song.AddBaseJSONInfo(songs[i]);
-						song.AddLocalizedJSONInfo(HumanLanguage.English, songsEN[i].name, songsEN[i].author);
-						song.AddLocalizedJSONInfo(HumanLanguage.SimplifiedChinese, songsCN_S[i].name, songsCN_S[i].author);
-						song.AddLocalizedJSONInfo(HumanLanguage.TraditionalChinese, songsCN_T[i].name, songsCN_T[i].author);
-						song.AddLocalizedJSONInfo(HumanLanguage.Japanese, songsJP[i].name, songsJP[i].author);
-						song.AddLocalizedJSONInfo(HumanLanguage.Korean, songsKO[i].name, songsKO[i].author);
+
+						if (songsEN != null)
+							song.AddLocalizedInfo(ILocalize.English, songsEN[i].name, songsEN[i].author);
+						if (songsCN_S != null)
+							song.AddLocalizedInfo(ILocalize.ChineseSimplified, songsCN_S[i].name, songsCN_S[i].author);
+						if (songsCN_T != null)
+							song.AddLocalizedInfo(ILocalize.ChineseTraditional, songsCN_T[i].name, songsCN_T[i].author);
+						if (songsJP != null)
+							song.AddLocalizedInfo(ILocalize.Japanese, songsJP[i].name, songsJP[i].author);
+						if (songsKO != null)
+							song.AddLocalizedInfo(ILocalize.Korean, songsKO[i].name, songsKO[i].author);
+
 						workSongs.Add(song);
 					}
 				});
 
 			Songs = [.. workSongs];
-			Songs.Sort((x, y) => x.FetchMetadata(HumanLanguage.Any).Name.CompareTo(y.FetchMetadata(HumanLanguage.Any).Name));
+			Songs.Sort((x, y) => x.FetchMetadata().Name.CompareTo(y.FetchMetadata().Name, StringComparison.InvariantCulture));
 #if I_AM_LAZY_I_WANT_TO_KNOW_THIS_NUMBER
 			Logs.Info($"total songs: {Songs.Count}, charts: {Songs.Sum(x => {
 				if (x.GetInfo() == null)
@@ -733,17 +742,6 @@ namespace CloneDash.Compatibility.MuseDash
 				return count;
 			})}");
 #endif
-			HashSet<char> codepoints = [];
-			foreach (var song in Songs) {
-				foreach (MuseDashSongInfoJSON info in song.GetAvailableInfo()) {
-					string name = info.Name, author = info.Author;
-					for (int i = 0, c = name.Length; i < c; i++)
-						codepoints.Add(name[i]);
-					for (int i = 0, c = author.Length; i < c; i++)
-						codepoints.Add(author[i]);
-				}
-			}
-			CodepointsInUse = codepoints.ToArray();
 		}
 
 		const string CHAOS_UID = "33-4";

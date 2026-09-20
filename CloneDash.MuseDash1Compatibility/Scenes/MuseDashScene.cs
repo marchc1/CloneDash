@@ -340,11 +340,10 @@ public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
 		return default;
 	}
 
-	public SceneMetadata FetchMetadata(in HumanLanguage desiredLanguage) {
+	public SceneMetadata FetchMetadata() {
 		return new() {
 			Name = SceneInfo.OfficialName,
 			Artists = "PeroPeroGames",
-			Language = HumanLanguage.English,
 		};
 	}
 

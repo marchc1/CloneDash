@@ -14,12 +14,14 @@ using Nucleus.Audio;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Images;
+using Nucleus.Core;
 using Nucleus.Types;
 using OdinSerializer;
 using Raylib_cs;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text.Json.Serialization;
 using static CloneDash.Compatibility.Unity.UnityAssetUtils;
 using JsonIgnoreAttribute = Newtonsoft.Json.JsonIgnoreAttribute;
@@ -214,18 +216,11 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 		return null;
 	}
 
-	public SongMetadata FetchMetadata() => FetchMetadata(HumanLanguage.GetCurrentLanguage()); 
-	public SongMetadata FetchMetadata(HumanLanguage desiredLanguage) {
-		if (__jsonInfoLanguages.TryGetValue(desiredLanguage, out MuseDashSongInfoJSON? languageInfo))
-			return new() {
-				Name = languageInfo.Name ?? __jsonInfo.Name,
-				Author = languageInfo.Author ?? __jsonInfo.Author
-			};
-		else
-			return new() {
-				Name = __jsonInfo.Name,
-				Author = __jsonInfo.Author
-			};
+	public SongMetadata FetchMetadata() {
+		return new() {
+			Name = localize.Find(__jsonInfo.Name),
+			Author = localize.Find(__jsonInfo.Author)
+		};
 	}
 
 	public IReadOnlyList<ISongChart> GetCharts() => LoadSheets();
@@ -255,18 +250,27 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 		});
 	}
 
-	private readonly MuseDashSongInfoJSON __jsonInfo = new();
-	private readonly Dictionary<HumanLanguage, MuseDashSongInfoJSON> __jsonInfoLanguages = [];
+	readonly MuseDashSongInfoJSON __jsonInfo = new();
 
-	public void AddBaseJSONInfo(MuseDashSongInfoJSON baseInfo) {
+	public void AddBaseJSONInfo(MuseDashSongInfoJSON baseInfo, bool doNotLocalize = false) {
 		baseInfo.CloneInto(__jsonInfo);
+		Graphics2D.RegisterCodepoints(baseInfo.Name);
+		Graphics2D.RegisterCodepoints(baseInfo.Author);
+		if (!doNotLocalize) {
+			__jsonInfo.Name = $"#{GetUUID()}_NAME";
+			__jsonInfo.Author = $"#{GetUUID()}_AUTHOR";
+		}
 	}
+	public void AddLocalizedInfo(CultureInfo lang, ReadOnlySpan<char> nameValue, ReadOnlySpan<char> authorValue, HashSet<char>? codepoints = null) {
+		if (codepoints != null) {
+			for (int i = 0, c = nameValue.Length; i < c; i++) codepoints.Add(nameValue[i]);
+			for (int i = 0, c = authorValue.Length; i < c; i++) codepoints.Add(authorValue[i]);
+		}
+		localize.AddString(__jsonInfo.Name, nameValue, lang);
+		localize.AddString(__jsonInfo.Author, authorValue, lang);
 
-	public void AddLocalizedJSONInfo(HumanLanguage lang, string? name, string? author) {
-		__jsonInfoLanguages[lang] = new() {
-			Name = name!,
-			Author = author!
-		};
+		Graphics2D.RegisterCodepoints(nameValue);
+		Graphics2D.RegisterCodepoints(authorValue);
 	}
 
 	public static string? GetFixedFilename(string givenBase, string fileName, [NotNullWhen(true)] bool throwExp = true) {
@@ -452,7 +456,5 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 	public IEnumerable<MuseDashSongInfoJSON> GetAvailableInfo() {
 		if (__jsonInfo != null)
 			yield return __jsonInfo;
-		foreach (var info in __jsonInfoLanguages)
-			yield return info.Value;
 	}
 }

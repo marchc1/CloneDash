@@ -4,6 +4,7 @@ using CloneDash.Game;
 
 using Nucleus;
 using Nucleus.Common;
+using Nucleus.Common.Localization;
 using Nucleus.Core;
 using Nucleus.Files;
 using System.Collections.Concurrent;
@@ -29,8 +30,6 @@ public static partial class MuseDash1Compatibility
 		return AppStatus.OperatingSystemNotCompatible;
 #endif
 	}
-
-	public static char[] CodepointsInUse = null!;
 
 	static T? ReadJSON<T>(ReadOnlySpan<char> path) => JsonSerializer.Deserialize<T>(StreamingAssets.ReadText(path)!, new JsonSerializerOptions {
 		PropertyNameCaseInsensitive = true,
@@ -68,13 +67,29 @@ public static partial class MuseDash1Compatibility
 			Parallel.Invoke(
 				() => NoteDataManager = ReadJSON<List<NoteConfigData>>("Assets/Static Resources/Data/Configs/others/notedata.json")!,
 				() => Characters = ReadJSON<List<CharacterConfigData>>("Assets/Static Resources/Data/Configs/others/character.json")!,
-				() => CharactersEN = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/english/character_English.json")!
+				() => CharactersEN = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/english/character_English.json")!,
+				() => CharactersZHCN = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/chineses/character_ChineseS.json")!,
+				() => CharactersZHTW = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/chineset/character_ChineseT.json")!,
+				() => CharactersJP = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/japanese/character_Japanese.json")!,
+				() => CharactersKO = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/korean/character_Korean.json")!
 			);
 
 		System.Diagnostics.Debug.Assert(Characters.Count == CharactersEN.Count);
+		System.Diagnostics.Debug.Assert(Characters.Count == CharactersZHCN.Count);
+		System.Diagnostics.Debug.Assert(Characters.Count == CharactersZHTW.Count);
+		System.Diagnostics.Debug.Assert(Characters.Count == CharactersJP.Count);
+		System.Diagnostics.Debug.Assert(Characters.Count == CharactersKO.Count);
 
 		using (StaticSequentialProfiler.StartStackFrame("Parallel Process Localization"))
-			Parallel.For(0, Characters.Count, static i => Characters[i].Localization["english"] = CharactersEN[i]);
+			Parallel.For(0, Characters.Count, static i => {
+			var ch = Characters[i];
+				ch.PrepareLocalization();
+				ch.AddLocalization(ILocalize.English, CharactersEN[i]);
+				ch.AddLocalization(ILocalize.ChineseSimplified, CharactersZHCN[i]);
+				ch.AddLocalization(ILocalize.ChineseTraditional, CharactersZHTW[i]);
+				ch.AddLocalization(ILocalize.Japanese, CharactersJP[i]);
+				ch.AddLocalization(ILocalize.Korean, CharactersKO[i]);
+			});
 
 		Interlude.Spin(submessage: "Muse Dash Compat: Deserialized note config...");
 
@@ -102,10 +117,6 @@ public static partial class MuseDash1Compatibility
 		using (StaticSequentialProfiler.StartStackFrame("BuildDashStructures"))
 			BuildDashStructures();
 		Interlude.Spin(submessage: "Muse Dash Compat: Structures ready!");
-
-		using (StaticSequentialProfiler.StartStackFrame("Graphics2D.RegisterCodepoints"))
-			Graphics2D.RegisterCodepoints(MuseDash1Compatibility.CodepointsInUse);
-		Interlude.Spin(submessage: "Muse Dash Compat: Fonts ready!");
 
 		Initialized = true;
 

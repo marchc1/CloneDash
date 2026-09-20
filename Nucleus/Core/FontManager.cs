@@ -5,6 +5,7 @@ using Nucleus.Files;
 using Nucleus.Util;
 
 using Raylib_cs;
+using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -94,8 +95,12 @@ namespace Nucleus.Core
 	public class FontManager
 	{
 		private readonly UtlSymbolTableMT symbols = new();
-		private readonly HashSet<int> RegisteredCodepointsHash = new HashSet<int>();
-		private readonly List<int> RegisteredCodepoints = new List<int>();
+		private readonly ConcurrentDictionary<int, bool> RegisteredCodepointsHash = [];
+
+		// Built fresh from the concurrent set every time a font is created. Codepoints can be
+		// registered from background threads (parallel song loading), so caching this array
+		// races with those writers and can leave a stale/partial snapshot behind.
+		private int[] GetRegisteredCodepoints() => [.. RegisteredCodepointsHash.Keys];
 
 		public readonly Dictionary<UtlSymId_t, FontEntry> FontNameToFilepath = new();
 
@@ -127,20 +132,16 @@ namespace Nucleus.Core
 			FontsMarkedForDeath.Add(font.Key);
 		}
 
-		private bool FullFontRefreshRequired = false;
+		private volatile bool FullFontRefreshRequired = false;
 		private bool AreFontsMarkedForDeath => FontsMarkedForDeath.Count != 0;
 
 		public void RegisterCodepoints(ReadOnlySpan<char> chars) {
-			bool dirty = false;
 			for (int i = 0; i < chars.Length;) {
 				Rune unicodeRune = chars.GetRuneAt(i);
-				bool added = RegisteredCodepointsHash.Add(unicodeRune.Value);
-				FullFontRefreshRequired |= added;
-				if (added)
-					RegisteredCodepoints.Add(unicodeRune.Value);
+				if (RegisteredCodepointsHash.TryAdd(unicodeRune.Value, true))
+					FullFontRefreshRequired = true;
 				i += unicodeRune.Utf16SequenceLength;
 			}
-			FullFontRefreshRequired |= dirty;
 		}
 
 		public FontManager(Dictionary<string, FontEntry> fonttable, string[]? codepoints = null) {
@@ -190,32 +191,32 @@ namespace Nucleus.Core
 				// determine if fonts need to be cleaned due to new codepoints
 				// is there a better way to do this?
 				fontSize = Math.Clamp(fontSize, 7, 256);
-				bool wasFirst = !FullFontRefreshRequired;
 				if (!text.IsEmpty) {
 					for (int i = 0; i < text.Length;) {
 						Rune unicodeRune = text.GetRuneAt(i);
-						bool added = RegisteredCodepointsHash.Add(unicodeRune.Value);
-						FullFontRefreshRequired |= added;
-						if (added)
-							RegisteredCodepoints.Add(unicodeRune.Value);
+						bool added = RegisteredCodepointsHash.TryAdd(unicodeRune.Value, true);
+						if (added) {
+							FullFontRefreshRequired = true;
+						}
 						i += unicodeRune.Utf16SequenceLength;
 					}
+				}
 
-					if (FullFontRefreshRequired && wasFirst) {
-						// We have to unload all fonts and reload them with new codepoints.
-						// We will do that before the next frame to ensure nothing is stuck with invalid font textures.
-
-						foreach (var kvp1 in FontTable)
-							MarkFontForDeath(kvp1.Value);
-					}
+				if (FullFontRefreshRequired) {
+					// New codepoints have been registered, either from the text above or via
+					// RegisterCodepoints (e.g. song titles registered through Graphics2D). Every
+					// live font predates them, so unload and reload them all with the complete
+					// codepoint set before the next frame.
+										FullFontRefreshRequired = false;
+					foreach (var kvp1 in FontTable)
+						MarkFontForDeath(kvp1.Value);
 				}
 
 				FontKey key = new FontKey(symbols.AddString(fontName), fontSize);
 
 				if (!FontTable.TryGetValue(key, out FontState? state)) {
 					if (FontNameToFilepath.TryGetValue(key.FontSymbol, out var entry)) {
-						var registeredCodepoints = RegisteredCodepoints.AsSpan();
-						entry.PushCodepoints(registeredCodepoints);
+						entry.PushCodepoints(GetRegisteredCodepoints());
 						Font newFont = Filesystem.ReadFont(entry.PathID, entry.Path, fontSize, entry.GetGoodOrUnknownCodepoints());
 						entry.ValidateCodepoints(in newFont);
 						Raylib.GenTextureMipmaps(ref newFont.Texture);
@@ -239,8 +240,7 @@ namespace Nucleus.Core
 
 		private FontState GetFallbackFont(int fontSize) {
 			if (!fallbackFonts.TryGetValue(fontSize, out FontState? state)) {
-				var registeredCodepoints = RegisteredCodepoints.AsSpan();
-				fallbackEntry.PushCodepoints(registeredCodepoints);
+				fallbackEntry.PushCodepoints(GetRegisteredCodepoints());
 				Font newFont = Filesystem.ReadFont(fallbackEntry.PathID, fallbackEntry.Path, fontSize, fallbackEntry.GetGoodOrUnknownCodepoints());
 				fallbackEntry.ValidateCodepoints(in newFont);
 				Raylib.GenTextureMipmaps(ref newFont.Texture);

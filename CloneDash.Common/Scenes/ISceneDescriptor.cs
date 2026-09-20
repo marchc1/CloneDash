@@ -6,7 +6,6 @@ namespace CloneDash.Common.Scenes;
 
 public struct SceneMetadata
 {
-	public HumanLanguage Language;
 	public string Name;
 	public string Artists;
 }
@@ -20,7 +19,7 @@ public interface ISceneInstance
 public interface ISceneDescriptor : IUniquelyIdentifiableObject
 {
 	public static ReadOnlySpan<char> ConstructUUID(ReadOnlySpan<char> source, ReadOnlySpan<char> name) => $"scene/{source}/{name}";
-	SceneMetadata FetchMetadata(in HumanLanguage desiredLanguage);
+	SceneMetadata FetchMetadata();
 	T? CreateInGame<T>(IGame game) where T : ISceneInstance;
 	bool SupportsGamemode(IGamemodeDescriptor gamemodeDescriptor);
 }

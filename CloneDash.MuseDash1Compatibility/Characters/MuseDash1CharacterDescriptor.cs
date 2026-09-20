@@ -13,6 +13,7 @@ using Nucleus.Engine;
 using Nucleus.Models.Runtime;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace CloneDash.Characters;
 
@@ -52,7 +53,7 @@ public class MuseDash1CharacterExpression : ICharacterMainMenuExpression
 		var audioNames = expr.AudioNames;
 		var audioI = Random.Shared.Next(0, audioNames.Count);
 
-		return new MuseDash1CharacterExpression(expr, data.Localization["english"].Expressions[i][audioI], audioNames[audioI]);
+		return new MuseDash1CharacterExpression(expr, data.Localization[localize.GetCurrentCulture()].Expressions[i][audioI], audioNames[audioI]);
 	}
 }
 
@@ -105,50 +106,16 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 		Logs.Warn("No more characters available.");
 	});
 
-	static ReadOnlySpan<char> LocalizationLookup(
-		CharacterConfigData configData,
-		in HumanLanguage desiredLanguage,
-		out HumanLanguage returnedLanguage,
-		Func<CharacterLocalizationData, string> fetchLocalization,
-		Func<CharacterConfigData, string> fetchFallback) {
-
-		string? key = desiredLanguage.Culture.TwoLetterISOLanguageName switch {
-			"en" => "english",
-			_ => null
-		};
-
-		if (key != null && configData.Localization.TryGetValue(key, out var localization)) {
-			returnedLanguage = desiredLanguage;
-			return fetchLocalization(localization);
-		}
-
-		if (key != "english" && configData.Localization.TryGetValue("english", out localization)) {
-			returnedLanguage = HumanLanguage.English;
-			return fetchLocalization(localization);
-		}
-
-		returnedLanguage = HumanLanguage.Any;
-		return fetchFallback(configData);
-	}
-
 	// cosplay name and character name clash over returnedLanguage, this should be fixed...
-	public ReadOnlySpan<char> GetName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
-		=> $"{GetCosplayName(desiredLanguage, out returnedLanguage)} {GetCharacterName(desiredLanguage, out returnedLanguage)}";
+	public ReadOnlySpan<char> GetName()
+		=> $"{GetCosplayName()} {GetCharacterName()}";
 
-	public ReadOnlySpan<char> GetCosplayName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
-		=> LocalizationLookup(ConfigData, desiredLanguage, out returnedLanguage, x => x.CosName, x => x.CosName);
-
-	public ReadOnlySpan<char> GetCharacterName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
-		=> LocalizationLookup(ConfigData, desiredLanguage, out returnedLanguage, x => x.CharacterName, x => x.CharacterName);
-
+	public ReadOnlySpan<char> GetCosplayName()		=> ConfigData.CosName;
+	public ReadOnlySpan<char> GetCharacterName()		=> ConfigData.CharacterName;
 	public ITexture? GetThumbnailTexture() => MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<Texture2D>(ConfigData.Skins.First().HeadName)!);
-
-	public ReadOnlySpan<char> GetDescription(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
-		=> LocalizationLookup(ConfigData, desiredLanguage, out returnedLanguage, x => x.Description, x => x.Description);
-	public ReadOnlySpan<char> GetAuthor(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
-		=> LocalizationLookup(ConfigData, desiredLanguage, out returnedLanguage, x => x.CV, x => x.Cv);
-	public ReadOnlySpan<char> GetPerk(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
-		=> LocalizationLookup(ConfigData, desiredLanguage, out returnedLanguage, x => x.Skill, x => x.Skill);
+	public ReadOnlySpan<char> GetDescription()		=> ConfigData.Description;
+	public ReadOnlySpan<char> GetAuthor()		=> ConfigData.Cv;
+	public ReadOnlySpan<char> GetPerk()		=> ConfigData.Skill;
 
 	public ICharacterMainMenuExpression? GetMainShowExpression() {
 		MuseDash1CharacterExpression expression = MuseDash1CharacterExpression.From(ConfigData);

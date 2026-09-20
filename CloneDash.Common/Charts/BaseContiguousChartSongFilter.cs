@@ -14,7 +14,7 @@ public class BaseContiguousChartSongFilter(BaseContiguousChartSongFilter? parent
 
 	public virtual bool NameTest(ISong song) {
 		if (Query != null) {
-			var metadata = song.FetchMetadata(HumanLanguage.GetCurrentLanguage());
+			var metadata = song.FetchMetadata();
 			if (metadata.Name.Contains(Query, StringComparison.InvariantCultureIgnoreCase)) return true;
 			if (metadata.Author.Contains(Query, StringComparison.InvariantCultureIgnoreCase)) return true;
 

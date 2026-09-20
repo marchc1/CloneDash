@@ -151,8 +151,6 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		_lastCharacterSelected = ch;
 		Character.SetCharacter(ch);
 
-		HumanLanguage lang = HumanLanguage.GetCurrentLanguage();
-
 		if (ch == null) {
 			_nameLabel.Text = "<NULL>";
 			_costumeLabel.Text = "<NULL>";
@@ -163,13 +161,13 @@ public class CharacterSelector : Panel, IMainMenuPanel
 			_skill.Text = "<NULL>";
 		}
 		else {
-			_nameLabel.Text = $"{ch.GetCharacterName(lang, out _)}";
-			_costumeLabel.Text = $"{ch.GetCosplayName(lang, out _)}";
+			_nameLabel.Text = $"{ch.GetCharacterName()}";
+			_costumeLabel.Text = $"{ch.GetCosplayName()}";
 			_healthLabel.Text = "250"; // no clue how to get HP values
-			_voiceLabel.Text = $"{ch.GetAuthor(lang, out _)}";
+			_voiceLabel.Text = $"{ch.GetAuthor()}";
 			_artistLabel.Text = "???"; // needs to be added at some point
 
-			_skill.Text = ch.GetPerk(lang, out _).ToString();
+			_skill.Text = ch.GetPerk().ToString();
 		}
 	}
 

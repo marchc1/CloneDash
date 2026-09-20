@@ -533,10 +533,10 @@ public class SongSelector : Panel, IMainMenuPanel
 		CurrentTrackAuthor.TextSize = 24;
 
 		var mainSong = GetDiscSong(0);
-		var info = mainSong?.FetchMetadata(HumanLanguage.GetCurrentLanguage());
-		if (info != null) {
-			CurrentTrackName.Text = info.Value.Name ?? "";
-			CurrentTrackAuthor.Text = info.Value.Author ?? "";
+		if (mainSong != null) {
+			var info = mainSong.FetchMetadata();
+			CurrentTrackName.Text = info.Name;
+			CurrentTrackAuthor.Text = info.Author;
 		}
 	}
 
