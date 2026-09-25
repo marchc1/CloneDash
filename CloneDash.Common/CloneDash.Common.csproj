@@ -29,7 +29,7 @@
 		<PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.12" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="4.1.745802" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="4.1.2" />
 		<PackageReference Include="Velopack" Version="0.0.1298" />
 	</ItemGroup>
 
