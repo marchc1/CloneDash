@@ -80,14 +80,20 @@ public class NumSlider : Textbox, INumSlider
 
 	public delegate void OnValueChangedDelegate(NumSlider self, double oldValue, double newValue);
 	public event OnValueChangedDelegate? OnValueChanged;
-	public double? MinimumValue { get; set; } = null;
-	public double? MaximumValue { get; set; } = null;
+	public double? MinimumValue {
+		get;
+		set { field = value; SetValueNoUpdate(_value); }
+	} = null;
+	public double? MaximumValue {
+		get;
+		set { field = value; SetValueNoUpdate(_value); }
+	} = null;
 	private int _digits = 5;
 	public int Digits {
 		get => _digits;
 		set {
 			_digits = value;
-			_value = Math.Round(_value, value);
+			SetValueNoUpdate(_value);
 		}
 	}
 	public string Prefix { get; set; } = "";
@@ -103,7 +109,6 @@ public class NumSlider : Textbox, INumSlider
 		else if (IsHovered() && !IsKeyboardFocused())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_POINTING_HAND);
 	}
-	string? workType = null;
 	int caret = 0;
 	protected override bool MouseClick(FrameState state, ButtonCode button) {
 		KeyboardUnfocus();
@@ -127,12 +132,11 @@ public class NumSlider : Textbox, INumSlider
 	bool didDrag = false;
 
 	protected override bool OnLosingKeyboardFocus(Element? lostTo) {
-		double? v = ParseString(workType);
-		if (v != null) {
-			Value = v.Value;
-		}
-		workType = null;
-		return true;
+		if (ParseString(Text) is double v)
+			Value = v;
+		else
+			SetValueNoUpdate(Value);
+		return base.OnLosingKeyboardFocus(lostTo);
 	}
 	protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
 		if (key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter) {
@@ -141,7 +145,6 @@ public class NumSlider : Textbox, INumSlider
 				Value = v.Value;
 				KeyboardUnfocus();
 			}
-			workType = null;
 		}
 		else {
 			return base.KeyPressed(in keyboardState, key);
@@ -153,14 +156,16 @@ public class NumSlider : Textbox, INumSlider
 	Vector2F dragStart;
 	protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 		if (dragStart.Distance(state.Mouse.MousePos) > 5 || didDrag) {
+			bool bounded = MinimumValue.HasValue && MaximumValue.HasValue;
 			if (!didDrag)
 				dragStart = state.Mouse.MousePos;
-			else
+			else if (!bounded)
 				EngineCore.Window.SetMousePosition(dragStart);
 
 			didDrag = true;
-			if (MinimumValue.HasValue && MaximumValue.HasValue) {
-				Value = NMath.Remap(self.GetMousePos().X, BarPadding, self.GetRenderBounds().Width - (BarPadding * 2), MinimumValue.Value, MaximumValue.Value);
+			if (bounded) {
+				RectangleF content = GetContentRect();
+				Value = NMath.Remap(self.GetMousePos().X - content.X, BarPadding, content.W - BarPadding, MinimumValue!.Value, MaximumValue!.Value, true);
 			}
 			else Value += delta.X / MathF.Pow(1.5f, Digits);
 		}
@@ -168,10 +173,10 @@ public class NumSlider : Textbox, INumSlider
 	}
 
 	protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
-		if (!IsHovered()) return true;
-		if (!didDrag)
-			base.MouseRelease(self, state, button);
+		bool wasDrag = didDrag;
 		didDrag = false;
+		if (!wasDrag && IsHovered())
+			base.MouseRelease(self, state, button);
 		return true;
 	}
 	protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {

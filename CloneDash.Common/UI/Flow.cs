@@ -19,7 +19,7 @@ namespace CloneDash.Common.UI
 			// putting this in PerformLayout() only seems to actually update the sizing
 			// when the window is resized, not when the items get added
 			
-			ReadOnlySpan<Element> children = GetChildren();
+			ChildSnapshot children = GetChildren();
 			if (children.Length == 0) return;
 
 			Vector2F current = Vector2F.Zero;

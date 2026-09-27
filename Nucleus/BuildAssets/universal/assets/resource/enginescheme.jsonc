@@ -47,7 +47,29 @@
         // standard nucleus colors (different formats, again, to test - mostly testing ignoring commas here)
         "Nucleus.Background":   "20, 25, 32 127,",
         "Nucleus.Border":       "85 95, 110, 255",
-        "Nucleus.Text":         "230, 236 255 255"
+        "Nucleus.Text":         "230, 236 255 255",
+        "Nucleus.BorderKeyboardFocused":        "210 255 225 255",
+
+        "Nucleus.Textbox.Background":           "20 25 32 127",
+        "Nucleus.Textbox.BackgroundFocused":    "20 32 25 127",
+        "Nucleus.Textbox.Border":               "85 95 110 255",
+        "Nucleus.Textbox.BorderFocused":        "85 110 95 255",
+        "Nucleus.Textbox.Selection":            "170 200 255 80",
+        "Nucleus.Textbox.Caret":                "240 248 255 255",
+
+        "Nucleus.ListViewItem.Hovered":         "200 210 230 50",
+        "Nucleus.ListViewItem.Depressed":       "30 35 45 65",
+
+        "Nucleus.Menu.Background":              "20 30 45 220",
+        "Nucleus.Menu.Border":                  "190 195 195 114",
+        "Nucleus.Menu.Separator":               "145 145 145 255",
+        "Nucleus.Menu.ItemHovered":             "70 80 90 222",
+
+        "Nucleus.TabView.SwitcherInactive":     "30 35 42 200",
+        "Nucleus.TabView.SwitcherActive":       "40 44 50 245",
+
+        "Nucleus.Tooltip.Background":           "20 27 35 225",
+        "Nucleus.Tooltip.Border":               "235 235 235 255"
     },
     // These fonts will be available in the above tables with their keys
     // The keys should be the font name you'll use above.

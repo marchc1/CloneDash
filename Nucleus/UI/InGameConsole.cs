@@ -33,7 +33,15 @@ namespace Nucleus
 			Clipping = false;
 		}
 
+		public Vector2F ListOffset;
+
 		public override void Paint(float width, float height) {
+			Graphics2D.OffsetDrawing(ListOffset);
+			PaintList();
+			Graphics2D.OffsetDrawing(-ListOffset);
+		}
+
+		void PaintList() {
 			if (PotentialMatches == null || PotentialMatches.Length == 0) return;
 
 			int visibleCount = Math.Min(PotentialMatches.Length, MaxVisibleRows);
@@ -347,8 +355,8 @@ namespace Nucleus
 		private void EnsureAutocompletePanel() {
 			if (!IValidatable.IsValid(autoComplete)) {
 				autoComplete = new ConsoleAutocomplete(consoleInput);
-				autoComplete.				Dock = Dock.Bottom;
-				autoComplete.				Size = new(0, 0);
+				autoComplete.Dock = Dock.Bottom;
+				autoComplete.Size = new(0, 0);
 			}
 		}
 
@@ -362,7 +370,7 @@ namespace Nucleus
 			var inputText = consoleInput.GetText();
 
 			if (string.IsNullOrEmpty(inputText)) {
-				autoComplete.				ChildRenderOffset = new(0, 12);
+				autoComplete.				ListOffset = new(0, 12);
 				SetupHistoryAutocomplete();
 				return;
 			}
@@ -384,7 +392,7 @@ namespace Nucleus
 			if (exactMatch != null && exactMatch.OnAutocomplete != null && isArgumentAutocomplete) {
 				xOffset = Graphics2D.GetTextSize(argumentPrefix, "Consolas", consoleInput.TextSize).X + 4;
 			}
-			autoComplete.			ChildRenderOffset = new(xOffset, 12);
+			autoComplete.ListOffset = new(xOffset, 12);
 		}
 
 		private void SetupHistoryAutocomplete() {

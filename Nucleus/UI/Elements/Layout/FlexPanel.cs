@@ -19,15 +19,24 @@ public enum FlexChildrenResizingMode
 
 public class FlexPanel(Element? parent) : Panel(parent)
 {
-	public Axis Direction { get; set; } = Axis.Horizontal;
-	public FlexChildrenResizingMode ChildrenResizingMode { get; set; } = FlexChildrenResizingMode.DoNotResize;
+	public Axis Direction {
+		get;
+		set { if (field == value) return; field = value; InvalidateLayout(); }
+	} = Axis.Horizontal;
+	public FlexChildrenResizingMode ChildrenResizingMode {
+		get;
+		set { if (field == value) return; field = value; InvalidateLayout(); }
+	} = FlexChildrenResizingMode.DoNotResize;
 
 	protected override void ChildParented(Element parent, Element child) {
 		base.ChildParented(parent, child);
-		child.		Dock = Dock.None;
+		child.Dock = Dock.None;
 	}
 
 	protected override void PerformLayout(float width, float height) {
+		if (ChildrenResizingMode == FlexChildrenResizingMode.DoNotResize)
+			return;
+
 		int visibleCount = 0;
 		foreach (var child in Children)
 			if (child.IsVisible())
@@ -40,7 +49,6 @@ public class FlexPanel(Element? parent) : Panel(parent)
 
 		RectangleF dp = DockPadding;
 
-		Vector2F sizeOfOne = new((width - dp.Right - dp.Left) / visibleCount, (height - dp.Bottom - dp.Top) / visibleCount);
 		Vector2F elementSpacePosition = new(dp.Left, dp.Top);
 		Vector2F elementSpaceBounds = new(width - dp.Right - dp.Left, height - dp.Bottom - dp.Top);
 
@@ -60,16 +68,20 @@ public class FlexPanel(Element? parent) : Panel(parent)
 			switch (ChildrenResizingMode) {
 				case FlexChildrenResizingMode.StretchToFit:
 					if (horiz) {
-						cx = elementSpacePosition.X + (sizeOfOne.X * idx);
+						float start = MathF.Round(elementSpacePosition.X + elementSpaceBounds.W * idx / visibleCount);
+						float end = MathF.Round(elementSpacePosition.X + elementSpaceBounds.W * (idx + 1) / visibleCount);
+						cx = start;
 						cy = elementSpacePosition.Y;
-						cw = sizeOfOne.X;
+						cw = end - start;
 						ch = elementSpaceBounds.H;
 					}
 					else {
+						float start = MathF.Round(elementSpacePosition.Y + elementSpaceBounds.H * idx / visibleCount);
+						float end = MathF.Round(elementSpacePosition.Y + elementSpaceBounds.H * (idx + 1) / visibleCount);
 						cx = elementSpacePosition.X;
-						cy = elementSpacePosition.Y + (sizeOfOne.Y * idx);
+						cy = start;
 						cw = elementSpaceBounds.W;
-						ch = sizeOfOne.Y;
+						ch = end - start;
 					}
 
 					cx = cx + mLeft;
@@ -79,13 +91,11 @@ public class FlexPanel(Element? parent) : Panel(parent)
 					ch = ch - mTop - mBot;
 					break;
 				default:
-					cx = cy = cw = ch = 0;
-					break;
+					continue;
 			}
 
-			child.
-			Position = new(cx, cy);
-			child.			Size = new(cw, ch);
+			child.Position = new(cx, cy);
+			child.Size = new(cw, ch);
 
 			idx++;
 		}

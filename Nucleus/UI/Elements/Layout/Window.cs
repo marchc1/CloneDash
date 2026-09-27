@@ -203,9 +203,6 @@ public class Titlebar : Panel
 		Graphics2D.SetDrawColor(GetBgColor());
 		Graphics2D.DrawRectangle(0, 0, width, height);
 
-		Graphics2D.SetDrawColor(GetFgColor());
-		Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
-
 		Graphics2D.SetDrawColor(GetTextColor());
 		var pnt = TitlePos.CalculatePosition(new(TitlePos.GetHorizontalRatio() == 0 ? 8 : 0, 0), new(width, height));
 
@@ -282,22 +279,32 @@ public class Window : Element
 			}
 		}
 
+		Vector2F grabMouse, grabPos, grabSize;
+		protected override bool MouseClick(FrameState state, ButtonCode button) {
+			base.MouseClick(state, button);
+			grabMouse = EngineCore.MousePos;
+			grabPos = window.Position;
+			grabSize = window.Size;
+			return true;
+		}
+
 		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
+			Vector2F d = EngineCore.MousePos - grabMouse;
 			switch (anchor) {
 				case Anchor.TopLeft:
-					window.					Position = window.Position + delta;
-					window.					Size = window.Size - delta;
+					window.Size = grabSize - d;
+					window.Position = grabPos + grabSize - window.Size;
 					break;
 				case Anchor.TopRight:
-					window.					Position = window.Position + delta.Mutate(zeroX: true);
-					window.					Size = window.Size - delta.Mutate(negateX: true);
+					window.Size = new(grabSize.W + d.X, grabSize.H - d.Y);
+					window.Position = new(grabPos.X, grabPos.Y + grabSize.H - window.Size.H);
 					break;
 				case Anchor.BottomLeft:
-					window.					Position = window.Position + delta.Mutate(zeroY: true);
-					window.					Size = window.Size - delta.Mutate(negateY: true);
+					window.Size = new(grabSize.W - d.X, grabSize.H + d.Y);
+					window.Position = new(grabPos.X + grabSize.W - window.Size.W, grabPos.Y);
 					break;
 				case Anchor.BottomRight:
-					window.					Size = window.Size + delta;
+					window.Size = grabSize + d;
 					break;
 				default:
 					break;
@@ -418,7 +425,17 @@ public class Window : Element
 	}
 
 	private void dragWindow(Titlebar self, Vector2F delta) {
-		this.		Position = this.Position + delta;
+		Vector2F pos = this.Position + delta;
+
+		if (GetParent() is Element parent) {
+			const float keepVisible = 64;
+			RectangleF pb = parent.GetRenderBounds();
+			float w = GetRenderBounds().W;
+			pos.X = Math.Clamp(pos.X, MathF.Min(0, keepVisible - w), MathF.Max(0, pb.W - keepVisible));
+			pos.Y = Math.Clamp(pos.Y, 0, MathF.Max(0, pb.H - Titlebar.GetRenderBounds().H));
+		}
+
+		this.Position = pos;
 	}
 
 	protected override void OnThink() {

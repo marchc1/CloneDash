@@ -379,7 +379,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		FigureOutDisk();
 
 		float width = GetRenderBounds().W, height = GetRenderBounds().H;
-		ChildRenderOffset = new(0, (float)NMath.Ease.InCirc(1 - Math.Clamp(Lifetime, 0, 0.5) / 0.5) * (width / 2));
+		RenderOffset = new(0, (float)NMath.Ease.InCirc(1 - Math.Clamp(Lifetime, 0, 0.5) / 0.5) * (width / 2));
 
 		// Hack... but no better way right now
 		if (Math.Abs(DiscAnimationOffset.Value) < 0.05f && GetMainMenu().IsHoldingSelectorKeys()) {
@@ -405,7 +405,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		}
 
 
-		if (FlyAwaySOS.Update(FlyAway) > 0.001f || ChildRenderOffset.Y > 0) {
+		if (FlyAwaySOS.Update(FlyAway) > 0.001f || RenderOffset.Y > 0) {
 			InvalidateLayout();
 		}
 
@@ -450,7 +450,7 @@ public class SongSelector : Panel, IMainMenuPanel
 	}
 
 	public void CalculateDiscPos(float width, float height, int index, out float x, out float y, out float rot) {
-		var offsetYParent = ChildRenderOffset.Y / (width / 2);
+		var offsetYParent = RenderOffset.Y / (width / 2);
 		float flyAway = FlyAwaySOS.Out - offsetYParent * -0.5f;
 		float flyAwayMw = flyAway * width;
 

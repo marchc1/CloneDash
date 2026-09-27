@@ -53,6 +53,17 @@ public struct KeyboardState()
 		}
 	}
 
+	public void ConsumeFirstKeyRelease(ButtonCode key) {
+		KeysReleased[(int)key] = false;
+
+		for (int i = 0; i < TotalKeysThisFrame; i++) {
+			if (KeysThisFrame[i] == (int)key) {
+				RemoveKeyAtIndex(i);
+				return;
+			}
+		}
+	}
+
 	public void ConsumeKeyPressAtIndex(int index) {
 		int key = KeysThisFrame[index];
 		if (KeysPressed[key] > 0)

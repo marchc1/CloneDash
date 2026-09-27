@@ -50,18 +50,26 @@ public class DropdownSelector<T> : Button
 				}
 
 				if (ret != null) {
-					OnSelectionChanged?.Invoke(this, Selected, ret);
+					var old = Selected;
 					Selected = ret;
+					OnSelectionChanged?.Invoke(this, old, Selected);
 				}
 				else {
 
 				}
 			});
 		}
-		m.Open(EngineCore.MousePos);
+		m.Open(GetGlobalPosition() + new Vector2F(0, GetRenderBounds().H));
 		return true;
 	}
+	bool displayedValid;
+	T? displayedSelected;
+	public void RefreshText() => displayedValid = false;
 	protected override void OnThink() {
+		if (displayedValid && EqualityComparer<T>.Default.Equals(displayedSelected, Selected))
+			return;
+		displayedValid = true;
+		displayedSelected = Selected;
 		this.Text = OnToString?.Invoke(this.Selected) ?? Selected?.ToString() ?? "<not-set>";
 	}
 

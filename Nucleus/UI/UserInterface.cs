@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualBasic;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Common.UI;
 using Nucleus.Core;
 using Nucleus.Engine;
@@ -15,6 +16,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Xml.Linq;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Nucleus.UI;
 
@@ -54,7 +56,8 @@ public class ElementSchemeSystem
 	public void ApplyScheme(Element? element, ref ElementSolveState state, bool force = false) {
 		if (!IValidatable.IsValid(element)) return;
 
-		foreach (var child in element.GetChildren())
+		using var children = element.GetChildren();
+		foreach (var child in children)
 			if (child.IsVisible() || force)
 				ApplyScheme(child, ref state);
 
@@ -91,7 +94,7 @@ public class ElementInputSystem
 		if (element.IsVisible()) {
 			RectangleF childClip = element.Clipping ? IntersectRects(clipBounds, globalSpaceBounds) : clipBounds;
 
-			var children = element.GetChildren();
+			using var children = element.GetChildren();
 			// If this element contains a modal, only process that modal.
 			// Also, process popups first here too.
 			for (int i = children.Length - 1; i >= 0; i--) {
@@ -100,7 +103,7 @@ public class ElementInputSystem
 
 				if (modal || popup) {
 					// Modals/popups escape ancestor clipping, so they get an unbounded clip.
-					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetRenderBounds().Pos + element.ChildRenderOffset, child.GetRenderBounds().Size);
+					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetVisualPosition() + element.ChildRenderOffset.Round(), child.GetRenderBounds().Size);
 					RectangleF popupClip = RectangleF.FromPosAndSize(new(-1e9f, -1e9f), new(2e9f, 2e9f));
 					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, popupClip, mousePos);
 
@@ -121,7 +124,7 @@ public class ElementInputSystem
 				Element child = children[i];
 				bool modal = child.IsModal(), popup = child.IsPopup();
 				if (!modal && !popup) {
-					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetRenderBounds().Pos + element.ChildRenderOffset, child.GetRenderBounds().Size);
+					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetVisualPosition() + element.ChildRenderOffset.Round(), child.GetRenderBounds().Size);
 					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, childClip, mousePos);
 					if (IValidatable.IsValid(subElementHovered))
 						return subElementHovered;
@@ -164,18 +167,23 @@ public class ElementInputSystem
 		}
 
 		// Handle mouse releases
-		// A click might invalidate via removing, so a second guard is done
-		if (IValidatable.IsValid(hovered)) {
-			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
-				ref Element? depressed = ref solveState.Depressed[i - ButtonCode.MouseFirst];
-				if (mouse.Released(i)) {
-					if (IValidatable.IsValid(depressed) && depressed.IsMouseInputEnabled() && depressed.MouseReleaseOccur(frameState, i)) {
-						mouse.SetHeld(i, false); // disengage input from game
-						mouse.SetReleased(i, false); // disengage input from game
-						depressed = null;
-					}
-				}
+		// Releases go to the depressed element regardless of what's hovered (or whether anything is)
+		for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
+			if (!mouse.Released(i))
+				continue;
+
+			ref Element? depressed = ref solveState.Depressed[i - ButtonCode.MouseFirst];
+			if (IValidatable.IsValid(depressed) && depressed.IsMouseInputEnabled() && depressed.MouseReleaseOccur(frameState, i)) {
+				mouse.SetHeld(i, false); // disengage input from game
+				mouse.SetReleased(i, false); // disengage input from game
 			}
+			depressed = null; // the button is physically up regardless of the handler's answer
+		}
+
+		// Losing mouse focus means we'll never see the releases
+		if (!mouse.Focused) {
+			for (int i = 0; i < (int)ButtonCode.MouseCount; i++)
+				solveState.Depressed[i] = null;
 		}
 
 		// Handle mouse scrolling
@@ -204,22 +212,23 @@ public class ElementInputSystem
 				return false;
 
 			emulated = keyboard;
-			keyboardFocused.			KeyboardInputMarshal.State(ref emulated);
+			keyboardFocused.KeyboardInputMarshal.State(ref emulated);
 			if (keybindChainingAllowed && keyboardFocused.Keybinds.TestKeybinds(ref emulated, out Keybind? keybind)) {
 				keyboard.ConsumeFirstKeyPress(keybind.FinalKey);
 				return true;
 			}
 
+			// The marshal may reorder or inject keys, so consume from the real keyboard by key code, not by index
 			for (int i = emulated.TotalKeysThisFrame - 1; i >= 0; i--) {
 				int key = emulated.KeysThisFrame[i];
 
 				if (emulated.WasKeyPressed(key))
 					if (keyboardFocused.KeyPressedOccur(in emulated, key.ToButtonCode()))
-						keyboard.ConsumeKeyPressAtIndex(i);
+						keyboard.ConsumeFirstKeyPress(key.ToButtonCode());
 
 				if (emulated.WasKeyReleased(key))
 					if (keyboardFocused.KeyReleasedOccur(in emulated, key.ToButtonCode()))
-						keyboard.ConsumeKeyReleaseAtIndex(i);
+						keyboard.ConsumeFirstKeyRelease(key.ToButtonCode());
 			}
 
 			for (int i = emulated.GetTextInputsThisFrame() - 1; i >= 0; i--)
@@ -249,7 +258,8 @@ public class ElementThinkingSystem
 
 		element.Think();
 
-		foreach (var child in element.GetChildren())
+		using var children = element.GetChildren();
+		foreach (var child in children)
 			if (child.IsVisible())
 				ThinkTraverse(child, ref state);
 	}
@@ -264,7 +274,23 @@ public enum ElementPaintPopupMode
 
 public class ElementPaintSystem
 {
-	public void Paint(Element? element, ref ElementSolveState state, ElementPaintPopupMode skipPopups) => PaintTraverse(element, ref state, skipPopups);
+	public void Paint(Element element, ref ElementSolveState state, ElementPaintPopupMode skipPopups) {
+		switch (skipPopups) {
+			case ElementPaintPopupMode.DontCare:
+			case ElementPaintPopupMode.NoPopups:
+				PaintTraverse(element, ref state, skipPopups);
+				break;
+			case ElementPaintPopupMode.OnlyPopups:
+				if (element is UserInterface ui)
+					foreach (var popup in ui.PopupsInZOrder()) {
+						var parent = popup.GetParent()!;
+						Graphics2D.SetOffset(parent == element ? Vector2F.Zero : parent.GetGlobalPosition() + parent.ChildRenderOffset.Round());
+						Paint(popup, ref state, ElementPaintPopupMode.DontCare);
+					}
+				break;
+		}
+	}
+
 	void PaintTraverse(Element? element, ref ElementSolveState state, ElementPaintPopupMode skipPopups) {
 		if (!IValidatable.IsValid(element)) return;
 		if (!element.IsVisible()) return;
@@ -286,13 +312,16 @@ public class ElementPaintSystem
 
 		if (element.BackdropAlpha > 0) {
 			if (IValidatable.IsValid(parent)) {
+				// The drawing offset is already at the parent's origin (plus its child offset); cover the parent from there.
 				RectangleF size = parent.GetRenderBounds();
+				Vector2F parentOrigin = -parent.ChildRenderOffset.Round();
 				Graphics2D.SetDrawColor(0, 0, 0, (int)float.Lerp(0, 100, (float)element.BackdropAlpha));
-				Graphics2D.DrawRectangle(size.X, size.Y, size.W, size.H);
+				Graphics2D.DrawRectangle(parentOrigin.X, parentOrigin.Y, size.W, size.H);
 			}
 		}
 
 		RectangleF renderBounds = element.GetRenderBounds();
+		Vector2F visualPos = element.GetVisualPosition();
 
 		if (element.IsUsingRenderTarget()) {
 			// quick check if needing to create a new RT
@@ -307,9 +336,8 @@ public class ElementPaintSystem
 				Graphics2D.OffsetDrawing(offset);           // Reset the offset now that rendering is complete
 
 				if (IValidatable.IsValid(parent)) {
-					Graphics2D.OffsetDrawing(element.ChildRenderOffset);
 					if (parent.PostRenderChildRT(element) == true) {
-						Graphics2D.OffsetDrawing(renderBounds.Pos);
+						Graphics2D.OffsetDrawing(visualPos);
 						{
 							element.PreRenderRT();
 							if (element.HasPaintRenderTargetOverride) {
@@ -327,9 +355,8 @@ public class ElementPaintSystem
 							}
 							element.PostRenderRT();
 						}
-						Graphics2D.OffsetDrawing(-renderBounds.Pos);
+						Graphics2D.OffsetDrawing(-visualPos);
 					}
-					Graphics2D.OffsetDrawing(-element.ChildRenderOffset);
 				}
 			}
 			else
@@ -338,51 +365,34 @@ public class ElementPaintSystem
 			return;
 		}
 
-		Vector2F childRenderOffset = IValidatable.IsValid(parent) ? element.ChildRenderOffset : Vector2F.Zero;
-		childRenderOffset = childRenderOffset.Round(5);
-
-		Graphics2D.OffsetDrawing(childRenderOffset);
+		Graphics2D.OffsetDrawing(visualPos);
 		{
-			Graphics2D.OffsetDrawing(renderBounds.Pos);
-			{
-				PaintElement(element, ref state, skipPopups);
-			}
-			Graphics2D.OffsetDrawing(-renderBounds.Pos);
+			PaintElement(element, ref state, skipPopups);
 		}
-		Graphics2D.OffsetDrawing(-childRenderOffset);
+		Graphics2D.OffsetDrawing(-visualPos);
 	}
 
 	private void PaintElement(Element? element, ref ElementSolveState state, ElementPaintPopupMode skipPopups) {
 		if (!IValidatable.IsValid(element)) return;
+		if (element.IsSchemeInvalid())
+			element.PerformApplySchemeSettings();
+
 		var renderBounds = element.GetRenderBounds();
 		float w = renderBounds.Width, h = renderBounds.Height;
 		if ((w <= 0 || h <= 0) && element.Clipping)
 			return;
 
-		if (element.Clipping) // This aggressively expands the render bounds test. Unclear how much this will help or if this will only make floating point things more annoying.
-								   // Arguably positions and sizes should move to a Vector2I equivalent at this point.
-								   // This also might be a regression due to the latest UI changes, although I vaguely remember this happening before in some cases
-			Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Vector2F.Floor(Graphics2D.Offset - element.ChildRenderOffset), Vector2F.Ceil(renderBounds.Size + Vector2F.One)));
+		if (element.Clipping)
+			Graphics2D.ScissorRect(RectangleF.FromPosAndSize(Graphics2D.Offset, renderBounds.Size));
 		{
 			Graphics2D.PushAlpha(element.Opacity * 255);
 			{
-				// Calculate border insetting
-				float iw = w, ih = h;
-				float border = element.BorderSize;
-				iw -= (border * 2);
-				ih -= (border * 2);
-				bool rounded = element.Roundness != 0;
-				Vector2F drawingOffset = new(border);
+				float inset = element.GetContentInset();
+				float iw = w - (inset * 2), ih = h - (inset * 2);
+				Vector2F drawingOffset = new(inset);
 				if ((iw > 0 && ih > 0) || !element.Clipping) {
-					if (element.IsPaintBackgroundEnabled()) {
-						if (rounded) // kinda hacky but required for border/background right now. Fixme
-							element.PaintBackground(w, h);
-						else {
-							Graphics2D.OffsetDrawing(drawingOffset);
-							element.PaintBackground(iw, ih);
-							Graphics2D.OffsetDrawing(-drawingOffset);
-						}
-					}
+					if (element.IsPaintBackgroundEnabled())
+						element.PaintBackground(w, h);
 
 					if (element.IsPaintEnabled()) {
 						Graphics2D.OffsetDrawing(drawingOffset);
@@ -394,14 +404,18 @@ public class ElementPaintSystem
 				if (element.IsPaintBorderEnabled())
 					element.PaintBorder(w, h);
 
-				ReadOnlySpan<Element> children = element.GetChildren();
-				int startIndex = element.GetPaintChildStartIndex();
-				int endIndex = element.GetPaintChildEndIndex();
-				for (int i = startIndex; i < endIndex; i++) {
-					Element child = children[i];
-					if (element.ShouldPaintChild(child))
-						PaintTraverse(child, ref state, skipPopups);
+				Vector2F childOffset = element.ChildRenderOffset.Round();
+				Graphics2D.OffsetDrawing(childOffset);
+				using (var children = element.GetChildren()) {
+					int startIndex = element.GetPaintChildStartIndex();
+					int endIndex = Math.Min(element.GetPaintChildEndIndex(), children.Length);
+					for (int i = startIndex; i < endIndex; i++) {
+						Element child = children[i];
+						if (element.ShouldPaintChild(child))
+							PaintTraverse(child, ref state, skipPopups);
+					}
 				}
+				Graphics2D.OffsetDrawing(-childOffset);
 
 				if (element.IsPostChildPaintEnabled())
 					element.PostChildPaint();
@@ -420,6 +434,7 @@ public class UserInterface : Element, IDisposable
 		SetPaintBorderEnabled(false);
 		SetPaintBackgroundEnabled(false);
 		SetPaintEnabled(false);
+		SetPostChildPaintEnabled(false);
 		SetScheme(ElementSchemeSystem.LoadScheme("resource", "enginescheme.jsonc"));
 
 		Input.OnClick += Input_OnClick;
@@ -446,9 +461,65 @@ public class UserInterface : Element, IDisposable
 			Popups.Add(element);
 		return true;
 	}
+	// Removal guards are null checks: these run from REMOVE(), after the element is already marked invalid.
 	internal bool RemovePopup(Element? element) {
-		if (!IValidatable.IsValid(element)) return false;
+		if (element is null) return false;
 		return Popups.Remove(element);
+	}
+
+	/// <summary>
+	/// Popups that aren't inside another popup (those are painted by their popup ancestor), in tree order.
+	/// </summary>
+	public List<Element> PopupsInZOrder() {
+		popupPaintOrder.Clear();
+		foreach (var popup in Popups) {
+			if (!IValidatable.IsValid(popup) || popup.IsParentedToPopup(out _))
+				continue;
+			bool ancestorsVisible = true;
+			for (Element? p = popup.GetParent(); p != null; p = p.GetParent())
+				if (!p.IsVisible()) { ancestorsVisible = false; break; }
+			if (ancestorsVisible)
+				popupPaintOrder.Add(popup);
+		}
+		popupPaintOrder.Sort(CompareTreeOrder);
+		return popupPaintOrder;
+	}
+	readonly List<Element> popupPaintOrder = [];
+
+	static int CompareTreeOrder(Element a, Element b) {
+		if (a == b) return 0;
+
+		static int Depth(Element e) {
+			int d = 0; for (var p = e.GetParent(); p != null; p = p.GetParent())
+				d++;
+			return d;
+		}
+
+		Element x = a, y = b;
+		int dx = Depth(x), dy = Depth(y);
+
+		while (dx > dy) {
+			x = x.GetParent()!;
+			dx--;
+		}
+		while (dy > dx) {
+			y = y.GetParent()!;
+			dy--;
+		}
+
+		if (x == y)
+			return dx < Depth(a) ? 1 : -1;
+
+		while (x.GetParent() != y.GetParent()) {
+			x = x.GetParent()!;
+			y = y.GetParent()!;
+		}
+
+		var siblings = x.GetParent()?.Children;
+		if (siblings == null)
+			return 0;
+
+		return siblings.IndexOf(x).CompareTo(siblings.IndexOf(y));
 	}
 	internal bool MakeModal(Element? element) {
 		if (!IValidatable.IsValid(element)) return false;
@@ -457,7 +528,7 @@ public class UserInterface : Element, IDisposable
 		return true;
 	}
 	internal bool RemoveModal(Element? element) {
-		if (!IValidatable.IsValid(element)) return false;
+		if (element is null) return false;
 		return Modals.Remove(element);
 	}
 
@@ -472,26 +543,65 @@ public class UserInterface : Element, IDisposable
 		set => window = value ?? throw new NullReferenceException();
 	}
 
-	public override void PostChildPaint() {
-		var text = TooltipText;
-		if (!text.IsEmpty && text[0] != '\0') {
-			var fontsize = 20;
-			var size = Graphics2D.GetTextSize(text, Graphics2D.UI_FONT_NAME, fontsize) + new Vector2F(8, 4);
-			var mousepos = Level.FrameState.Mouse.MousePos + new Vector2F(8, 8 + 16);
+	public int TooltipFontSize => 20;
 
-			// determine if tooltip goes over screen bounds and fix it if so
-			var drawingOffset = Vector2F.Zero;
-			var whereIsEnd = mousepos + size + new Vector2F(4, 4);
+	public ReadOnlySpan<byte> DetermineTooltipText(out Vector2F pos, out Vector2F size) {
+		Element target = GetHoveredElement() ?? this;
 
-			if (whereIsEnd.X > EngineCore.GetScreenSize().W) drawingOffset.X -= (size.X) + 4;
-			if (whereIsEnd.Y > EngineCore.GetScreenSize().H) drawingOffset.Y -= (size.Y) + 4 + 24 + 24;
+		ReadOnlySpan<byte> data = target.GetTooltipData();
 
-			Graphics2D.SetDrawColor(50, 57, 65, 120);
-			Graphics2D.DrawRectangle(mousepos + drawingOffset, size);
-			Graphics2D.SetDrawColor(10, 15, 25, 225);
-			Graphics2D.SetDrawColor(235, 235, 235, 255);
-			Graphics2D.DrawRectangleOutline(mousepos + drawingOffset, size + new Vector2F(4, 4), 1);
-			Graphics2D.DrawText((mousepos + drawingOffset) + new Vector2F(6, 4), text, Graphics2D.UI_FONT_NAME, fontsize);
+		ElementTooltipReader probe = new ElementTooltipReader(data);
+		if (!probe.MoveNext() || probe.Text.IsEmpty) {
+			pos = size = default;
+			return null;
+		}
+
+		Vector2F measured = Vector2F.Zero;
+		ElementTooltipReader measurer = new ElementTooltipReader(data);
+		while (measurer.MoveNext()) {
+			ReadOnlySpan<char> font = measurer.Font.IsEmpty ? Graphics2D.UI_FONT_NAME : measurer.Font;
+			Vector2F itemSize = Graphics2D.GetTextSize(measurer.Text, font, measurer.FontSize);
+			measured.X += itemSize.X;
+			measured.Y = MathF.Max(measured.Y, itemSize.Y);
+		}
+
+		size = measured + new Vector2F(8, 4);
+
+		target.DetermineTooltipDrawingSpace(size, out pos);
+
+		if (pos.X < 0) pos.X = 4;
+		if (pos.Y < 0) pos.Y = 4;
+		var whereIsEnd = pos + size + new Vector2F(4, 4);
+
+		var uiBounds = GetRenderBounds();
+		if (whereIsEnd.X > uiBounds.W) pos.X -= size.X + 4;
+		if (whereIsEnd.Y > uiBounds.H) pos.Y -= size.Y + 4 + 24 + 24;
+
+		return data;
+	}
+
+	public void PaintTooltip() {
+		ReadOnlySpan<byte> text = DetermineTooltipText(out Vector2F pos, out Vector2F size);
+		if (text.IsEmpty)
+			return;
+
+		// Background + outline
+		IScheme? scheme = GetScheme();
+		Graphics2D.SetDrawColor(scheme?.GetColor("Nucleus.Tooltip.Background", new(20, 27, 35, 225)) ?? new Color(20, 27, 35, 225));
+		Graphics2D.DrawRectangle(pos, size);
+		Graphics2D.SetDrawColor(scheme?.GetColor("Nucleus.Tooltip.Border", new(235, 235, 235, 255)) ?? new Color(235, 235, 235, 255));
+		Graphics2D.DrawRectangleOutline(pos, size, 1);
+
+		// Draw each styled run left-to-right
+		var cursor = pos + new Vector2F(6, 4);
+		ElementTooltipReader reader = new ElementTooltipReader(text);
+		while (reader.MoveNext()) {
+			ReadOnlySpan<char> font = reader.Font.IsEmpty ? Graphics2D.UI_FONT_NAME : reader.Font;
+
+			Graphics2D.SetDrawColor(reader.TextColor);
+			Graphics2D.DrawText(cursor, reader.Text, font, reader.FontSize);
+
+			cursor.X += Graphics2D.GetTextSize(reader.Text, font, reader.FontSize).X;
 		}
 	}
 
@@ -583,7 +693,7 @@ public class UserInterface : Element, IDisposable
 	}
 
 	internal bool RemoveElement(Element element) {
-		if (!IValidatable.IsValid(element)) return false;
+		if (element is null) return false;
 		return Elements.Remove(element);
 	}
 
@@ -591,7 +701,9 @@ public class UserInterface : Element, IDisposable
 	public Element? GetDepressedElement(ButtonCode? code = null) {
 		Element? ret = null;
 		if (code.HasValue) {
-			ret = SolveState.Depressed[(int)code.Value];
+			if (!code.Value.IsMouseCode())
+				return null;
+			ret = SolveState.Depressed[(int)(code.Value - ButtonCode.MouseFirst)];
 		}
 		else {
 			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
@@ -611,8 +723,24 @@ public class UserInterface : Element, IDisposable
 		ulong currentFunctionID = ++keyboardFocusReentrantID;
 
 		Element? keyboardFocused = SolveState.KeyboardFocused;
+
+		// Ask the new element first, so a refusal leaves the old focus fully intact
+		if (IValidatable.IsValid(element)) {
+			if (!element.TryGainKeyboardFocus(keyboardFocused, ref element))
+				return false;
+			if (keyboardFocusReentrantID != currentFunctionID)
+				return false; // If another caller calls into this function in a keyboard focus hook, it would cause their focus to be
+							  // lost. The intention of this check is to determine if a call happened in the hooks, and if so, to ignore
+							  // the result to not immediately override it. Although you should just use the ref element if you can.
+							  // (or maybe we should just have the re-entrant check and nix the ref... todo)
+			if (element == keyboardFocused)
+				return true; // focus was passed to what already has it
+		}
+
 		if (IValidatable.IsValid(keyboardFocused)) {
 			if (!keyboardFocused.TryLoseKeyboardFocus(element))
+				return false;
+			if (keyboardFocusReentrantID != currentFunctionID)
 				return false;
 		}
 
@@ -622,15 +750,8 @@ public class UserInterface : Element, IDisposable
 			return true;
 		}
 
-		if (!element.TryGainKeyboardFocus(keyboardFocused, ref element))
-			return false;
-
-		if (keyboardFocusReentrantID != currentFunctionID)
-			return false; // If another caller calls into this function in a keyboard focus hook, it would cause their focus to be
-						  // lost. The intention of this check is to determine if a call happened in the hooks, and if so, to ignore
-						  // the result to not immediately override it. Although you should just use the ref element if you can. 
-						  // (or maybe we should just have the re-entrant check and nix the ref... todo)
-		EngineCore.Window.StartTextInput();
+		if (element.WantsTextInput)
+			EngineCore.Window.StartTextInput();
 		SolveState.KeyboardFocused = element;
 		return true;
 	}

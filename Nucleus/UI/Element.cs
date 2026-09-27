@@ -13,9 +13,13 @@ using Nucleus.Types;
 
 using Raylib_cs;
 
+using System.Buffers;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Nucleus.UI;
 
@@ -133,8 +137,6 @@ public class Element : IValidatable
 	private bool _firstThink = true;
 	private bool QueueCenter = false;
 	internal List<Element> Children = [];
-	internal Element?[] FlushedChildren = [];
-	internal int CurrentChildrenCount;
 	private bool __layoutinvalid = true;
 
 	string? name;
@@ -169,6 +171,7 @@ public class Element : IValidatable
 
 	SchemeableSetting<Color> backgroundColor = SchemeableSetting<Color>.Default(DefaultBackgroundColor);
 	SchemeableSetting<Color> foregroundColor = SchemeableSetting<Color>.Default(DefaultForegroundColor);
+	SchemeableSetting<Color> focusedBorderColor = SchemeableSetting<Color>.Default(new(210, 255, 225, 255));
 
 	private float borderSize = 2;
 	private float roundness = 0;
@@ -179,12 +182,50 @@ public class Element : IValidatable
 	private double lastLayoutTime = 0;
 
 	private readonly Dictionary<string, object?> Tags = [];
-	DateTime Birth = DateTime.Now;
+	long Birth = Stopwatch.GetTimestamp();
 	private IKeyboardInputMarshal keyboardInputMarshal = DefaultKeyboardInputMarshal.Instance;
 
 	private Vector2F sizeOfAllChildren = Vector2F.Zero;
 
-	private string? tooltipText;
+	private byte[]? tooltipText;
+	private int tooltipTextSize;
+
+	// Some ways to control the background.
+	// todo: private float backgroundBlur;
+	private float shadowSize = 4;
+	// todo: private float shadowBlur = 0; 
+
+	// centering of shadow direction means the panel will draw a shadow around the borders rather than towards a direction
+	// basically only use -1, 0, or 1, unless you want some weird partial shadow on one side vs the other
+	private Vector2F shadowDirection = new(1, 1); // Shadow direction goes towards bottom-right
+
+	// this makes the background alpha dependant on the hoevr state
+	private bool backgroundAlphaDependsOnHover;
+
+	public bool BackgroundBlur {
+		get => throw new NotImplementedException("Background blurring is not yet supported (needs UI shader, just a concept I have right now)");
+		set => throw new NotImplementedException("Background blurring is not yet supported (needs UI shader, just a concept I have right now)");
+	}
+
+	public float ShadowSize {
+		get => shadowSize;
+		set => shadowSize = value;
+	}
+
+	public bool ShadowBlur {
+		get => throw new NotImplementedException("Shadow blurring is not yet supported (needs UI shader, just a concept I have right now)");
+		set => throw new NotImplementedException("Shadow blurring is not yet supported (needs UI shader, just a concept I have right now)");
+	}
+
+	public Vector2F ShadowDirection {
+		get => shadowDirection;
+		set => shadowDirection = value;
+	}
+
+	public bool BackgroundAlphaDependsOnHover {
+		get => backgroundAlphaDependsOnHover;
+		set => backgroundAlphaDependsOnHover = value;
+	}
 
 	/// <summary>
 	/// Controls the size of borders on elements. This may not be supported on all elements, depending on their implementation of <see cref="PaintBorder(float, float)"/>.
@@ -203,12 +244,14 @@ public class Element : IValidatable
 	}
 
 	/// <summary>
-	/// All children of this element will be offset by this relative position.
+	/// All children of this element will be offset by this relative position. 
 	/// </summary>
 	public Vector2F ChildRenderOffset {
 		get => childRenderOffset;
 		set => childRenderOffset = value;
 	}
+
+	public Vector2F RenderOffset { get; set; } = Vector2F.Zero;
 
 	/// <summary>
 	/// Determines if the elements children are clipped to the bounds of this element.
@@ -243,11 +286,11 @@ public class Element : IValidatable
 	/// <summary>
 	/// The <see cref="UserInterface"/> the element belongs to.
 	/// </summary>
-	public UserInterface UI{
+	public UserInterface UI {
 		get => field;
 		set {
 			field = value;
-			foreach (var child in GetChildren())
+			foreach (var child in Children)
 				child.UI = value;
 		}
 	}
@@ -362,9 +405,84 @@ public class Element : IValidatable
 		}
 	}
 
+	public Vector2F GetVisualPosition() => GetRenderBounds().Pos + RenderOffset.Round();
+
+	public void SetTooltipText(ReadOnlySpan<char> text) {
+		TooltipText = text;
+	}
+
+	public void SetTooltipText(ReadOnlySpan<byte> text) {
+		int size = text.Length;
+		if (size == 0) {
+			tooltipTextSize = 0;
+			return;
+		}
+
+		if (tooltipText == null || tooltipText.Length < size)
+			tooltipText = new byte[NMath.CeilPow2(size)];
+
+		text.CopyTo(tooltipText);
+		tooltipTextSize = size;
+	}
+
+	public void SetTooltipText(HeapTooltip? tooltips) {
+		if (tooltips == null) {
+			tooltipTextSize = 0;
+			return;
+		}
+
+		int size = tooltips.GetSizeInBytes();
+		if (tooltipText == null || tooltipText.Length < size)
+			tooltipText = new byte[NMath.CeilPow2(size)];
+
+		tooltips.WriteTooltipItems(tooltipText.AsSpan()[..size]);
+		tooltipTextSize = size;
+	}
+
+	public void SetTooltipText(HeapTooltipItem? tooltip) {
+		if (tooltip == null) {
+			tooltipTextSize = 0;
+			return;
+		}
+
+		int size = tooltip.GetSizeInBytes();
+		if (tooltipText == null || tooltipText.Length < size)
+			tooltipText = new byte[NMath.CeilPow2(size)];
+
+		tooltip.WriteTooltipItem(tooltipText.AsSpan()[..size]);
+		tooltipTextSize = size;
+	}
+
+	/// <summary>
+	/// The simple and legacy way to do tooltips (internally writes a more complex tooltip for you)
+	/// </summary>
 	public virtual ReadOnlySpan<char> TooltipText {
-		get => tooltipText;
-		set => tooltipText = (value.Length == 0 || value[0] == '\0') ? null : new(value);
+		get {
+			ElementTooltipReader reader = new ElementTooltipReader(GetTooltipData());
+			if (!reader.MoveNext())
+				return "";
+			return reader.Text;
+		}
+		set {
+			if (value.Length == 0) {
+				tooltipTextSize = 0;
+				return;
+			}
+
+			ElementTooltipWriter writer = new ElementTooltipWriter();
+			writer.AddTooltipItem(value);
+			int size = writer.GetAllocationSize();
+			if (tooltipText == null || tooltipText.Length < size)
+				tooltipText = new byte[NMath.CeilPow2(size)];
+			writer.BeginWriting(tooltipText.AsSpan()[..size]);
+			writer.AddTooltipItem(value);
+			tooltipTextSize = size;
+			// Logs.Info(Convert.ToHexString(tooltipText.AsSpan()[..tooltipTextSize]));
+		}
+	}
+
+	public virtual ReadOnlySpan<byte> GetTooltipData() {
+		return tooltipText.AsSpan()[..tooltipTextSize];
 	}
 
 	/// <summary>
@@ -430,6 +548,22 @@ public class Element : IValidatable
 	public virtual RectangleF GetRenderBounds() {
 		return __renderbounds;
 	}
+
+	/// <summary>
+	/// How far Paint's canvas is inset from the element's bounds
+	/// </summary>
+	public float GetContentInset() => IsPaintBorderEnabled() ? BorderSize : 0;
+
+	public RectangleF GetContentRect() {
+		float i = GetContentInset();
+		var b = GetRenderBounds();
+		return RectangleF.XYWH(i, i, MathF.Max(0, b.W - i * 2), MathF.Max(0, b.H - i * 2));
+	}
+
+	/// <summary>
+	/// Whether keyboard focus on this element should start OS text input (IMEs, on-screen keyboards).
+	/// </summary>
+	public virtual bool WantsTextInput => false;
 
 	public Element() {
 		Initialize(0, 0, 32, 32);
@@ -542,6 +676,11 @@ public class Element : IValidatable
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual Color GetFgColor() => foregroundColor.Get();
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public virtual void SetFgColor(Color value) => foregroundColor.SetUserValue(value);
 
+	protected void SetBgSchemeColor(Color value) => backgroundColor.SetSchemeValue(value);
+	protected void SetFgSchemeColor(Color value) => foregroundColor.SetSchemeValue(value);
+	protected bool HasUserBgColor => backgroundColor.HasUserValue;
+	protected bool HasUserFgColor => foregroundColor.HasUserValue;
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBgColor(ReadOnlySpan<char> schemeColor) {
 		var scheme = GetScheme();
@@ -558,24 +697,29 @@ public class Element : IValidatable
 	public event Action<Element>? Removed;
 
 	private void REMOVE() {
-		if (__markedForRemoval == true)
+		if (__markedForRemoval)
 			return;
+		__markedForRemoval = true;
+		AddFlag(ElementFlags.MarkedForRemoval);
 
 		OnRemoval();
 		Removed?.Invoke(this);
 
 		if (IsPopup())
-			UI.RemovePopup(this);
+			UI?.RemovePopup(this);
 
 		if (IsModal())
-			UI.RemoveModal(this);
+			UI?.RemoveModal(this);
 
-		UI.RemoveElement(this);
+		UI?.RemoveElement(this);
 
-		__markedForRemoval = true;
-		foreach (Element element in this.LockAndEnumerateChildren())
+		__RT1?.Dispose();
+		__RT1 = null;
+		__lastRTSize = null;
+
+		using var children = GetChildren();
+		foreach (Element element in children)
 			element.REMOVE();
-		this.UnlockChildren();
 	}
 	public void Remove() {
 		REMOVE();
@@ -606,7 +750,7 @@ public class Element : IValidatable
 	internal void Think() {
 		if (_firstThink) {
 			_firstThink = false;
-			Birth = DateTime.Now;
+			Birth = Stopwatch.GetTimestamp();
 		}
 
 		if (IsVisible())
@@ -616,31 +760,34 @@ public class Element : IValidatable
 		Thinking?.Invoke(this);
 	}
 
-	/// <summary>
-	/// Use this for child-critical contexts rather than creating a full copy to throw away!!!
-	/// </summary>
-	/// <returns></returns>
-	internal Span<Element> LockAndEnumerateChildren() {
-		CurrentChildrenCount = Children.Count;
-
-		if (CurrentChildrenCount > FlushedChildren.Length)
-			FlushedChildren = new Element[CurrentChildrenCount];
-
-		for (int i = 0; i < CurrentChildrenCount; i++)
-			FlushedChildren[i] = Children[i];
-
-		return FlushedChildren.AsSpan()[..CurrentChildrenCount]!;
+	public ref struct ChildSnapshot
+	{
+		Element[]? buf;
+		readonly int count;
+		internal ChildSnapshot(List<Element> src) {
+			count = src.Count;
+			if (count == 0)
+				return;
+			buf = ArrayPool<Element>.Shared.Rent(count);
+			src.CopyTo(buf);
+		}
+		public readonly int Length => count;
+		public readonly Element this[int i] => (uint)i < (uint)count ? buf![i] : throw new IndexOutOfRangeException();
+		public readonly ReadOnlySpan<Element> AsSpan() => buf == null ? [] : buf.AsSpan(0, count);
+		public readonly ReadOnlySpan<Element>.Enumerator GetEnumerator() => AsSpan().GetEnumerator();
+		public void Dispose() {
+			if (buf == null)
+				return;
+			Array.Clear(buf, 0, count);
+			ArrayPool<Element>.Shared.Return(buf);
+			buf = null;
+		}
 	}
-	internal void UnlockChildren() {
-		for (int i = 0; i < CurrentChildrenCount; i++)
-			FlushedChildren[i] = null;
-	}
 
 	/// <summary>
-	/// Returns all children of this element. Does not allow modification of the elements children; use AddChild/SetParent functionality for that.
+	/// Returns a snapshot of this element's children. Does not allow modification of the elements children; use AddChild/SetParent functionality for that.
 	/// </summary>
-	/// <returns></returns>
-	public ReadOnlySpan<Element> GetChildren() => LockAndEnumerateChildren();
+	public ChildSnapshot GetChildren() => new(Children);
 
 	public ReadOnlySpan<char> GetElementName() => name;
 	public void SetElementName(ReadOnlySpan<char> name) {
@@ -662,7 +809,7 @@ public class Element : IValidatable
 		// Detach ourselves from the current parent
 		if (Parent != null) {
 			Parent.Children.Remove(this);
-			p?.InvalidateLayout();
+			Parent.InvalidateLayout();
 		}
 
 		// Set up fields from the new parent
@@ -727,13 +874,15 @@ public class Element : IValidatable
 		__renderbounds.H = layoutSize.H;
 		PostRenderBoundsFlush(ref __renderbounds);
 		RemoveFlag(ElementFlags.NeedsRenderBoundsFlush);
-		if (FORCE_ROUNDED_RENDERBOUNDS) {
-			__renderbounds.X = float.Floor(__renderbounds.X);
-			__renderbounds.Y = float.Floor(__renderbounds.Y);
-			__renderbounds.W = float.Floor(__renderbounds.W);
-			__renderbounds.H = float.Floor(__renderbounds.H);
-		}
+		if (FORCE_ROUNDED_RENDERBOUNDS)
+			SnapRect(ref __renderbounds);
 		SetLastLayoutTime(globals.CurTime);
+	}
+
+	static void SnapRect(ref RectangleF b) {
+		float x0 = MathF.Round(b.X), y0 = MathF.Round(b.Y);
+		float x1 = MathF.Round(b.X + b.W), y1 = MathF.Round(b.Y + b.H);
+		b = RectangleF.XYWH(x0, y0, x1 - x0, y1 - y0);
 	}
 
 	public double GetLastLayoutTime() {
@@ -753,6 +902,8 @@ public class Element : IValidatable
 	}
 
 	private void Layout() {
+		if (IsSchemeInvalid())
+			PerformApplySchemeSettings();
 		// Flush render bounds if we need that
 		FlushRenderBounds();
 		if (QueueCenter)
@@ -791,14 +942,16 @@ public class Element : IValidatable
 	}
 
 	private void ComputeSizeOfAllChildren() {
-		SetSizeOfAllChildren(Vector2F.Zero);
+		Vector2F ext = Vector2F.Zero;
 		foreach (var child in Children) {
-			if (child.IsVisible()) {
-				var ps = child.GetRenderBounds().Pos + child.GetRenderBounds().Size;
-				if (ps > GetSizeOfAllChildren())
-					SetSizeOfAllChildren(ps);
-			}
+			if (!child.IsVisible())
+				continue;
+			var rb = child.GetRenderBounds();
+			ext = new(MathF.Max(ext.X, rb.X + rb.W), MathF.Max(ext.Y, rb.Y + rb.H));
 		}
+		if (ext.X > 0) ext.X += _dockPadding.Right;
+		if (ext.Y > 0) ext.Y += _dockPadding.Bottom;
+		SetSizeOfAllChildren(ext);
 	}
 
 	private void DoCentering() {
@@ -817,10 +970,12 @@ public class Element : IValidatable
 	}
 	private void DoOriginAnchor() {
 		Element? parent = GetParent();
-		if (IValidatable.IsValid(parent) && (Origin != Anchor.TopLeft || Anchor != Anchor.TopLeft)) {
-			var np = Origin.CalculatePosition(__renderbounds.Pos, __renderbounds.Size, true);
+		if (Dock == Dock.None && IValidatable.IsValid(parent) && (Origin != Anchor.TopLeft || Anchor != Anchor.TopLeft)) {
+			var np = Origin.CalculatePosition(_position, __renderbounds.Size, true);
 			var npO = Anchor.CalculatePosition(new(0, 0), parent.__renderbounds.Size, false);
 			__renderbounds.Pos = npO + np;
+			if (FORCE_ROUNDED_RENDERBOUNDS)
+				SnapRect(ref __renderbounds);
 		}
 	}
 
@@ -907,6 +1062,9 @@ public class Element : IValidatable
 				childBounds.W -= child._dockMargin.X + child._dockMargin.W;
 				childBounds.H -= child._dockMargin.Y + child._dockMargin.H;
 			}
+
+			if (FORCE_ROUNDED_RENDERBOUNDS)
+				SnapRect(ref childBounds);
 
 			// manual layout flag setting here
 			if (childBoundsPreEdit != childBounds)
@@ -1051,7 +1209,7 @@ public class Element : IValidatable
 
 	public DynamicSizeReference DynamicTextSizeReference = DynamicSizeReference.None;
 
-	public float GetReferenceSize(DynamicSizeReference referenceValue) => DynamicTextSizeReference switch {
+	public float GetReferenceSize(DynamicSizeReference referenceValue) => referenceValue switch {
 		DynamicSizeReference.None => 1f,
 		DynamicSizeReference.WindowHeight => EngineCore.GetWindowHeight() / 900f,
 		DynamicSizeReference.ParentHeight => GetParent() == null ? 1 : GetParent()!.GetRenderBounds().Height / 20f,
@@ -1060,8 +1218,9 @@ public class Element : IValidatable
 	};
 
 	~Element() {
-		__RT1?.Dispose();
-		//OnRemoval();
+		var rt = __RT1;
+		if (rt != null)
+			MainThread.RunASAP(rt.Dispose);
 	}
 
 	public virtual void PreRenderRT() { }
@@ -1111,9 +1270,10 @@ public class Element : IValidatable
 
 
 	public void ClearChildren() {
-		foreach (var child in this.GetAddParent().LockAndEnumerateChildren())
-			child.Remove();
-		this.GetAddParent().UnlockChildren();
+		using (var children = this.GetAddParent().GetChildren()) {
+			foreach (var child in children)
+				child.Remove();
+		}
 
 		this.GetAddParent().Children.Clear();
 		InvalidateLayout();
@@ -1152,21 +1312,37 @@ public class Element : IValidatable
 		return MouseScroll(element, state, delta);
 	}
 
-	public double Lifetime => (DateTime.Now - Birth).TotalSeconds;
+	public double Lifetime => Stopwatch.GetElapsedTime(Birth).TotalSeconds;
 
 #if SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
 	private SecondOrderSystem? __mouseColorableHoverState;
 	private SecondOrderSystem? __mouseColorableDepressState;
 #endif
 
+	protected bool IsUsingSecondOrderSystemsForResponsiveness() =>
+#if SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
+		true;
+#else
+		false;
+#endif
+	protected SecondOrderSystem? GetColorableHoverState() => __mouseColorableDepressState;
+	protected SecondOrderSystem? GetColorableDepressState() => __mouseColorableDepressState;
+
 	public static Color MixColorBasedOnMouseState(Element e, Color original, Vector4 hoveredHSV, Vector4 depressedHSV) {
+		Color c;
 #if SECOND_ORDER_SYSTEM_MOUSE_RESPONSIVENESS
 		e.__mouseColorableHoverState ??= e.BuildHoveredSOS();
 		e.__mouseColorableDepressState ??= e.BuildDepressedSOS();
-		return MixColorBasedOnMouseState(e.__mouseColorableHoverState.Update(e.IsHovered() ? 1 : 0), e.__mouseColorableDepressState.Update(e.IsDepressed() ? 1 : 0), original, hoveredHSV, depressedHSV);
+		float yH = e.__mouseColorableHoverState.Update(e.IsHovered() ? 1 : 0), yD = e.__mouseColorableDepressState.Update(e.IsDepressed() ? 1 : 0);
+		c = MixColorBasedOnMouseState(yH, yD, original, hoveredHSV, depressedHSV);
+		if (e.BackgroundAlphaDependsOnHover)
+			c.A = (byte)Math.Clamp(c.A * yH, 0, 255);
 #else
-		return MixColorBasedOnMouseState(e.IsHovered() ? 1 : 0, e.Depressed ? 1 : 0, original, hoveredHSV, depressedHSV);
+		c = MixColorBasedOnMouseState(e.IsHovered() ? 1 : 0, e.IsDepressed() ? 1 : 0, original, hoveredHSV, depressedHSV);
+		if(e.BackgroundAlphaDependsOnHover && !e.IsHovered())
+			c.A = 0;
 #endif
+		return c;
 	}
 
 	private float GetSpecificSOSFloat(ReadOnlySpan<char> prefix, ReadOnlySpan<char> keyName, float def = 0) {
@@ -1206,11 +1382,9 @@ public class Element : IValidatable
 	public virtual void Center() {
 		if (Parent == null)
 			return;
-		if (!Parent.IsLayoutInvalid() || IsLayoutInvalid())
-			QueueCenter = true;
-		else {
-			DoCentering();
-		}
+		// Always defer to layout, which runs against the parent's current bounds
+		QueueCenter = true;
+		InvalidateLayout();
 	}
 
 
@@ -1245,15 +1419,9 @@ public class Element : IValidatable
 	public bool IsKeyboardFocused() => UI.GetKeyboardFocusedElement() == this;
 
 	public Vector2F GetGlobalPosition() {
-		Vector2F ret = new Vector2F(0, 0);
-		Element? t = this;
-		while (true) {
-			ret += t.GetRenderBounds().Pos + t.ChildRenderOffset;
-			t = t.Parent;
-			if (t == null || t == t.UI) {
-				break;
-			}
-		}
+		Vector2F ret = GetVisualPosition();
+		for (Element? p = Parent; p != null && p != p.UI; p = p.Parent)
+			ret += p.GetVisualPosition() + p.ChildRenderOffset.Round();
 		return ret;
 	}
 
@@ -1269,9 +1437,30 @@ public class Element : IValidatable
 	public Vector2F GetMousePos() => EngineCore.MousePos - this.GetGlobalPosition();
 
 	public void SizeToChildren(bool sizeW = true, bool sizeH = true) {
-		this.Size = new(sizeW ? 0 : this.Size.W, sizeH ? 0 : this.Size.H);
-		InvalidateLayout();
-		Size = new(sizeW ? GetSizeOfAllChildren().W : Size.W, sizeH ? GetSizeOfAllChildren().H : Size.H);
+		var host = GetAddParent();
+		host.ValidateLayout();
+
+		Vector2F ext = Vector2F.Zero;
+		foreach (var c in host.Children) {
+			if (!c.IsVisible() || c.Dock == Dock.Fill)
+				continue;
+			var rb = c.GetRenderBounds();
+			ext = new(MathF.Max(ext.X, rb.X + rb.W + c.DockMargin.Right),
+					  MathF.Max(ext.Y, rb.Y + rb.H + c.DockMargin.Bottom));
+		}
+
+		var pad = host.DockPadding;
+		ext += new Vector2F(pad.Right, pad.Bottom);
+		if (host != this) {
+			Vector2F hostOffset = Vector2F.Zero;
+			for (Element? e = host; e != null && e != this; e = e.Parent)
+				hostOffset += e.GetRenderBounds().Pos;
+			ext += hostOffset;
+			if (host.Dock != Dock.None)
+				ext += new Vector2F(host.DockMargin.Right, host.DockMargin.Bottom);
+		}
+
+		Size = new(sizeW ? ext.X : Size.W, sizeH ? ext.Y : Size.H);
 	}
 
 	public virtual void ProvideExample(Panel buildHere) { }
@@ -1341,6 +1530,7 @@ public class Element : IValidatable
 	public virtual void ApplySchemeSettings(IScheme scheme) {
 		backgroundColor.SetSchemeValue(scheme.GetColor("Nucleus.Background"));
 		foregroundColor.SetSchemeValue(scheme.GetColor("Nucleus.Border"));
+		focusedBorderColor.SetSchemeValue(scheme.GetColor("Nucleus.BorderKeyboardFocused", new(210, 255, 225, 255)));
 
 		SetFlag(ElementFlags.NeedsSchemeUpdate, false);
 	}
@@ -1367,7 +1557,7 @@ public class Element : IValidatable
 		float borderSize = BorderSize, roundness = Roundness;
 
 		if (roundness <= 0) {
-			Graphics2D.SetDrawColor(IsKeyboardFocused() ? new Color(210, 255, 225, 255) : fore);
+			Graphics2D.SetDrawColor(IsKeyboardFocused() ? focusedBorderColor.Get() : fore);
 			Graphics2D.DrawRectangleOutline(0, 0, width, height, borderSize);
 		}
 		else {
@@ -1375,11 +1565,81 @@ public class Element : IValidatable
 			roundness = Math.Clamp(roundness, 0, width / 2);
 			roundness = Math.Clamp(roundness, 0, height / 2);
 			int segments = (int)Math.Clamp(roundness * 1.5f, 0, 12);
-			Graphics2D.SetDrawColor(IsKeyboardFocused() ? new Color(210, 255, 225, 255) : fore);
+			Graphics2D.SetDrawColor(IsKeyboardFocused() ? focusedBorderColor.Get() : fore);
 			Graphics2D.DrawRectangleRoundedOutline(0, 0, width, height, roundness, borderSize, segments);
 		}
 	}
 	public virtual void PostChildPaint() { }
+
+	public virtual void DetermineTooltipDrawingSpace(Vector2F size, out Vector2F position) {
+		position = default;
+
+		switch (TooltipPositioningMode) {
+			case TooltipPositioningMode.MousePosition: {
+					position = Level.FrameState.Mouse.MousePos + TooltipOffset;
+				}
+				break;
+			case TooltipPositioningMode.AnchorInclusiveTopLeft:
+			case TooltipPositioningMode.AnchorInclusiveTopCenter:
+			case TooltipPositioningMode.AnchorInclusiveTopRight:
+			case TooltipPositioningMode.AnchorInclusiveCenterLeft:
+			case TooltipPositioningMode.AnchorInclusiveCenter:
+			case TooltipPositioningMode.AnchorInclusiveCenterRight:
+			case TooltipPositioningMode.AnchorInclusiveBottomLeft:
+			case TooltipPositioningMode.AnchorInclusiveBottomCenter:
+			case TooltipPositioningMode.AnchorInclusiveBottomRight:
+
+			case TooltipPositioningMode.AnchorExclusiveTopLeft:
+			case TooltipPositioningMode.AnchorExclusiveTopCenter:
+			case TooltipPositioningMode.AnchorExclusiveTopRight:
+			case TooltipPositioningMode.AnchorExclusiveCenterLeft:
+			case TooltipPositioningMode.AnchorExclusiveCenter:
+			case TooltipPositioningMode.AnchorExclusiveCenterRight:
+			case TooltipPositioningMode.AnchorExclusiveBottomLeft:
+			case TooltipPositioningMode.AnchorExclusiveBottomCenter:
+			case TooltipPositioningMode.AnchorExclusiveBottomRight:
+				bool exclusive = TooltipPositioningMode >= TooltipPositioningMode.AnchorExclusiveTopLeft;
+				Anchor anchor = exclusive ? (Anchor)((int)TooltipPositioningMode - 9) : (Anchor)(TooltipPositioningMode);
+
+				RectangleF renderBounds = GetRenderBounds();
+				Vector2F elementPosition = GetGlobalPosition();
+				var t2d = anchor.ToTextAlignment();
+
+				bool verticalEdge = t2d.Vertical != TextAlignment.Center;
+				bool horizontalEdge = t2d.Horizontal != TextAlignment.Center;
+
+				bool escapeVertical = exclusive && verticalEdge;
+				bool escapeHorizontal = exclusive && horizontalEdge && !verticalEdge;
+
+				switch (t2d.Vertical) {
+					case TextAlignment.Top:
+						elementPosition += new Vector2F(0, escapeVertical ? -size.H : 0);
+						break;
+					case TextAlignment.Center:
+						elementPosition += new Vector2F(0, (renderBounds.H / 2) - (size.H / 2));
+						break;
+					case TextAlignment.Bottom:
+						elementPosition += new Vector2F(0, renderBounds.H - (escapeVertical ? 0 : size.H));
+						break;
+				}
+
+				switch (t2d.Horizontal) {
+					case TextAlignment.Left:
+						elementPosition += new Vector2F(escapeHorizontal ? -size.W : 0, 0);
+						break;
+					case TextAlignment.Center:
+						elementPosition += new Vector2F((renderBounds.W / 2) - (size.W / 2), 0);
+						break;
+					case TextAlignment.Right:
+						elementPosition += new Vector2F(renderBounds.W - (escapeHorizontal ? 0 : size.W), 0);
+						break;
+				}
+
+				position = elementPosition + TooltipOffset;
+
+				break;
+		}
+	}
 
 	public virtual int GetPaintChildStartIndex() => 0;
 	public virtual int GetPaintChildEndIndex() => Children.Count;
@@ -1390,7 +1650,7 @@ public class Element : IValidatable
 		RectangleF parent = GetRenderBounds();
 		RectangleF childRect = child.GetRenderBounds();
 
-		childRect.Pos += ChildRenderOffset;
+		childRect.Pos = child.GetVisualPosition() + ChildRenderOffset;
 
 		RectangleF localParentBounds = RectangleF.XYWH(0, 0, parent.W, parent.H);
 		return RectangleF.IsRectangleInsideRectangle(localParentBounds, childRect, true);
@@ -1426,10 +1686,197 @@ public class Element : IValidatable
 		if (HasFlag(ElementFlags.NeedsSchemeUpdate) && current != null)
 			ApplySchemeSettings(current);
 	}
+
+	public TooltipPositioningMode TooltipPositioningMode;
+	public Vector2F TooltipOffset = new Vector2F(8, 8 + 16);
 }
 
 [Nucleus.MarkForStaticConstruction]
 public static class ElementConsoleInfo
 {
 	public static ConCommand nucleus_ui_examples = new("nucleus_ui_examples", (_, in _) => Element.CreateExampleWindow());
+}
+
+public enum TooltipPositioningMode
+{
+	MousePosition,
+
+	// Inclusive anchors within the bounds of the element, exclusive anchors outside of it
+	AnchorInclusiveTopLeft,
+	AnchorInclusiveTopCenter,
+	AnchorInclusiveTopRight,
+
+	AnchorInclusiveCenterLeft,
+	AnchorInclusiveCenter,
+	AnchorInclusiveCenterRight,
+
+	AnchorInclusiveBottomLeft,
+	AnchorInclusiveBottomCenter,
+	AnchorInclusiveBottomRight,
+
+	AnchorExclusiveTopLeft,
+	AnchorExclusiveTopCenter,
+	AnchorExclusiveTopRight,
+
+	AnchorExclusiveCenterLeft,
+	AnchorExclusiveCenter,
+	AnchorExclusiveCenterRight,
+
+	AnchorExclusiveBottomLeft,
+	AnchorExclusiveBottomCenter,
+	AnchorExclusiveBottomRight,
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct TooltipItem
+{
+	public int TextBytes;
+	public int FontBytes;
+	public Color Color;
+	public float Size;
+	// NOT STORED IN STRUCT LAYOUT:
+	// CHARACTERS <TextBytes>
+	// CHARACTERS <FontBytes>
+}
+
+public class HeapTooltipItem
+{
+	public static readonly HeapTooltipItem Empty = new("");
+	public readonly Color Color;
+	public readonly float Size;
+	public readonly string Text;
+	public readonly string Font;
+
+	public static implicit operator HeapTooltipItem(ReadOnlySpan<char> text) => new(text);
+
+	public HeapTooltipItem(ReadOnlySpan<char> text, ReadOnlySpan<char> font = default, Color? color = null, float size = 20) {
+		Color = color ?? Color.White;
+		if (font.IsEmpty) font = "Noto Sans";
+		Size = size;
+		Text = new(text.SliceNullTerminatedString());
+		Font = new(font.SliceNullTerminatedString());
+	}
+
+	public int GetSizeInBytes() => Unsafe.SizeOf<TooltipItem>() + ((Text.Length + Font.Length) * sizeof(char));
+	public void WriteTooltipItem(Span<byte> buffer) {
+		int bytes = GetSizeInBytes();
+		if (buffer.Length != bytes)
+			throw new ArgumentException($"Buffer size did not match expected size; did you size {nameof(buffer)} to {GetSizeInBytes}()?");
+		ElementTooltipWriter writer = new ElementTooltipWriter();
+		writer.AddTooltipItem(Text, Font, Size, Color);
+		writer.BeginWriting(buffer);
+		writer.AddTooltipItem(Text, Font, Size, Color);
+	}
+}
+
+public class HeapTooltip : List<HeapTooltipItem>
+{
+	public static implicit operator HeapTooltip(ReadOnlySpan<char> text) => [new(text)];
+
+	public int GetSizeInBytes() {
+		int bytes = 0;
+		foreach (var item in this)
+			bytes += item.GetSizeInBytes();
+		return bytes;
+	}
+
+	public void WriteTooltipItems(Span<byte> buffer) {
+		int bytes = GetSizeInBytes();
+		if (buffer.Length != bytes)
+			throw new ArgumentException($"Buffer size did not match expected size; did you size {nameof(buffer)} to {GetSizeInBytes}()?");
+		ElementTooltipWriter writer = new ElementTooltipWriter();
+		foreach (var item in this)
+			writer.AddTooltipItem(item.Text, item.Font, item.Size, item.Color);
+		writer.BeginWriting(buffer[..writer.GetAllocationSize()]);
+		foreach (var item in this)
+			writer.AddTooltipItem(item.Text, item.Font, item.Size, item.Color);
+	}
+}
+
+public ref struct ElementTooltipReader
+{
+	readonly ReadOnlySpan<byte> readTarget;
+	int ptr = 0;
+
+	public ReadOnlySpan<char> Text;
+	public ReadOnlySpan<char> Font;
+	public float FontSize;
+	public Color TextColor;
+
+	public ElementTooltipReader(ReadOnlySpan<byte> text) {
+		this.readTarget = text;
+		// Logs.Info($"Got read target {Convert.ToHexString(text)}");
+	}
+
+	public bool MoveNext() {
+		if (ptr >= this.readTarget.Length)
+			return false;
+
+		ReadOnlySpan<byte> readTarget = this.readTarget[ptr..];
+		int tooltipSizeof = Unsafe.SizeOf<TooltipItem>();
+		if (readTarget.Length < tooltipSizeof)
+			return false;
+
+		ref readonly TooltipItem tooltipHeader = ref MemoryMarshal.Cast<byte, TooltipItem>(readTarget[..tooltipSizeof])[0];
+
+		int textBytes = tooltipHeader.TextBytes;
+		int fontBytes = tooltipHeader.FontBytes;
+		int itemSize = tooltipSizeof + textBytes + fontBytes;
+
+		FontSize = tooltipHeader.Size;
+		TextColor = tooltipHeader.Color;
+		Text = MemoryMarshal.Cast<byte, char>(readTarget[tooltipSizeof..][..textBytes]);
+		Font = MemoryMarshal.Cast<byte, char>(readTarget[(tooltipSizeof + textBytes)..][..fontBytes]);
+
+		ptr += itemSize;
+
+		return true;
+	}
+}
+
+/// <summary>
+/// Builds a string of characters for Element tooltips
+/// </summary>
+public ref struct ElementTooltipWriter
+{
+	int allocationSize;
+	Span<byte> allocationBuffer;
+	int allocationPtr;
+
+	public int GetAllocationSize() => allocationSize;
+
+	public void AddTooltipItem(ReadOnlySpan<char> text, ReadOnlySpan<char> font = "", float fontSize = 20, Color? color = null) {
+		if (font.IsEmpty)
+			font = "Noto Sans";
+
+		int tooltipSizeof = Unsafe.SizeOf<TooltipItem>();
+		int textByteSize = sizeof(char) * text.Length;
+		int fontByteSize = sizeof(char) * font.Length;
+
+		int itemSize = tooltipSizeof + textByteSize + fontByteSize;
+		if (allocationBuffer.IsEmpty)
+			allocationSize += itemSize;
+		else {
+			Span<byte> bufferTarget = allocationBuffer[allocationPtr..][..itemSize];
+
+			MemoryMarshal.Cast<byte, TooltipItem>(bufferTarget[..tooltipSizeof])[0] = new() {
+				Color = color ?? Color.White,
+				Size = fontSize,
+				TextBytes = textByteSize,
+				FontBytes = fontByteSize
+			};
+
+			text.CopyTo(MemoryMarshal.Cast<byte, char>(bufferTarget[tooltipSizeof..][..textByteSize]));
+			font.CopyTo(MemoryMarshal.Cast<byte, char>(bufferTarget[(tooltipSizeof + textByteSize)..][..fontByteSize]));
+
+			allocationPtr += itemSize;
+		}
+
+	}
+	public void BeginWriting(Span<byte> allocatedBuffer) {
+		if (allocatedBuffer.Length != allocationSize)
+			throw new ArgumentException("Allocated buffer must be the computed size of the tooltip builder.");
+		this.allocationBuffer = allocatedBuffer;
+		allocationPtr = 0;
+	}
 }

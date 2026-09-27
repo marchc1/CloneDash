@@ -1,5 +1,6 @@
 ﻿using Nucleus.Common.Input;
 using Nucleus.Common.Types;
+using Nucleus.Common.UI;
 using Nucleus.Core;
 using Nucleus.Types;
 
@@ -16,15 +17,27 @@ public class Menu(Element? parent) : Panel(parent)
 {
 	internal class MenuSeparatorPanel : Panel
 	{
+		readonly Menu menu;
 		public MenuSeparatorPanel(Menu parent) : base(parent) {
+			menu = parent;
 			SetPaintBackgroundEnabled(false);
 			SetPaintBorderEnabled(false);
 		}
 		public override void Paint(float width, float height) {
-			var c = 145;
-			Graphics2D.SetDrawColor(c, c, c);
-			Graphics2D.DrawLine(8, height / 2, (width) - (8 * 2), height / 2);
+			Graphics2D.SetDrawColor(menu.separatorColor.Get());
+			Graphics2D.DrawLine(8, height / 2, width - 8, height / 2);
 		}
+	}
+
+	SchemeableSetting<Color> separatorColor = SchemeableSetting<Color>.Default(new(145, 145, 145, 255));
+	SchemeableSetting<Color> itemHoveredColor = SchemeableSetting<Color>.Default(new(70, 80, 90, 222));
+
+	public override void ApplySchemeSettings(IScheme scheme) {
+		base.ApplySchemeSettings(scheme);
+		SetBgSchemeColor(scheme.GetColor("Nucleus.Menu.Background", new(20, 30, 45, 220)));
+		SetFgSchemeColor(scheme.GetColor("Nucleus.Menu.Border", new(190, 195, 195, 114)));
+		separatorColor.SetSchemeValue(scheme.GetColor("Nucleus.Menu.Separator", new(145, 145, 145, 255)));
+		itemHoveredColor.SetSchemeValue(scheme.GetColor("Nucleus.Menu.ItemHovered", new(70, 80, 90, 222)));
 	}
 
 	internal class MenuButtonPanel(Menu parent, MenuButton btn) : Button(parent)
@@ -56,7 +69,7 @@ public class Menu(Element? parent) : Panel(parent)
 			var by = new Vector2F(x, 0);
 			Graphics2D.OffsetDrawing(by);
 			if (IsHovered()) {
-				Graphics2D.SetDrawColor(70, 80, 90, 222);
+				Graphics2D.SetDrawColor(parent.itemHoveredColor.Get());
 				Graphics2D.DrawRectangle(0, 0, width, height);
 			}
 			base.Paint(width, height);
@@ -90,7 +103,7 @@ public class Menu(Element? parent) : Panel(parent)
 			var by = new Vector2F(x, 0);
 			Graphics2D.OffsetDrawing(by);
 			if (IsHovered()) {
-				Graphics2D.SetDrawColor(70, 80, 90, 222);
+				Graphics2D.SetDrawColor(parent.itemHoveredColor.Get());
 				Graphics2D.DrawRectangle(0, 0, width, height);
 			}
 			base.Paint(width, height);
@@ -117,14 +130,11 @@ public class Menu(Element? parent) : Panel(parent)
 	Element? lastHoveredPiece = null;
 
 	public void Open(Vector2F pos, bool popup = true, Menu? parent = null) {
-		this.		Position = pos;
+		this.Position = pos;
 		this.BorderSize = 1;
 
-		this.SetBgColor(new Color(20, 30, 45, 220));
-		this.SetFgColor(new Color(190, 195, 195, 114));
-
 		var i = 0;
-		this.		Clipping = false;
+		this.Clipping = false;
 		reverse = false;
 		activeSubmenu = null;
 		lastHoveredPiece = null;
@@ -139,31 +149,31 @@ public class Menu(Element? parent) : Panel(parent)
 						continue;
 
 					var s = new MenuSeparatorPanel(this);
-					s.					Dock = Dock.Top;
-					s.					Size = new Types.Vector2F(0, 5);
+					s.Dock = Dock.Top;
+					s.Size = new Types.Vector2F(0, 5);
 					break;
 				case MenuButton btn: {
 						var b = new MenuButtonPanel(this, btn);
-						b.						Dock = Dock.Top;
-						b.						Size = new Types.Vector2F(0, 28);
-						b.						Text = btn.text;
+						b.Dock = Dock.Top;
+						b.Size = new Types.Vector2F(0, 28);
+						b.Text = btn.text;
 						b.SetAutoSize(false);
 						b.SetTextPadding(new(12, 12));
-						b.						TextSize = 18;
+						b.TextSize = 18;
 						b.SetTextAlignment(Anchor.CenterLeft);
 						b.SetBgColor(new Color(0, 0, 0, 0));
 						b.BorderSize = 0;
-						b.						Clipping = false;
+						b.Clipping = false;
 					}
 					break;
 				case MenuSubmenu submenu: {
 						var b = new MenuSubMenuButtonPanel(this, submenu);
-						b.						Dock = Dock.Top;
-						b.						Size = new Types.Vector2F(0, 28);
-						b.						Text = submenu.text;
+						b.Dock = Dock.Top;
+						b.Size = new Types.Vector2F(0, 28);
+						b.Text = submenu.text;
 						b.SetAutoSize(false);
 						b.SetTextPadding(new(12, 12));
-						b.						TextSize = 18;
+						b.TextSize = 18;
 						b.SetTextAlignment(Anchor.CenterLeft);
 						b.SetBgColor(new Color(0, 0, 0, 0));
 						b.BorderSize = 0;
@@ -179,32 +189,36 @@ public class Menu(Element? parent) : Panel(parent)
 			}
 			i++;
 		}
+		// Width from the widest item's text; height is just the items' heights stacked
 		float pX = 0;
 		float pY = 0;
-		ValidateLayout();
 		foreach (var child in Children) {
+			if (child.Dock == Dock.Top)
+				pY += child.Size.H;
 			if (child is ITextElement textElement) {
-				child.FlushRenderBounds();
-				var newP = child.GetRenderBounds().Pos + Graphics2D.GetTextSize(textElement.Text, textElement.Font, textElement.TextSize) + 16;
-				if (newP.X > pX) pX = newP.X;
-				if (newP.Y > pY) pY = newP.Y;
+				var textW = Graphics2D.GetTextSize(textElement.Text, textElement.Font, textElement.TextSize).X + 16;
+				if (textW > pX) pX = textW;
 			}
-
 		}
-		this.		Size = new(pX + 12, pY - 4);
-		var whereIsEnd = this.Position + this.Size + new Vector2F(4, 4);
+		this.Size = new(pX + 12, pY);
+
+		// Edge checks happen in UI space; for submenus, pos is local to the parent button
+		Vector2F globalPos = pos;
+		if (GetParent() is Element parentElement && parentElement != UI)
+			globalPos += parentElement.GetGlobalPosition() + parentElement.ChildRenderOffset;
+		var whereIsEnd = globalPos + this.Size + new Vector2F(4, 4);
+		RectangleF uiBounds = UI.GetRenderBounds();
 
 		TextAlignment lr = TextAlignment.Left;
 		TextAlignment tb = TextAlignment.Top;
 
-		if (whereIsEnd.X > EngineCore.GetScreenBounds().W) {
+		if (whereIsEnd.X > uiBounds.W) {
 			lr = TextAlignment.Right;
 			reverse = true;
 		}
-		if (whereIsEnd.Y > EngineCore.GetScreenBounds().H) tb = TextAlignment.Bottom;
+		if (whereIsEnd.Y > uiBounds.H) tb = TextAlignment.Bottom;
 
-		this.
-		Origin = new TextAlignment2D(lr, tb).ToAnchor();
+		this.Origin = new TextAlignment2D(lr, tb).ToAnchor();
 		if (popup) {
 			this.MakeModal();
 			this.MakePopup();
@@ -238,5 +252,12 @@ public class Menu(Element? parent) : Panel(parent)
 			this.Close();
 			UI.Input.OnClick -= UI_OnElementClicked;
 		}
+	}
+
+	protected override void OnRemoval() {
+		base.OnRemoval();
+		// Closing via a menu item never goes through UI_OnElementClicked; don't leave the handler holding a dead menu
+		if (UI != null)
+			UI.Input.OnClick -= UI_OnElementClicked;
 	}
 }

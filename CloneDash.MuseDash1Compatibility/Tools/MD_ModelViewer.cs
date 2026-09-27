@@ -363,7 +363,7 @@ public class MD_ModelThumbnailCard : Button
 
 	bool IsVisibleInViewport() {
 		if (Viewport == null) return true;
-		var viewportPos = Viewport.GetGlobalPosition() - Viewport.ChildRenderOffset;
+		var viewportPos = Viewport.GetGlobalPosition() - Viewport.RenderOffset;
 		var viewportRect = RectangleF.FromPosAndSize(viewportPos, Viewport.GetRenderBounds().Size);
 		viewportRect = viewportRect + new RectangleF(-PREFETCH_MARGIN, -PREFETCH_MARGIN, PREFETCH_MARGIN * 2, PREFETCH_MARGIN * 2);
 		var cardRect = RectangleF.FromPosAndSize(GetGlobalPosition(), GetRenderBounds().Size);

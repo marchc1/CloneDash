@@ -1,10 +1,13 @@
 ﻿using Nucleus.Common.Input;
 using Nucleus.Common.Types;
+using Nucleus.Common.UI;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Types;
 using Raylib_cs;
+
+using System.Diagnostics;
 
 namespace Nucleus.UI;
 
@@ -61,6 +64,7 @@ internal struct TextLine
 	public float Width;
 	public float Height;
 	public float Y;
+	public int PrefixStart;
 
 	public readonly int End => Start + Length;
 	public override string ToString() => $"Line(start:{Start}, len:{Length}, w:{Width:F1}, h:{Height:F1}, y:{Y:F1})";
@@ -100,13 +104,15 @@ public class Textbox : Label
 	public bool IsPassword { get; set; } = false;
 	public int TabSize { get; set; } = 4;
 	public readonly Caret Caret = new();
-	public DateTime LastKeyboardInteraction { get; private set; } = DateTime.Now;
+	long lastKeyboardInteraction = Stopwatch.GetTimestamp();
+	public override bool WantsTextInput => true;
 
 	public delegate void TextChangedDelegate(Textbox textbox, string oldText, string newText);
 	public event TextChangedDelegate? OnUserPressedEnter;
 	public event TextChangedDelegate? OnTextChanged;
 
 	readonly List<TextLine> lines = [];
+	readonly List<float> prefixWidths = [];
 	bool linesInvalid = true;
 
 	float scrollOffsetY = 0;
@@ -115,7 +121,7 @@ public class Textbox : Label
 	readonly List<UndoEntry> undoStack = [];
 	readonly List<UndoEntry> redoStack = [];
 	const int MaxUndoEntries = 128;
-	DateTime lastUndoPush = DateTime.MinValue;
+	long lastUndoPush = long.MinValue;
 
 	public Textbox(Element? parent) : base(parent) {
 		Text = "";
@@ -159,7 +165,7 @@ public class Textbox : Label
 		if (inPerformUndoOrRedo)
 			return;
 
-		if (!force && (DateTime.Now - lastUndoPush).TotalMilliseconds < 400 && undoStack.Count > 0)
+		if (!force && lastUndoPush != long.MinValue && Stopwatch.GetElapsedTime(lastUndoPush).TotalMilliseconds < 400 && undoStack.Count > 0)
 			return;
 
 		if (undoStack.Count >= MaxUndoEntries)
@@ -167,7 +173,7 @@ public class Textbox : Label
 
 		undoStack.Add(new UndoEntry(text, Caret.Position));
 		redoStack.Clear();
-		lastUndoPush = DateTime.Now;
+		lastUndoPush = Stopwatch.GetTimestamp();
 	}
 
 	void PerformUndo() {
@@ -213,25 +219,55 @@ public class Textbox : Label
 		return true;
 	}
 	string DisplayText => IsPassword ? new string('•', text.Length) : text;
+
+	RectangleF TextArea() {
+		var c = GetContentRect();
+		var p = GetTextPadding();
+		return RectangleF.XYWH(p.X, p.Y, MathF.Max(0, c.W - p.X * 2), MathF.Max(0, c.H - p.Y * 2));
+	}
+
+	void AddLine(ReadOnlySpan<char> text, int start, int length, float y, float height) {
+		int prefixStart = prefixWidths.Count;
+		float x = 0;
+		prefixWidths.Add(0);
+		for (int i = 0; i < length; i++) {
+			x += Graphics2D.GetTextSize(text.Slice(start + i, 1), Font, GetRenderTextSize()).X;
+			prefixWidths.Add(x);
+		}
+		lines.Add(new TextLine { Start = start, Length = length, Width = x, Height = height, Y = y, PrefixStart = prefixStart });
+	}
+
+	float PrefixWidth(in TextLine line, int col) => prefixWidths[line.PrefixStart + Math.Clamp(col, 0, line.Length)];
+
+	int ColumnAtX(in TextLine line, float x) {
+		for (int i = 0; i < line.Length; i++) {
+			float left = PrefixWidth(line, i), right = PrefixWidth(line, i + 1);
+			if (x < (left + right) * 0.5f)
+				return i;
+		}
+		return line.Length;
+	}
+
 	void ValidateLines() {
 		if (!linesInvalid) return;
 		linesInvalid = false;
 		lines.Clear();
+		prefixWidths.Clear();
 
 		string text = DisplayText ?? "";
+		float textSize = GetRenderTextSize();
+		float emptyLineH = Graphics2D.GetTextSize("X", Font, textSize).Y;
 		if (text.Length == 0) {
-			float lineH = Graphics2D.GetTextSize("X", Font, TextSize).Y;
-			lines.Add(new TextLine { Start = 0, Length = 0, Width = 0, Height = lineH, Y = 0 });
+			AddLine(text, 0, 0, 0, emptyLineH);
 			return;
 		}
 
 		if (!MultiLine) {
-			var sz = Graphics2D.GetTextSize(text, Font, TextSize);
-			lines.Add(new TextLine { Start = 0, Length = text.Length, Width = sz.X, Height = sz.Y, Y = 0 });
+			AddLine(text, 0, text.Length, 0, Graphics2D.GetTextSize(text, Font, textSize).Y);
 			return;
 		}
 
-		float availableW = GetRenderBounds().Width - GetTextPadding().X * 2 - 4;
+		float availableW = TextArea().W;
 		if (availableW <= 0) availableW = 1;
 
 		float yAccum = 0;
@@ -244,9 +280,8 @@ public class Textbox : Label
 			int segLen = segEnd - cursor;
 
 			if (segLen == 0) {
-				float lineH = Graphics2D.GetTextSize("X", Font, TextSize).Y;
-				lines.Add(new TextLine { Start = cursor, Length = 0, Width = 0, Height = lineH, Y = yAccum });
-				yAccum += lineH;
+				AddLine(text, cursor, 0, yAccum, emptyLineH);
+				yAccum += emptyLineH;
 			}
 			else {
 				int pos = cursor;
@@ -256,7 +291,7 @@ public class Textbox : Label
 					int lineStart = pos;
 
 					while (pos < segEnd) {
-						var chSz = Graphics2D.GetTextSize(text.AsSpan().Slice(pos, 1), Font, TextSize);
+						var chSz = Graphics2D.GetTextSize(text.AsSpan().Slice(pos, 1), Font, textSize);
 						if (lineW > 0 && lineW + chSz.X > availableW)
 							break;
 						lineW += chSz.X;
@@ -265,15 +300,9 @@ public class Textbox : Label
 					}
 
 					if (lineH == 0)
-						lineH = Graphics2D.GetTextSize("X", Font, TextSize).Y;
+						lineH = emptyLineH;
 
-					lines.Add(new TextLine {
-						Start = lineStart,
-						Length = pos - lineStart,
-						Width = lineW,
-						Height = lineH,
-						Y = yAccum
-					});
+					AddLine(text, lineStart, pos - lineStart, yAccum, lineH);
 					yAccum += lineH;
 				}
 			}
@@ -309,20 +338,16 @@ public class Textbox : Label
 		var line = lines[lineIndex];
 		if (col <= 0) return 0;
 
-		int clampedCol = Math.Min(col, line.Length);
-		string text = DisplayText;
-		return Graphics2D.GetTextSize(text.AsSpan().Slice(line.Start, clampedCol), Font, TextSize).X;
+		return PrefixWidth(line, col);
 	}
 
-	int HitTestPosition(Vector2F localPos) {
+	int HitTestPosition(Vector2F mouseLocalToElement) {
 		ValidateLines();
 
-		float textAreaX = GetTextPadding().X + 2;
-		float textAreaY = GetTextPadding().Y + 2;
-		float relX = localPos.X - textAreaX;
-		float relY = localPos.Y - textAreaY + scrollOffsetY;
-
-		string text = DisplayText;
+		// Into content space (where Paint draws), then into the text area exactly as DrawTextLines does
+		Vector2F local = mouseLocalToElement - GetContentRect().Pos;
+		RectangleF area = TextArea();
+		float relY = local.Y - area.Y + scrollOffsetY;
 
 		int targetLine = lines.Count - 1;
 		for (int i = 0; i < lines.Count; i++) {
@@ -333,30 +358,17 @@ public class Textbox : Label
 		}
 
 		var line = lines[targetLine];
-
-		float lineStartX = GetLineDrawX(line, GetRenderBounds().Width);
-		relX -= lineStartX - textAreaX;
-
-		float accumX = 0;
-		for (int i = 0; i < line.Length; i++) {
-			var chSz = Graphics2D.GetTextSize(text.AsSpan().Slice(line.Start + i, 1), Font, TextSize);
-			if (relX < accumX + chSz.X * 0.5f)
-				return line.Start + i;
-			accumX += chSz.X;
-		}
-
-		return line.Start + line.Length;
+		return line.Start + ColumnAtX(line, local.X - GetLineDrawX(line));
 	}
 
-	float GetLineDrawX(TextLine line, float width) {
-		float padX = GetTextPadding().X + 2;
-		float availW = width - padX * 2;
+	float GetLineDrawX(TextLine line) {
+		RectangleF area = TextArea();
 
 		var halign = GetTextAlignment().ToTextAlignment().Horizontal;
 		return halign switch {
-			Types.TextAlignment.Center => padX + (availW - line.Width) / 2f,
-			Types.TextAlignment.Right => padX + availW - line.Width,
-			_ => padX
+			Types.TextAlignment.Center => area.X + (area.W - line.Width) / 2f,
+			Types.TextAlignment.Right => area.X + area.W - line.Width,
+			_ => area.X
 		};
 	}
 
@@ -413,7 +425,7 @@ public class Textbox : Label
 
 		var line = lines[lineIdx];
 		float caretY = line.Y;
-		float visibleH = GetRenderBounds().Height - GetTextPadding().Y * 2 - 4;
+		float visibleH = TextArea().H;
 
 		if (caretY < scrollOffsetY)
 			scrollOffsetY = caretY;
@@ -445,7 +457,7 @@ public class Textbox : Label
 		return true;
 	}
 
-	private DateTime lastClickTime = DateTime.MinValue;
+	private long lastClickTime = long.MinValue;
 	private int clickCount = 0;
 
 	protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
@@ -455,8 +467,8 @@ public class Textbox : Label
 
 		KeyboardFocus();
 
-		var now = DateTime.Now;
-		if ((now - lastClickTime).TotalMilliseconds < 400)
+		long now = Stopwatch.GetTimestamp();
+		if (lastClickTime != long.MinValue && Stopwatch.GetElapsedTime(lastClickTime, now).TotalMilliseconds < 400)
 			clickCount++;
 		else
 			clickCount = 1;
@@ -514,7 +526,7 @@ public class Textbox : Label
 		ValidateLines();
 
 		float totalH = lines.Count > 0 ? lines[^1].Y + lines[^1].Height : 0;
-		float visibleH = GetRenderBounds().Height - GetTextPadding().Y * 2 - 4;
+		float visibleH = TextArea().H;
 		scrollOffsetY = Math.Clamp(scrollOffsetY, 0, Math.Max(0, totalH - visibleH));
 
 		return true;
@@ -581,7 +593,7 @@ public class Textbox : Label
 		if (action.Type == CharacterType.NoAction)
 			return true;
 
-		LastKeyboardInteraction = DateTime.Now;
+		lastKeyboardInteraction = Stopwatch.GetTimestamp();
 		var oldText = text;
 
 		bool ctrl = state.ControlDown;
@@ -807,67 +819,62 @@ public class Textbox : Label
 		}
 
 		var line = lines[targetLine];
-		ReadOnlySpan<char> text = DisplayText;
-		float accumX = 0;
-		int bestPos = line.Start;
-
-		for (int i = 0; i < line.Length; i++) {
-			var chSz = Graphics2D.GetTextSize(text.Slice(line.Start + i, 1), Font, TextSize);
-			if (accumX + chSz.X * 0.5f > preferredX) {
-				bestPos = line.Start + i;
-				break;
-			}
-			accumX += chSz.X;
-			bestPos = line.Start + i + 1;
-		}
-
-		Caret.Position = Math.Min(bestPos, line.Start + line.Length);
+		Caret.Position = line.Start + ColumnAtX(line, preferredX);
 	}
+
+	SchemeableSetting<Color> bgFocusedColor = SchemeableSetting<Color>.Default(new(20, 32, 25, 127));
+	SchemeableSetting<Color> fgFocusedColor = SchemeableSetting<Color>.Default(new(85, 110, 95, 255));
+	SchemeableSetting<Color> selectionColor = SchemeableSetting<Color>.Default(new(170, 200, 255, 80));
+	SchemeableSetting<Color> caretColor = SchemeableSetting<Color>.Default(new(240, 248, 255, 255));
+
+	public override void ApplySchemeSettings(IScheme scheme) {
+		base.ApplySchemeSettings(scheme);
+
+		SetBgSchemeColor(scheme.GetColor("Nucleus.Textbox.Background", scheme.GetColor("Nucleus.Background")));
+		SetFgSchemeColor(scheme.GetColor("Nucleus.Textbox.Border", scheme.GetColor("Nucleus.Border")));
+		bgFocusedColor.SetSchemeValue(scheme.GetColor("Nucleus.Textbox.BackgroundFocused", new(20, 32, 25, 127)));
+		fgFocusedColor.SetSchemeValue(scheme.GetColor("Nucleus.Textbox.BorderFocused", new(85, 110, 95, 255)));
+		selectionColor.SetSchemeValue(scheme.GetColor("Nucleus.Textbox.Selection", new(170, 200, 255, 80)));
+		caretColor.SetSchemeValue(scheme.GetColor("Nucleus.Textbox.Caret", new(240, 248, 255, 255)));
+	}
+
+	Color GetStateBgColor() => IsKeyboardFocused() && !HasUserBgColor ? bgFocusedColor.Get() : GetBgColor();
+	Color GetStateFgColor() => IsKeyboardFocused() && !HasUserFgColor ? fgFocusedColor.Get() : GetFgColor();
 
 	public override void Paint(float width, float height) {
 		ValidateLines();
 
-		SetBgColor(IsKeyboardFocused() ? new Color(20, 32, 25, 127) : new Color(20, 25, 32, 127));
-		SetFgColor(IsKeyboardFocused() ? new Color(85, 110, 95, 255) : new Color(85, 95, 110, 255));
-
 		Color back;
 		if (!ReadOnly) {
-			back = MixColorBasedOnMouseState(this, GetBgColor(), new(0, 1.1f, 2.3f, 1f), new(0, 1.2f, 0.6f, 1f));
+			back = MixColorBasedOnMouseState(this, GetStateBgColor(), new(0, 1.1f, 2.3f, 1f), new(0, 1.2f, 0.6f, 1f));
 		}
 		else {
-			back = GetBgColor();
+			back = GetStateBgColor();
 		}
 
 		Graphics2D.SetDrawColor(back);
 		Graphics2D.DrawRectangle(0, 0, width, height);
 
-		string text = DisplayText ?? "";
-		bool showPlaceholder = text.Length == 0;
-
-		var colorStore = GetTextColor();
-		if (showPlaceholder) {
-			text = HelperText; // switch pointer for a minute to helper text
-			SetTextColor(GetTextColor().Adjust(0, -0.1, -0.4));
-		}
+		bool showPlaceholder = (DisplayText ?? "").Length == 0;
 
 		if (Caret.HasSelection && !showPlaceholder)
 			DrawSelection(width, height);
 
-		if (showPlaceholder || lines.Count == 0)
-			base.Paint(width, height);
+		if (showPlaceholder) {
+			if (HelperText.Length > 0 && lines.Count > 0) {
+				Graphics2D.SetDrawColor(GetTextColor().Adjust(0, -0.1, -0.4));
+				var line = lines[0];
+				Graphics2D.DrawText(GetLineDrawX(line), TextArea().Y, HelperText, Font, GetRenderTextSize(), Anchor.TopLeft);
+			}
+		}
 		else
 			DrawTextLines(width, height);
 
-		if (showPlaceholder) {
-			text = ""; // switch back to empty
-			SetTextColor(colorStore);
-		}
-
-		if (IsKeyboardFocused() && (DateTime.Now - LastKeyboardInteraction).TotalSeconds % 0.666 < 0.333)
+		if (IsKeyboardFocused() && Stopwatch.GetElapsedTime(lastKeyboardInteraction).TotalSeconds % 0.666 < 0.333)
 			DrawCaret(width, height);
 	}
 	public override void PaintBorder(float width, float height) {
-		Color fore = MixColorBasedOnMouseState(this, GetFgColor(), new(0, 1.1f, 1.3f, 1f), new(0, 1.2f, 0.6f, 1f));
+		Color fore = MixColorBasedOnMouseState(this, GetStateFgColor(), new(0, 1.1f, 1.3f, 1f), new(0, 1.2f, 0.6f, 1f));
 		Graphics2D.SetDrawColor(fore);
 		Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
 	}
@@ -880,7 +887,7 @@ public class Textbox : Label
 
 		Graphics2D.SetDrawColor(textC);
 
-		float padY = GetTextPadding().Y + 2;
+		float padY = TextArea().Y;
 
 		foreach (var line in lines) {
 			float drawY = padY + line.Y - scrollOffsetY;
@@ -890,20 +897,19 @@ public class Textbox : Label
 
 			if (line.Length == 0) continue;
 
-			float drawX = GetLineDrawX(line, width);
+			float drawX = GetLineDrawX(line);
 			ReadOnlySpan<char> lineText = text.AsSpan().Slice(line.Start, line.Length);
-			Graphics2D.DrawText(drawX, drawY, lineText, Font, TextSize, Anchor.TopLeft);
+			Graphics2D.DrawText(drawX, drawY, lineText, Font, GetRenderTextSize(), Anchor.TopLeft);
 		}
 	}
 
 	void DrawSelection(float width, float height) {
 		int selStart = Caret.SelectionStart;
 		int selEnd = Caret.SelectionEnd;
-		string text = DisplayText;
 
-		float padY = GetTextPadding().Y + 2;
+		float padY = TextArea().Y;
 
-		Graphics2D.SetDrawColor(170, 200, 255, 80);
+		Graphics2D.SetDrawColor(selectionColor.Get());
 
 		foreach (var line in lines) {
 			int lineEnd = line.Start + line.Length;
@@ -913,11 +919,8 @@ public class Textbox : Label
 			int overlapStart = Math.Max(selStart, line.Start);
 			int overlapEnd = Math.Min(selEnd, lineEnd);
 
-			float startX = GetLineDrawX(line, width);
-			if (overlapStart > line.Start)
-				startX += Graphics2D.GetTextSize(text.AsSpan().Slice(line.Start, overlapStart - line.Start), Font, TextSize).X;
-
-			float selW = Graphics2D.GetTextSize(text.AsSpan().Slice(overlapStart, overlapEnd - overlapStart), Font, TextSize).X;
+			float startX = GetLineDrawX(line) + PrefixWidth(line, overlapStart - line.Start);
+			float selW = PrefixWidth(line, overlapEnd - line.Start) - PrefixWidth(line, overlapStart - line.Start);
 			float drawY = padY + line.Y - scrollOffsetY;
 
 			float pad = 2;
@@ -927,17 +930,15 @@ public class Textbox : Label
 
 	void DrawCaret(float width, float height) {
 		ValidateLines();
-		string text = DisplayText;
 
 		var (lineIdx, col) = CharIndexToLineCol(Caret.Position);
 		if (lineIdx < 0 || lineIdx >= lines.Count) return;
 		var line = lines[lineIdx];
 
-		float drawX = GetLineDrawX(line, width) + GetCaretXInLine(lineIdx, col);
-		float padY = GetTextPadding().Y + 2;
-		float drawY = padY + line.Y - scrollOffsetY;
+		float drawX = MathF.Round(GetLineDrawX(line) + GetCaretXInLine(lineIdx, col));
+		float drawY = TextArea().Y + line.Y - scrollOffsetY;
 
-		Graphics2D.SetDrawColor(240, 248, 255);
+		Graphics2D.SetDrawColor(caretColor.Get());
 		Graphics2D.DrawLine(drawX, drawY, drawX, drawY + line.Height);
 	}
 }

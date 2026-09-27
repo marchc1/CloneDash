@@ -428,6 +428,12 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			Position = Position - GetRenderBounds().Size / 2;
 			Position = Position + new Vector2F(levelSelector.GetRenderBounds().W / 4f, 0);
 			Size = new(256, height);
+
+			foreach (var button in buttons) {
+				var life = button.Lifetime - (button.offset * .15f);
+				var xOffset = (float)NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
+				button.RenderOffset = new(xOffset, 0);
+			}
 		}
 
 		protected override void PerformLayout(float width, float height) {
@@ -437,9 +443,14 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		internal void UpdateHeight(int v) {
 			height = v;
 		}
+
+		readonly List<LevelSelectorSelectDifficultyButton> buttons = [];
+		internal void AddButton(LevelSelectorSelectDifficultyButton button) {
+			buttons.Add(button);
+		}
 	}
 
-	class LevelSelectorSelectDifficultyButton(Element parent, string difficultyName, SongChartMetadata metadata) : Button(parent)
+	class LevelSelectorSelectDifficultyButton : Button
 	{
 		public override void PaintBackground(float w, float h) {
 			var life = Lifetime - (offset * .15f);
@@ -458,10 +469,6 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			}
 		}
 		public override void Paint(float w, float h) {
-			var life = Lifetime - (offset * .15f);
-			var xOffset = (float)NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
-			ChildRenderOffset = new(xOffset, 0);
-
 			base.Paint(w, h);
 
 			Vector2F textDrawingPosition = Anchor.CenterRight.GetPositionGivenAlignment(GetRenderBounds().Size, GetTextPadding());
@@ -470,7 +477,15 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		}
 
 		bool autoplayChart;
-		float offset;
+		public float offset;
+		private readonly string difficultyName;
+		private readonly SongChartMetadata metadata;
+
+		public LevelSelectorSelectDifficultyButton(LevelSelectorDifficultiesPanel parent, string difficultyName, SongChartMetadata metadata) : base(parent) {
+			this.difficultyName = difficultyName;
+			this.metadata = metadata;
+			parent.AddButton(this);
+		}
 
 		protected override void OnThink() {
 			base.OnThink();
@@ -577,7 +592,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	}
 
 	private static LevelSelectorSelectDifficultyButton? CreateDifficulty(
-		FlexPanel levelSelector, ISongChart chart, in SongChartMetadata metadata
+		LevelSelectorDifficultiesPanel levelSelector, ISongChart chart, in SongChartMetadata metadata
 	)
 		=> CreateDifficulty(levelSelector, (autoplay) => {
 			levelSelector.Level.As<MainMenuLevel>().LoadChartSheetLevel(chart, autoplay);
@@ -646,7 +661,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		Character.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Curtime * 1.5, 0, 1))) * -(FrameState.WindowWidth / 2), 0);
 	}
 
-	private static LevelSelectorSelectDifficultyButton? CreateDifficulty(FlexPanel levelSelector, Action<bool> onClick, SongChartMetadata metadata) {
+	private static LevelSelectorSelectDifficultyButton? CreateDifficulty(LevelSelectorDifficultiesPanel levelSelector, Action<bool> onClick, SongChartMetadata metadata) {
 		var difficultyName = metadata.DifficultyName;
 		var buttonColor = metadata.Color;
 		var designer = metadata.ChartAuthors;

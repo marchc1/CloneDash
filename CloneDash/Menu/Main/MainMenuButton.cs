@@ -41,7 +41,7 @@ public class MainMenuButton : Button
 	protected override void OnThink() {
 		base.OnThink();
 
-		ChildRenderOffset = new Vector2F(
+		RenderOffset = new Vector2F(
 			sos.Update(Offscreen != 0 ? EngineCore.GetWindowWidth() / 2 * Offscreen : IsHovered() ? -50 : 0), 0
 		);
 	}

@@ -188,6 +188,22 @@ public sealed class RenderTexture : IRenderTexture
 		Raylib.SetTextureFilter(AsTexture2D(), filter);
 	}
 
+	static int glFilter(TextureFilterFunc fn) => fn switch {
+		TextureFilterFunc.Nearest => GLEnum.NEAREST,
+		TextureFilterFunc.Linear => GLEnum.LINEAR,
+		TextureFilterFunc.NearestMipmapNearest => GLEnum.NEAREST_MIPMAP_NEAREST,
+		TextureFilterFunc.LinearMipmapNearest => GLEnum.LINEAR_MIPMAP_NEAREST,
+		TextureFilterFunc.NearestMipmapLinear => GLEnum.NEAREST_MIPMAP_LINEAR,
+		TextureFilterFunc.LinearMipmapLinear => GLEnum.LINEAR_MIPMAP_LINEAR,
+		_ => 0
+	};
+
+	public void SetFilter(TextureFilterFunc min, TextureFilterFunc max) {
+		OpenGL.BindTexture(GLEnum.TEXTURE_2D, colorTextureId);
+		OpenGL.TexParameteri(GLEnum.TEXTURE_2D, GLEnum.TEXTURE_MIN_FILTER, glFilter(min));
+		OpenGL.TexParameteri(GLEnum.TEXTURE_2D, GLEnum.TEXTURE_MAG_FILTER, glFilter(max));
+	}
+
 	public void SetWrap(TextureWrap wrap) {
 		this.wrap = wrap;
 		Raylib.SetTextureWrap(AsTexture2D(), wrap);

@@ -73,6 +73,16 @@ public unsafe partial struct Model
     /// Bones base transformation (pose, Transform *)
     /// </summary>
     public Transform* BindPose;
+
+    /// <summary>
+    /// Current animation pose (Transform[])
+    /// </summary>
+    public Transform* CurrentPose;
+
+    /// <summary>
+    /// Bones animated transformation matrices
+    /// </summary>
+    public Matrix4x4* BoneMatrices;
 }
 
 /// <summary>

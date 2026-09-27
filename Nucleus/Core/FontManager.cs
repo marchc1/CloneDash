@@ -69,6 +69,7 @@ namespace Nucleus.Core
 		private bool Killed;
 		private Font Font;
 		private bool MarkedForDeath;
+		private bool NeverKillThisFont;
 		private DateTime LastUsed;
 
 		public void OwnFont(in Font font) => Font = font;
@@ -90,6 +91,9 @@ namespace Nucleus.Core
 
 			Killed = true;
 		}
+
+		public void MarkFontAsInvincible() => NeverKillThisFont = true;
+		public bool IsFontInvincible() => NeverKillThisFont;
 	}
 
 	public class FontManager
@@ -125,6 +129,9 @@ namespace Nucleus.Core
 		}
 
 		public void MarkFontForDeath(FontState font) {
+			if (font.IsFontInvincible())
+				return;
+
 			if (font.IsMarkedForDeath())
 				return;
 

@@ -67,7 +67,7 @@ namespace CloneDash.Menu.Character
 				x += size + 24;
 			}
 
-			ChildRenderOffset = new Vector2F(-centerX, 0);
+			RenderOffset = new Vector2F(-centerX, 0);
 		}
 	}
 }
