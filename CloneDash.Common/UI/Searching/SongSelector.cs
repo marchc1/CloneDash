@@ -2,9 +2,10 @@
 using CloneDash.Charts;
 using CloneDash.Common;
 using CloneDash.Common.Songs;
+using CloneDash.Common.Systems;
+using CloneDash.Common.Systems.Discord;
 using CloneDash.Game;
 using CloneDash.Settings;
-using CloneDash.Systems;
 using FftSharp;
 using Nucleus;
 using Nucleus.Audio;
