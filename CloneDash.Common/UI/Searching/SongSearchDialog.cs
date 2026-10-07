@@ -1,4 +1,5 @@
 ﻿using CloneDash.Charts;
+using CloneDash.Common.UI.Searching;
 using CloneDash.UI;
 using Nucleus.Common.Input;
 using Nucleus.Input;

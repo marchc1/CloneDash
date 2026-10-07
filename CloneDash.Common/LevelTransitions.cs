@@ -1,5 +1,6 @@
 ﻿using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Songs;
+using CloneDash.Common.UI.Searching;
 using CloneDash.Menu.Searching;
 using Nucleus;
 

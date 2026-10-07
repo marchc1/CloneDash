@@ -3,6 +3,7 @@ using CloneDash.Common;
 using CloneDash.Common.Songs;
 using CloneDash.Common.UI;
 using CloneDash.Common.UI.Binding;
+using CloneDash.Common.UI.Searching;
 using CloneDash.Compatibility.MDMC;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
@@ -521,7 +522,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		levelSelector.Dock = Dock.Fill;
 
 		selector.EnterSheetSelection();
-		selector.DiscRotateSOS.ResetTo(0);
+		selector.DiscRotateSos.ResetTo(0);
 		levelSelector.Removed += (s) => {
 			if (selector != null) {
 				selector.ExitSheetSelection();

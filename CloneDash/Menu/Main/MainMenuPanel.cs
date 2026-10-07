@@ -1,11 +1,8 @@
 ﻿using CloneDash.Charts;
-using CloneDash.Common.Songs;
-using CloneDash.Common.Systems;
 using CloneDash.Common.Systems.Discord;
+using CloneDash.Common.UI.Searching;
 using CloneDash.Game;
 using CloneDash.Menu.Character;
-using CloneDash.Menu.Searching;
-using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Common.Types;
 using Nucleus.Extensions;
@@ -13,7 +10,6 @@ using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
 using System.Numerics;
-using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 namespace CloneDash.Menu.Main;
 
