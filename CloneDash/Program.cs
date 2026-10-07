@@ -6,6 +6,7 @@ using CloneDash.Common;
 using CloneDash.Common.Compatibility.Valve;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Systems.Discord;
+using CloneDash.Common.UI.Searching;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.UnbeatableWhiteLabel;
 using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
