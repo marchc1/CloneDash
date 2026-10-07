@@ -1,55 +1,23 @@
-﻿using DiscordRPC;
-using DiscordRPC.Logging;
+﻿using CloneDash.Common.Systems.Discord;
+using DiscordRPC;
 using Nucleus;
 using Nucleus.Commands;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace CloneDash.Systems;
-
-public struct RichPresenceState
-{
-	public string Details;
-	public string State;
-}
-
-internal class NucleusDiscordLogger : ILogger
-{
-	public DiscordRPC.Logging.LogLevel Level { get; set; } = DiscordRPC.Logging.LogLevel.Warning;
-
-	public void Error(string message, params object[] args) {
-		if (Level <= DiscordRPC.Logging.LogLevel.Error)
-			Logs.Error(string.Format(message, args));
-	}
-
-	public void Info(string message, params object[] args) {
-		if (Level <= DiscordRPC.Logging.LogLevel.Info)
-			Logs.Info(string.Format(message, args));
-	}
-
-	public void Trace(string message, params object[] args) {
-		if (Level <= DiscordRPC.Logging.LogLevel.Trace)
-			Logs.Debug(string.Format(message, args));
-	}
-
-	public void Warning(string message, params object[] args) {
-		if (Level <= DiscordRPC.Logging.LogLevel.Warning)
-			Logs.Warn(string.Format(message, args));
-	}
-}
+namespace CloneDash.Common.Systems;
 
 [MarkForStaticConstruction]
 public static class RichPresenceSystem
 {
-	static DiscordRpcClient? DiscordClient;
-	static bool initialized;
-
-	public static ConVar richpresence = new(nameof(richpresence), "1", FCvar.Saved, "Enables/disables rich presence systems", 0, 1, (cv, _, _) => {
+	public const string LargeImageKey = "clonedashguy512wip";
+	public const string LargeImageText = "Clone Dash";
+	
+	private static DiscordRpcClient? _discordClient;
+	private static bool _initialized;
+	private static readonly Lock DoubleInitializationLock = new();
+	
+	public static readonly ConVar RichPresence = new(nameof(RichPresence), "1", FCvar.Saved, "Enables/disables rich presence systems", 0, 1, (cv, _, _) => {
 		if (cv.GetBool()) {
-			if (!initialized)
+			if (!_initialized)
 				Initialize();
 		}
 		else {
@@ -57,39 +25,46 @@ public static class RichPresenceSystem
 		}
 	});
 
-	private static readonly Lock Lock = new();
-
 	public static void Initialize() {
-		lock (Lock) {
-			if (!richpresence.GetBool()) return;
-			if (initialized) return;
+		lock (DoubleInitializationLock) {
+			if (!RichPresence.GetBool()) return;
+			if (_initialized) return;
 
-			DiscordClient = new DiscordRpcClient("1372433185115476018");
-			DiscordClient.Logger = new NucleusDiscordLogger();
-			DiscordClient.OnReady += (_, e) => {
+			_discordClient = new DiscordRpcClient("1372433185115476018");
+			_discordClient.Logger = new NucleusDiscordLogger();
+			_discordClient.OnReady += (_, e) => {
 				Logs.Info($"Received Ready from user {e.User.Username}");
-				if (hasPrevPresence)
-					SetPresence(in lastPresence);
+				if (_hasPrevPresence)
+					SetPresence(in _lastPresence);
 			};
-			DiscordClient.OnPresenceUpdate += (_, e) =>
+			
+			_discordClient.OnPresenceUpdate += (_, e) =>
 				Logs.Info($"Received Update! {e.Presence}");
-			DiscordClient.Initialize();
-			initialized = true;
+			
+			_discordClient.Initialize();
+			_initialized = true;
 		}
 	}
 
 	public static void Shutdown() {
-		DiscordClient?.Dispose();
-		DiscordClient = null;
-		initialized = false;
+		_discordClient?.Dispose();
+		_discordClient = null;
+		_initialized = false;
 	}
 
-	static bool hasPrevPresence;
-	static RichPresenceState lastPresence;
+	private static bool _hasPrevPresence;
+	private static RichPresenceState _lastPresence;
 
 	public static void SetPresence(in RichPresenceState state) {
-		lastPresence = state;
-		hasPrevPresence = true;
-		DiscordClient?.SetPresence(new() { Details = state.Details, State = state.State, Assets = new Assets() { LargeImageKey = "clonedashguy512wip", LargeImageText = "Clone Dash" } });
+		_lastPresence = state;
+		_hasPrevPresence = true;
+		_discordClient?.SetPresence(new RichPresence {
+			Details = state.Details,
+			State = state.State,
+			Assets = new Assets {
+				LargeImageKey = LargeImageKey,
+				LargeImageText = LargeImageText
+			}
+		});
 	}
 }

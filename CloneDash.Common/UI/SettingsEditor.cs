@@ -1,7 +1,8 @@
 ﻿using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Common.Systems;
+using CloneDash.Common.Systems.Discord;
 using CloneDash.Game;
 using CloneDash.Settings;
-using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;

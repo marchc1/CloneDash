@@ -1,5 +1,7 @@
 ﻿using CloneDash.Charts;
 using CloneDash.Common.Songs;
+using CloneDash.Common.Systems;
+using CloneDash.Common.Systems.Discord;
 using CloneDash.Game;
 using CloneDash.Menu.Character;
 using CloneDash.Menu.Searching;

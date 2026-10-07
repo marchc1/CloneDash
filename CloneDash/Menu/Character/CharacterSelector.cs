@@ -1,5 +1,7 @@
 ﻿using CloneDash.Characters;
 using CloneDash.Common;
+using CloneDash.Common.Systems;
+using CloneDash.Common.Systems.Discord;
 using CloneDash.Common.UI;
 using CloneDash.Common.UI.Binding;
 using CloneDash.Game;
