@@ -1,4 +1,5 @@
 ﻿using CloneDash.Common.Songs;
+using CloneDash.Common.UI.Searching;
 using CloneDash.Compatibility.MDMC;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Menu.Searching;
