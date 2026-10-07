@@ -1,9 +1,8 @@
-﻿using CloneDash.Common.Systems.Discord;
-using DiscordRPC;
+﻿using DiscordRPC;
 using Nucleus;
 using Nucleus.Commands;
 
-namespace CloneDash.Common.Systems;
+namespace CloneDash.Common.Systems.Discord;
 
 [MarkForStaticConstruction]
 public static class RichPresenceSystem

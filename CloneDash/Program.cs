@@ -7,6 +7,7 @@ using CloneDash.Common.Compatibility.Valve;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 using CloneDash.Common.Systems;
+using CloneDash.Common.Systems.Discord;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.UnbeatableWhiteLabel;
 using CloneDash.CustomAlbumsCompatibility.CustomAlbums;

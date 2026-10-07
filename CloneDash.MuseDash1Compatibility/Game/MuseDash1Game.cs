@@ -8,6 +8,7 @@ using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Scenes;
 using CloneDash.Common.Songs;
 using CloneDash.Common.Systems;
+using CloneDash.Common.Systems.Discord;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game.Entities;
 using CloneDash.Game.Events;
