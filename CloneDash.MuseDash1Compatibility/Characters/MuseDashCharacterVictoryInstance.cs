@@ -16,7 +16,20 @@ public class MuseDashCharacterVictoryInstance(MuseDash1CharacterDescriptor descr
 		model = Descriptor.GetVictoryModel(EngineCore.Level).Instantiate();
 		anims.SetModel(model);
 		anims.SetAnimation(0, "in");
-		anims.AddAnimation(0, Descriptor.GetVictoryStandby(), true);
+		anims.AddAnimation(0, GetStandby(model), true);
+	}
+
+	// Bloodheir uses "Standby"
+	private string GetStandby(ModelInstance model) {
+		var standby = Descriptor.GetVictoryStandby();
+		if (model.Data.FindAnimation(standby) != null)
+			return standby;
+
+		foreach (var anim in model.Data.Animations)
+			if (string.Equals(anim.Name, standby, StringComparison.OrdinalIgnoreCase))
+				return anim.Name;
+
+		return standby;
 	}
 
 	public void PlayAudio() {

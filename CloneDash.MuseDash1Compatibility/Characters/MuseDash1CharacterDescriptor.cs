@@ -19,22 +19,22 @@ namespace CloneDash.Characters;
 
 public class MuseDash1CharacterExpression : ICharacterMainMenuExpression
 {
-	private CharacterExpression Expression;
+	private string AnimName;
 	private string Talk;
 	private string AudioName;
 
-	public MuseDash1CharacterExpression(CharacterExpression expression, string talk, string audioName) {
-		Expression = expression;
+	public MuseDash1CharacterExpression(string animName, string talk, string audioName) {
+		AnimName = animName;
 		Talk = talk;
 		AudioName = audioName;
 	}
 
 	string ICharacterMainMenuExpression.GetEndAnimationName() {
-		return $"{Expression.AnimName}_end";
+		return $"{AnimName}_end";
 	}
 
 	string ICharacterMainMenuExpression.GetIdleAnimationName() {
-		return $"{Expression.AnimName}_standby";
+		return $"{AnimName}_standby";
 	}
 
 	void ICharacterMainMenuExpression.GetSpeech(Level level, out string text, out IAudioClip? voice) {
@@ -43,17 +43,37 @@ public class MuseDash1CharacterExpression : ICharacterMainMenuExpression
 	}
 
 	string ICharacterMainMenuExpression.GetStartAnimationName() {
-		return $"{Expression.AnimName}_start";
+		return $"{AnimName}_start";
 	}
 
-	public static MuseDash1CharacterExpression From(CharacterConfigData data) {
-		int i = Random.Shared.Next(0, data.Expressions.Count);
+	// Weighted like ExpressionContainer.RefreshRandom. Weight 0 never plays (the "t" transform voicelines use this)
+	public static MuseDash1CharacterExpression? From(CharacterConfigData data, int form) {
+		var expressions = data.Expressions;
 
-		var expr = data.Expressions[i];
-		var audioNames = expr.AudioNames;
+		double total = 0;
+		foreach (var expr in expressions)
+			if (expr.Weight > 0 && expr.IsAvailableForForm(form))
+				total += expr.Weight;
+
+		if (total <= 0)
+			return null;
+
+		double roll = Random.Shared.NextDouble() * total;
+		int i = -1;
+		for (int j = 0; j < expressions.Count; j++) {
+			var expr = expressions[j];
+			if (expr.Weight <= 0 || !expr.IsAvailableForForm(form)) continue;
+
+			i = j;
+			roll -= expr.Weight;
+			if (roll < 0) break;
+		}
+
+		var picked = expressions[i];
+		var audioNames = picked.AudioNames;
 		var audioI = Random.Shared.Next(0, audioNames.Count);
 
-		return new MuseDash1CharacterExpression(expr, data.Localization[localize.GetCurrentCulture()].Expressions[i][audioI], audioNames[audioI]);
+		return new MuseDash1CharacterExpression(picked.AnimName, data.Localization[localize.GetCurrentCulture()].Expressions[i][audioI], audioNames[audioI]);
 	}
 }
 
@@ -106,44 +126,108 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 		Logs.Warn("No more characters available.");
 	});
 
+	public static ConVar md_rinthief = new(nameof(md_rinthief), "0", FCvar.Saved, "Phantom Thief Rin's form", 0, 1);
+	public static ConVar md_bloodheirbig = new(nameof(md_bloodheirbig), "0", FCvar.Saved, "Nocturne Bloodheir Buro's form", 0, 1);
+
+	private sealed record CharacterForm(string Standby, string? ExpressingStandby, string ApplyAnimKey, string ApplySoundKey, string? Bgm);
+
+	private bool formsResolved;
+	private CharacterForm[]? forms;
+	private ConVar? formVar;
+
+	private static string mbString(OrderedDictionary mb, string key, string fallback)
+		=> mb[key] is string { Length: > 0 } value ? value : fallback;
+
+	private CharacterForm[]? GetForms() {
+		if (formsResolved)
+			return forms;
+
+		formsResolved = true;
+		var mainShow = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(ConfigData.MainShow);
+		if (mainShow == null)
+			return null;
+
+		var thief = mainShow.GetMonoBehaviorByScriptName("ThiefTransformGenerator")?.ToType();
+		if (thief != null) {
+			var police = mbString(thief, "m_PoliceStandbyAnim", "standby_police");
+			var kaito = mbString(thief, "m_KaitoStandbyAnim", "standby_thief");
+
+			formVar = md_rinthief;
+			forms = [
+				new(police, $"{police}_B", "m_PoliceApplyAnimName", "m_PoliceApplySoundName", null),
+				new(kaito, $"{kaito}_B", "m_ThiefApplyAnimName", "m_ThiefApplySoundName", $"{ConfigData.BGM}_mask"),
+			];
+		}
+		else if (mainShow.GetMonoBehaviorByScriptName("BloodheirTransformGenerator") != null) {
+			formVar = md_bloodheirbig;
+			forms = [
+				new("standby_A", null, "m_SmallApplyAnimName", "m_SmallApplySoundName", null),
+				new("standby_B", null, "m_BigApplyAnimName", "m_BigApplySoundName", null),
+			];
+		}
+
+		return forms;
+	}
+
+	public int GetForm() => GetForms() == null ? 0 : formVar!.GetBool() ? 2 : 1;
+
+	private CharacterForm? GetActiveForm() {
+		int form = GetForm();
+		return form == 0 ? null : forms![form - 1];
+	}
+
 	// cosplay name and character name clash over returnedLanguage, this should be fixed...
-	public ReadOnlySpan<char> GetName()
-		=> $"{GetCosplayName()} {GetCharacterName()}";
-
-	public ReadOnlySpan<char> GetCosplayName()		=> ConfigData.CosName;
-	public ReadOnlySpan<char> GetCharacterName()		=> ConfigData.CharacterName;
+	public ReadOnlySpan<char> GetName() => $"{GetCosplayName()} {GetCharacterName()}";
+	public ReadOnlySpan<char> GetCosplayName() => ConfigData.CosName;
+	public ReadOnlySpan<char> GetCharacterName() => ConfigData.CharacterName;
 	public ITexture? GetThumbnailTexture() => MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<Texture2D>(ConfigData.Skins.First().HeadName)!);
-	public ReadOnlySpan<char> GetDescription()		=> ConfigData.Description;
-	public ReadOnlySpan<char> GetAuthor()		=> ConfigData.Cv;
-	public ReadOnlySpan<char> GetPerk()		=> ConfigData.Skill;
+	public ReadOnlySpan<char> GetDescription() => ConfigData.Description;
+	public ReadOnlySpan<char> GetAuthor() => ConfigData.Cv;
+	public ReadOnlySpan<char> GetPerk() => ConfigData.Skill;
 
-	public ICharacterMainMenuExpression? GetMainShowExpression() {
-		MuseDash1CharacterExpression expression = MuseDash1CharacterExpression.From(ConfigData);
-		return expression;
+	public ICharacterMainMenuExpression? GetMainShowExpression() => MuseDash1CharacterExpression.From(ConfigData, GetForm());
+
+	// Thief/Bloodheir/Pirate/Spectre all subclass CharacterApply
+	private static MonoBehaviour? FindCharacterApply(GameObject obj) {
+		foreach (var compPtr in obj.m_Components) {
+			if (!compPtr.TryGet(out var comp)) continue;
+			if (comp is not MonoBehaviour mb) continue;
+			if (!mb.m_Script.TryGet(out var script)) continue;
+
+			if (script.m_Name.EndsWith("CharacterApply"))
+				return mb;
+		}
+
+		return null;
 	}
 
 	public ICharacterMainMenuExpression? GetMainShowApplyExpression() {
 		// probably need a better way to figure out the folder name
 		var assets = MuseDash1Compatibility.StreamingAssets;
 		var mainShow = assets.FindAssetByName<GameObject>(ConfigData.MainShow);
-		var apply = mainShow?.GetMonoBehaviorByScriptName("CharacterApply")?.ToType();
+		if (mainShow == null) return null;
+
+		var apply = FindCharacterApply(mainShow)?.ToType();
 		if (apply is null) return null;
 
-		var animation = (string)apply["characterAnimation"]!;
-		var voiceline = (string)apply["characterSound"]!;
+		var form = GetActiveForm();
+		string animKey = form?.ApplyAnimKey ?? "characterAnimation";
+		string soundKey = form?.ApplySoundKey ?? "characterSound";
 
-		var exp = ConfigData.Expressions.FindIndex(x => animation.StartsWith(x.AnimName));
-		if (exp == -1)
+		if (apply[animKey] is not string animation || animation.Length == 0)
 			return null;
 
+		if (animation.EndsWith("_start"))
+			animation = animation[..^"_start".Length];
+
 		return new MuseDash1CharacterExpression(
-			ConfigData.Expressions[exp],
+			animation,
 			string.Empty,
-			voiceline
+			(string)apply[soundKey]!
 		);
 	}
 
-	public void ApplyQuirks(ref MuseDash1GameplayQuirks quirks){
+	public void ApplyQuirks(ref MuseDash1GameplayQuirks quirks) {
 		MuseDash1GameplayQuirks.ApplyCharacterQuirks(name, ref quirks);
 	}
 
@@ -214,8 +298,18 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 
 	public ModelData GetMainShowModel(Level level) => PullModelDataFromGameObject(level, ConfigData.MainShow);
 
-	public IAudioClip? GetMainShowMusic(Level level) => MuseDash1Compatibility.LoadMusicFromName(level, ConfigData.BGM);
-	public string GetMainShowStandby() => "BgmStandby";
+	public IAudioClip? GetMainShowMusic(Level level) => MuseDash1Compatibility.LoadMusicFromName(level, GetActiveForm()?.Bgm ?? ConfigData.BGM);
+
+	// The looping body animation on the main show.
+	// NOTE: Thief Rin swaps to a _B variant while an expression plays (ThiefCharacterApply.PreCharacterApply)!!!
+	// This probably deserves its own interface to handle main-show behavior separately... kinda getting crowded in here frankly
+	public string GetMainShowStandby(bool expressing = false) {
+		var form = GetActiveForm();
+		if (form == null)
+			return "BgmStandby";
+
+		return expressing && form.ExpressingStandby != null ? form.ExpressingStandby : form.Standby;
+	}
 
 	private static MD1_SpineActionControllerData? black_girl_battle;
 	private MD1_SpineActionControllerData? anims;
