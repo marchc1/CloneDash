@@ -1,4 +1,6 @@
 ﻿using Nucleus.Common.Input;
+using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Input;
 using Nucleus.Types;
 using System;
@@ -15,9 +17,18 @@ public class DropdownSelector<T> : Button
 	public List<T> Items { get; } = [];
 	public bool Editable { get; set; } = false;
 
-	public DropdownSelector(Element? parent) : base(parent, text: "") { }
+	public DropdownSelector(Element? parent) : base(parent, text: "") {
+		Setup();
+	}
 
-	public DropdownSelector(Element? parent, ReadOnlySpan<char> name) : base(parent, text: "", name: name) { }
+	public DropdownSelector(Element? parent, ReadOnlySpan<char> name) : base(parent, text: "", name: name) {
+		Setup();
+	}
+
+	private void Setup() {
+		SetTextAlignment(Anchor.CenterLeft);
+		SetTextPadding(new(8, 0));
+	}
 
 	public static DropdownSelector<ET> FromEnum<ET>(Element parent, ET v) where ET : Enum {
 		DropdownSelector<ET> selector = new DropdownSelector<ET>(parent);
@@ -39,7 +50,7 @@ public class DropdownSelector<T> : Button
 				Selected = i;
 				if ((old != null && !old.Equals(Selected)) || (old == null && i != null) || (old != null && i == null))
 					OnSelectionChanged?.Invoke(this, old, Selected);
-			}));
+			}), EqualityComparer<T>.Default.Equals(i, Selected));
 		}
 
 		if (Editable) {
@@ -59,9 +70,21 @@ public class DropdownSelector<T> : Button
 				}
 			});
 		}
+		m.MinimumWidth = GetRenderBounds().W;
 		m.Open(GetGlobalPosition() + new Vector2F(0, GetRenderBounds().H));
 		return true;
 	}
+
+	public override void Paint(float width, float height) {
+		base.Paint(width, height);
+
+		// Arrow
+		Graphics2D.SetDrawColor(GetTextColor());
+		float arrowX = width - 16, arrowY = MathF.Round(height / 2) - 2;
+		Graphics2D.DrawLine(new Vector2F(arrowX - 4, arrowY), new Vector2F(arrowX, arrowY + 4), 1.5f);
+		Graphics2D.DrawLine(new Vector2F(arrowX, arrowY + 4), new Vector2F(arrowX + 4, arrowY), 1.5f);
+	}
+
 	bool displayedValid;
 	T? displayedSelected;
 	public void RefreshText() => displayedValid = false;

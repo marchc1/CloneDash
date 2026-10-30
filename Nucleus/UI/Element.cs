@@ -32,6 +32,15 @@ public enum Dock
 	Bottom,
 	Fill
 }
+[Flags]
+public enum BorderSides
+{
+	None = 0,
+	Left = 1,
+	Top = 2,
+	Right = 4,
+	Bottom = 8
+}
 public enum DynamicSizeReference
 {
 	None,
@@ -137,6 +146,9 @@ public class Element : IValidatable
 	private bool _firstThink = true;
 	private bool QueueCenter = false;
 	internal List<Element> Children = [];
+	// Copy handed out by GetChildren, rebuilt after the children change
+	Element[]? childArray;
+	internal void ChildrenChanged() => childArray = null;
 	private bool __layoutinvalid = true;
 
 	string? name;
@@ -234,6 +246,16 @@ public class Element : IValidatable
 		get => borderSize;
 		set => borderSize = value;
 	}
+
+	/// <summary>
+	/// Border sides this element shares with its parent or a docked sibling
+	/// </summary>
+	public BorderSides SharedBorders { get; private set; }
+
+	/// <summary>
+	/// Can this element's border be shared with neighbors?
+	/// </summary>
+	public virtual bool CanShareBorders => true;
 
 	/// <summary>
 	/// Controls the roundness of corners of the element. This may not be supported on all elements, depending on their implementations of <see cref="PaintBorder(float, float)"/> and <see cref="PaintBackground(float, float)"/>.
@@ -727,6 +749,7 @@ public class Element : IValidatable
 		// Call parent methods
 		if (IValidatable.IsValid(Parent)) {
 			Parent.Children.Remove(this);
+			Parent.ChildrenChanged();
 			Parent.InvalidateLayout();
 		}
 	}
@@ -760,34 +783,25 @@ public class Element : IValidatable
 		Thinking?.Invoke(this);
 	}
 
-	public ref struct ChildSnapshot
+	public readonly ref struct ChildSnapshot
 	{
-		Element[]? buf;
-		readonly int count;
-		internal ChildSnapshot(List<Element> src) {
-			count = src.Count;
-			if (count == 0)
-				return;
-			buf = ArrayPool<Element>.Shared.Rent(count);
-			src.CopyTo(buf);
-		}
-		public readonly int Length => count;
-		public readonly Element this[int i] => (uint)i < (uint)count ? buf![i] : throw new IndexOutOfRangeException();
-		public readonly ReadOnlySpan<Element> AsSpan() => buf == null ? [] : buf.AsSpan(0, count);
-		public readonly ReadOnlySpan<Element>.Enumerator GetEnumerator() => AsSpan().GetEnumerator();
-		public void Dispose() {
-			if (buf == null)
-				return;
-			Array.Clear(buf, 0, count);
-			ArrayPool<Element>.Shared.Return(buf);
-			buf = null;
-		}
+		readonly Element[] buf;
+		internal ChildSnapshot(Element[] children) => buf = children;
+		public int Length => buf.Length;
+		public Element this[int i] => buf[i];
+		public ReadOnlySpan<Element> AsSpan() => buf;
+		public ReadOnlySpan<Element>.Enumerator GetEnumerator() => AsSpan().GetEnumerator();
+		/// <summary>
+		/// Does nothing
+		/// </summary>
+		public void Dispose() { }
 	}
 
 	/// <summary>
 	/// Returns a snapshot of this element's children. Does not allow modification of the elements children; use AddChild/SetParent functionality for that.
+	/// The array is shared until the children change, never write to it.
 	/// </summary>
-	public ChildSnapshot GetChildren() => new(Children);
+	public ChildSnapshot GetChildren() => new(childArray ??= [.. Children]);
 
 	public ReadOnlySpan<char> GetElementName() => name;
 	public void SetElementName(ReadOnlySpan<char> name) {
@@ -809,6 +823,7 @@ public class Element : IValidatable
 		// Detach ourselves from the current parent
 		if (Parent != null) {
 			Parent.Children.Remove(this);
+			Parent.ChildrenChanged();
 			Parent.InvalidateLayout();
 		}
 
@@ -819,6 +834,7 @@ public class Element : IValidatable
 		// Attach ourselves to the new parent
 		if (p != null) {
 			p.Children.Add(this);
+			p.ChildrenChanged();
 			p.InvalidateLayout();
 		}
 
@@ -828,7 +844,9 @@ public class Element : IValidatable
 	}
 
 	public void SortChildren(Comparison<Element> childSortMethod) {
-		this.GetAddParent().Children.Sort(childSortMethod);
+		var host = this.GetAddParent();
+		host.Children.Sort(childSortMethod);
+		host.ChildrenChanged();
 	}
 
 	public void InvalidateChildren(bool recursive = false, bool self = false) {
@@ -979,6 +997,13 @@ public class Element : IValidatable
 		}
 	}
 
+	private const float SHARED_BORDER_GAP = 2;
+	private bool SharesBorder(Element? owner, float padding, float ownerMargin, float childMargin) {
+		if (owner == null)
+			return CanShareBorders && IsPaintBorderEnabled() && BorderSize > 0 && padding - BorderSize + childMargin <= SHARED_BORDER_GAP;
+		return owner.CanShareBorders && owner.IsPaintBorderEnabled() && owner.BorderSize > 0 && ownerMargin + childMargin <= SHARED_BORDER_GAP;
+	}
+
 	private void DoChildDocking() {
 		RectangleF availableSpace = RectangleF.FromPosAndSize(Vector2F.Zero, __renderbounds.Size);
 
@@ -990,12 +1015,40 @@ public class Element : IValidatable
 			availableSpace.H -= _dockPadding.Y + _dockPadding.H;
 		}
 
+		// Who's on each side of the remaining space, null is us
+		Element? ownerL = null;
+		Element? ownerT = null;
+		Element? ownerR = null;
+		Element? ownerB = null;
+
 		foreach (var child in Children) {
+			child.SharedBorders = BorderSides.None;
 			Dock dock = child.Dock;
 			if (dock == Dock.None)
 				continue;
 			if (!child.IsVisible())
 				continue;
+
+			if (child.CanShareBorders && child.IsPaintBorderEnabled()) {
+				RectangleF margin = child._dockMargin;
+				BorderSides shared = BorderSides.None;
+				if (dock is not Dock.Right && SharesBorder(ownerL, _dockPadding.X, ownerL?._dockMargin.W ?? 0, margin.X))
+					shared |= BorderSides.Left;
+				if (dock is not Dock.Bottom && SharesBorder(ownerT, _dockPadding.Y, ownerT?._dockMargin.H ?? 0, margin.Y))
+					shared |= BorderSides.Top;
+				if (dock is not Dock.Left && SharesBorder(ownerR, _dockPadding.W, ownerR?._dockMargin.X ?? 0, margin.W))
+					shared |= BorderSides.Right;
+				if (dock is not Dock.Top && SharesBorder(ownerB, _dockPadding.H, ownerB?._dockMargin.Y ?? 0, margin.H))
+					shared |= BorderSides.Bottom;
+				child.SharedBorders = shared;
+			}
+
+			switch (dock) {
+				case Dock.Left: ownerL = child; break;
+				case Dock.Top: ownerT = child; break;
+				case Dock.Right: ownerR = child; break;
+				case Dock.Bottom: ownerB = child; break;
+			}
 
 			// We will modify the render bounds of the child, and mark its render bounds as NOT dirty after
 			// This is kind of a hack but its the cleanest way to do it probably, forcing the render bounds flush
@@ -1156,10 +1209,11 @@ public class Element : IValidatable
 			AddFlag(ElementFlags.IsPopup);
 	}
 
-	public void MakeModal() {
+	public void MakeModal(bool backdrop = true) {
 		if (UI.MakeModal(this)) {
 			AddFlag(ElementFlags.IsModal);
-			Backdrop = true;
+			if (backdrop)
+				Backdrop = true;
 		}
 	}
 
@@ -1196,6 +1250,7 @@ public class Element : IValidatable
 
 		Parent.Children.Remove(this);
 		Parent.Children.Add(this);
+		Parent.ChildrenChanged();
 		Parent.InvalidateLayout();
 	}
 	public void MoveToBack() {
@@ -1204,6 +1259,7 @@ public class Element : IValidatable
 
 		Parent.Children.Remove(this);
 		Parent.Children.Insert(0, this);
+		Parent.ChildrenChanged();
 		Parent.InvalidateLayout();
 	}
 
@@ -1250,8 +1306,10 @@ public class Element : IValidatable
 		if (!__lastRTSize.HasValue || GetRenderBounds() != __lastRTSize) {
 			__RT1?.Dispose();
 
-			__RT1 = Graphics2D.CreateRenderTarget(GetRenderBounds().W, GetRenderBounds().H);
-			__lastRTSize = GetRenderBounds();
+			var size = GetRenderBounds();
+			// nothing to draw into
+			__RT1 = size.W >= 1 && size.H >= 1 ? Graphics2D.CreateRenderTarget(size.W, size.H) : null;
+			__lastRTSize = size;
 		}
 
 		if (__RT1 == null) {
@@ -1276,11 +1334,13 @@ public class Element : IValidatable
 		}
 
 		this.GetAddParent().Children.Clear();
+		this.GetAddParent().ChildrenChanged();
 		InvalidateLayout();
 	}
 
 	public void ClearChildrenNoRemove() {
 		this.GetAddParent().Children.Clear();
+		this.GetAddParent().ChildrenChanged();
 		InvalidateLayout();
 	}
 
@@ -1534,6 +1594,13 @@ public class Element : IValidatable
 
 		SetFlag(ElementFlags.NeedsSchemeUpdate, false);
 	}
+	public Color GetFocusColor() => focusedBorderColor.Get();
+
+	/// <summary>
+	/// Should this be drawn as disabled?
+	/// </summary>
+	public virtual bool IsDisabled() => !IsMouseInputEnabled();
+
 	public virtual void PaintBackground(float width, float height) {
 		Color back = GetBgColor(), fore = GetFgColor();
 		float borderSize = BorderSize, roundness = Roundness;
@@ -1557,8 +1624,21 @@ public class Element : IValidatable
 		float borderSize = BorderSize, roundness = Roundness;
 
 		if (roundness <= 0) {
-			Graphics2D.SetDrawColor(IsKeyboardFocused() ? focusedBorderColor.Get() : fore);
-			Graphics2D.DrawRectangleOutline(0, 0, width, height, borderSize);
+			bool focused = IsKeyboardFocused();
+			Graphics2D.SetDrawColor(focused ? focusedBorderColor.Get() : fore);
+			BorderSides shared = focused ? BorderSides.None : SharedBorders;
+			if (shared == BorderSides.None) {
+				Graphics2D.DrawRectangleOutline(0, 0, width, height, borderSize);
+				return;
+			}
+			if (!shared.HasFlag(BorderSides.Left))
+				Graphics2D.DrawRectangle(0, 0, borderSize, height);
+			if (!shared.HasFlag(BorderSides.Top))
+				Graphics2D.DrawRectangle(0, 0, width, borderSize);
+			if (!shared.HasFlag(BorderSides.Right))
+				Graphics2D.DrawRectangle(width - borderSize, 0, borderSize, height);
+			if (!shared.HasFlag(BorderSides.Bottom))
+				Graphics2D.DrawRectangle(0, height - borderSize, width, borderSize);
 		}
 		else {
 			// Prevent roundness from exceeding bounds of the element

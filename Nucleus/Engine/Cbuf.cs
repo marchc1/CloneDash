@@ -53,24 +53,16 @@ public class CommandBuffer
 
 	public ref TokenizedCommand GetCommand() => ref CurrentCommand;
 
-	public ReadOnlySpan<char> FirstTextSlice(ReadOnlySpan<char> message) {
-		int indexOf = message.IndexOf(';'); // command delimiter
-		if (indexOf == -1)
-			return message; // allow ; to be missing the first slice
-		return message[..indexOf];
-	}
-
-	public ReadOnlySpan<char> NextTextSlice(ReadOnlySpan<char> message) {
-		int indexOf = message.IndexOf(';'); // command delimiter
-		if (indexOf == -1)
-			return default; // no remaining delimiter
-		return message[..indexOf];
-	}
-
 	public bool AddText(ReadOnlySpan<char> text) {
-		for (ReadOnlySpan<char> slice = FirstTextSlice(text); !slice.IsEmpty; slice = NextTextSlice(slice))
-			if (!InsertCommand(slice))
+		while (!text.IsEmpty) {
+			// command delimiters
+			int end = text.IndexOfAny(';', '\n');
+			ReadOnlySpan<char> slice = (end == -1 ? text : text.Slice(0, end)).Trim();
+			text = end == -1 ? default : text.Slice(end + 1);
+
+			if (!slice.IsEmpty && !InsertCommand(slice))
 				return false;
+		}
 
 		return true;
 	}

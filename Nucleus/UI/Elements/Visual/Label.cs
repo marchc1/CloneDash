@@ -88,7 +88,7 @@ public class Label : Element, ITextElement
 	private Anchor textAlignment = Anchor.Center;
 	readonly List<TextRange> textRanges = [];
 	Vector2F fullTextSize;
-	TextOverflowMode textOverflowMode;
+	TextOverflowMode textOverflowMode = TextOverflowMode.CharTruncate;
 	bool textInvalid = true;
 	SchemeableSetting<Color> textColor = SchemeableSetting<Color>.Default(DefaultTextColor);
 
@@ -127,7 +127,7 @@ public class Label : Element, ITextElement
 				ReadOnlySpan<char> subtext = range.Truncate ? range.TruncateText : text[range.Start..range.End];
 				var rangeSize = Graphics2D.GetTextSize(subtext, font, curTextSize);
 				size = new(Math.Max(size.X, rangeSize.X), size.Y + rangeSize.Y);
-				if (range.Truncate)
+				if (range.Truncate && textOverflowMode.IsWrap())
 					break;
 			}
 		}
@@ -278,8 +278,11 @@ public class Label : Element, ITextElement
 		TextRange workingRange = new() { };
 		Vector2F workingArea = GetTextWorkingArea();
 
-		if (textOverflowMode.IsTruncate())
-			workingArea.W -= Graphics2D.GetTextSize("...", font, textSize).X;
+		if (textOverflowMode.IsTruncate()) {
+			BuildTruncatedRanges(text, font, textSize, workingArea.W);
+			textInvalid = false;
+			return;
+		}
 
 		float lineHeight = Graphics2D.GetTextSize(" ", font, textSize).H;
 
@@ -383,6 +386,57 @@ public class Label : Element, ITextElement
 		textInvalid = false;
 	}
 
+	private void BuildTruncatedRanges(ReadOnlySpan<char> text, ReadOnlySpan<char> font, float textSize, float maxWidth) {
+		float lineHeight = Graphics2D.GetTextSize(" ", font, textSize).H;
+		bool byWord = textOverflowMode.TargetsWord();
+
+		int start = 0;
+		while (start <= text.Length) {
+			int newline = text.Slice(start).IndexOf('\n');
+			int end = newline < 0 ? text.Length : start + newline;
+			int visibleEnd = end;
+			while (visibleEnd > start && text[visibleEnd - 1] == '\r')
+				visibleEnd--;
+
+			ReadOnlySpan<char> line = text.Slice(start, visibleEnd - start);
+			TextRange range = new() { Start = start, End = visibleEnd, Height = lineHeight };
+			float width = line.IsEmpty ? 0 : Graphics2D.GetTextSize(line, font, textSize).W;
+
+			// unsized labels draw freely
+			if (width > maxWidth && maxWidth > 0) {
+				float ellipsis = Graphics2D.GetTextSize("...", font, textSize).W;
+				int low = 0, high = line.Length;
+				while (low < high) {
+					int mid = (low + high + 1) / 2;
+					if (Graphics2D.GetTextSize(line.Slice(0, mid), font, textSize).W + ellipsis <= maxWidth)
+						low = mid;
+					else
+						high = mid - 1;
+				}
+
+				int cut = low;
+				if (byWord) {
+					int space = line.Slice(0, cut).LastIndexOf(' ');
+					if (space > 0)
+						cut = space;
+				}
+
+				range.Truncate = true;
+				range.TruncateText = $"{line.Slice(0, cut).TrimEnd()}...";
+				width = Graphics2D.GetTextSize(range.TruncateText, font, textSize).W;
+			}
+
+			range.Width = width;
+			textRanges.Add(range);
+			fullTextSize.W = Math.Max(fullTextSize.W, width);
+			fullTextSize.H += lineHeight;
+
+			if (newline < 0)
+				break;
+			start = end + 1;
+		}
+	}
+
 	protected override void PerformLayout(float width, float height) {
 
 	}
@@ -395,7 +449,7 @@ public class Label : Element, ITextElement
 		ValidateText();
 
 		var textC = GetTextColor();
-		if (!IsMouseInputEnabled()) {
+		if (IsDisabled()) {
 			textC = textC.Adjust(0, 0, -0.5f);
 		}
 
@@ -426,7 +480,7 @@ public class Label : Element, ITextElement
 			ReadOnlySpan<char> subtext = range.Truncate ? range.TruncateText : text[range.Start..range.End];
 			// startDrawingPosition already has the alignment and padding applied on X
 			Graphics2D.DrawText(startDrawingPosition, subtext, font, textSize, GetTextAlignment());
-			if (range.Truncate)
+			if (range.Truncate && textOverflowMode.IsWrap())
 				break;
 			startDrawingPosition.Y += range.Height;
 		}

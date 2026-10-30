@@ -35,6 +35,8 @@ public struct KeyboardState()
 			KeysPressed[i] = 0;
 			KeysReleased[i] = false;
 		}
+		for (int i = 0; i < MAX_TEXT_INPUTS; i++)
+			TextInputs[i] = null;
 	}
 
 	public void ConsumeFirstKeyPress(ButtonCode key) {

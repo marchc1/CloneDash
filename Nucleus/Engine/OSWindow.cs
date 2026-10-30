@@ -1251,8 +1251,11 @@ public unsafe class OSWindow : IValidatable
 		}
 
 		int k = 0;
-		while (Keyboard.EnqueuedTextInputs.TryDequeue(out string? str))
+		while (k < Nucleus.Input.KeyboardState.MAX_TEXT_INPUTS - 1 && Keyboard.EnqueuedTextInputs.TryDequeue(out string? str))
 			textInputs[k++] = str;
+		// last frame's leftovers
+		for (int i = k; i < Nucleus.Input.KeyboardState.MAX_TEXT_INPUTS; i++)
+			textInputs[i] = null;
 
 		Keyboard.Reset();
 	}

@@ -865,6 +865,11 @@ public static class EngineCore
 				}
 			}
 			catch (Exception ex) {
+				if (Environment.GetCommandLineArgs().Contains("-nopanic")) {
+					Console.Error.WriteLine($"PANIC: {ex}");
+					Environment.Exit(1);
+				}
+
 				ExceptionDispatchInfo edi = ExceptionDispatchInfo.Capture(ex);
 				if (!PanicSystem.Panic(edi)) {
 					edi.Throw();

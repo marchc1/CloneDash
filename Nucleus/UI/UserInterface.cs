@@ -231,9 +231,11 @@ public class ElementInputSystem
 						keyboard.ConsumeFirstKeyRelease(key.ToButtonCode());
 			}
 
-			for (int i = emulated.GetTextInputsThisFrame() - 1; i >= 0; i--)
+			// In typed order, consuming shifts the real keyboard's text down.
+			int consumed = 0;
+			for (int i = 0, count = emulated.GetTextInputsThisFrame(); i < count; i++)
 				if (keyboardFocused.TextInputOccur(in emulated, emulated.GetTextInputThisFrameAtIndex(i)))
-					keyboard.ConsumeTextAtIndex(i);
+					keyboard.ConsumeTextAtIndex(i - consumed++);
 
 			if (keybindChainingAllowed && !keyboardFocused.HasFlag(ElementFlags.AllowChainKeybindingToParent))
 				keybindChainingAllowed = false;
@@ -351,7 +353,9 @@ public class ElementPaintSystem
 								var t = (byte)Math.Clamp(element.Opacity * 255, 0, 255);
 								Graphics2D.SetDrawColor(t, t, t, t);
 								Graphics2D.SetTexture(rt);
+								Graphics2D.SetBlendMode(BlendMode.AlphaPremultiply);
 								Graphics2D.DrawTexturedRectangle(0, 0, renderBounds.W, renderBounds.H);
+								Graphics2D.SetBlendMode(BlendMode.Alpha);
 							}
 							element.PostRenderRT();
 						}
@@ -544,6 +548,7 @@ public class UserInterface : Element, IDisposable
 	}
 
 	public int TooltipFontSize => 20;
+	static readonly Vector2F TooltipPadding = new(6, 3);
 
 	public ReadOnlySpan<byte> DetermineTooltipText(out Vector2F pos, out Vector2F size) {
 		Element target = GetHoveredElement() ?? this;
@@ -565,7 +570,7 @@ public class UserInterface : Element, IDisposable
 			measured.Y = MathF.Max(measured.Y, itemSize.Y);
 		}
 
-		size = measured + new Vector2F(8, 4);
+		size = measured + TooltipPadding * 2;
 
 		target.DetermineTooltipDrawingSpace(size, out pos);
 
@@ -593,7 +598,7 @@ public class UserInterface : Element, IDisposable
 		Graphics2D.DrawRectangleOutline(pos, size, 1);
 
 		// Draw each styled run left-to-right
-		var cursor = pos + new Vector2F(6, 4);
+		var cursor = pos + TooltipPadding;
 		ElementTooltipReader reader = new ElementTooltipReader(text);
 		while (reader.MoveNext()) {
 			ReadOnlySpan<char> font = reader.Font.IsEmpty ? Graphics2D.UI_FONT_NAME : reader.Font;
@@ -636,6 +641,7 @@ public class UserInterface : Element, IDisposable
 		foreach (var child in e.Children)
 			trashElement(child);
 		e.Children.Clear();
+		e.ChildrenChanged();
 		e.Parent = null;
 
 		foreach (var ev in e.GetType().GetEvents(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)) {

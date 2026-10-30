@@ -151,8 +151,25 @@ public class TextureManager : ITextureManager
 	public IRenderTexture CreateRenderTexture(int width, int height, int samples = 1, bool depth = true, ImageFormat format = ImageFormat.R8G8B8A8)
 		=> CreateRenderTexture(new RenderTextureDesc(width, height, samples, depth, format));
 
-	public ITexture GetErrorTexture() {
-		throw new NotImplementedException();
+	private ITexture? errorTexture;
+
+	public unsafe ITexture GetErrorTexture() {
+		if (errorTexture != null && errorTexture.IsValid()) return errorTexture;
+
+		const int SIZE = 16;
+		Image image = Image.GenImageColor(SIZE, SIZE, Color.Black);
+		Color* pixels = (Color*)image.Data;
+		for (int y = 0; y < SIZE; y++) {
+			for (int x = 0; x < SIZE; x++) {
+				if ((x < SIZE / 2) != (y < SIZE / 2))
+					pixels[y * SIZE + x] = new Color(255, 0, 255, 255);
+			}
+		}
+
+		errorTexture = CreateTexture(image);
+		Image.UnloadImage(image);
+		errorTexture.SetFilter(TextureFilter.Point);
+		return errorTexture;
 	}
 
 	public WeakCollection<ITexture> GetTextureCollectionForIteration() => Textures;

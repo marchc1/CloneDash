@@ -136,7 +136,7 @@ public class Button : Label
 			var backpre = GetBgColor();
 			var forepre = GetFgColor();
 
-			var canInput = IsMouseInputEnabled();
+			var canInput = !IsDisabled();
 
 			if ((TriggeredWhenEnterPressed || Pulsing) && canInput) {
 				double val = ((Math.Sin(PulseTime * 6) + 1) / 2);
@@ -150,8 +150,8 @@ public class Button : Label
 			fore = MixColorBasedOnMouseState(this, forepre, HoveredMultiplier, DepressedMultiplier);
 
 			if (!canInput) {
-				back = back.Adjust(0, 0, -0.5f);
-				fore = fore.Adjust(0, 0, -0.5f);
+				back = back.Adjust(0, -0.3f, -0.15f);
+				fore = fore.Adjust(0, -0.3f, -0.15f);
 			}
 
 			if (!DrawBackgroundWhenMouseIdle && !IsHovered() && !Pulsing) {
@@ -187,6 +187,7 @@ public class Button : Label
 		base.Paint(width, height);
 		switchToPaintTimeColors = false;
 	}
+	public override bool CanShareBorders => false;
 	public override void PaintBorder(float width, float height) {
 		ColorStateSetup(out var back, out var fore);
 

@@ -53,7 +53,6 @@
         "Nucleus.Textbox.Background":           "20 25 32 127",
         "Nucleus.Textbox.BackgroundFocused":    "20 32 25 127",
         "Nucleus.Textbox.Border":               "85 95 110 255",
-        "Nucleus.Textbox.BorderFocused":        "85 110 95 255",
         "Nucleus.Textbox.Selection":            "170 200 255 80",
         "Nucleus.Textbox.Caret":                "240 248 255 255",
 

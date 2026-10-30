@@ -7,54 +7,53 @@ using Nucleus.Input;
 using Nucleus.Types;
 using Raylib_cs;
 
-using System.Diagnostics;
-
 namespace Nucleus.UI;
 
+/// <summary>
+/// The primary caret of a <see cref="Textbox"/>, as character offsets into its text
+/// </summary>
 public class Caret
 {
+	readonly TextEditingCore core;
+	internal Caret(TextEditingCore core) {
+		this.core = core;
+	}
+
+	private int Offset(TextPosition position) => core.Document.GetOffset(position);
+	private TextPosition Pos(int offset) => core.Document.GetPosition(offset);
+
 	public int Position {
-		get;
-		set;
-	} = 0;
-	public int? SelectionOrigin { get; set; } = null;
-	public int SelectionStart => HasSelection ? Math.Min(Position, SelectionOrigin!.Value) : Position;
-	public int SelectionEnd => HasSelection ? Math.Max(Position, SelectionOrigin!.Value) : Position;
+		get => Offset(core.Primary.Caret);
+		set {
+			var selection = core.Primary;
+			bool hadSelection = !selection.IsEmpty;
+			selection.Caret = Pos(value);
+			if (!hadSelection)
+				selection.Anchor = selection.Caret;
+			core.SetPrimary(selection);
+		}
+	}
+
+	/// <summary>
+	/// Where the selection started, null when nothing is selected
+	/// </summary>
+	public int? SelectionOrigin {
+		get => core.Primary.IsEmpty ? null : Offset(core.Primary.Anchor);
+		set {
+			var selection = core.Primary;
+			selection.Anchor = value.HasValue ? Pos(value.Value) : selection.Caret;
+			core.SetPrimary(selection);
+		}
+	}
+
+	public int SelectionStart => Offset(core.Primary.Start);
+	public int SelectionEnd => Offset(core.Primary.End);
 	public int SelectionLength => SelectionEnd - SelectionStart;
-	public bool HasSelection => SelectionOrigin.HasValue && SelectionOrigin.Value != Position;
-	public float? PreferredX { get; set; } = null;
+	public bool HasSelection => !core.Primary.IsEmpty;
+
 	public void MovePosition(string text, int delta) => Position = Math.Clamp(Position + delta, 0, text.Length);
-	public void Clamp(string text) {
-		Position = Math.Clamp(Position, 0, text.Length);
-		if (SelectionOrigin.HasValue)
-			SelectionOrigin = Math.Clamp(SelectionOrigin.Value, 0, text.Length);
-	}
-	public string GetSelectedText(string text) {
-		if (!HasSelection)
-			return "";
-
-		return text.Substring(SelectionStart, SelectionLength);
-	}
-	public string DeleteSelection(string text) {
-		if (!HasSelection)
-			return text;
-
-		int start = SelectionStart;
-		string result = text.Remove(start, SelectionLength);
-		Position = start;
-		ClearSelection();
-
-		return result;
-	}
-	public void BeginOrExtendSelection() => SelectionOrigin ??= Position;
-	public void ClearSelection() {
-		SelectionOrigin = null;
-		PreferredX = null;
-	}
-	public void SelectAll(ReadOnlySpan<char> text) {
-		SelectionOrigin = 0;
-		Position = text.Length;
-	}
+	public void ClearSelection() => core.SetPrimary(new(core.Primary.Caret));
+	public void SelectAll() => core.SelectAll();
 }
 
 internal struct TextLine
@@ -70,28 +69,36 @@ internal struct TextLine
 	public override string ToString() => $"Line(start:{Start}, len:{Length}, w:{Width:F1}, h:{Height:F1}, y:{Y:F1})";
 }
 
-public class Textbox : Label
+public class Textbox : Label, ITextLayout
 {
 	string HelperText = "";
-	bool __multiLine = false;
 
+	// These have to exist before Label's constructor sets Text.
+	readonly TextEditingCore core = new() { MultiLine = false, CopyLineWhenEmpty = false };
+	string cachedText = "";
+	bool settingText;
+
+	readonly TextEditingInput input;
+
+	public TextEditingCore Editing => core;
+	public readonly Caret Caret;
 
 	public bool MultiLine {
-		get => __multiLine;
+		get => core.MultiLine;
 		set {
-			if (__multiLine == value) return;
-			__multiLine = value;
+			if (core.MultiLine == value) return;
+			core.MultiLine = value;
+			core.CopyLineWhenEmpty = value;
 			if (value)
 				TextOverflowMode = TextOverflowMode.CharWrap;
 			InvalidateLines();
 		}
 	}
 
-	private bool __readOnly = false;
 	public bool ReadOnly {
-		get => __readOnly;
+		get => core.ReadOnly;
 		set {
-			__readOnly = value;
+			core.ReadOnly = value;
 			KeyboardUnfocus();
 		}
 	}
@@ -99,16 +106,22 @@ public class Textbox : Label
 	public ReadOnlySpan<char> GetHelperText() => HelperText;
 	public void SetHelperText(ReadOnlySpan<char> text) => HelperText = new(text);
 
-	Vector2F startClickPosition;
-	public int MaxLength { get; set; } = 0;
-	public bool IsPassword { get; set; } = false;
-	public int TabSize { get; set; } = 4;
-	public readonly Caret Caret = new();
-	long lastKeyboardInteraction = Stopwatch.GetTimestamp();
+	public int MaxLength { get => core.MaxLength; set => core.MaxLength = value; }
+	public bool IsPassword {
+		get => !core.AllowCopy;
+		set {
+			core.AllowCopy = !value;
+			InvalidateLines();
+		}
+	}
+	public int TabSize { get => core.TabSize; set => core.TabSize = value; }
 	public override bool WantsTextInput => true;
 
 	public delegate void TextChangedDelegate(Textbox textbox, string oldText, string newText);
 	public event TextChangedDelegate? OnUserPressedEnter;
+	/// <summary>
+	/// Fires when the user changes the text, not when <see cref="Text"/> is set from code.
+	/// </summary>
 	public event TextChangedDelegate? OnTextChanged;
 
 	readonly List<TextLine> lines = [];
@@ -116,18 +129,51 @@ public class Textbox : Label
 	bool linesInvalid = true;
 
 	float scrollOffsetY = 0;
-
-	readonly record struct UndoEntry(string Text, int CaretPosition);
-	readonly List<UndoEntry> undoStack = [];
-	readonly List<UndoEntry> redoStack = [];
-	const int MaxUndoEntries = 128;
-	long lastUndoPush = long.MinValue;
+	float scrollOffsetX = 0;
 
 	public Textbox(Element? parent) : base(parent) {
+		Caret = new(core);
+		input = new(core);
+		core.Layout = this;
+		core.TextChanged += Core_TextChanged;
+
 		Text = "";
 		KeyboardInputMarshal = new HoldingKeyboardInputMarshal();
 		TextSize = 20;
+		TextOverflowMode = TextOverflowMode.None;
 		SetPaintBorderEnabled(true);
+	}
+
+	public override bool IsDisabled() => !IsMouseInputEnabled() || !IsKeyboardInputEnabled();
+
+	public override ReadOnlySpan<char> Text {
+		get => cachedText;
+		set {
+			if (value.Equals(cachedText, StringComparison.Ordinal))
+				return;
+			settingText = true;
+			core.SetText(new string(value));
+			settingText = false;
+			// Text set from code isn't an undo step.
+			core.ResetUndo();
+			SyncText(false);
+		}
+	}
+
+	private void Core_TextChanged(TextEditingCore _) {
+		if (!settingText)
+			SyncText(true);
+	}
+
+	private void SyncText(bool fromUser) {
+		string old = cachedText;
+		string now = core.GetText();
+		// Label compares against Text (cachedText), has to happen before cachedText changes
+		base.Text = now;
+		cachedText = now;
+		InvalidateLines();
+		if (fromUser && old != now)
+			OnTextChanged?.Invoke(this, old, now);
 	}
 
 	protected override void PerformLayout(float width, float height) {
@@ -140,91 +186,28 @@ public class Textbox : Label
 		InvalidateLines();
 	}
 
-	bool inPerformUndoOrRedo;
 	public void SetTextInternal(ReadOnlySpan<char> text, bool resetCaret) {
-		if (text.Equals(Text, StringComparison.InvariantCulture))
-			return;
-
-		Caret.ClearSelection();
-		if (resetCaret)
-			Caret.Position = text.Length;
-		base.		Text = text;
-
-		InvalidateLines();
+		int caret = Caret.Position;
+		Text = text;
+		if (!resetCaret)
+			core.SetCaret(core.Document.GetPosition(caret));
 	}
 
-	public void SelectAll() {
-		Caret.SelectAll(text);
-	}
+	public void SelectAll() => core.SelectAll();
 
-	/// <summary>
-	/// Pushes a state onto the undo list
-	/// </summary>
-	/// <param name="force"></param>
-	void PushUndo(bool force) {
-		if (inPerformUndoOrRedo)
-			return;
-
-		if (!force && lastUndoPush != long.MinValue && Stopwatch.GetElapsedTime(lastUndoPush).TotalMilliseconds < 400 && undoStack.Count > 0)
-			return;
-
-		if (undoStack.Count >= MaxUndoEntries)
-			undoStack.RemoveAt(0);
-
-		undoStack.Add(new UndoEntry(text, Caret.Position));
-		redoStack.Clear();
-		lastUndoPush = Stopwatch.GetTimestamp();
-	}
-
-	void PerformUndo() {
-		if (undoStack.Count == 0) return;
-		inPerformUndoOrRedo = true;
-		UndoEntry entry = undoStack[^1];
-		undoStack.RemoveAt(undoStack.Count - 1);
-		redoStack.Add(new UndoEntry(text, Caret.Position));
-
-		var old = text;
-		Text = entry.Text;
-		Caret.Position = entry.CaretPosition;
-		Caret.ClearSelection();
-		FireTextChanged(old);
-
-		inPerformUndoOrRedo = false;
-	}
-
-	void PerformRedo() {
-		if (redoStack.Count == 0) return;
-		inPerformUndoOrRedo = true;
-		var entry = redoStack[^1];
-		redoStack.RemoveAt(redoStack.Count - 1);
-		undoStack.Add(new UndoEntry(text, Caret.Position));
-
-		var old = text;
-		Text = entry.Text;
-		Caret.Position = entry.CaretPosition;
-		Caret.ClearSelection();
-		FireTextChanged(old);
-
-		inPerformUndoOrRedo = false;
-	}
 	void InvalidateLines() {
 		linesInvalid = true;
 	}
-	protected override bool MouseClick(FrameState state, ButtonCode button) {
-		base.MouseClick(state, button);
-		startClickPosition = GetMousePos();
-		Caret.ClearSelection();
-		int charIdx = HitTestPosition(startClickPosition);
-		Caret.Position = charIdx;
-		return true;
-	}
-	string DisplayText => IsPassword ? new string('•', text.Length) : text;
+
+	string DisplayText => IsPassword ? new string('•', cachedText.Length) : cachedText;
 
 	RectangleF TextArea() {
 		var c = GetContentRect();
 		var p = GetTextPadding();
 		return RectangleF.XYWH(p.X, p.Y, MathF.Max(0, c.W - p.X * 2), MathF.Max(0, c.H - p.Y * 2));
 	}
+
+	#region Layout
 
 	void AddLine(ReadOnlySpan<char> text, int start, int length, float y, float height) {
 		int prefixStart = prefixWidths.Count;
@@ -254,7 +237,7 @@ public class Textbox : Label
 		lines.Clear();
 		prefixWidths.Clear();
 
-		string text = DisplayText ?? "";
+		string text = DisplayText;
 		float textSize = GetRenderTextSize();
 		float emptyLineH = Graphics2D.GetTextSize("X", Font, textSize).Y;
 		if (text.Length == 0) {
@@ -316,15 +299,15 @@ public class Textbox : Label
 
 	(int lineIdx, int col) CharIndexToLineCol(int charIndex) {
 		ValidateLines();
+		string text = cachedText;
 		charIndex = Math.Clamp(charIndex, 0, text.Length);
 
 		for (int i = 0; i < lines.Count; i++) {
 			var line = lines[i];
 			if (charIndex >= line.Start && charIndex <= line.Start + line.Length) {
-				if (charIndex == line.Start + line.Length && i + 1 < lines.Count && charIndex < text.Length)
-					if (charIndex < text.Length && text[charIndex] == '\n')
-						continue;
-
+				// Wrapped line ends where the next starts, prefer the next one
+				if (charIndex == line.End && i + 1 < lines.Count && lines[i + 1].Start == charIndex)
+					continue;
 				return (i, charIndex - line.Start);
 			}
 		}
@@ -341,28 +324,31 @@ public class Textbox : Label
 		return PrefixWidth(line, col);
 	}
 
-	int HitTestPosition(Vector2F mouseLocalToElement) {
+	private int VisualLineAtY(float y) {
+		for (int i = 0; i < lines.Count; i++)
+			if (y < lines[i].Y + lines[i].Height)
+				return i;
+		return lines.Count - 1;
+	}
+
+	private int HitTestPosition(Vector2F mouseLocalToElement, out float lineX) {
 		ValidateLines();
 
 		// Into content space (where Paint draws), then into the text area exactly as DrawTextLines does
 		Vector2F local = mouseLocalToElement - GetContentRect().Pos;
-		RectangleF area = TextArea();
-		float relY = local.Y - area.Y + scrollOffsetY;
-
-		int targetLine = lines.Count - 1;
-		for (int i = 0; i < lines.Count; i++) {
-			if (relY < lines[i].Y + lines[i].Height) {
-				targetLine = i;
-				break;
-			}
-		}
-
-		var line = lines[targetLine];
-		return line.Start + ColumnAtX(line, local.X - GetLineDrawX(line));
+		var line = lines[VisualLineAtY(local.Y - TextTop() + scrollOffsetY)];
+		lineX = local.X - GetLineDrawX(line);
+		return line.Start + ColumnAtX(line, lineX);
 	}
+
+	private TextPosition PositionFromMouse(out float lineX) => core.Document.GetPosition(HitTestPosition(GetMousePos(), out lineX));
 
 	float GetLineDrawX(TextLine line) {
 		RectangleF area = TextArea();
+
+		// doesn't fit, scroll instead of aligning
+		if (!MultiLine && line.Width > area.W)
+			return area.X - MathF.Min(scrollOffsetX, line.Width - area.W + 1);
 
 		var halign = GetTextAlignment().ToTextAlignment().Horizontal;
 		return halign switch {
@@ -372,55 +358,46 @@ public class Textbox : Label
 		};
 	}
 
-	static bool IsWordChar(char c) => char.IsLetterOrDigit(c) || c == '_';
+	/// <summary>
+	/// Y of the first line. Multi-line text that doesn't fit always starts at the top
+	/// </summary>
+	private float TextTop() {
+		RectangleF area = TextArea();
+		if (lines.Count == 0)
+			return area.Y;
 
-	int FindWordBoundaryLeft(string text, int pos) {
-		if (pos <= 0)
-			return 0;
-
-		pos--;
-		while (pos > 0 && !IsWordChar(text[pos]))
-			pos--;
-		while (pos > 0 && IsWordChar(text[pos - 1]))
-			pos--;
-
-		return pos;
+		float textHeight = lines[lines.Count - 1].Y + lines[lines.Count - 1].Height;
+		if (MultiLine && textHeight > area.H)
+			return area.Y;
+		return GetTextAlignment().ToTextAlignment().Vertical switch {
+			Types.TextAlignment.Center => MathF.Round(area.Y + (area.H - textHeight) / 2f),
+			Types.TextAlignment.Bottom => area.Y + area.H - textHeight,
+			_ => area.Y
+		};
 	}
 
-	int FindWordBoundaryRight(string text, int pos) {
-		if (pos >= text.Length)
-			return text.Length;
-
-		while (pos < text.Length && IsWordChar(text[pos]))
-			pos++;
-		while (pos < text.Length && !IsWordChar(text[pos]))
-			pos++;
-
-		return pos;
-	}
-
-	(int start, int end) GetWordAtPosition(string text, int pos) {
-		if (text.Length == 0) return (0, 0);
-		pos = Math.Clamp(pos, 0, text.Length - 1);
-
-		int start = pos, end = pos;
-
-		if (IsWordChar(text[pos])) {
-			while (start > 0 && IsWordChar(text[start - 1])) start--;
-			while (end < text.Length - 1 && IsWordChar(text[end + 1])) end++;
-			return (start, end + 1);
-		}
-
-		while (start > 0 && !IsWordChar(text[start - 1]) && text[start - 1] != '\n') start--;
-		while (end < text.Length - 1 && !IsWordChar(text[end + 1]) && text[end + 1] != '\n') end++;
-		return (start, end + 1);
-	}
-
-	void EnsureCaretVisible() {
-		if (!MultiLine) return;
-
+	private void EnsureCaretVisible() {
 		ValidateLines();
 		var (lineIdx, col) = CharIndexToLineCol(Caret.Position);
+
+		if (!MultiLine) {
+			var only = lines[0];
+			float areaW = TextArea().W;
+			if (only.Width <= areaW) {
+				scrollOffsetX = 0;
+				return;
+			}
+
+			float caretX = GetCaretXInLine(lineIdx, col);
+			if (caretX < scrollOffsetX)
+				scrollOffsetX = caretX;
+			else if (caretX > scrollOffsetX + areaW - 1)
+				scrollOffsetX = caretX - areaW + 1;
+
+			scrollOffsetX = Math.Clamp(scrollOffsetX, 0, only.Width - areaW + 1);
+			return;
+		}
+
 		if (lineIdx < 0 || lineIdx >= lines.Count) return;
 
 		var line = lines[lineIdx];
@@ -435,395 +412,166 @@ public class Textbox : Label
 		scrollOffsetY = Math.Max(0, scrollOffsetY);
 	}
 
+	#endregion
+
+	#region ITextLayout
+
+	private int VisualLineOf(TextPosition position, out int col) {
+		var location = CharIndexToLineCol(core.Document.GetOffset(position));
+		col = location.col;
+		return location.lineIdx;
+	}
+
+	TextPosition ITextLayout.MoveVertically(TextPosition from, int count, ref float? preferredX) {
+		ValidateLines();
+		int lineIndex = VisualLineOf(from, out int col);
+		preferredX ??= GetCaretXInLine(lineIndex, col);
+
+		int target = lineIndex + count;
+		if (target < 0) return core.Document.Start;
+		if (target >= lines.Count) return core.Document.End;
+
+		var line = lines[target];
+		return core.Document.GetPosition(line.Start + ColumnAtX(line, preferredX.Value));
+	}
+
+	int ITextLayout.PageLines {
+		get {
+			ValidateLines();
+			float lineH = lines.Count > 0 ? lines[0].Height : 1;
+			return Math.Max(1, (int)(TextArea().H / MathF.Max(1, lineH)));
+		}
+	}
+
+	float ITextLayout.GetX(TextPosition position) {
+		int lineIndex = VisualLineOf(position, out int col);
+		return GetCaretXInLine(lineIndex, col);
+	}
+
+	TextPosition ITextLayout.PositionAt(int line, float x) {
+		ValidateLines();
+		int offset = core.Document.GetOffset(new(line, 0));
+		int lineIndex = CharIndexToLineCol(offset).lineIdx;
+		return core.Document.GetPosition(lines[lineIndex].Start + ColumnAtX(lines[lineIndex], x));
+	}
+
+	#endregion
+
+	#region Input
+
 	protected override void OnThink() {
 		if (IsHovered())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_IBEAM);
+		input.EndFrame();
 	}
 
 	protected override bool OnGainingKeyboardFocus(Element? lastFocus, ref Element? passTo) {
 		base.OnGainingKeyboardFocus(lastFocus, ref passTo);
-		// Reset the undo/redo stacks.
-		undoStack.Clear();
-		redoStack.Clear();
+		core.ResetUndo();
+		input.Blink.Reset();
 		return true;
 	}
 
 	protected override bool OnLosingKeyboardFocus(Element? lostTo) {
 		base.OnLosingKeyboardFocus(lostTo);
-		Caret.ClearSelection();
-		// Reset the undo/redo stacks.
-		undoStack.Clear();
-		redoStack.Clear();
+		core.SetCaret(core.Primary.Caret);
+		core.ResetUndo();
+		scrollOffsetX = 0;
 		return true;
 	}
 
-	private long lastClickTime = long.MinValue;
-	private int clickCount = 0;
+	protected override bool MouseClick(FrameState state, ButtonCode button) {
+		base.MouseClick(state, button);
+		if (button != ButtonCode.MouseLeft)
+			return true;
+
+		if (!IsKeyboardFocused())
+			KeyboardFocus();
+
+		var pos = PositionFromMouse(out _);
+		input.PointerDown(pos, state.Keyboard.ShiftDown, state.Keyboard.ControlDown, state.Keyboard.AltDown);
+		EnsureCaretVisible();
+		return true;
+	}
 
 	protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
 		if (!IsHovered()) return true;
-		if (ReadOnly && !MultiLine) return true;
 		if (button != ButtonCode.MouseLeft) return true;
 
-		KeyboardFocus();
-
-		long now = Stopwatch.GetTimestamp();
-		if (lastClickTime != long.MinValue && Stopwatch.GetElapsedTime(lastClickTime, now).TotalMilliseconds < 400)
-			clickCount++;
-		else
-			clickCount = 1;
-		lastClickTime = now;
-
-		var localPos = self.GetMousePos();
-
-		if (clickCount == 3) {
-			ValidateLines();
-			int charIdx = HitTestPosition(localPos);
-			var (lineIdx, _) = CharIndexToLineCol(charIdx);
-			if (lineIdx >= 0 && lineIdx < lines.Count) {
-				var line = lines[lineIdx];
-				Caret.SelectionOrigin = line.Start;
-				Caret.Position = line.Start + line.Length;
-			}
+		// Subclasses that skip MouseClick (NumSlider) still focus here.
+		if (!IsKeyboardFocused()) {
+			KeyboardFocus();
+			core.SetCaret(PositionFromMouse(out _));
+			EnsureCaretVisible();
 		}
-		else if (clickCount == 2) {
-			int charIdx = HitTestPosition(localPos);
-			var (start, end) = GetWordAtPosition(text, charIdx);
-			Caret.SelectionOrigin = start;
-			Caret.Position = end;
-		}
-		else if ((GetMousePos() - startClickPosition).Length <= 3) {
-			int charIdx = HitTestPosition(localPos);
-			Caret.Position = charIdx;
-			Caret.ClearSelection();
-		}
-
 		return true;
 	}
 
 	protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 		base.MouseDrag(self, state, delta);
-
-		if (!Caret.HasSelection && !Caret.SelectionOrigin.HasValue)
-			Caret.SelectionOrigin = Caret.Position;
-		else
-			Caret.SelectionOrigin ??= Caret.Position;
-
-		var localPos = self.GetMousePos();
-		Caret.Position = HitTestPosition(localPos);
+		var pos = PositionFromMouse(out float lineX);
+		input.PointerDrag(pos, lineX, state.Keyboard.AltDown);
 		EnsureCaretVisible();
-
 		return true;
 	}
 
 	protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
-		if (!MultiLine) {
-			base.MouseScroll(self, state, delta);
-			return true;
-		}
+		// Shift scrolls sideways
+		if (state.Keyboard.ShiftDown && delta.X == 0)
+			delta = new(delta.Y, 0);
 
-		scrollOffsetY -= delta.Y * 20;
 		ValidateLines();
 
-		float totalH = lines.Count > 0 ? lines[^1].Y + lines[^1].Height : 0;
-		float visibleH = TextArea().H;
-		scrollOffsetY = Math.Clamp(scrollOffsetY, 0, Math.Max(0, totalH - visibleH));
+		// Nothing to scroll, let the parent have it
+		if (!MultiLine) {
+			if (delta.X == 0 || lines.Count == 0)
+				return false;
+			float maxX = lines[0].Width - TextArea().W + 1;
+			if (maxX <= 0)
+				return false;
+			scrollOffsetX = Math.Clamp(scrollOffsetX - delta.X * 20, 0, maxX);
+			return true;
+		}
+		if (delta.Y == 0)
+			return false;
 
+		float totalH = lines.Count > 0 ? lines[^1].Y + lines[^1].Height : 0;
+		float maxScroll = Math.Max(0, totalH - TextArea().H);
+		if (maxScroll <= 0)
+			return false;
+
+		scrollOffsetY = Math.Clamp(scrollOffsetY - delta.Y * 20, 0, maxScroll);
 		return true;
 	}
 
-	void FireTextChanged(string oldText) {
-		if (text != oldText)
-			OnTextChanged?.Invoke(this, oldText, text);
-	}
-
-	void InsertText(string insert) {
-		var old = text;
-
-		bool pushedUndo = false;
-		if (Caret.HasSelection) {
-			pushedUndo = true;
-			PushUndo(true);
-			SetTextInternal(Caret.DeleteSelection(text), true);
-		}
-		if (MaxLength > 0 && text.Length + insert.Length > MaxLength)
-			insert = insert[..(MaxLength - text.Length)];
-
-		if (insert.Length == 0) {
-			FireTextChanged(old);
-			return;
-		}
-
-		if (!pushedUndo)
-			PushUndo(true);
-
-		SetTextInternal(text.Insert(Math.Clamp(Caret.Position, 0, text.Length), insert), false);
-		Caret.Position += insert.Length;
-		Caret.ClearSelection();
-		FireTextChanged(old);
-	}
-
 	protected override bool TextInput(in KeyboardState keyboardState, string inputText) {
-		var oldText = this.text;
-
-		if (Caret.HasSelection) {
-			PushUndo(true);
-			Text = Caret.DeleteSelection(this.text);
-		}
-
-		if (MaxLength > 0 && this.text.Length >= MaxLength) {
-			FireTextChanged(oldText);
-			return true;
-		}
-
-		// todo: MaxLength handling here...
-		int oldPosition = Caret.Position;
-		PushUndo(false);
-		Text = this.text.Insert(Caret.Position, inputText);
-		Caret.MovePosition(this.text, inputText.Length);
-		Caret.ClearSelection();
-		FireTextChanged(oldText);
+		input.TextInput(in keyboardState, inputText);
 		EnsureCaretVisible();
-		Caret.Position = oldPosition + inputText.Length;
 		return true;
 	}
 
 	protected override bool KeyPressed(in KeyboardState state, ButtonCode key) {
-		var action = key.GetAction();
-		if (action.Type == CharacterType.NoAction)
+		if ((key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter) && !MultiLine) {
+			KeyboardUnfocus();
+			OnUserPressedEnter?.Invoke(this, "", cachedText);
 			return true;
-
-		lastKeyboardInteraction = Stopwatch.GetTimestamp();
-		var oldText = text;
-
-		bool ctrl = state.ControlDown;
-		bool shift = state.ShiftDown;
-
-		if (ctrl) {
-			switch (key) {
-				case ButtonCode.KeyA:
-					SelectAll();
-					return true;
-
-				case ButtonCode.KeyC:
-					if (Caret.HasSelection)
-						Clipboard.Text = Caret.GetSelectedText(text);
-					return true;
-
-				case ButtonCode.KeyX:
-					if (!ReadOnly && Caret.HasSelection) {
-						Clipboard.Text = Caret.GetSelectedText(text);
-						PushUndo(true);
-						Text = Caret.DeleteSelection(text);
-						FireTextChanged(oldText);
-					}
-					return true;
-
-				case ButtonCode.KeyV:
-					if (!ReadOnly) {
-						string clip = Clipboard.Text ?? "";
-						if (!MultiLine)
-							clip = clip.Replace("\n", "").Replace("\r", "");
-						InsertText(clip);
-					}
-					return true;
-
-				case ButtonCode.KeyZ:
-					if (!ReadOnly) {
-						if (shift)
-							PerformRedo();
-						else
-							PerformUndo();
-					}
-					return true;
-
-				case ButtonCode.KeyY:
-					if (!ReadOnly)
-						PerformRedo();
-					return true;
-			}
 		}
 
-		if (action.Type == CharacterType.Arrow) {
-			bool selecting = shift;
-
-			if (selecting)
-				Caret.BeginOrExtendSelection();
-
-			switch (action.Extra) {
-				case "LEFT":
-					if (!selecting && Caret.HasSelection) {
-						Caret.Position = Caret.SelectionStart;
-						Caret.ClearSelection();
-					}
-					else if (ctrl)
-						Caret.Position = FindWordBoundaryLeft(text, Caret.Position);
-					else
-						Caret.MovePosition(text, -1);
-
-					Caret.PreferredX = null;
-					break;
-
-				case "RIGHT":
-					if (!selecting && Caret.HasSelection) {
-						Caret.Position = Caret.SelectionEnd;
-						Caret.ClearSelection();
-					}
-					else if (ctrl)
-						Caret.Position = FindWordBoundaryRight(text, Caret.Position);
-					else
-						Caret.MovePosition(text, 1);
-
-					Caret.PreferredX = null;
-					break;
-
-				case "UP":
-					if (MultiLine)
-						MoveCaretVertically(-1);
-					else if (!selecting && Caret.HasSelection) {
-						Caret.Position = Caret.SelectionStart;
-						Caret.ClearSelection();
-					}
-					break;
-
-				case "DOWN":
-					if (MultiLine)
-						MoveCaretVertically(1);
-					else if (!selecting && Caret.HasSelection) {
-						Caret.Position = Caret.SelectionEnd;
-						Caret.ClearSelection();
-					}
-					break;
-			}
-
-			if (!selecting)
-				Caret.ClearSelection();
-
+		bool handled = input.KeyPressed(in state, key);
+		if (handled)
 			EnsureCaretVisible();
-			return true;
-		}
 
-		if (key == ButtonCode.KeyHome) {
-			if (shift) Caret.BeginOrExtendSelection();
-
-			if (ctrl)
-				Caret.Position = 0;
-			else {
-				var (lineIdx, _) = CharIndexToLineCol(Caret.Position);
-				Caret.Position = lines[lineIdx].Start;
-			}
-
-			if (!shift) Caret.ClearSelection();
-			Caret.PreferredX = null;
-			EnsureCaretVisible();
-			return true;
-		}
-
-		if (key == ButtonCode.KeyEnd) {
-			if (shift) Caret.BeginOrExtendSelection();
-
-			if (ctrl)
-				Caret.Position = text.Length;
-			else {
-				var (lineIdx, _) = CharIndexToLineCol(Caret.Position);
-				var line = lines[lineIdx];
-				Caret.Position = line.Start + line.Length;
-			}
-
-			if (!shift) Caret.ClearSelection();
-			Caret.PreferredX = null;
-			EnsureCaretVisible();
-			return true;
-		}
-
-		if (ReadOnly) return true;
-
-		if (action.Type == CharacterType.VisibleCharacter) {
-			// Handled by text input now
-			return true;
-		}
-
-		switch (action.Type) {
-			case CharacterType.DeleteBackwards:
-				if (Caret.HasSelection) {
-					PushUndo(false);
-					SetTextInternal(Caret.DeleteSelection(text), false);
-					FireTextChanged(oldText);
-				}
-				else if (Caret.Position > 0) {
-					int deleteCount = ctrl ? Caret.Position - FindWordBoundaryLeft(text, Caret.Position) : 1;
-					int deleteStart = Caret.Position - deleteCount;
-					PushUndo(false);
-					Text = text.Remove(deleteStart, deleteCount);
-					Caret.Position = deleteStart;
-					FireTextChanged(oldText);
-				}
-				EnsureCaretVisible();
-				break;
-
-			case CharacterType.DeleteForwards:
-				if (Caret.HasSelection) {
-					PushUndo(false);
-					SetTextInternal(Caret.DeleteSelection(text), false);
-					FireTextChanged(oldText);
-				}
-				else if (Caret.Position < text.Length) {
-					int deleteCount = ctrl ? FindWordBoundaryRight(text, Caret.Position) - Caret.Position : 1;
-					int deleteStart = Caret.Position;
-					PushUndo(false);
-					Text = text.Remove(Caret.Position, deleteCount);
-					Caret.Position = deleteStart;
-					FireTextChanged(oldText);
-				}
-				EnsureCaretVisible();
-				break;
-
-			case CharacterType.Enter:
-				if (MultiLine) {
-					InsertText("\n");
-					EnsureCaretVisible();
-				}
-				else {
-					KeyboardUnfocus();
-					OnUserPressedEnter?.Invoke(this, "", text);
-				}
-				break;
-
-			case CharacterType.Tab:
-				if (MultiLine) {
-					InsertText(new string(' ', TabSize));
-					EnsureCaretVisible();
-				}
-				break;
-		}
-
+		// Let these go up to the parent if we didn't use them
+		if (!handled && key is ButtonCode.KeyTab or ButtonCode.KeyEscape)
+			return false;
 		return true;
 	}
 
-	void MoveCaretVertically(int direction) {
-		ValidateLines();
+	#endregion
 
-		var (lineIdx, col) = CharIndexToLineCol(Caret.Position);
-
-		Caret.PreferredX ??= GetCaretXInLine(lineIdx, col);
-		float preferredX = Caret.PreferredX.Value;
-
-		int targetLine = lineIdx + direction;
-		if (targetLine < 0) {
-			Caret.Position = 0;
-			return;
-		}
-		if (targetLine >= lines.Count) {
-			Caret.Position = this.text.Length;
-			return;
-		}
-
-		var line = lines[targetLine];
-		Caret.Position = line.Start + ColumnAtX(line, preferredX);
-	}
+	#region Painting
 
 	SchemeableSetting<Color> bgFocusedColor = SchemeableSetting<Color>.Default(new(20, 32, 25, 127));
-	SchemeableSetting<Color> fgFocusedColor = SchemeableSetting<Color>.Default(new(85, 110, 95, 255));
 	SchemeableSetting<Color> selectionColor = SchemeableSetting<Color>.Default(new(170, 200, 255, 80));
 	SchemeableSetting<Color> caretColor = SchemeableSetting<Color>.Default(new(240, 248, 255, 255));
 
@@ -833,13 +581,12 @@ public class Textbox : Label
 		SetBgSchemeColor(scheme.GetColor("Nucleus.Textbox.Background", scheme.GetColor("Nucleus.Background")));
 		SetFgSchemeColor(scheme.GetColor("Nucleus.Textbox.Border", scheme.GetColor("Nucleus.Border")));
 		bgFocusedColor.SetSchemeValue(scheme.GetColor("Nucleus.Textbox.BackgroundFocused", new(20, 32, 25, 127)));
-		fgFocusedColor.SetSchemeValue(scheme.GetColor("Nucleus.Textbox.BorderFocused", new(85, 110, 95, 255)));
 		selectionColor.SetSchemeValue(scheme.GetColor("Nucleus.Textbox.Selection", new(170, 200, 255, 80)));
 		caretColor.SetSchemeValue(scheme.GetColor("Nucleus.Textbox.Caret", new(240, 248, 255, 255)));
 	}
 
 	Color GetStateBgColor() => IsKeyboardFocused() && !HasUserBgColor ? bgFocusedColor.Get() : GetBgColor();
-	Color GetStateFgColor() => IsKeyboardFocused() && !HasUserFgColor ? fgFocusedColor.Get() : GetFgColor();
+	private Color GetStateFgColor() => IsKeyboardFocused() && !HasUserFgColor ? GetFocusColor() : GetFgColor();
 
 	public override void Paint(float width, float height) {
 		ValidateLines();
@@ -855,23 +602,26 @@ public class Textbox : Label
 		Graphics2D.SetDrawColor(back);
 		Graphics2D.DrawRectangle(0, 0, width, height);
 
-		bool showPlaceholder = (DisplayText ?? "").Length == 0;
+		bool showPlaceholder = cachedText.Length == 0;
 
-		if (Caret.HasSelection && !showPlaceholder)
-			DrawSelection(width, height);
+		if (!showPlaceholder && (IsKeyboardFocused() || core.HasSelection))
+			foreach (var selection in core.Selections)
+				if (!selection.IsEmpty)
+					DrawSelection(selection);
 
 		if (showPlaceholder) {
 			if (HelperText.Length > 0 && lines.Count > 0) {
 				Graphics2D.SetDrawColor(GetTextColor().Adjust(0, -0.1, -0.4));
 				var line = lines[0];
-				Graphics2D.DrawText(GetLineDrawX(line), TextArea().Y, HelperText, Font, GetRenderTextSize(), Anchor.TopLeft);
+				Graphics2D.DrawText(GetLineDrawX(line), TextTop(), HelperText, Font, GetRenderTextSize(), Anchor.TopLeft);
 			}
 		}
 		else
 			DrawTextLines(width, height);
 
-		if (IsKeyboardFocused() && Stopwatch.GetElapsedTime(lastKeyboardInteraction).TotalSeconds % 0.666 < 0.333)
-			DrawCaret(width, height);
+		if (IsKeyboardFocused() && input.Blink.Visible)
+			foreach (var selection in core.Selections)
+				DrawCaret(selection.Caret);
 	}
 	public override void PaintBorder(float width, float height) {
 		Color fore = MixColorBasedOnMouseState(this, GetStateFgColor(), new(0, 1.1f, 1.3f, 1f), new(0, 1.2f, 0.6f, 1f));
@@ -882,12 +632,12 @@ public class Textbox : Label
 	void DrawTextLines(float width, float height) {
 		string text = DisplayText;
 		var textC = GetTextColor();
-		if (!IsMouseInputEnabled())
+		if (IsDisabled())
 			textC = textC.Adjust(0, 0, -0.5f);
 
 		Graphics2D.SetDrawColor(textC);
 
-		float padY = TextArea().Y;
+		float padY = TextTop();
 
 		foreach (var line in lines) {
 			float drawY = padY + line.Y - scrollOffsetY;
@@ -903,42 +653,46 @@ public class Textbox : Label
 		}
 	}
 
-	void DrawSelection(float width, float height) {
-		int selStart = Caret.SelectionStart;
-		int selEnd = Caret.SelectionEnd;
+	private void DrawSelection(TextSelection selection) {
+		int selStart = core.Document.GetOffset(selection.Start);
+		int selEnd = core.Document.GetOffset(selection.End);
 
-		float padY = TextArea().Y;
+		float padY = TextTop();
 
 		Graphics2D.SetDrawColor(selectionColor.Get());
 
 		foreach (var line in lines) {
 			int lineEnd = line.Start + line.Length;
-			if (selEnd <= line.Start || selStart >= lineEnd)
-				continue;
+			if (selEnd <= line.Start || selStart >= lineEnd) {
+				// sliver for empty lines in a selection
+				if (!(line.Length == 0 && selStart <= line.Start && selEnd > line.Start))
+					continue;
+			}
 
 			int overlapStart = Math.Max(selStart, line.Start);
 			int overlapEnd = Math.Min(selEnd, lineEnd);
 
 			float startX = GetLineDrawX(line) + PrefixWidth(line, overlapStart - line.Start);
-			float selW = PrefixWidth(line, overlapEnd - line.Start) - PrefixWidth(line, overlapStart - line.Start);
+			float selW = MathF.Max(PrefixWidth(line, overlapEnd - line.Start) - PrefixWidth(line, overlapStart - line.Start), line.Length == 0 ? 4 : 0);
 			float drawY = padY + line.Y - scrollOffsetY;
 
-			float pad = 2;
-			Graphics2D.DrawRectangle(startX - pad, drawY - pad, selW + pad * 2, line.Height + pad * 2);
+			Graphics2D.DrawRectangle(startX, drawY, selW, line.Height);
 		}
 	}
 
-	void DrawCaret(float width, float height) {
+	private void DrawCaret(TextPosition position) {
 		ValidateLines();
 
-		var (lineIdx, col) = CharIndexToLineCol(Caret.Position);
+		var (lineIdx, col) = CharIndexToLineCol(core.Document.GetOffset(position));
 		if (lineIdx < 0 || lineIdx >= lines.Count) return;
 		var line = lines[lineIdx];
 
 		float drawX = MathF.Round(GetLineDrawX(line) + GetCaretXInLine(lineIdx, col));
-		float drawY = TextArea().Y + line.Y - scrollOffsetY;
+		float drawY = TextTop() + line.Y - scrollOffsetY;
 
 		Graphics2D.SetDrawColor(caretColor.Get());
-		Graphics2D.DrawLine(drawX, drawY, drawX, drawY + line.Height);
+		Graphics2D.DrawRectangle(drawX, drawY, 2, line.Height);
 	}
+
+	#endregion
 }

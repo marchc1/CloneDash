@@ -54,39 +54,70 @@ public class Checkbox : Button, IBindableToConVar
 	public Checkbox(Element? parent) : base(parent, "") { }
 	public Checkbox(Element? parent, ReadOnlySpan<char> name) : base(parent, "", name) { }
 
+	public static float AnimationTime = 0.15f;
+
+	// The box or circle, square and centered in whatever space we were given
+	private RectangleF GetBox(float width, float height) {
+		float side = MathF.Floor(Math.Min(width, height));
+		return RectangleF.XYWH(MathF.Floor((width - side) / 2), MathF.Floor((height - side) / 2), side, side);
+	}
+
+	public override void PaintBackground(float width, float height) {
+		ColorStateSetup(out var back, out _);
+		var box = GetBox(width, height);
+		Graphics2D.SetDrawColor(back);
+		if (Radio)
+			Graphics2D.DrawCircle(box.Pos + box.Size / 2, box.W / 2);
+		else
+			Graphics2D.DrawRectangle(box);
+	}
+
+	public override void PaintBorder(float width, float height) {
+		ColorStateSetup(out _, out var fore);
+		if (IsKeyboardFocused())
+			fore = GetFocusColor();
+		var box = GetBox(width, height);
+		float thickness = Math.Max(1, BorderSize);
+		Graphics2D.SetDrawColor(fore);
+		if (Radio)
+			Graphics2D.DrawRing(box.Pos + box.Size / 2, box.W / 2 - thickness, box.W / 2, 0, 360, 48);
+		else
+			Graphics2D.DrawRectangleOutline(box, thickness);
+	}
+
 	public override void Paint(float width, float height) {
 		float c = CheckAnim ?? (Checked ? 1 : 0);
-		c = Math.Clamp(c + ((float)Level.RendertimeDelta * 6f * (Checked ? 1 : -1)), 0, 1);
+		c = Math.Clamp(c + ((float)Level.RendertimeDelta / AnimationTime * (Checked ? 1 : -1)), 0, 1);
 		CheckAnim = c;
 
-		DrawAsCircle = Radio;
+		if (c <= 0)
+			return;
+
+		var box = GetBox(width, height);
+		Graphics2D.SetDrawColor(GetTextColor());
+
 		if (Radio) {
-			var smallest = Math.Min(width, height);
-			var largest = Math.Max(width, height);
-			var diff = largest - smallest;
-
-			var offset = new Vector2F(
-				width > height ? diff / 2 : 0,
-				width > height ? 0 : diff / 2
-			);
-			Graphics2D.OffsetDrawing(offset);
-
-			base.Paint(smallest, smallest);
-			if (c > 0) {
-				c = NMath.Ease.OutQuart(c);
-				Graphics2D.SetDrawColor(GetTextColor());
-				Graphics2D.DrawCircle(new Vector2F(smallest / 2, smallest / 2), new Vector2F((c * smallest) / 5f));
-			}
-
-			Graphics2D.OffsetDrawing(-offset);
+			float radius = NMath.Ease.OutQuart(c) * box.W * 0.22f;
+			Graphics2D.DrawCircle(box.Pos + box.Size / 2, radius);
+			return;
 		}
-		else {
-			base.Paint(width, height);
-			if (c > 0) {
-				c = NMath.Ease.InQuad(c);
-				Graphics2D.SetDrawColor(GetTextColor());
-				Graphics2D.DrawLineStrip([new(width * 0.25f, height * 0.55f), new(width / 2f, height * 0.8f), new(width * 0.75f, height * 0.28f)], c);
-			}
+
+		// Short arm down to the corner, long arm up, drawn on by length
+		Vector2F start = box.Pos + box.Size * new Vector2F(0.24f, 0.52f);
+		Vector2F corner = box.Pos + box.Size * new Vector2F(0.42f, 0.70f);
+		Vector2F end = box.Pos + box.Size * new Vector2F(0.77f, 0.31f);
+		float thickness = Math.Max(2, MathF.Round(box.W / 12));
+
+		float first = (corner - start).Length;
+		float second = (end - corner).Length;
+		float drawn = NMath.Ease.OutCubic(c) * (first + second);
+
+		Vector2F firstEnd = drawn >= first ? corner : Vector2F.Lerp(drawn / first, start, corner);
+		Graphics2D.DrawLine(start, firstEnd, thickness);
+		if (drawn > first) {
+			Graphics2D.DrawLine(corner, Vector2F.Lerp((drawn - first) / second, corner, end), thickness);
+			// fill the corner joint
+			Graphics2D.DrawCircle(corner, thickness / 2);
 		}
 	}
 

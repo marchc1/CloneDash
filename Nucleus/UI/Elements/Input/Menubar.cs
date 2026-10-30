@@ -12,8 +12,14 @@ public class MenuContext(UserInterface UI)
 	public void AddSubMenu(string text, string? icon = null, Func<Menu, bool>? callback = null) => AddMenuItem(new MenuSubmenu(text, icon, callback));
 	public void AddSeparator() => AddMenuItem(new MenuSeparator());
 
+	/// <summary>
+	/// Dims everything behind the menu
+	/// </summary>
+	public bool Backdrop { get; set; }
+
 	public void Show() {
 		Menu menu = UI.Menu();
+		menu.Backdrop = Backdrop;
 
 		foreach (var item in MenuItems) {
 			menu.AddItem(item);

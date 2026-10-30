@@ -10,21 +10,10 @@ public class ListView : ScrollPanel
 {
 	public ListView(Element? parent) : base(parent) {
 		DockPadding = RectangleF.TLRB(2);
+		MainPanel.ChildDock = Dock.Top;
 	}
 	public Element? LastSelectedElement { get; private set; } = null;
 	public HashSet<Element> SelectedElements { get; private set; } = [];
-	public override void Paint(float width, float height) {
-		Graphics2D.SetDrawColor(GetBgColor());
-		Graphics2D.DrawRectangle(0, 0, width, height);
-	}
-	public override void PaintBorder(float width, float height) {
-		Graphics2D.SetDrawColor(GetFgColor());
-		Graphics2D.DrawRectangleOutline(0, 0, width, height, 2);
-	}
-	protected override void ChildParented(Element parent, Element child) {
-		base.ChildParented(parent, child);
-		child.		Dock = Dock.Top;
-	}
 	protected override bool FiltersItems => true;
 	public override bool ShouldItemBeVisible(Element e) {
 		return e is not ListViewItem li || li.ShowLVItem;

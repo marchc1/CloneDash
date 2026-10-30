@@ -137,7 +137,10 @@ namespace Nucleus.Core
 		private static int offsetY(float input) => (int)(input + __offset.Y);
 
 		static void __SetOffset(Vector2F o) => __offset = o.Round(3);
-		public static void ResetDrawingOffset() => __offset = new Vector2F(0, 0);
+		public static void ResetDrawingOffset() {
+			__offset = new Vector2F(0, 0);
+			knownLineWidth = null;
+		}
 		public static void OffsetDrawing(Vector2F by) => __SetOffset(__offset + by);
 		public static void SetOffset(Vector2F offset) => __SetOffset(offset);
 
@@ -367,10 +370,14 @@ namespace Nucleus.Core
 		public static void DrawPixel(int x, int y) => Raylib.DrawPixel(offsetX(x), offsetY(x), __drawColor);
 		public static void DrawPixel(Vector2F pos) => Raylib.DrawPixelV(AFV2ToSNV2(pos), __drawColor);
 
+		// GetLineWidth is a synchronous glGetFloatv, only ask once per ResetDrawingOffset.
+		private static float? knownLineWidth;
 		static float potentialLineWidthFlush(float newWidth) {
-			if (MathF.Abs(Rlgl.GetLineWidth() - newWidth) > 0.01f) {
+			knownLineWidth ??= Rlgl.GetLineWidth();
+			if (MathF.Abs(knownLineWidth.Value - newWidth) > 0.01f) {
 				Rlgl.DrawRenderBatchActive();
 				Rlgl.SetLineWidth(newWidth);
+				knownLineWidth = newWidth;
 			}
 			return newWidth;
 		}

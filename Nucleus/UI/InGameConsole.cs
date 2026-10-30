@@ -20,6 +20,13 @@ namespace Nucleus
 		public string?[]? HelpStrings;
 		public int MaxVisibleRows = 12;
 
+		private const string FONT = "Consolas";
+		private const float TEXT_SIZE = 14;
+		private const float ROW_HEIGHT = 17;
+		private const float HORIZ_PAD = 6;
+		private const float HELP_GAP = 12;
+		private const float FOOTER_HEIGHT = 14;
+
 		public void SetPotentialMatches(string[] potentialMatches, string?[]? helpStrings = null) {
 			PotentialMatches = potentialMatches;
 			HelpStrings = helpStrings;
@@ -30,181 +37,138 @@ namespace Nucleus
 		}
 
 		public ConsoleAutocomplete(Element? parent) : base(parent) {
-			Clipping = false;
-		}
-
-		public Vector2F ListOffset;
-
-		public override void Paint(float width, float height) {
-			Graphics2D.OffsetDrawing(ListOffset);
-			PaintList();
-			Graphics2D.OffsetDrawing(-ListOffset);
-		}
-
-		void PaintList() {
-			if (PotentialMatches == null || PotentialMatches.Length == 0) return;
-
-			int visibleCount = Math.Min(PotentialMatches.Length, MaxVisibleRows);
-
-			int scrollStart = 0;
-			if (selectionIndex >= 0) {
-				if (selectionIndex >= scrollStart + visibleCount)
-					scrollStart = selectionIndex - visibleCount + 1;
-				if (selectionIndex < scrollStart)
-					scrollStart = selectionIndex;
-			}
-			int scrollEnd = scrollStart + visibleCount;
-
-			int maxNameLen = 0;
-			string maxNameStr = "";
-			int maxHelpLen = 0;
-			string maxHelpStr = "";
-
-			for (int i = scrollStart; i < scrollEnd && i < PotentialMatches.Length; i++) {
-				string s = PotentialMatches[i];
-				if (s.Length > maxNameLen) {
-					maxNameStr = s;
-					maxNameLen = s.Length;
-				}
-
-				if (HelpStrings != null && i < HelpStrings.Length) {
-					string? d = HelpStrings[i];
-					if (d != null && d.Length > maxHelpLen) {
-						maxHelpStr = d;
-						maxHelpLen = d.Length;
-					}
-				}
-			}
-
-			var textSize = 14;
-			var rowPadding = 3;
-			var rowHeight = textSize + rowPadding;
-			var horizPad = 6;
-
-			float maxNameX = Graphics2D.GetTextSize(maxNameStr, "Consolas", textSize).X;
-			float maxHelpX = maxHelpStr.Length > 0 ? Graphics2D.GetTextSize(maxHelpStr, "Consolas", textSize).X : 0;
-
-			float totalWidth = maxNameX + horizPad * 2;
-			if (maxHelpX > 0)
-				totalWidth += 12 + maxHelpX + horizPad;
-
-			float totalHeight = visibleCount * rowHeight;
-
-			Graphics2D.SetDrawColor(2, 2, 2, 200);
-			Graphics2D.DrawRectangle(new(-1, -4), new(totalWidth + 2, totalHeight + 2));
-
-			for (int vi = 0; vi < visibleCount; vi++) {
-				int i = scrollStart + vi;
-				if (i >= PotentialMatches.Length) break;
-
-				var yPos = -4 + (vi * rowHeight);
-
-				if (selectionIndex == i)
-					Graphics2D.SetDrawColor(60, 60, 80, 240);
-				else if (vi % 2 == 0)
-					Graphics2D.SetDrawColor(15, 15, 18, 210);
-				else
-					Graphics2D.SetDrawColor(10, 10, 12, 210);
-
-				Graphics2D.DrawRectangle(new(0, yPos), new(totalWidth, rowHeight));
-
-				if (selectionIndex == i)
-					Graphics2D.SetDrawColor(255, 255, 255);
-				else
-					Graphics2D.SetDrawColor(230, 230, 230);
-
-				Graphics2D.DrawText(new(horizPad, yPos + 1), PotentialMatches[i], "Consolas", textSize);
-
-				if (HelpStrings != null && i < HelpStrings.Length) {
-					string? d = HelpStrings[i];
-					if (d != null) {
-						if (selectionIndex == i)
-							Graphics2D.SetDrawColor(180, 180, 200);
-						else
-							Graphics2D.SetDrawColor(140, 140, 150);
-
-						Graphics2D.DrawText(new(maxNameX + horizPad + 12, yPos + 1), d, "Consolas", textSize);
-					}
-				}
-			}
-
-			if (PotentialMatches.Length > MaxVisibleRows) {
-				float indicatorY = -4 + totalHeight + 2;
-				Graphics2D.SetDrawColor(100, 100, 120, 180);
-				string scrollInfo = $" [{scrollStart + 1}-{Math.Min(scrollEnd, PotentialMatches.Length)} of {PotentialMatches.Length}] ";
-				Graphics2D.DrawText(new(horizPad, indicatorY), scrollInfo, "Consolas", 11);
-			}
+			SetPaintBackgroundEnabled(false);
+			SetPaintBorderEnabled(false);
+			SetPassthru(true);
+			MakePopup();
 		}
 
 		int selectionIndex = -1;
 
-		internal void Reset() {
-			selectionIndex = -1;
+		/// <summary>
+		/// Highlighted row, -1 for none
+		/// </summary>
+		public int SelectionIndex {
+			get => selectionIndex;
+			set => selectionIndex = value;
 		}
 
-		internal void SelectNext() {
-			if ((PotentialMatches?.Length ?? 0) == 0) return;
-			selectionIndex++;
-			if (selectionIndex >= PotentialMatches!.Length)
-				selectionIndex = 0;
+		int VisibleCount => Math.Min(PotentialMatches?.Length ?? 0, MaxVisibleRows);
+
+		int ScrollStart {
+			get {
+				int start = 0;
+				int visible = VisibleCount;
+				if (selectionIndex >= visible)
+					start = selectionIndex - visible + 1;
+				return start;
+			}
 		}
 
-		internal void SelectPrev() {
-			if ((PotentialMatches?.Length ?? 0) == 0) return;
-			if (selectionIndex <= 0)
-				selectionIndex = PotentialMatches!.Length - 1;
-			else
-				selectionIndex--;
+		float nameWidth;
+
+		/// <summary>
+		/// Sizes to the rows that are showing right now.
+		/// </summary>
+		public void FitToContents() {
+			int visible = VisibleCount;
+			if (visible == 0) {
+				SetVisible(false);
+				return;
+			}
+			SetVisible(true);
+
+			float helpWidth = 0;
+			nameWidth = 0;
+			int start = ScrollStart;
+			for (int i = start; i < start + visible; i++) {
+				nameWidth = MathF.Max(nameWidth, Graphics2D.GetTextSize(PotentialMatches![i], FONT, TEXT_SIZE).X);
+				if (HelpStrings != null && i < HelpStrings.Length && HelpStrings[i] is string help)
+					helpWidth = MathF.Max(helpWidth, Graphics2D.GetTextSize(help, FONT, TEXT_SIZE).X);
+			}
+
+			float contentWidth = nameWidth + HORIZ_PAD * 2;
+			if (helpWidth > 0)
+				contentWidth += HELP_GAP + helpWidth + HORIZ_PAD;
+			float footer = PotentialMatches!.Length > MaxVisibleRows ? FOOTER_HEIGHT : 0;
+			float contentHeight = visible * ROW_HEIGHT + footer;
+			Size = new(MathF.Ceiling(contentWidth), MathF.Ceiling(contentHeight));
 		}
 
-		internal string? GetSelected() {
-			if (PotentialMatches == null || selectionIndex < 0 || selectionIndex >= PotentialMatches.Length)
-				return null;
-			return PotentialMatches[selectionIndex];
-		}
+		public override void Paint(float width, float height) {
+			int visible = VisibleCount;
+			if (visible == 0) return;
+			int start = ScrollStart;
 
-		internal string? SelectAndGet() {
-			if ((PotentialMatches?.Length ?? 0) == 0) return null;
-			if (selectionIndex < 0)
-				selectionIndex = 0;
-			return PotentialMatches![selectionIndex];
-		}
+			Graphics2D.SetDrawColor(2, 2, 2, 200);
+			Graphics2D.DrawRectangle(0, 0, width, height);
 
-		public bool HasSelection => selectionIndex >= 0 && PotentialMatches != null && selectionIndex < PotentialMatches.Length;
-		public int SelectionIndex => selectionIndex;
+			for (int row = 0; row < visible; row++) {
+				int i = start + row;
+				float y = row * ROW_HEIGHT;
+
+				if (selectionIndex == i)
+					Graphics2D.SetDrawColor(60, 60, 80, 240);
+				else if (row % 2 == 0)
+					Graphics2D.SetDrawColor(15, 15, 18, 210);
+				else
+					Graphics2D.SetDrawColor(10, 10, 12, 210);
+				Graphics2D.DrawRectangle(0, y, width, ROW_HEIGHT);
+
+				Graphics2D.SetDrawColor(selectionIndex == i ? new Color(255, 255, 255) : new Color(230, 230, 230));
+				Graphics2D.DrawText(new(HORIZ_PAD, y + 1), PotentialMatches![i], FONT, TEXT_SIZE);
+
+				if (HelpStrings != null && i < HelpStrings.Length && HelpStrings[i] is string help) {
+					Graphics2D.SetDrawColor(selectionIndex == i ? new Color(180, 180, 200) : new Color(140, 140, 150));
+					Graphics2D.DrawText(new(nameWidth + HORIZ_PAD + HELP_GAP, y + 1), help, FONT, TEXT_SIZE);
+				}
+			}
+
+			if (PotentialMatches!.Length > MaxVisibleRows) {
+				Graphics2D.SetDrawColor(100, 100, 120, 180);
+				Graphics2D.DrawText(new(HORIZ_PAD, visible * ROW_HEIGHT),
+					$" [{start + 1}-{start + visible} of {PotentialMatches.Length}] ", FONT, 11);
+			}
+		}
 	}
 
 	public class ConsoleWindow : Panel
 	{
-		public static string[] UserHistory = new string[256];
-		public static int UserHistoryPos = 0;
-		public static int UserHistoryCount = 0;
-		public static void PushUserHistory(string str) {
-			var last = UserHistory[NMath.Modulo(UserHistoryPos - 1, UserHistory.Length)];
-			if (str == last && last != null) return;
+		public const int MAX_HISTORY = 256;
 
-			UserHistory[UserHistoryPos] = str;
-			UserHistoryPos = NMath.Modulo(UserHistoryPos + 1, UserHistory.Length);
-			if (UserHistoryCount < UserHistory.Length)
-				UserHistoryCount++;
-		}
-		public static string? GetUserHistory(int localIndex) {
-			if (localIndex <= 0 || localIndex > UserHistoryCount) return null;
-			string? at = UserHistory[NMath.Modulo(UserHistoryPos - localIndex, UserHistory.Length)];
-			return at;
+		/// <summary>
+		/// Commands typed into the console, oldest first
+		/// </summary>
+		public static List<string> History { get; } = [];
+
+		public static void AddToHistory(string command) {
+			command = command.Trim();
+			if (command.Length == 0)
+				return;
+			History.RemoveAll(h => string.Equals(h, command, StringComparison.OrdinalIgnoreCase));
+			History.Add(command);
+			while (History.Count > MAX_HISTORY)
+				History.RemoveAt(0);
 		}
 
 		ConsoleLogs consoleLogs;
 		ConsoleInput consoleInput;
 		ConsoleAutocomplete? autoComplete;
 
-		bool isArgumentAutocomplete = false;
-		string argumentPrefix = "";
+		/// <param name="Fill">What goes in the input when this is picked</param>
+		readonly record struct Completion(string Fill, string Name, string? Help);
+
+		readonly List<Completion> completions = [];
+		int nextCompletion;
+		bool cycling;
+		bool settingText;
+		float listOffsetX;
 
 
 		protected override void OnThink() {
 			Position = new(8, Level.GetConsoleOverlaySettings().Position.Y);
 			Size = new(GetParent()!.Size.W - 16, 384);
+			PlaceList();
 		}
 
 		internal class ConsoleLogs : TextEditor
@@ -260,13 +224,9 @@ namespace Nucleus
 			consoleInput.TriggerExecuteOnEnter = true;
 			consoleInput.OnExecute += ConsoleInput_OnExecute;
 
-			consoleInput.OnKeyPressed += ConsoleInput_OnKeyPressed;
-			consoleInput.OnTextInput += ConsoleInput_OnTextInput;
+			consoleInput.OnTextEdited += ConsoleInput_OnTextEdited;
+			consoleInput.InterceptKey = ConsoleInput_InterceptKey;
 			consoleInput.Editor.Keybinds.AddKeybind([ButtonCode.KeyBackquote], () => InGameConsole.CloseConsole());
-			consoleInput.Editor.Keybinds.AddKeybind([ButtonCode.KeyUp], HandleArrowUp);
-			consoleInput.Editor.Keybinds.AddKeybind([ButtonCode.KeyDown], HandleArrowDown);
-			consoleInput.PreRenderEditorLines += ConsoleInput_PreRenderEditorLines;
-			consoleInput.OnTab += ConsoleInput_OnTab;
 
 			consoleLogs = new ConsoleLogs(this);
 			consoleLogs.			Dock = Dock.Fill;
@@ -304,11 +264,6 @@ namespace Nucleus
 			SetupAutocomplete();
 		}
 
-		private void ConsoleInput_PreRenderEditorLines(TextEditor self, float w, float h) {
-			if (autoCompleteStr == null) return;
-			self.RenderRowPiece(0, 0, autoCompleteStr, new Color(255, 255, 255, 150));
-		}
-
 		private void SetupRow(ref readonly LiveConsoleMessage message) {
 			consoleLogs.AppendLine($"[{message.Header.Time.ToString(Logs.TimeFormat)}] [{Logs.LevelToConsoleString(message.Header.Level)}] {message.Text}");
 			if (consoleLogs.Rows.Count > ConsoleSystem.MaxConsoleMessages)
@@ -319,111 +274,118 @@ namespace Nucleus
 			SetupRow(in message);
 		}
 
-		private string? autoCompleteStr;
-		private string savedInputBeforeHistory = "";
-		private bool browsingHistory = false;
-
 		private static string QuoteIfNeeded(string arg) {
 			if (arg.Contains(' '))
 				return $"\"{arg}\"";
 			return arg;
 		}
 
-		private string BuildCommandWithArg(string selected) {
-			return argumentPrefix + QuoteIfNeeded(selected) + " ";
+		private void SetInput(string text) {
+			settingText = true;
+			consoleInput.SetText(text);
+			consoleInput.SetCaret(text.Length, 0);
+			settingText = false;
 		}
 
-		private void ConsoleInput_OnTab(TextEditor self) {
-			if (!IValidatable.IsValid(autoComplete)) return;
-
-			string? match = autoComplete.SelectAndGet();
-			if (match == null) return;
-
-			if (isArgumentAutocomplete) {
-				string built = BuildCommandWithArg(match);
-				consoleInput.SetText(built);
-				consoleInput.SetCaret(built.Length, 0);
-				autoCompleteStr = built;
-			}
-			else {
-				consoleInput.SetText(match);
-				consoleInput.SetCaret(match.Length, 0);
-				autoCompleteStr = match;
-			}
+		private void ConsoleInput_OnTextEdited(TextEditor self) {
+			if (settingText)
+				return;
+			SetupAutocomplete();
 		}
 
+		// Tab/Down go forward through the list, Shift+Tab/Up go back. Like Source.
+		private bool ConsoleInput_InterceptKey(TextEditor self, in KeyboardState state, ButtonCode key) {
+			switch (key) {
+				case ButtonCode.KeyTab: Complete(state.ShiftDown); return true;
+				case ButtonCode.KeyDown: Complete(false); return true;
+				case ButtonCode.KeyUp: Complete(true); return true;
+			}
+			return false;
+		}
+
+		private void Complete(bool reverse) {
+			if (!cycling) {
+				nextCompletion = 0;
+				cycling = true;
+			}
+
+			if (reverse) {
+				nextCompletion -= 2;
+				if (nextCompletion < 0)
+					nextCompletion = completions.Count - 1;
+			}
+
+			if (nextCompletion < 0 || nextCompletion >= completions.Count)
+				nextCompletion = 0;
+			if (completions.Count == 0)
+				return;
+
+			SetInput(completions[nextCompletion].Fill);
+			ShowList(nextCompletion);
+			nextCompletion++;
+		}
+
+		[MemberNotNull(nameof(autoComplete))]
 		private void EnsureAutocompletePanel() {
-			if (!IValidatable.IsValid(autoComplete)) {
-				autoComplete = new ConsoleAutocomplete(consoleInput);
-				autoComplete.Dock = Dock.Bottom;
-				autoComplete.Size = new(0, 0);
-			}
+			if (!IValidatable.IsValid(autoComplete))
+				autoComplete = new ConsoleAutocomplete(UI);
 		}
 
-		private void SetupAutocomplete() {
+		private void ShowList(int selected) {
 			EnsureAutocompletePanel();
-			autoComplete.Reset();
-			autoCompleteStr = null;
-			isArgumentAutocomplete = false;
-			argumentPrefix = "";
+			if (completions.Count == 0)
+				autoComplete.SetNoMatches();
+			else {
+				autoComplete.SetPotentialMatches([.. completions.Select(c => c.Name)], [.. completions.Select(c => c.Help)]);
+				autoComplete.SelectionIndex = selected;
+			}
+			autoComplete.FitToContents();
+			PlaceList();
+		}
+
+		private void PlaceList() {
+			if (!IValidatable.IsValid(autoComplete))
+				return;
+			var pos = consoleInput.GetGlobalPosition();
+			autoComplete.Position = new(MathF.Round(pos.X + listOffsetX), MathF.Round(pos.Y + consoleInput.GetRenderBounds().H + 2));
+			autoComplete.MoveToFront();
+		}
+
+		/// <summary>
+		/// Rebuilds the suggestions from what's typed, or the history when it's empty.
+		/// </summary>
+		private void SetupAutocomplete() {
+			cycling = false;
+			completions.Clear();
+			listOffsetX = 0;
 
 			var inputText = consoleInput.GetText();
-
 			if (string.IsNullOrEmpty(inputText)) {
-				autoComplete.				ListOffset = new(0, 12);
-				SetupHistoryAutocomplete();
+				foreach (var command in History)
+					completions.Add(new(command.Contains(' ') ? command : command + " ", command, null));
+				// History only shows once you start going through it
+				EnsureAutocompletePanel();
+				autoComplete.SetNoMatches();
+				autoComplete.FitToContents();
 				return;
 			}
-
-			browsingHistory = false;
 
 			TokenizedCommand tokenized = new();
 			tokenized.Tokenize(inputText);
-
 			string firstToken = tokenized.ArgC() > 0 ? tokenized.Arg(0).ToString() : inputText.Trim();
-			ConCommandBase? exactMatch = cvar.FindCommandBase(firstToken);
 
-			if (exactMatch != null && inputText.Contains(' '))
-				SetupArgumentAutocomplete(exactMatch, inputText, tokenized);
+			if (inputText.Contains(' ')) {
+				ConCommandBase? cmd = cvar.FindCommandBase(firstToken);
+				if (cmd != null)
+					AddArgumentCompletions(cmd, inputText, tokenized);
+			}
 			else
-				SetupNameAutocomplete(inputText.Trim());
+				AddNameCompletions(inputText.Trim());
 
-			float xOffset = 0;
-			if (exactMatch != null && exactMatch.OnAutocomplete != null && isArgumentAutocomplete) {
-				xOffset = Graphics2D.GetTextSize(argumentPrefix, "Consolas", consoleInput.TextSize).X + 4;
-			}
-			autoComplete.ListOffset = new(xOffset, 12);
+			ShowList(-1);
 		}
 
-		private void SetupHistoryAutocomplete() {
-			if (UserHistoryCount == 0) {
-				autoComplete?.SetNoMatches();
-				return;
-			}
-
-			var entries = new List<string>();
-			for (int i = 1; i <= UserHistoryCount; i++) {
-				string? entry = GetUserHistory(i);
-				if (entry != null && entry.Length > 0 && !entries.Contains(entry))
-					entries.Add(entry);
-			}
-
-			if (entries.Count == 0) {
-				autoComplete?.SetNoMatches();
-				return;
-			}
-
-			autoComplete?.SetPotentialMatches(entries.ToArray());
-		}
-
-		private void SetupNameAutocomplete(string partial) {
-			if (string.IsNullOrEmpty(partial)) {
-				autoComplete?.SetNoMatches();
-				return;
-			}
-
-			var matches = new List<(string name, string? help)>();
-
+		private void AddNameCompletions(string partial) {
 			var current = cvar.GetCommands();
 			while (current != null) {
 				if (current.Registered && current.Name.StartsWith(partial, StringComparison.OrdinalIgnoreCase)) {
@@ -436,165 +398,44 @@ namespace Nucleus
 							: $"= \"{valStr}\" - {helpText}";
 					}
 
-					matches.Add((current.Name, helpText));
+					completions.Add(new(current.Name + " ", current.Name, helpText));
 				}
 				current = current.Next;
 			}
 
-			if (matches.Count == 0) {
-				autoComplete?.SetNoMatches();
-				return;
-			}
-
-			matches.Sort((a, b) => string.Compare(a.name, b.name, StringComparison.OrdinalIgnoreCase));
-
-			autoComplete?.SetPotentialMatches(
-				matches.Select(m => m.name).ToArray(),
-				matches.Select(m => m.help).ToArray()
-			);
+			completions.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
 		}
 
-		private void SetupArgumentAutocomplete(ConCommandBase cmd, string fullInput, TokenizedCommand tokenized) {
-			isArgumentAutocomplete = true;
-
+		private void AddArgumentCompletions(ConCommandBase cmd, string fullInput, TokenizedCommand tokenized) {
 			int currentArgIndex = tokenized.ArgC();
 			bool endsWithSpace = fullInput.EndsWith(' ');
 			bool hasUnclosedQuote = tokenized.HasUnclosedQuote();
 
-			if (hasUnclosedQuote) {
+			if (hasUnclosedQuote || !endsWithSpace)
 				currentArgIndex = tokenized.ArgC() - 1;
-			}
-			else if (!endsWithSpace) {
-				currentArgIndex = tokenized.ArgC() - 1;
-			}
-
 			if (currentArgIndex < 1)
 				currentArgIndex = 1;
 
-			int prefixEnd;
-			if (hasUnclosedQuote || !endsWithSpace) {
-				prefixEnd = tokenized.GetArgStartPosition(currentArgIndex);
-			}
-			else {
-				prefixEnd = fullInput.Length;
-			}
-			argumentPrefix = fullInput[..prefixEnd];
+			int prefixEnd = hasUnclosedQuote || !endsWithSpace ? tokenized.GetArgStartPosition(currentArgIndex) : fullInput.Length;
+			string argumentPrefix = fullInput[..prefixEnd];
 
 			if (cmd.OnAutocomplete != null) {
-				string[] returns = Array.Empty<string>();
+				string[] returns = [];
 				string[]? helpReturns = null;
-
 				cmd.OnAutocomplete(cmd, fullInput, tokenized, currentArgIndex, ref returns, ref helpReturns);
 
-				if (returns.Length > 0)
-					autoComplete?.SetPotentialMatches(returns, helpReturns);
-				else
-					autoComplete?.SetNoMatches();
+				for (int i = 0; i < returns.Length; i++)
+					completions.Add(new(argumentPrefix + QuoteIfNeeded(returns[i]) + " ", returns[i],
+						helpReturns != null && i < helpReturns.Length ? helpReturns[i] : null));
+				listOffsetX = Graphics2D.GetTextSize(argumentPrefix, "Consolas", consoleInput.TextSize).X + 4;
 			}
-			else {
-				if (!string.IsNullOrEmpty(cmd.HelpString)) {
-					autoComplete?.SetPotentialMatches(
-						new[] { fullInput.TrimEnd() },
-						new[] { cmd.HelpString }
-					);
-				}
-				else {
-					autoComplete?.SetNoMatches();
-				}
-			}
-		}
-
-		private int userHistoryPos = 0;
-
-		private void NavigateHistory(int direction) {
-			var inputText = consoleInput.GetText();
-
-			if (!browsingHistory) {
-				savedInputBeforeHistory = inputText;
-				browsingHistory = true;
-				userHistoryPos = 0;
-			}
-
-			int newPos = userHistoryPos + direction;
-
-			if (newPos <= 0) {
-				userHistoryPos = 0;
-				browsingHistory = false;
-				consoleInput.SetText(savedInputBeforeHistory);
-				consoleInput.SetCaret(savedInputBeforeHistory.Length, 0);
-				SetupAutocomplete();
-				return;
-			}
-
-			string? txt = GetUserHistory(newPos);
-			if (txt != null) {
-				userHistoryPos = newPos;
-				consoleInput.SetText(txt);
-				consoleInput.SetCaret(txt.Length, 0);
-				SetupAutocomplete();
-			}
-		}
-
-		private void HandleArrowUp() {
-			if (IValidatable.IsValid(autoComplete) && (autoComplete.PotentialMatches?.Length ?? 0) > 0) {
-				autoComplete.SelectPrev();
-				return;
-			}
-
-			NavigateHistory(1);
-		}
-
-		private void HandleArrowDown() {
-			if (IValidatable.IsValid(autoComplete) && (autoComplete.PotentialMatches?.Length ?? 0) > 0) {
-				autoComplete.SelectNext();
-				return;
-			}
-
-			NavigateHistory(-1);
-		}
-
-		private void ConsoleInput_OnKeyPressed(TextEditor self, in KeyboardState state, ButtonCode key) {
-			if (IValidatable.IsValid(autoComplete)) {
-				if (key == ButtonCode.KeySpace && autoComplete.HasSelection) {
-					string? selected = autoComplete.GetSelected();
-					if (selected != null) {
-						if (isArgumentAutocomplete) {
-							string built = BuildCommandWithArg(selected);
-							consoleInput.SetText(built);
-							consoleInput.SetCaret(built.Length, 0);
-						}
-						else {
-							string committed = selected + " ";
-							consoleInput.SetText(committed);
-							consoleInput.SetCaret(committed.Length, 0);
-						}
-
-						autoComplete.Reset();
-						autoCompleteStr = null;
-						browsingHistory = false;
-						SetupAutocomplete();
-						return;
-					}
-				}
-
-				if (key != ButtonCode.KeyTab && key != ButtonCode.KeyUp && key != ButtonCode.KeyDown && !state.ControlDown) {
-					autoComplete.Reset();
-					autoCompleteStr = null;
-					browsingHistory = false;
-				}
-			}
-
-			SetupAutocomplete();
-		}
-
-		private void ConsoleInput_OnTextInput(TextEditor self, in KeyboardState state, string inText) {
-			browsingHistory = false;
-			userHistoryPos = 0;
-			SetupAutocomplete();
+			else if (!string.IsNullOrEmpty(cmd.HelpString))
+				completions.Add(new(fullInput, fullInput.TrimEnd(), cmd.HelpString));
 		}
 
 		protected override void OnRemoval() {
 			base.OnRemoval();
+			ConsoleSystem.ConsoleMessageWrittenEvent -= ConsoleSystem_ConsoleMessageWrittenEvent;
 			autoComplete?.Remove();
 		}
 
@@ -604,16 +445,11 @@ namespace Nucleus
 
 			Logs.Print("> " + txt);
 			Cbuf.AddText(txt);
-			autoComplete?.Remove();
 			MainThread.RunASAP(() => {
 				consoleLogs.SetScroll(1);
 			});
 
-			PushUserHistory(txt);
-			userHistoryPos = 0;
-			browsingHistory = false;
-			savedInputBeforeHistory = "";
-			self.SetText("");
+			AddToHistory(txt);
 		}
 
 		public override void Paint(float width, float height) {
