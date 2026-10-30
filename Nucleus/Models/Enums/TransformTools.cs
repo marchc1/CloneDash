@@ -2,26 +2,21 @@
 {
 	public static class TransformTools
 	{
-		public static (bool Rotation, bool Scale, bool Reflection) Unpack(this TransformMode transformMode) {
-			return (
-				((int)transformMode & 0b0001) != 0b0001,
-				((int)transformMode & 0b0010) != 0b0001,
-				((int)transformMode & 0b0100) != 0b0001
-				);
-		}
+		public static (bool Rotation, bool Scale, bool Reflection) Unpack(
+			this TransformMode transformMode) => transformMode switch {
+			TransformMode.OnlyTranslation => (false, false, false),
+			TransformMode.NoRotationOrReflection => (false, true, false),
+			TransformMode.NoScale => (true, false, true),
+			TransformMode.NoScaleOrReflection => (true, false, false),
+			_ => (true, true, true)
+		};
 
+		// Reflection only matters when scale is off
 		public static TransformMode Pack(bool rotation, bool scale, bool reflection) {
-			if (!scale && !rotation)
-				reflection = false;
-
-			if (scale)
-				reflection = rotation;
-
-			return (TransformMode)(
-				(!reflection ? 0b0100 : 0b0000) |
-				(!scale ? 0b0010 : 0b0000) |
-				(!rotation ? 0b0001 : 0b0000)
-			);
+			if (!rotation && !scale) return TransformMode.OnlyTranslation;
+			if (!rotation) return TransformMode.NoRotationOrReflection;
+			if (!scale) return reflection ? TransformMode.NoScale : TransformMode.NoScaleOrReflection;
+			return TransformMode.Normal;
 		}
 	}
 }

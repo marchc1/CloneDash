@@ -57,12 +57,11 @@ public class SkeletonEntry
 		if (LoadAttempted) return CachedModelData;
 		LoadAttempted = true;
 		try {
+			// Bundle cache may have unloaded the old one.
+			Asset = MuseDash1Compatibility.StreamingAssets.FindAssetByName<MonoBehaviour>(AssetName) ?? Asset;
 			if (Asset == null) {
-				Asset = MuseDash1Compatibility.StreamingAssets.FindAssetByName<MonoBehaviour>(AssetName);
-				if (Asset == null) {
-					LoadFailed = true;
-					return null;
-				}
+				LoadFailed = true;
+				return null;
 			}
 			CachedModelData = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, Asset);
 		}
