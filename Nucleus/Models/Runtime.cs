@@ -2545,6 +2545,16 @@ public class ModelBinary : IModelFormat
 	public const string FULL_EXTENSION = $".{EXTENSION}";
 
 	/// <summary>
+	/// Pack and write the atlas beside the model when saving
+	/// </summary>
+	public bool PackAtlas { get; set; } = true;
+	public AtlasPackSettings PackSettings { get; set; } = new();
+	/// <summary>
+	/// The atlas packed by the last save, for its warnings
+	/// </summary>
+	public PackedAtlas? LastAtlas { get; private set; }
+
+	/// <summary>
 	/// First format version with constraints, events, path attachments and linked meshes
 	/// </summary>
 	public const string VERSION_CONSTRAINTS = "Nucleus Model4 2026.10.27.01";
@@ -3089,22 +3099,16 @@ public class ModelBinary : IModelFormat
 				data.ResolveLinkedMeshes();
 				ShareLinkedGeometry(data);
 
-				// Try to load the texture atlas
-				string? texatlas = filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas"));
-				byte[]? imagedata = filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png"));
-
-				if (texatlas == null && imagedata == null)
+				var atlas = ModelAtlasFiles.Load(
+					filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas")),
+					page => filesystem.ReadAllBytes(pathID, Path.Combine(Path.GetDirectoryName(path) ?? "", page))
+				);
+				if (atlas == null)
 					return data;
 
-				if (texatlas == null)
-					throw new NullReferenceException("Got image data, expected texture atlas as well");
-				if (imagedata == null)
-					throw new NullReferenceException("Got texture atlas, expected image data as well");
-
-				throw new NotImplementedException("Need to fix incoming texture atlases!!! :(");
-				// data.SetupAttachments();
-
-				// return data;
+				data.TextureAtlas = atlas;
+				data.SetupAttachments();
+				return data;
 			}
 		}
 	}
@@ -3530,8 +3534,7 @@ public class ModelBinary : IModelFormat
 			writer.WriteList(modelData.Animations, (w, anim) => writeAnimation(modelData, w, anim));
 		}
 
-		//modelData.TextureAtlas.SaveTo(absoluteFilePath);
-		throw new NotImplementedException("Need to fix outgoing texture atlases!!! :(");
+		LastAtlas = PackAtlas ? ModelAtlasFiles.SaveNextTo(absoluteFilePath, modelData, PackSettings) : null;
 	}
 }
 
@@ -3541,6 +3544,16 @@ public class ModelRefJSON : IModelFormat
 {
 	public const string EXTENSION = "nm4rj";
 	public const string FULL_EXTENSION = $".{EXTENSION}";
+
+	/// <summary>
+	/// Pack and write the atlas beside the model when saving
+	/// </summary>
+	public bool PackAtlas { get; set; } = true;
+	public AtlasPackSettings PackSettings { get; set; } = new();
+	/// <summary>
+	/// The atlas packed by the last save, for its warnings
+	/// </summary>
+	public PackedAtlas? LastAtlas { get; private set; }
 
 	public class ModelRefJsonSerializationBinder : ISerializationBinder
 	{
@@ -3593,29 +3606,21 @@ public class ModelRefJSON : IModelFormat
 		if (data == null)
 			throw new FormatException("Issue occured during deserialization of a Model4-refjson");
 
-		// Try to load the texture atlas
-		string? texatlas = filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas"));
-		byte[]? imagedata = filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png"));
-
-		if (texatlas == null && imagedata == null)
+		var atlas = ModelAtlasFiles.Load(
+			filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas")),
+			page => filesystem.ReadAllBytes(pathID, Path.Combine(Path.GetDirectoryName(path) ?? "", page))
+		);
+		if (atlas == null)
 			return data;
 
-		if (texatlas == null)
-			throw new NullReferenceException("Got image data, expected texture atlas as well");
-		if (imagedata == null)
-			throw new NullReferenceException("Got texture atlas, expected image data as well");
-
-		throw new NotImplementedException("Need to fix incoming texture atlases!!! :(");
-
-		// data.SetupAttachments();
-
-		// return data;
+		data.TextureAtlas = atlas;
+		data.SetupAttachments();
+		return data;
 	}
 
 	public void SaveModelToFile(string filepath, ModelData data) {
 		var serialized = JsonConvert.SerializeObject(data, Settings);
 		File.WriteAllText(filepath, serialized);
-		throw new NotImplementedException("Need to fix outgoing texture atlases!!! :(");
-		//data.TextureAtlas.TrySaveTo(filepath);
+		LastAtlas = PackAtlas ? ModelAtlasFiles.SaveNextTo(filepath, data, PackSettings) : null;
 	}
 }

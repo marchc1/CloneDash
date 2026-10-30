@@ -30,13 +30,22 @@ public class TimelineManager
 	public int PlayDirection { get; private set; } = 0;
 
 	/// <summary>
+	/// Playback starts over at the end
+	/// </summary>
+	public bool Repeat { get; set; } = true;
+	/// <summary>
+	/// Loop range in frames, used when both are set and <see cref="Repeat"/> is on
+	/// </summary>
+	public double? LoopStart { get; set; }
+	public double? LoopEnd { get; set; }
+
+	/// <summary>
 	/// Differs from Frame, in that it accounts for Interpolated.
 	/// </summary>
-	/// <returns></returns>
 	public double GetPlayhead() {
 		if (Interpolated) return Frame;
 
-		return Math.Round(Frame);
+		return Math.Round(Frame * GetReferenceFPS()) / GetReferenceFPS();
 	}
 
 	/// <summary>
@@ -55,14 +64,8 @@ public class TimelineManager
 		set => PlayDirection = value ? 1 : 0;
 	}
 
-	public T? Evaluate<T>(FCurve<T> fcurve) {
-		double frame = Interpolated ? Math.Round(Frame) : Frame;
-
-		return fcurve.DetermineValueAtTime(frame, Stepped ? KeyframeInterpolation.Constant : null) ?? default;
-	}
-
-	public int SavedFrame;
-	public void SaveFrame() => SavedFrame = (int)(float)Frame;
+	public double SavedFrame;
+	public void SaveFrame() => SavedFrame = Frame * GetReferenceFPS();
 	public void LoadFrame() => SetFrame(SavedFrame);
 	public void RoundFrame() => SetFrame(Math.Round(Frame * GetReferenceFPS()));
 
@@ -70,21 +73,26 @@ public class TimelineManager
 		if (PlayDirection == 0) return;
 		if (!ModelEditor.Active.AnimationMode) return;
 
-		dt *= (FPS / (double)(GetReferenceFPS()));
+		dt *= Speed * (FPS / (double)(GetReferenceFPS()));
 
 		if (PlayingBackwards) dt *= -1;
 
 		Frame += dt;
-		if (maxTime > 0) {
-			if (Frame > maxTime) {
-				while (Frame > maxTime)
-					Frame -= maxTime;
-			}
-
-			if (Frame < 0) {
-				while (Frame < 0)
-					Frame += maxTime;
-			}
+		double start = 0, end = maxTime;
+		if (LoopStart is double loopStart && LoopEnd is double loopEnd && loopEnd > loopStart) {
+			start = loopStart / GetReferenceFPS();
+			end = loopEnd / GetReferenceFPS();
+		}
+		if (Repeat && end > start) {
+			double length = end - start;
+			if (Frame > end)
+				Frame = start + (Frame - end) % length;
+			if (Frame < start)
+				Frame = end - (start - Frame) % length;
+		}
+		else if (Frame < 0) {
+			Frame = 0;
+			PlayDirection = 0;
 		}
 		FrameElapsed?.Invoke(this, Frame);
 	}
@@ -94,11 +102,7 @@ public class TimelineManager
 	public event FrameChangedD? FrameChanged;
 	public event FrameChangedD2? FrameElapsed;
 
-	public void SetFrame(int frame) {
-		frame = Math.Max(0, frame);
-		Frame = frame;
-		FrameChanged?.Invoke(this, frame);
-	}
+	public void SetFrame(int frame) => SetFrame((double)frame);
 	public void SetFrame(double frame) {
 		frame = Math.Max(0, frame / GetReferenceFPS());
 		Frame = frame;

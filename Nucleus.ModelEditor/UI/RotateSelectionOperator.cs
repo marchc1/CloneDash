@@ -29,11 +29,15 @@ namespace Nucleus.ModelEditor
 
 		private IEditorType etype;
 		private RevolutionManager revolutionManager;
+		// Degrees dragged so far, and how much of it got applied (shift snaps to 15)
+		private float dragged;
+		private float applied;
 
 		public override bool GizmoStartDragging(EditorPanel editorPanel, Vector2F mouseScreenStart, IEditorType? currentSelection, IEditorType? clicked) {
 			currentSelection = currentSelection?.DeferTransformationsTo();
 			clicked = clicked?.DeferTransformationsTo();
 
+			dragged = applied = 0;
 			if (clicked != null && clicked != currentSelection && clicked.CanRotate()) {
 				ModelEditor.Active.SelectObject(clicked);
 				etype = clicked;
@@ -51,9 +55,11 @@ namespace Nucleus.ModelEditor
 
 		public override void GizmoDrag(EditorPanel editorPanel, Vector2F mouseScreenStart, Vector2F mouseScreenNow, IEnumerable<IEditorType> targets) {
 			if (revolutionManager == null) return;
-			var angDelta = revolutionManager.CalculateDelta(editorPanel.ScreenToGrid(mouseScreenNow));
-			ModelEditor.Active.File.RotateSelected(-angDelta, true);
-			Console.WriteLine($"{angDelta}, {mouseScreenNow}");
+			dragged -= revolutionManager.CalculateDelta(editorPanel.ScreenToGrid(mouseScreenNow));
+			float want = EngineCore.Level.FrameState.Keyboard.ShiftDown ? MathF.Round(dragged / 15) * 15 : dragged;
+			if (want == applied) return;
+			ModelEditor.Active.File.RotateSelected(want - applied, true);
+			applied = want;
 		}
 	}
 }

@@ -12,6 +12,10 @@ namespace Nucleus.ModelEditor
 
 		public KeyframeProperty Property { get; set; }
 		public int ArrayIndex { get; set; } = -1;
+		/// <summary>
+		/// What gets keyed, null for the last selected item
+		/// </summary>
+		public IEditorType? Target { get; set; }
 
 		Nucleus.UI.Elements.Image KeyframeImage;
 
@@ -19,18 +23,13 @@ namespace Nucleus.ModelEditor
 			bool canInput = ModelEditor.Active.IsPropertyCurrentlyAnimatable(Property) && IsMouseInputEnabled();
 			if (canInput) {
 				// todo: determine background color
-				var selected = ModelEditor.Active.LastSelectedObject;
-				var timelineSearch = ModelEditor.Active.File.ActiveAnimation?.SearchTimelineByProperty(selected, Property, ArrayIndex, false);
-				if (timelineSearch == null) {
-					SetBgColor(KEYFRAME_COLOR_NOT_KEYFRAMED);
-				}
-				else {
-					SetBgColor(timelineSearch.KeyframedAt(ModelEditor.Active.File.Timeline.Frame) switch {
-						KeyframeState.NotKeyframed => KEYFRAME_COLOR_NOT_KEYFRAMED,
-						KeyframeState.PendingKeyframe => KEYFRAME_COLOR_PENDING_KEYFRAME,
-						KeyframeState.Keyframed => KEYFRAME_COLOR_ACTIVE_KEYFRAME
-					});
-				}
+				var target = Target ?? ModelEditor.Active.LastSelectedObject;
+				var state = target == null ? KeyframeState.NotKeyframed : ModelEditor.Active.File.KeyState(target, Property, ArrayIndex);
+				SetBgColor(state switch {
+					KeyframeState.PendingKeyframe => KEYFRAME_COLOR_PENDING_KEYFRAME,
+					KeyframeState.Keyframed => KEYFRAME_COLOR_ACTIVE_KEYFRAME,
+					_ => KEYFRAME_COLOR_NOT_KEYFRAMED
+				});
 				KeyframeImage.ImageColor = Color.Black;
 			}
 			else {

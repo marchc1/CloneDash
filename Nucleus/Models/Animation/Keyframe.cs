@@ -29,6 +29,14 @@ public interface IKeyframe
 	public void SetValue<T>(T? value);
 }
 
+public static class KeyframeSettings
+{
+	/// <summary>
+	/// Interpolation to use when none is passed, for stepped playback in the editor
+	/// </summary>
+	[ThreadStatic] public static KeyframeInterpolation? InterpolationOverride;
+}
+
 public class Keyframe<T> : IKeyframe
 {
 	public Keyframe() {
@@ -155,7 +163,7 @@ public class Keyframe<T> : IKeyframe
 		if (time >= rightmostOfTime.Time)
 			return rightmostOfTime.Value;
 
-		var interpolation = interpolationOverride ?? leftmostOfTime.Interpolation;
+		var interpolation = interpolationOverride ?? KeyframeSettings.InterpolationOverride ?? leftmostOfTime.Interpolation;
 		switch (interpolation) {
 			case KeyframeInterpolation.Constant:
 				return leftmostOfTime.Value;

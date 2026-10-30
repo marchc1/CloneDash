@@ -29,6 +29,8 @@ namespace Nucleus.ModelEditor
 		TransformPanel TransformRotation, TransformTranslation, TransformScale, TransformShear;
 		Button LocalTransformButton, ParentTransformButton, WorldTransformButton;
 		Button PoseBonesOpBtn, WeighVerticesOpBtn, CreateBonesOpBtn;
+		Button BoneCompensationBtn, ImageCompensationBtn, AutoKeyBtn;
+		public ViewportOptionsGrid ViewportOptions;
 
 		CenteredObjectsPanel MainTransformsPanel;
 		CenteredObjectsPanel OperatorPanel;
@@ -41,6 +43,7 @@ namespace Nucleus.ModelEditor
 
 			MainTransformsPanel = new(this);
 			MainTransformsPanel.ForceHeight = false;
+			MainTransformsPanel.DropOverflow = true;
 
 			MainTransformsPanel.
 			Dock = Dock.Bottom;
@@ -51,42 +54,56 @@ namespace Nucleus.ModelEditor
 
 			OperatorPanel.
 			Dock = Dock.Bottom;
-			OperatorPanel.			DockMargin = RectangleF.TLRB(0, 0, 0, -120); // Silly way to do this, but w/e
 			OperatorPanel.			Size = new(128);
 			OperatorPanel.SetVisible(false);
 
 			var modePanel = new FlexPanel(MainTransformsPanel);
 			modePanel.Direction = Axis.Vertical;
 			modePanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-			modePanel.			Size = new(98, 90);
+			modePanel.Size = new(124, 90);
 
-			PoseBonesOpBtn = new Button(modePanel);
-			PoseBonesOpBtn.			Text = "Pose";
+			PoseBonesOpBtn = ToolbarButtons.New(modePanel, "Pose", "models/poseBones.png");
 			PoseBonesOpBtn.OnButtonClick += (_, _) => SetEditorOperator(EditorDefaultOperator.PoseBoneToTarget);
 
-			WeighVerticesOpBtn = new Button(modePanel);
-			WeighVerticesOpBtn.			Text = "Weights";
+			WeighVerticesOpBtn = ToolbarButtons.New(modePanel, "Weights", "models/weights.png");
 			WeighVerticesOpBtn.OnButtonClick += (_, _) => SetEditorOperator(EditorDefaultOperator.ChangeMeshWeights);
 
-			CreateBonesOpBtn = new Button(modePanel);
-			CreateBonesOpBtn.			Text = "Create";
+			CreateBonesOpBtn = ToolbarButtons.New(modePanel, "Create", "models/createBones.png");
 			CreateBonesOpBtn.OnButtonClick += (_, _) => SetEditorOperator(EditorDefaultOperator.CreateNewBones);
 
 			var transformPanel = new FlexPanel(MainTransformsPanel);
 			transformPanel.Direction = Axis.Vertical;
 			transformPanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-			transformPanel.			Size = new(280, 115);
+			transformPanel.Size = new(360, 115);
 
-			TransformRotation = TransformPanel.New(transformPanel, "Rotate", 1, KeyframeProperty.Bone_Rotation);
-			TransformTranslation = TransformPanel.New(transformPanel, "Translate", 2, KeyframeProperty.Bone_Translation);
-			TransformScale = TransformPanel.New(transformPanel, "Scale", 2, KeyframeProperty.Bone_Scale);
-			TransformShear = TransformPanel.New(transformPanel, "Shear", 2, KeyframeProperty.Bone_Shear);
+			TransformRotation = TransformPanel.New(transformPanel, "Rotate", "models/rotate_color.png", 1,
+				KeyframeProperty.Bone_Rotation);
+			TransformTranslation = TransformPanel.New(transformPanel, "Translate", "models/translate_color.png", 2,
+				KeyframeProperty.Bone_Translation);
+			TransformScale = TransformPanel.New(transformPanel, "Scale", "models/scale_color.png", 2,
+				KeyframeProperty.Bone_Scale);
+			TransformShear = TransformPanel.New(transformPanel, "Shear", "models/shear_color.png", 2,
+				KeyframeProperty.Bone_Shear);
 
 			TransformRotation.GetNumSlider(0).OnValueChanged += CHANGE_Rotation;
 			TransformTranslation.GetNumSlider(0).OnValueChanged += CHANGE_TranslationX;
 			TransformTranslation.GetNumSlider(1).OnValueChanged += CHANGE_TranslationY;
 			TransformScale.GetNumSlider(0).OnValueChanged += CHANGE_ScaleX;
 			TransformScale.GetNumSlider(1).OnValueChanged += CHANGE_ScaleY;
+			// World scale can't be typed, the fields show local scale while typing.
+			for (int i = 0; i < 2; i++) {
+				int axis = i;
+				var slider = TransformScale.GetNumSlider(i);
+				slider.FocusGained += focused => {
+					typingScale = true;
+					if (TransformMode == EditorTransformMode.WorldCoordinates && FirstSelectedTransformable() is IEditorType item)
+						focused.SetValueNoUpdate(axis == 0 ? item.GetScaleX() : item.GetScaleY());
+				};
+				slider.FocusLost += _ => {
+					typingScale = false;
+					Active_SelectedChanged();
+				};
+			}
 			TransformShear.GetNumSlider(0).OnValueChanged += CHANGE_ShearX;
 			TransformShear.GetNumSlider(1).OnValueChanged += CHANGE_ShearY;
 
@@ -98,19 +115,37 @@ namespace Nucleus.ModelEditor
 			var transformModePanel = new FlexPanel(MainTransformsPanel);
 			transformModePanel.Direction = Axis.Vertical;
 			transformModePanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-			transformModePanel.			Size = new(70, 90);
+			transformModePanel.Size = new(110, 90);
 
-			LocalTransformButton = new Button(transformModePanel);
-			LocalTransformButton.			Text = "Local";
+			LocalTransformButton = ToolbarButtons.New(transformModePanel, "Local", "models/axes_local.png");
 			LocalTransformButton.OnButtonClick += (_, _) => SetTransformMode(EditorTransformMode.LocalCoordinates);
 
-			ParentTransformButton = new Button(transformModePanel);
-			ParentTransformButton.			Text = "Parent";
+			ParentTransformButton = ToolbarButtons.New(transformModePanel, "Parent", "models/axes_parent.png");
 			ParentTransformButton.OnButtonClick += (_, _) => SetTransformMode(EditorTransformMode.ParentCoordinates);
 
-			WorldTransformButton = new Button(transformModePanel);
-			WorldTransformButton.			Text = "World";
+			WorldTransformButton = ToolbarButtons.New(transformModePanel, "World", "models/axes_world.png");
 			WorldTransformButton.OnButtonClick += (_, _) => SetTransformMode(EditorTransformMode.WorldCoordinates);
+			// Orange reminder of which axes a typed value uses
+			HighlightWhileTyping(WorldTransformButton, () => TransformMode == EditorTransformMode.WorldCoordinates && TransformRotation.GetNumSlider(0).IsKeyboardFocused());
+			HighlightWhileTyping(LocalTransformButton, () => TransformMode == EditorTransformMode.WorldCoordinates
+				&& (TransformScale.GetNumSlider(0).IsKeyboardFocused() || TransformScale.GetNumSlider(1).IsKeyboardFocused()));
+
+			var compensationPanel = new FlexPanel(MainTransformsPanel);
+			compensationPanel.Direction = Axis.Vertical;
+			compensationPanel.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
+			compensationPanel.Size = new(130, 90);
+
+			BoneCompensationBtn = ToolbarButtons.New(compensationPanel, "Bones", "models/comp_bones.png");
+			BoneCompensationBtn.OnButtonClick += (_, _) => BoneCompensation = !BoneCompensation;
+
+			ImageCompensationBtn = ToolbarButtons.New(compensationPanel, "Images", "models/comp_images.png");
+			ImageCompensationBtn.OnButtonClick += (_, _) => ImageCompensation = !ImageCompensation;
+
+			AutoKeyBtn = ToolbarButtons.New(compensationPanel, "Auto Key", "models/autokey.png");
+			AutoKeyBtn.OnButtonClick += (_, _) => AutoKey = !AutoKey;
+
+			ViewportOptions = new ViewportOptionsGrid(MainTransformsPanel);
+			ViewportOptions.Size = new(180, 90);
 
 			ModelEditor.Active.SelectedChanged += Active_SelectedChanged;
 			ModelEditor.Active.SetupAnimateModeChanged += (_, _) => Active_SelectedChanged();
@@ -139,20 +174,34 @@ namespace Nucleus.ModelEditor
 			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => Active_SelectedChanged();
 			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => Active_SelectedChanged();
 
+			var zoomStrip = new ZoomStrip(this);
+			zoomStrip.Anchor = Anchor.BottomLeft;
+			zoomStrip.Origin = Anchor.BottomLeft;
+			zoomStrip.Position = new(8, -8);
+			zoomStrip.Size = new(30, 200);
+
 			var perfGraph1 = new PerformanceGraph(this);
-			perfGraph1.			Anchor = Anchor.BottomRight;
-			perfGraph1.			Origin = Anchor.BottomRight;
-			perfGraph1.			Position = new(-8, -8 + -32 + -8);
+			perfGraph1.Anchor = Anchor.TopRight;
+			perfGraph1.Origin = Anchor.TopRight;
+			perfGraph1.Position = new(-8, 8);
 			perfGraph1.			Size = new(300, 32);
 			perfGraph1.Mode = PerformanceGraph.GraphMode.CpuUpdateTime;
 
 			var perfGraph2 = new PerformanceGraph(this);
-			perfGraph2.			Anchor = Anchor.BottomRight;
-			perfGraph2.			Origin = Anchor.BottomRight;
-			perfGraph2.			Position = new(-8, -8);
+			perfGraph2.Anchor = Anchor.TopRight;
+			perfGraph2.Origin = Anchor.TopRight;
+			perfGraph2.Position = new(-8, 8 + 32 + 8);
 			perfGraph2.			Size = new(300, 32);
 			perfGraph2.Mode = PerformanceGraph.GraphMode.RamUsage;
 
+		}
+
+		private static IEditorType? FirstSelectedTransformable() {
+			foreach (var selected in ModelEditor.Active.SelectedObjects) {
+				var transformable = selected.DeferTransformationsTo();
+				if (transformable != null) return transformable;
+			}
+			return null;
 		}
 
 		private void Active_SelectedChanged1() {
@@ -194,7 +243,51 @@ namespace Nucleus.ModelEditor
 			Active_SelectedChanged();
 		}
 
+		private bool boneCompensation;
+		private bool imageCompensation;
+		public bool BoneCompensation {
+			get => boneCompensation;
+			set {
+				boneCompensation = value;
+				BoneCompensationBtn.Pulsing = value;
+			}
+		}
+		public bool ImageCompensation {
+			get => imageCompensation;
+			set {
+				imageCompensation = value;
+				ImageCompensationBtn.Pulsing = value;
+			}
+		}
+
+		private bool autoKey;
+		public bool AutoKey {
+			get => autoKey;
+			set {
+				autoKey = value;
+				AutoKeyBtn.Pulsing = value;
+			}
+		}
+
+		private void AutoKeyItem(IEditorType item, bool translation, bool rotation, bool scale, bool shear) {
+			if (!ModelEditor.Active.AnimationMode || ModelEditor.Active.Actions.Applying) return;
+			if (item.DeferTransformationsTo() is not EditorBone bone) return;
+
+			var file = ModelEditor.Active.File;
+			if (file.ActiveAnimation == null) return;
+
+			if (rotation)
+				file.PoseEdited(bone, KeyframeProperty.Bone_Rotation);
+			if (translation)
+				file.PoseEdited(bone, KeyframeProperty.Bone_Translation);
+			if (scale)
+				file.PoseEdited(bone, KeyframeProperty.Bone_Scale);
+			if (shear)
+				file.PoseEdited(bone, KeyframeProperty.Bone_Shear);
+		}
+
 		private void File_ItemTransformed(IEditorType item, bool translation, bool rotation, bool scale, bool shear) {
+			AutoKeyItem(item, translation, rotation, scale, shear);
 			if (translation || rotation || scale || shear) {
 				Active_SelectedChanged();
 			}
@@ -218,6 +311,9 @@ namespace Nucleus.ModelEditor
 		}
 
 		public DefaultOperator? DefaultOperator { get; private set; }
+		readonly DeformTool deformTool = new();
+		// whichever tool took the last left click
+		DefaultOperator? toolOp;
 		public EditorDefaultOperator DefaultOperatorType { get; private set; }
 
 		public bool InPoseMode => !ModelEditor.Active.File.IsOperatorActive && DefaultOperatorType == EditorDefaultOperator.PoseBoneToTarget;
@@ -229,7 +325,12 @@ namespace Nucleus.ModelEditor
 		public bool InScaleMode => !ModelEditor.Active.File.IsOperatorActive && DefaultOperatorType == EditorDefaultOperator.ScaleSelection;
 		public bool InShearMode => !ModelEditor.Active.File.IsOperatorActive && DefaultOperatorType == EditorDefaultOperator.ShearSelection;
 
-		private void SetEditorOperator(EditorDefaultOperator op) {
+		EditorDefaultOperator? lastOperatorType;
+		bool operatorChosen;
+		public void SetEditorOperator(EditorDefaultOperator op) {
+			if (operatorChosen && op != DefaultOperatorType)
+				lastOperatorType = DefaultOperatorType;
+			operatorChosen = true;
 			PoseBonesOpBtn.Pulsing = false;
 			WeighVerticesOpBtn.Pulsing = false;
 			CreateBonesOpBtn.Pulsing = false;
@@ -245,6 +346,7 @@ namespace Nucleus.ModelEditor
 			switch (op) {
 				case EditorDefaultOperator.PoseBoneToTarget:
 					PoseBonesOpBtn.Pulsing = true;
+					DefaultOperator = new PoseBonesOperator();
 					break;
 				case EditorDefaultOperator.ChangeMeshWeights:
 					WeighVerticesOpBtn.Pulsing = true;
@@ -275,9 +377,26 @@ namespace Nucleus.ModelEditor
 			DefaultOperator?.Activated();
 		}
 
+		private static readonly Color TYPING_AXES_COLOR = new(225, 135, 40);
+		private static void HighlightWhileTyping(Button button, Func<bool> when) {
+			Color? normal = null;
+			button.Thinking += _ => {
+				if (when()) {
+					normal ??= button.GetBgColor();
+					button.SetBgColor(TYPING_AXES_COLOR);
+				}
+				else if (normal is Color original) {
+					button.SetBgColor(original);
+					normal = null;
+				}
+			};
+		}
+
 		public EditorTransformMode TransformMode { get; private set; }
 		private void SetTransformMode(EditorTransformMode mode) {
 			TransformMode = mode;
+			if (TransformRotation != null)
+				Active_SelectedChanged();
 
 			switch (TransformMode) {
 				case EditorTransformMode.LocalCoordinates:
@@ -299,20 +418,26 @@ namespace Nucleus.ModelEditor
 		}
 
 		private void CHANGE_Rotation(NumSlider self, double oldValue, double newValue) {
-			ModelEditor.Active.File.RotateSelected((float)newValue);
+			ModelEditor.Active.File.RotateSelectedAxes((float)newValue, TransformMode);
 		}
 		private void CHANGE_TranslationX(NumSlider self, double oldValue, double newValue) {
-			ModelEditor.Active.File.TranslateXSelected((float)newValue);
+			ModelEditor.Active.File.TranslateSelectedAxes(0, (float)newValue, TransformMode);
 		}
 		private void CHANGE_TranslationY(NumSlider self, double oldValue, double newValue) {
-			ModelEditor.Active.File.TranslateYSelected((float)newValue);
+			ModelEditor.Active.File.TranslateSelectedAxes(1, (float)newValue, TransformMode);
 		}
 		private void CHANGE_ScaleX(NumSlider self, double oldValue, double newValue) {
-			ModelEditor.Active.File.ScaleXSelected((float)newValue);
+			ModelEditor.Active.File.ScaleSelectedAxes(0, (float)newValue, scaleAxes);
 		}
 		private void CHANGE_ScaleY(NumSlider self, double oldValue, double newValue) {
-			ModelEditor.Active.File.ScaleYSelected((float)newValue);
+			ModelEditor.Active.File.ScaleSelectedAxes(1, (float)newValue, scaleAxes);
 		}
+
+		// World scale can't be typed, typed values are local
+		bool typingScale;
+		EditorTransformMode scaleAxes => typingScale && TransformMode == EditorTransformMode.WorldCoordinates ? EditorTransformMode.LocalCoordinates
+			: TransformMode;
+
 		private void CHANGE_ShearX(NumSlider self, double oldValue, double newValue) {
 			ModelEditor.Active.File.ShearXSelected((float)newValue);
 		}
@@ -338,6 +463,7 @@ namespace Nucleus.ModelEditor
 
 			bool first = true;
 			float rotV = 0f, posX = 0f, posY = 0f, scaX = 0f, scaY = 0f, sheX = 0f, sheY = 0f;
+			var axes = TransformMode;
 
 			foreach (var selected in determinations.Selected) {
 				var item = selected.DeferTransformationsTo();
@@ -345,18 +471,18 @@ namespace Nucleus.ModelEditor
 
 				if (first) {
 					supportRotation = item.CanRotate();
-					rotV = item.GetRotation();
+					rotV = TransformAxes.GetRotation(item, axes);
 					TransformRotation.GetNumSlider(0).SetValueNoUpdate(rotV);
 
 					supportTranslation = item.CanTranslate();
-					posX = item.GetTranslationX();
-					posY = item.GetTranslationY();
+					var pos = TransformAxes.GetTranslation(item, axes);
+					posX = pos.X; posY = pos.Y;
 					TransformTranslation.GetNumSlider(0).SetValueNoUpdate(posX);
 					TransformTranslation.GetNumSlider(1).SetValueNoUpdate(posY);
 
 					supportScale = item.CanScale();
-					scaX = item.GetScaleX();
-					scaY = item.GetScaleY();
+					var sca = TransformAxes.GetScale(item, axes);
+					scaX = sca.X; scaY = sca.Y;
 					TransformScale.GetNumSlider(0).SetValueNoUpdate(scaX);
 					TransformScale.GetNumSlider(1).SetValueNoUpdate(scaY);
 
@@ -374,22 +500,18 @@ namespace Nucleus.ModelEditor
 					// 2. supported && not equals == don't support
 					//        (which leads to the former scenario happening for the rest of the selected items)
 
-					supportRotation = supportRotation && item.GetRotation() == rotV;
-					supportTranslation = supportTranslation && item.GetTranslationX() == posX && item.GetTranslationY() == posY;
-					supportScale = supportScale && item.GetScaleX() == scaX && item.GetScaleY() == scaY;
+					supportRotation = supportRotation && TransformAxes.GetRotation(item, axes) == rotV;
+					supportTranslation = supportTranslation && TransformAxes.GetTranslation(item, axes) == new Vector2F(posX, posY);
+					supportScale = supportScale && TransformAxes.GetScale(item, axes) == new Vector2F(scaX, scaY);
 					supportShear = supportShear && item.GetShearX() == sheX && item.GetShearY() == sheY;
 				}
 			}
 
 		end:
-			TransformRotation.EnableSliders = supportRotation;
-			TransformRotation.SetMouseInputEnabled(supportRotation);
-			TransformTranslation.EnableSliders = supportTranslation;
-			TransformTranslation.SetMouseInputEnabled(supportTranslation);
-			TransformScale.EnableSliders = supportScale;
-			TransformScale.SetMouseInputEnabled(supportScale);
-			TransformShear.EnableSliders = supportShear;
-			TransformShear.SetMouseInputEnabled(supportShear);
+			TransformRotation.ValuesEnabled = supportRotation;
+			TransformTranslation.ValuesEnabled = supportTranslation;
+			TransformScale.ValuesEnabled = supportScale;
+			TransformShear.ValuesEnabled = supportShear;
 		}
 
 		private float cameraX = 0;
@@ -399,7 +521,6 @@ namespace Nucleus.ModelEditor
 		public float CameraX {
 			get => cameraX;
 			set {
-				Console.WriteLine(value);
 				cameraX = value;
 				ModelEditor.Active.File.CameraX = value;
 			}
@@ -427,6 +548,9 @@ namespace Nucleus.ModelEditor
 		public bool IsTypeProhibitedByOperator(Type T) => SelectableTypes == null ? false : !SelectableTypes.Contains(T);
 
 		public bool CanSelect(IEditorType type) {
+			// The item's own Select checkbox. The tree can still select it.
+			if (type is EditorBone { ViewportCanSelect: false } or EditorAttachment { ViewportCanSelect: false })
+				return false;
 			if (SelectableTypes != null)
 				return !IsTypeProhibitedByOperator(type.GetType());
 
@@ -437,33 +561,90 @@ namespace Nucleus.ModelEditor
 		}
 
 
+		private void PickFilters(out bool bones, out bool images, out bool meshes) => PickFilters(out bones, out images, out meshes, out _);
+		private void PickFilters(out bool bones, out bool images, out bool meshes, out bool others) {
+			var options = ViewportOptions;
+			// Hidden bones can still be picked, they show under the mouse.
+			bool bonesOn = options.Selectable[(int)ViewportItemKind.Bones];
+			bool imagesOn = options.Selectable[(int)ViewportItemKind.Images] && options.Visible[(int)ViewportItemKind.Images];
+			bool othersOn = options.Selectable[(int)ViewportItemKind.Others] && options.Visible[(int)ViewportItemKind.Others];
+			bones = (SelectMode & ViewportSelectMode.Bones) == ViewportSelectMode.Bones && bonesOn;
+			images = (SelectMode & ViewportSelectMode.Images) == ViewportSelectMode.Images && imagesOn;
+			meshes = (SelectMode & ViewportSelectMode.Meshes) == ViewportSelectMode.Meshes && imagesOn;
+			others = (SelectMode & ViewportSelectMode.Other) == ViewportSelectMode.Other && othersOn;
+		}
+
+		/// <summary>
+		/// Everything selectable with its origin inside a screen-space box
+		/// </summary>
+		public List<IEditorType> ItemsInBox(Vector2F screenA, Vector2F screenB) {
+			var gridA = ScreenToGrid(screenA);
+			var gridB = ScreenToGrid(screenB);
+			float minX = MathF.Min(gridA.X, gridB.X), maxX = MathF.Max(gridA.X, gridB.X);
+			float minY = MathF.Min(gridA.Y, gridB.Y), maxY = MathF.Max(gridA.Y, gridB.Y);
+
+			PickFilters(out bool bones, out bool images, out bool meshes, out bool others);
+			List<IEditorType> found = [];
+			foreach (var model in ModelEditor.Active.File.Models) {
+				if (model.Hidden) continue;
+				foreach (var slot in model.Slots) {
+					foreach (var attachment in slot.Attachments) {
+						if (!attachment.GetVisible() || !CanSelect(attachment) || !slot.Bone.IsActive) continue;
+						bool kindOn = attachment switch {
+							EditorMeshAttachment => meshes,
+							EditorRegionAttachment => images,
+							EditorPathAttachment => others,
+							_ => false
+						};
+						if (kindOn && Inside(attachment.GetWorldPosition(), minX, maxX, minY, maxY))
+							found.Add(attachment);
+					}
+				}
+
+				if (bones) {
+					foreach (var bone in model.GetAllBones()) {
+						if (!bone.Hidden && bone.IsActive && CanSelect(bone) && Inside(bone.GetWorldPosition(), minX, maxX, minY, maxY))
+							found.Add(bone);
+					}
+				}
+			}
+			return found;
+		}
+
+		private static bool Inside(Vector2F point, float minX, float maxX, float minY, float maxY)
+			=> point.X >= minX && point.X <= maxX && point.Y >= minY && point.Y <= maxY;
+
 		protected override void OnThink() {
 			var activeOp = ModelEditor.Active.File.ActiveOperator;
 			ModelEditor.Active.File.Timeline.AddDeltaTime(EngineCore.Level.CurtimeDelta, ModelEditor.Active.File.ActiveAnimation?.CalculateMaxTime() ?? 0);
+			foreach (var model in ModelEditor.Active.File.Models)
+				model.UpdateConstraints();
+			CollectFiredEvents();
 
 			if (IsHovered()) {
 				// Hover determination
 				HoverGridPos = ScreenToGrid(GetMousePos());
 
-				bool canHoverTest_Bones = (SelectMode & ViewportSelectMode.Bones) == ViewportSelectMode.Bones;
-				bool canHoverTest_Images = (SelectMode & ViewportSelectMode.Images) == ViewportSelectMode.Images;
-				bool canHoverTest_Meshes = (SelectMode & ViewportSelectMode.Meshes) == ViewportSelectMode.Meshes;
+				PickFilters(out bool canHoverTest_Bones, out bool canHoverTest_Images, out bool canHoverTest_Meshes, out bool canHoverTest_Others);
 
 				IEditorType? hovered = null;
 
-				foreach (var model in ModelEditor.Active.File.Models) {
+				foreach (var model in ModelEditor.Active.File.ModelsBackToFront) {
 					EditorAttachment? firstAttachment = null;
 					foreach (var slot in model.Slots) {
 						foreach (var attachment in slot.Attachments) {
 							var lastHovered = hovered;
 
-							if (!attachment.GetVisible()) continue;
+							if (!attachment.GetVisible() || !slot.Bone.IsActive) continue;
 
 							bool hovertest = attachment.HoverTest(HoverGridPos) && CanSelect(attachment);
 
 							switch (attachment) {
 								case EditorRegionAttachment:
 									if (canHoverTest_Images && hovertest) hovered = attachment; break;
+								case EditorPathAttachment:
+									if (canHoverTest_Others && hovertest)
+										hovered = attachment; break;
 								case EditorMeshAttachment meshAttachment:
 									if (canHoverTest_Meshes && hovertest)
 										hovered = attachment;
@@ -494,8 +675,26 @@ namespace Nucleus.ModelEditor
 
 					if (hovered is not EditorVertex && canHoverTest_Bones) {
 						foreach (var bone in model.GetAllBones()) {
-							if (bone.HoverTest(HoverGridPos) && CanSelect(bone))
+							if (bone.IsActive && bone.HoverTest(HoverGridPos) && CanSelect(bone))
 								hovered = bone;
+						}
+					}
+				}
+
+				// name tags sit on top of everything
+				if (hovered is not EditorVertex) {
+					var mouse = GetMousePos();
+					for (int i = nameTags.Count - 1; i >= 0; i--) {
+						var tag = nameTags[i];
+						bool kindOn = tag.Item switch {
+							EditorBone => canHoverTest_Bones,
+							EditorMeshAttachment => canHoverTest_Meshes,
+							EditorRegionAttachment => canHoverTest_Images,
+							_ => canHoverTest_Others
+						};
+						if (kindOn && CanSelect(tag.Item) && mouse.X >= tag.Rect.X && mouse.X <= tag.Rect.X + tag.Rect.W && mouse.Y >= tag.Rect.Y && mouse.Y <= tag.Rect.Y + tag.Rect.H) {
+							hovered = tag.Item;
+							break;
 						}
 					}
 				}
@@ -544,7 +743,7 @@ namespace Nucleus.ModelEditor
 
 			return Vector2F.Remap(
 				(gridPos - new Vector2F(CameraX, -CameraY)) * CameraZoom,
-				-size / 2, size / 2, new(0), GetRenderBounds().Size) + new Vector2F(0, GetRenderBounds().Pos.Y);
+				-size / 2, size / 2, new(0), GetRenderBounds().Size);
 		}
 
 		Vector2F ClickPos;
@@ -561,13 +760,73 @@ namespace Nucleus.ModelEditor
 		public IEditorType? HoveredObject { get; private set; }
 		public IEditorType? ClickedObject { get; private set; }
 
+		bool boxPending;
+		bool boxSelecting;
+		bool boxAdditive;
+		bool toolClick;
+		Vector2F boxStart;
+		double lastEmptyClick = -1;
+		Vector2F lastEmptyClickPos;
+
+		/// <summary>
+		/// The box being dragged out, in panel space
+		/// </summary>
+		public RectangleF? SelectionBox => boxSelecting ? ScreenBox(boxStart, GetMousePos()) : null;
+
+		public static RectangleF ScreenBox(Vector2F start, Vector2F end)
+			=> RectangleF.XYWH(MathF.Min(start.X, end.X), MathF.Min(start.Y, end.Y), MathF.Abs(start.X - end.X), MathF.Abs(start.Y - end.Y));
+
 		protected override bool MouseClick(FrameState state, ButtonCode button) {
 			base.MouseClick(state, button);
+			ModelEditor.Active.Dopesheet.Focused = false;
+			ModelEditor.Active.Graph.Focused = false;
 			ClickPos = GetMousePos();
 			ClickedObject = null;
 			__dragBlocked = false;
+			toolClick = false;
+			operatorAtPress = ModelEditor.Active.File.IsOperatorActive;
 
-			var doesOperatorAllowClick = DefaultOperator?.GizmoClicked(this, HoveredObject, ClickPos) ?? true;
+			if (button == ButtonCode.Mouse1 && CanUseDefaultOperator) {
+				if (deformTool.ToolClick(this, ClickPos, state.Keyboard.ControlDown))
+					toolOp = deformTool;
+				else if (DefaultOperator.ToolClick(this, ClickPos, state.Keyboard.ControlDown))
+					toolOp = DefaultOperator;
+				else
+					toolOp = null;
+
+				if (toolOp != null) {
+					toolClick = true;
+					CanDragObject = CanDragCamera = false;
+					return true;
+				}
+			}
+
+			// ctrl+drag or middle drag box selects, ctrl+click toggles
+			bool ctrl = state.Keyboard.ControlDown;
+			if (!ModelEditor.Active.File.IsOperatorActive && (button == ButtonCode.Mouse3 || (button == ButtonCode.Mouse1 && ctrl))) {
+				boxPending = true;
+				boxSelecting = false;
+				boxStart = ClickPos;
+				boxAdditive = ctrl || state.Keyboard.ShiftDown;
+				ClickedObject = HoveredObject;
+				CanDragObject = CanDragCamera = false;
+				return true;
+			}
+
+			// create tool clicks empty space on purpose
+			if (button == ButtonCode.Mouse1 && HoveredObject == null && !ModelEditor.Active.File.IsOperatorActive && DefaultOperatorType != EditorDefaultOperator.CreateNewBones) {
+				var now = EngineCore.Level.Realtime;
+				if (lastEmptyClick >= 0 && now - lastEmptyClick < 0.4 && (ClickPos - lastEmptyClickPos).Length < 6) {
+					ModelEditor.Active.UnselectAllObjects();
+					lastEmptyClick = -1;
+					__dragBlocked = true;
+					return true;
+				}
+				lastEmptyClick = now;
+				lastEmptyClickPos = ClickPos;
+			}
+
+			var doesOperatorAllowClick = button != ButtonCode.Mouse1 || !CanUseDefaultOperator || DefaultOperator.GizmoClicked(this, HoveredObject, ClickPos);
 			if (HoveredObject != null && button == ButtonCode.Mouse1) {
 				if (doesOperatorAllowClick == false) {
 					__dragBlocked = true;
@@ -595,22 +854,34 @@ namespace Nucleus.ModelEditor
 			return true;
 		}
 
+		bool operatorAtPress;
+
 		[MemberNotNullWhen(true, nameof(DefaultOperator))]
 		public bool CanUseDefaultOperator => DefaultOperator != null && !ModelEditor.Active.File.IsOperatorActive;
 
 		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
 			base.MouseDrag(self, state, delta);
+			if (toolClick) {
+				toolOp?.ToolDrag(this, ClickPos, GetMousePos());
+				return true;
+			}
+			if (boxPending) {
+				if ((GetMousePos() - boxStart).Length > __LengthUntilDragStarts)
+					boxSelecting = true;
+				return true;
+			}
 			if (__dragBlocked) return false;
 
 			var pos = GetMousePos();
 			if (((pos - ClickPos).Length > __LengthUntilDragStarts || ModelEditor.Active.SelectedObjectsCount > 0) && !__startedDrag) {
 				__startedDrag = true;
-				__dragStartScreenspace = pos;
-				__dragStartGridspace = ScreenToGrid(pos);
+				// From the press, not from where the drag got noticed
+				__dragStartScreenspace = ClickPos;
+				__dragStartGridspace = ScreenToGrid(ClickPos);
 				if (CanDragObject) {
 					// In some operators we would do something here
 					if (CanUseDefaultOperator) {
-						__startDraggingOperator = DefaultOperator.GizmoStartDragging(this, pos, ModelEditor.Active.FirstSelectedObject, ClickedObject);
+						__startDraggingOperator = DefaultOperator.GizmoStartDragging(this, ClickPos, ModelEditor.Active.FirstSelectedObject, ClickedObject);
 					}
 					if (!__startDraggingOperator) {
 						if (HoveredObject != null) {
@@ -643,8 +914,46 @@ namespace Nucleus.ModelEditor
 			CanDragCamera = false;
 			__dragBlocked = false;
 
+			if (toolClick && button == ButtonCode.Mouse1) {
+				toolClick = false;
+				toolOp?.ToolRelease(this, ClickPos, GetMousePos(), (GetMousePos() - ClickPos).Length > __LengthUntilDragStarts);
+				return true;
+			}
+
+			if (boxPending) {
+				var editor = ModelEditor.Active;
+				if (boxSelecting) {
+					var found = ItemsInBox(boxStart, GetMousePos());
+					if (!boxAdditive)
+						editor.UnselectAllObjects();
+					List<IEditorType> add = [];
+					foreach (var item in found) {
+						if (!editor.IsObjectSelected(item))
+							add.Add(item);
+					}
+					if (add.Count > 0)
+						editor.SelectObjects(add.ToArray());
+				}
+				else if (button == ButtonCode.Mouse1 && ClickedObject != null) {
+					if (editor.IsObjectSelected(ClickedObject))
+						editor.UnselectObject(ClickedObject);
+					else
+						editor.SelectObject(ClickedObject, true);
+				}
+				boxPending = boxSelecting = false;
+				return true;
+			}
+
+			if (button == ButtonCode.Mouse2 && (GetMousePos() - ClickPos).Length <= __LengthUntilDragStarts) {
+				if (ModelEditor.Active.File.ActiveOperator != null)
+					ModelEditor.Active.File.ActiveOperator.RightClicked(ModelEditor.Active, GetMousePos());
+				// right click swaps to the last tool
+				else if (lastOperatorType is EditorDefaultOperator last)
+					SetEditorOperator(last);
+			}
+
 			if (button == ButtonCode.Mouse1) {
-				bool allowSelection = DefaultOperator?.GizmoReleased(this, ClickedObject, GetMousePos()) ?? true;
+				bool allowSelection = operatorAtPress || !CanUseDefaultOperator || DefaultOperator.GizmoReleased(this, ClickedObject, GetMousePos());
 				ModelEditor.Active.File.ActiveOperator?.DragRelease(ModelEditor.Active, ClickPos);
 				if (
 					ClickedObject != null
@@ -661,8 +970,82 @@ namespace Nucleus.ModelEditor
 			return true;
 		}
 
+		public const float MIN_ZOOM = 0.05f;
+		public const float MAX_ZOOM = 40;
+
+		public bool IsWindowPointInside(Vector2F windowPos) {
+			var pos = GetGlobalPosition();
+			var size = GetRenderBounds().Size;
+			return windowPos.X >= pos.X && windowPos.Y >= pos.Y && windowPos.X < pos.X + size.X && windowPos.Y < pos.Y + size.Y;
+		}
+
+		public void ZoomAt(float zoom) => CameraZoom = Math.Clamp(zoom, MIN_ZOOM, MAX_ZOOM);
+
+		public void FitToView() {
+			float minX = float.MaxValue, minY = float.MaxValue;
+			float maxX = float.MinValue, maxY = float.MinValue;
+
+			foreach (var model in ModelEditor.Active.File.Models) {
+				if (model.Hidden) continue;
+				foreach (var slot in model.Slots) {
+					switch (slot.GetActiveAttachment()) {
+						case EditorRegionAttachment region when !region.Hidden:
+							var quad = region.QuadPoints();
+							Add(quad.TL, ref minX, ref minY, ref maxX, ref maxY);
+							Add(quad.TR, ref minX, ref minY, ref maxX, ref maxY);
+							Add(quad.BL, ref minX, ref minY, ref maxX, ref maxY);
+							Add(quad.BR, ref minX, ref minY, ref maxX, ref maxY);
+							break;
+						case EditorMeshAttachment mesh when !mesh.Hidden:
+							foreach (var vertex in mesh.GetVertices())
+								Add(mesh.CalculateVertexWorldPosition(mesh.WorldTransform, vertex), ref minX, ref minY, ref maxX, ref maxY);
+							break;
+					}
+				}
+			}
+			// Bones only when there's no art, effect bones can sit far off.
+			if (minX > maxX) {
+				foreach (var model in ModelEditor.Active.File.Models) {
+					if (!model.Hidden) {
+						foreach (var bone in model.GetAllBones())
+							Add(bone.GetWorldPosition(), ref minX, ref minY, ref maxX, ref maxY);
+					}
+				}
+			}
+			if (minX > maxX) return;
+
+			// Visible grid area at zoom 1, above the toolbar
+			var size = GetRenderBounds().Size;
+			float toolbarHeight = MainTransformsPanel.IsVisible() ? MainTransformsPanel.GetRenderBounds().H : 0;
+			var area = new Vector2F(size.W, MathF.Max(size.H - toolbarHeight, size.H * 0.5f));
+			CameraZoom = 1;
+			var topLeft = ScreenToGrid(Vector2F.Zero);
+			var bottomRight = ScreenToGrid(area);
+			float visW = MathF.Abs(bottomRight.X - topLeft.X), visH = MathF.Abs(bottomRight.Y - topLeft.Y);
+
+			ZoomAt(0.85f * MathF.Min(visW / MathF.Max(maxX - minX, 1), visH / MathF.Max(maxY - minY, 1)));
+			CameraX = (minX + maxX) / 2;
+			CameraY = (minY + maxY) / 2;
+
+			var shift = ScreenToGrid(area / 2) - ScreenToGrid(size / 2);
+			CameraX -= shift.X;
+			CameraY -= shift.Y;
+		}
+
+		private static void Add(Vector2F point, ref float minX, ref float minY, ref float maxX, ref float maxY) {
+			if (!float.IsFinite(point.X) || !float.IsFinite(point.Y)) return;
+			minX = MathF.Min(minX, point.X); maxX = MathF.Max(maxX, point.X);
+			minY = MathF.Min(minY, point.Y); maxY = MathF.Max(maxY, point.Y);
+		}
+
 		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
-			CameraZoom = Math.Clamp(CameraZoom + (delta.Y / 5 * CameraZoom), 0.05f, 40);
+			// keep the point under the cursor fixed
+			var mouse = GetMousePos();
+			var before = ScreenToGrid(mouse);
+			ZoomAt(CameraZoom + (delta.Y / 5 * CameraZoom));
+			var after = ScreenToGrid(mouse);
+			CameraX += before.X - after.X;
+			CameraY += before.Y - after.Y;
 			return true;
 		}
 		Camera3D cam;
@@ -672,7 +1055,7 @@ namespace Nucleus.ModelEditor
 		}
 
 		/// <summary>
-		/// Draws a bone and then its children based on its posing
+		/// Draws a bone based on its posing
 		/// </summary>
 		/// <param name="bone"></param>
 		public void DrawBone(EditorBone bone) {
@@ -697,18 +1080,23 @@ namespace Nucleus.ModelEditor
 
 			}
 
-			var color = selected ? Color.SkyBlue : bone.Hovered ? bone.Color.Adjust(0, -0.3f, 0.3f) : (bone.Color.Adjust(0, 0, -0.15f) with { A = (byte)(bone.Length > 0 ? 45 : 155) });
+			Color color;
+			if (selected)
+				color = Color.SkyBlue;
+			else if (bone.Hovered)
+				color = bone.Color.Adjust(0, -0.3f, 0.3f);
+			else
+				color = bone.Color.Adjust(0, 0, -0.15f) with { A = (byte)(bone.Length > 0 ? 180 : 255) };
 			ITexture boneTex;
 
 			if (ModelEditor.Active.Editor.InWeightsMode
-			 && ModelEditor.Active.LastSelectedObject is EditorMeshAttachment meshAttachment
-			 && meshAttachment.Weights.Count > 0) {
+			 && VertexWeightOperator.Target is EditorVertexAttachment meshAttachment) {
 				// Override the color
-				int boneIndex = meshAttachment.Weights.FindIndex(0, (x) => x.Bone == bone);
-				if (boneIndex == -1)
+				var weights = meshAttachment.Weights.FirstOrDefault(x => x.Bone == bone);
+				if (weights == null)
 					color = new Color(170, 170, 170, 40);
 				else
-					color = EditorVertexAttachment.BoneWeightListIndexToColor(boneIndex, color.A);
+					color = meshAttachment.WeightColor(weights, color.A);
 			}
 
 			if (bone.Length > 0) {
@@ -769,32 +1157,48 @@ namespace Nucleus.ModelEditor
 				);
 				Rlgl.PopMatrix();
 			}
-			foreach (var child in bone.Children) {
-				DrawBone(child);
-			}
 		}
 
 		/// <summary>
 		/// Draws all models in the working model list
 		/// </summary>
 		public void DrawModels() {
-			foreach (var model in ModelEditor.Active.File.Models) {
+			foreach (var model in ModelEditor.Active.File.ModelsBackToFront) {
 				if (model.Hidden) continue;
+				model.UpdateConstraints();
 
-				foreach (var slot in model.Slots) {
-					slot.GetActiveAttachment()?.Render();
+				bool showImages = ViewportOptions.Visible[(int)ViewportItemKind.Images];
+				Ghosting.Draw(model, false, showImages);
+				foreach (var slot in model.DrawOrder) {
+					var attachment = slot.GetActiveAttachment();
+					if (slot.Bone.IsActive && (showImages || attachment is not (EditorRegionAttachment or EditorMeshAttachment)))
+						attachment?.Render();
 					model.Clipping.NextSlot(slot);
 				}
 
 				model.Clipping.End();
+				Ghosting.Draw(model, true, showImages);
 			}
 
 			foreach (var model in ModelEditor.Active.File.Models) {
 				if (model.Hidden) continue;
 
-				foreach (var bone in model.GetAllBones()) {
-					DrawBone(bone);
+				foreach (var slot in model.Slots) {
+					if (slot.GetActiveAttachment()
+						is EditorMeshAttachment { Wireframe: true, Selected: false, Hidden: false } wire && wire != HoveredObject && slot.Bone.IsActive)
+						wire.RenderOverlay();
 				}
+
+				bool showBones = ViewportOptions.Visible[(int)ViewportItemKind.Bones];
+				foreach (var bone in model.GetAllBones()) {
+					if (bone.IsActive && (showBones || bone == HoveredObject || bone.Selected))
+						DrawBone(bone);
+				}
+				if (!showBones) continue;
+
+				DrawConstraints(model, model.IkConstraints);
+				DrawConstraints(model, model.TransformConstraints);
+				DrawConstraints(model, model.PathConstraints);
 			}
 
 			bool caughtHovered = false;
@@ -809,6 +1213,127 @@ namespace Nucleus.ModelEditor
 				hAttachment.RenderOverlay();
 		}
 
+
+		private static void DrawConstraints<T>(EditorModel model, List<T> constraints) where T : EditorConstraint {
+			foreach (var constraint in constraints) {
+				if (!constraint.Hidden && constraint.IsActiveIn(model.ActiveSkin))
+					constraint.RenderViewport();
+			}
+		}
+
+		// last drawn name tags, for clicking them
+		readonly List<(RectangleF Rect, IEditorType Item)> nameTags = [];
+
+		private void DrawName(IEditorType item, Vector2F gridPos, string name, Color color, bool skipIfOverlapping = false) {
+			var at = GridToScreen(gridPos);
+			var size = Graphics2D.GetTextSize(name, Graphics2D.UI_FONT_NAME, 16);
+			var rect = RectangleF.XYWH(at.X - size.X / 2, at.Y - size.Y, size.X, size.Y);
+			// a name shown by its own Name checkbox only draws if it doesn't overlap another
+			if (skipIfOverlapping && nameTags.Any(x => x.Rect.X < rect.X + rect.W && rect.X < x.Rect.X + x.Rect.W && x.Rect.Y < rect.Y + rect.H && rect.Y < x.Rect.Y + x.Rect.H))
+				return;
+			nameTags.Add((rect, item));
+			var screen = at - new Vector2F(0, GetRenderBounds().Pos.Y);
+			Graphics2D.SetDrawColor(0, 0, 0, 200);
+			Graphics2D.DrawText(screen + new Vector2F(1, 1), name, Graphics2D.UI_FONT_NAME, 16, Anchor.BottomCenter);
+			Graphics2D.SetDrawColor(color);
+			Graphics2D.DrawText(screen, name, Graphics2D.UI_FONT_NAME, 16, Anchor.BottomCenter);
+		}
+
+		private void DrawNames() {
+			var options = ViewportOptions;
+			nameTags.Clear();
+			bool boneNames = options.ShowNames[(int)ViewportItemKind.Bones];
+			bool imageNames = options.ShowNames[(int)ViewportItemKind.Images] && options.Visible[(int)ViewportItemKind.Images];
+			bool otherNames = options.ShowNames[(int)ViewportItemKind.Others] && options.Visible[(int)ViewportItemKind.Others];
+
+			foreach (var model in ModelEditor.Active.File.Models) {
+				if (model.Hidden) continue;
+
+				foreach (var slot in model.Slots) {
+					var attachment = slot.GetActiveAttachment();
+					if (attachment == null || attachment.Hidden) continue;
+					bool isImage = attachment is EditorRegionAttachment or EditorMeshAttachment;
+					if (isImage ? imageNames : otherNames)
+						DrawName(attachment, attachment.GetWorldPosition(), attachment.Name, isImage ? new Color(200, 225, 255) : new Color(255, 200, 150));
+					else if (attachment.ViewportShowName && options.Visible[(int)(isImage ? ViewportItemKind.Images : ViewportItemKind.Others)])
+						DrawName(attachment, attachment.GetWorldPosition(), attachment.Name, isImage ? new Color(200, 225, 255) : new Color(255, 200, 150), true);
+				}
+
+				if (!options.Visible[(int)ViewportItemKind.Bones]) continue;
+				foreach (var bone in model.GetAllBones()) {
+					if (bone.IsActive && (boneNames || bone.ViewportShowName))
+						DrawName(bone, bone.GetWorldPosition(), bone.Name, new Color(235, 235, 235));
+				}
+			}
+		}
+
+		// Event keys flash their name above the model during playback.
+		private const double EVENT_SHOW_TIME = 0.75;
+		readonly List<(string Name, double Time, EditorModel Model)> firedEvents = [];
+		double lastEventPlayhead = -1;
+
+		private void CollectFiredEvents() {
+			var timeline = ModelEditor.Active.File.Timeline;
+			double now = timeline.GetPlayhead();
+			double last = lastEventPlayhead;
+			lastEventPlayhead = now;
+			int dir = timeline.PlayDirection;
+			if (dir == 0 || last < 0 || last == now || !ModelEditor.Active.AnimationMode) return;
+
+			double realtime = EngineCore.Level.Realtime;
+			foreach (var model in ModelEditor.Active.File.Models) {
+				var animation = model.ActiveAnimation;
+				if (animation == null || model.Hidden) continue;
+				foreach (var timelineAny in animation.Timelines) {
+					if (timelineAny is not EventTimeline events) continue;
+					foreach (var key in events.Keys.GetKeyframes()) {
+						if (!Crossed(last, now, key.Time, dir) || key.Value == null) continue;
+						foreach (var eventKey in key.Value) {
+							var editorEvent = eventKey.Event;
+							if (editorEvent != null && !editorEvent.Hidden)
+								firedEvents.Add((editorEvent.Name, realtime, model));
+						}
+					}
+				}
+			}
+		}
+
+		// wraps when the playhead loops
+		private static bool Crossed(double from, double to, double t, int dir) {
+			if (dir > 0) return from <= to ? (t > from && t <= to) : (t > from || t <= to);
+			return from >= to ? (t < from && t >= to) : (t < from || t >= to);
+		}
+
+		private void DrawFiredEvents() {
+			if (firedEvents.Count == 0) return;
+			double realtime = EngineCore.Level.Realtime;
+			firedEvents.RemoveAll(x => realtime - x.Time > EVENT_SHOW_TIME);
+
+			EditorModel? stackModel = null;
+			Vector2F anchor = Vector2F.Zero;
+			int stack = 0;
+			for (int i = firedEvents.Count - 1; i >= 0; i--) {
+				var fired = firedEvents[i];
+				if (fired.Model != stackModel) {
+					stackModel = fired.Model;
+					stack = 0;
+					float top = float.MinValue;
+					foreach (var bone in fired.Model.GetAllBones()) {
+						if (bone.IsActive)
+							top = MathF.Max(top, bone.WorldTransform.Y);
+					}
+					anchor = new(fired.Model.Root.WorldTransform.X, top);
+				}
+
+				var screen = GridToScreen(anchor) - new Vector2F(0, GetRenderBounds().Pos.Y + 28 + stack * 24);
+				int alpha = (int)(255 * Math.Clamp(1 - (realtime - fired.Time) / EVENT_SHOW_TIME, 0, 1));
+				Graphics2D.SetDrawColor(0, 0, 0, alpha * 200 / 255);
+				Graphics2D.DrawText(screen + new Vector2F(1, 1), fired.Name, Graphics2D.UI_FONT_NAME, 20, Anchor.BottomCenter);
+				Graphics2D.SetDrawColor(255, 230, 90, alpha);
+				Graphics2D.DrawText(screen, fired.Name, Graphics2D.UI_FONT_NAME, 20, Anchor.BottomCenter);
+				stack++;
+			}
+		}
 
 		public override void Paint(float width, float height) {
 			cam = new Camera3D() {
@@ -848,6 +1373,9 @@ namespace Nucleus.ModelEditor
 			EngineCore.Window.EndMode3D();
 			Surface.ResetViewport();
 
+			DrawNames();
+			DrawFiredEvents();
+
 			IEditorType? selectedTransformable = null;
 			if (ModelEditor.Active.TryGetFirstSelected(out IEditorType? selected) && !ModelEditor.Active.File.IsOperatorActive) {
 				selectedTransformable = selected.DeferTransformationsTo();
@@ -875,9 +1403,18 @@ namespace Nucleus.ModelEditor
 
 			Graphics2D.SetDrawColor(255, 255, 255);
 
-			Graphics2D.DrawText(new(4, height - 32), $"fps:  {EngineCore.FPS}", "Consolas", 12, Anchor.BottomLeft);
-			Graphics2D.DrawText(new(4, height - 18), $"gridpos:  {HoverGridPos}", "Consolas", 12, Anchor.BottomLeft);
-			Graphics2D.DrawText(new(4, height - 4), $"mousepos: {GetMousePos()}", "Consolas", 12, Anchor.BottomLeft);
+			if (CanUseDefaultOperator) {
+				deformTool.PaintOverlay(this, width, height);
+				DefaultOperator.PaintOverlay(this, width, height);
+			}
+
+			if ((SelectionBox ?? ModelEditor.Active.File.ActiveOperator?.SelectionBox ?? (CanUseDefaultOperator ? deformTool.SelectionBox ?? DefaultOperator.SelectionBox : null)) is RectangleF box) {
+				Graphics2D.SetDrawColor(120, 170, 255, 40);
+				Graphics2D.DrawRectangle(box);
+				Graphics2D.SetDrawColor(140, 185, 255, 220);
+				Graphics2D.DrawRectangleOutline(box, 1);
+				Graphics2D.SetDrawColor(255, 255, 255);
+			}
 
 			Operator? op = ModelEditor.Active.File.ActiveOperator;
 			if (op != null) {

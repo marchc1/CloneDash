@@ -7,7 +7,6 @@ using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
-using Poly2Tri;
 using Raylib_cs;
 using System;
 using System.Collections.Generic;
@@ -31,6 +30,12 @@ namespace Nucleus.ModelEditor
 		public override Type[]? SelectableTypes => [typeof(EditorVertex)];
 
 		public void SetMode(EditClipping_Mode mode) {
+			// Leaving New (or clicking it again) closes the polygon, a too short one is dropped
+			if (CurrentMode == EditClipping_Mode.New && WorkingLines.Count >= MIN_VERTICES) {
+				ApplyNew();
+				if (mode == EditClipping_Mode.New)
+					mode = EditClipping_Mode.Create;
+			}
 			CurrentMode = mode;
 			UpdateButtonState();
 		}
@@ -83,38 +88,67 @@ namespace Nucleus.ModelEditor
 				}
 			};
 		}
-		public EditorVertex? AttachedVertex;
 		public EditorVertex? HoveredVertex;
 		/// <summary>
-		/// In the context of <see cref="EditClipping_Mode.Create"/>, this is the created vertex.
-		/// <br/>
-		/// In the context of <see cref="EditClipping_Mode.Modify"/>, this is the clicked vertex.
+		/// Edge from ShapeEdges[i] to the next, -1 for none
 		/// </summary>
-		public EditorVertex? ClickedVertex;
+		public int HoveredEdge = -1;
 		public EditorClippingAttachment Attachment => this.UIDeterminations.Last as EditorClippingAttachment ?? throw new Exception("Wtf?");
 
+		public const int MIN_VERTICES = 3;
+		private const double DOUBLE_CLICK = 0.3;
+		private const float DRAG_START = 4;
+		static bool CtrlDown => EngineCore.Level.FrameState.Keyboard.ControlDown;
+
+		bool mouseDown;
+		bool dragged;
+		bool boxing;
+		Vector2F clickScreen;
+		Vector2F moveStartLocal;
+		EditorVertex? pendingDelete;
+		readonly List<(EditorVertex Vertex, Vector2F Start)> moving = [];
+		double lastClickTime = -1;
+		EditorVertex? lastClickVertex;
+
+		private Vector2F MouseLocal(ModelEditor editor, Vector2F mousePos) =>
+			Attachment.WorldTransform.WorldToLocal(editor.Editor.ScreenToGrid(mousePos));
+		List<EditorVertex> shownVertices => CurrentMode == EditClipping_Mode.New ? WorkingLines : Attachment.ShapeEdges;
+
+		private static float ProjectT(Vector2F p, Vector2F a, Vector2F b) {
+			var ab = b - a;
+			float lengthSquared = ab.X * ab.X + ab.Y * ab.Y;
+			return lengthSquared == 0 ? 0 : Math.Clamp(((p.X - a.X) * ab.X + (p.Y - a.Y) * ab.Y) / lengthSquared, 0, 1);
+		}
+
 		public override void Think(ModelEditor editor, Vector2F mousePos) {
-			EditorPanel editorPanel = editor.Editor;
-			float closestVertexDist = 100000000;
-
+			Attachment.SetupWorldTransform();
 			HoveredVertex = null;
+			HoveredEdge = -1;
+			var mouse = MouseLocal(editor, editor.Editor.GetMousePos());
+			var reach = 12f / ModelEditor.Active.Editor.CameraZoom;
 
-			System.Numerics.Vector2 mp = (Attachment.WorldTransform.WorldToLocal(mousePos)).ToNumerics();
-
-			var camsize = ModelEditor.Active.Editor.CameraZoom;
-			var dist = 32f / camsize;
-			var array = (CurrentMode == EditClipping_Mode.New ? WorkingLines : Attachment.ShapeEdges);
-			for (int i = 0; i < array.Count; i++) {
-				var vertex = array[i];
-				var vertexDistance = mp.ToNucleus().Distance(vertex.ToVector());
-				if (vertexDistance < closestVertexDist && vertex != ClickedVertex) {
-					closestVertexDist = vertexDistance;
+			float closest = float.MaxValue;
+			foreach (var vertex in shownVertices) {
+				if (mouseDown && moving.Any(x => x.Vertex == vertex)) continue;
+				float distance = mouse.Distance(vertex.ToVector());
+				if (distance < closest) {
+					closest = distance;
 					HoveredVertex = vertex;
 				}
 			}
-
-			if (closestVertexDist > dist) {
+			if (closest > reach)
 				HoveredVertex = null;
+
+			if (HoveredVertex != null || CurrentMode != EditClipping_Mode.Create) return;
+			var edges = Attachment.ShapeEdges;
+			closest = reach;
+			for (int i = 0; i < edges.Count; i++) {
+				Vector2F a = edges[i].ToVector(), b = edges[(i + 1) % edges.Count].ToVector();
+				float distance = mouse.Distance(Vector2F.Lerp(ProjectT(mouse, a, b), a, b));
+				if (distance < closest) {
+					closest = distance;
+					HoveredEdge = i;
+				}
 			}
 		}
 
@@ -123,82 +157,154 @@ namespace Nucleus.ModelEditor
 			base.Selected(editor, type);
 		}
 
+		public override RectangleF? SelectionBox => boxing && dragged ? EditorPanel.ScreenBox(clickScreen, ModelEditor.Active.Editor.GetMousePos()) : null;
+
+		private bool DeleteVertex(EditorVertex vertex) {
+			if (Attachment.ShapeEdges.Count <= MIN_VERTICES) return false;
+			Attachment.SelectedVertices.Remove(vertex);
+			Attachment.RemoveVertex(vertex);
+			Attachment.Invalidate();
+			return true;
+		}
+
+		private void BeginMove(IEnumerable<EditorVertex> vertices, Vector2F local) {
+			moving.Clear();
+			foreach (var vertex in vertices)
+				moving.Add((vertex, vertex.ToVector()));
+			moveStartLocal = local;
+		}
+
+		private void ApplyNew() {
+			var attachment = Attachment;
+			ModelEditor.Active.Actions.TrackMesh(attachment);
+			attachment.ShapeEdges.Clear();
+			attachment.Weights.Clear();
+			attachment.SelectedVertices.Clear();
+			attachment.ShapeEdges.AddRange(WorkingLines);
+			attachment.Invalidate();
+		}
+
 		public override void Clicked(ModelEditor editor, Vector2F mousePos) {
 			base.Clicked(editor, mousePos);
+			editor.Actions.TrackMesh(Attachment);
+			mouseDown = true;
+			dragged = boxing = false;
+			pendingDelete = null;
+			moving.Clear();
+			clickScreen = mousePos;
+			var local = MouseLocal(editor, mousePos);
+			var selected = Attachment.SelectedVertices;
 
-			// Overrides, for the create vertex mode, but designed this way in case
-			// other things need it
-			EditorVertex? clickVertexOverride = null;
+			var now = EngineCore.Level.Realtime;
+			bool doubleClick = HoveredVertex != null && HoveredVertex == lastClickVertex && now - lastClickTime < DOUBLE_CLICK;
+			lastClickVertex = doubleClick ? null : HoveredVertex;
+			lastClickTime = now;
 
 			switch (CurrentMode) {
 				case EditClipping_Mode.Create:
+					if (HoveredVertex != null) {
+						if (doubleClick)
+							DeleteVertex(HoveredVertex);
+						else
+							BeginMove(selected.Contains(HoveredVertex) ? selected : [HoveredVertex], local);
+					}
+					else if (HoveredEdge >= 0) {
+						var edges = Attachment.ShapeEdges;
+						Vector2F a = edges[HoveredEdge].ToVector();
+						Vector2F b = edges[(HoveredEdge + 1) % edges.Count].ToVector();
+						var created = EditorVertex.FromVector(Vector2F.Lerp(ProjectT(local, a, b), a, b), new(0, 0), Attachment);
+						edges.Insert(HoveredEdge + 1, created);
+						Attachment.Invalidate();
+						BeginMove([created], local);
+					}
 					break;
 				case EditClipping_Mode.Delete:
-					if (HoveredVertex != null) {
-						Attachment.RemoveVertex(HoveredVertex);
-						HoveredVertex = null;
-						Attachment.Invalidate();
+					if (HoveredVertex == null) {
+						boxing = true;
+						break;
 					}
+					if (CtrlDown) {
+						if (!selected.Remove(HoveredVertex))
+							selected.Add(HoveredVertex);
+						break;
+					}
+					// Wait for the release, it might be a drag
+					pendingDelete = HoveredVertex;
+					BeginMove(selected.Contains(HoveredVertex) ? selected : [HoveredVertex], local);
 					break;
 				case EditClipping_Mode.New:
-					if (WorkingLines.Count > 0 && HoveredVertex == WorkingLines.First()) {
-						Attachment.ShapeEdges.Clear();
-						Attachment.Weights.Clear();
-						Attachment.ShapeEdges.AddRange(WorkingLines);
-						Attachment.Invalidate();
-						SetMode(EditClipping_Mode.Create);
+					if (HoveredVertex != null) {
+						if (HoveredVertex == WorkingLines[0] && WorkingLines.Count >= MIN_VERTICES)
+							SetMode(EditClipping_Mode.Create);
+						else if (doubleClick)
+							WorkingLines.Remove(HoveredVertex);
+						else
+							BeginMove([HoveredVertex], local);
 					}
-					else {
-						Attachment.SetupWorldTransform();
-
-						var gridpos = ModelEditor.Active.Editor.ScreenToGrid(mousePos);
-						var attachpos = Attachment.WorldTransform.Translation;
-						var attachClickPos = gridpos - attachpos;
-						
-						var newClickP = Attachment.WorldTransform.WorldToLocal(attachClickPos + Attachment.WorldTransform.Translation);
-						WorkingLines.Add(EditorVertex.FromVector(newClickP, new(0, 0), Attachment));
-					}
+					else
+						WorkingLines.Add(EditorVertex.FromVector(local, new(0, 0), Attachment));
 					break;
 			}
-
-			ClickedVertex = clickVertexOverride ?? HoveredVertex;
 		}
+
 		public override void DragStart(ModelEditor editor, Vector2F mousePos) {
 			base.DragStart(editor, mousePos);
 		}
+
 		public override void Drag(ModelEditor editor, Vector2F startPos, Vector2F mousePos) {
-			switch (CurrentMode) {
-				case EditClipping_Mode.Create:
-					if (ClickedVertex != null) {
-						var mouseGridPos = editor.Editor.ScreenToGrid(mousePos);
-						var localized = Attachment.WorldTransform.WorldToLocal(mouseGridPos);
-
-						ClickedVertex.SetPos(localized);
-						EditorFile.UpdateVertexPositions(ClickedVertex.Attachment);
-
-						Attachment.Invalidate();
-					}
-					break;
+			if (!mouseDown) return;
+			if (!dragged && (mousePos - clickScreen).Length < DRAG_START) return;
+			dragged = true;
+			if (moving.Count == 0) return;
+			var delta = MouseLocal(editor, mousePos) - moveStartLocal;
+			if (CurrentMode != EditClipping_Mode.New)
+				editor.Actions.TrackMesh(Attachment);
+			foreach (var item in moving)
+				item.Vertex.SetPos(item.Start + delta);
+			if (CurrentMode != EditClipping_Mode.New) {
+				EditorFile.UpdateVertexPositions(Attachment);
+				Attachment.Invalidate();
 			}
 		}
 
 		public override void DragRelease(ModelEditor editor, Vector2F mousePos) {
 			base.DragRelease(editor, mousePos);
-			switch (CurrentMode) {
-				case EditClipping_Mode.Create:
-					if (HoveredVertex != ClickedVertex && HoveredVertex != null && ClickedVertex != null && AttachedVertex != null) {
-						// Remove the clicked vertex
-						ClickedVertex.Attachment.RemoveVertex(ClickedVertex);
-						// Instead, constraint AttachedVertex to HoveredVertex
-						AttachedVertex.ConstrainTo(HoveredVertex);
-					}
-					break;
-			}
+			if (!mouseDown) return;
+			mouseDown = false;
+			var selected = Attachment.SelectedVertices;
 
-			AttachedVertex = null;
-			ClickedVertex = null;
+			if (pendingDelete != null && !dragged) {
+				// Deleting a selected vertex takes the whole selection with it.
+				var doomed = selected.Contains(pendingDelete) ? selected.ToList() : [pendingDelete];
+				foreach (var vertex in doomed)
+					DeleteVertex(vertex);
+			}
+			else if (boxing && dragged) {
+				var boxStart = editor.Editor.ScreenToGrid(clickScreen);
+				var boxEnd = editor.Editor.ScreenToGrid(editor.Editor.GetMousePos());
+				float minX = MathF.Min(boxStart.X, boxEnd.X), maxX = MathF.Max(boxStart.X, boxEnd.X);
+				float minY = MathF.Min(boxStart.Y, boxEnd.Y), maxY = MathF.Max(boxStart.Y, boxEnd.Y);
+				if (!CtrlDown)
+					selected.Clear();
+				foreach (var vertex in Attachment.ShapeEdges) {
+					var position = Attachment.CalculateVertexWorldPosition(Attachment.WorldTransform, vertex);
+					if (position.X >= minX && position.X <= maxX && position.Y >= minY && position.Y <= maxY)
+						selected.Add(vertex);
+				}
+			}
+			else if (boxing && !CtrlDown)
+				selected.Clear();
+
+			boxing = false;
+			pendingDelete = null;
+			moving.Clear();
 		}
 
+		// right click switches between Create and Delete
+		public override void RightClicked(ModelEditor editor, Vector2F mousePos) {
+			if (!mouseDown)
+				SetMode(CurrentMode == EditClipping_Mode.Create ? EditClipping_Mode.Delete : EditClipping_Mode.Create);
+		}
 
 		public override bool RenderOverride() {
 			return false;
@@ -221,6 +327,7 @@ namespace Nucleus.ModelEditor
 		public EditorSlot? EndSlot { get; set; }
 
 		public override void BuildProperties(Panel props, PreUIDeterminations determinations) {
+			base.BuildProperties(props, determinations);
 			var slotRow = PropertiesPanel.NewRow(props, "End Slot", "models/clip_end.png");
 			var slot = PropertiesPanel.AddComboBox(slotRow, EndSlot, GetModel().Slots, (s) => {
 				if (s == null) return Slot.Name;
@@ -232,6 +339,9 @@ namespace Nucleus.ModelEditor
 
 		public override void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
 			PropertiesPanel.OperatorButton<EditClippingOperator>(buttons, "Clipping Editor", "models/clipping.png");
+			PropertiesPanel.ButtonIcon(buttons, "Freeze", "models/clipping.png",
+				(_, _) => ModelEditor.Active.File.FreezeVertexAttachment(this));
+			base.BuildOperators(buttons, determinations);
 		}
 
 		public override Color DetermineVertexColor(bool selected, bool highlighted) {
@@ -246,7 +356,8 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override void Render() {
-			RenderOverlay();
+			if (ModelEditor.Active.Editor.ViewportOptions.Visible[(int)ViewportItemKind.Others])
+				RenderOverlay();
 			GetModel().Clipping.Start(this, Slot, EndSlot?.Name);
 		}
 
@@ -265,13 +376,8 @@ namespace Nucleus.ModelEditor
 
 			var transform = WorldTransform;
 
-			foreach (var tri in Triangles) {
-				TriPoint tp1 = tri.Points[0], tp2 = tri.Points[1], tp3 = tri.Points[2];
-				EditorVertex? av1 = tp1.AssociatedObject as EditorVertex,
-							av2 = tp2.AssociatedObject as EditorVertex,
-							av3 = tp3.AssociatedObject as EditorVertex;
-
-				if (av1 == null || av2 == null || av3 == null) continue;
+			for (int i = 0; i < triangles.Count; i += 3) {
+				EditorVertex av1 = triangles[i], av2 = triangles[i + 1], av3 = triangles[i + 2];
 
 				//av1.Attachment = this;
 				//av2.Attachment = this;
@@ -285,7 +391,8 @@ namespace Nucleus.ModelEditor
 
 				if (ic1) Graphics2D.DrawLine(v1, v2);
 				if (ic2) Graphics2D.DrawLine(v2, v3);
-				if (ic3) Graphics2D.DrawLine(v1, v1);
+				if (ic3)
+					Graphics2D.DrawLine(v3, v1);
 			}
 
 			Graphics2D.SetOffset(offset);
@@ -311,7 +418,7 @@ namespace Nucleus.ModelEditor
 
 				Raylib.DrawLineV(vertex1.ToNumerics(), vertex2.ToNumerics(), lineColor);
 
-				if (Selected) {
+				if (Selected || (ModelEditor.Active.Editor.InWeightsMode && VertexWeightOperator.Target == this)) {
 					RenderVertex(edge1, isHighlighted, vertex1);
 				}
 			}
@@ -320,6 +427,7 @@ namespace Nucleus.ModelEditor
 			if (
 				ModelEditor.Active.File.ActiveOperator is EditClippingOperator editClipOperator
 				&& editClipOperator.CurrentMode == EditClipping_Mode.Create
+				&& editClipOperator.HoveredEdge >= 0
 				&& editClipOperator.HoveredVertex == null
 			) {
 				editClipOperator.DrawCreateGizmo();

@@ -1,4 +1,5 @@
 ﻿using Nucleus.Common.Input;
+using Nucleus.ModelEditor.UI;
 using Nucleus.Types;
 using Nucleus.UI;
 
@@ -43,10 +44,27 @@ namespace Nucleus.ModelEditor
 				}
 			}
 		}
+		private bool valuesEnabled = true;
+		/// <summary>
+		/// Turns the value fields and key buttons on or off, not the tool button.
+		/// </summary>
+		public bool ValuesEnabled {
+			get => valuesEnabled;
+			set {
+				valuesEnabled = value;
+				EnableSliders = value;
+				foreach (var slider in sliders)
+					slider.SetMouseInputEnabled(value);
+				keyframe.SetVisible(value);
+				keyframeX.SetVisible(value);
+				keyframeY.SetVisible(value);
+			}
+		}
+
 		public NumSlider GetNumSlider(int index) => sliders[index];
 		public Button GetButton() => button;
 
-		public static TransformPanel New(Element parent, string text, int floats, KeyframeProperty property = KeyframeProperty.None) {
+		public static TransformPanel New(Element parent, string text, string icon, int floats, KeyframeProperty property = KeyframeProperty.None) {
 			var panel = new TransformPanel(parent);
 			panel.			DockPadding = RectangleF.TLRB(2);
 			panel.BorderSize = 2;
@@ -54,7 +72,8 @@ namespace Nucleus.ModelEditor
 			panel.button = new Button(panel);
 			panel.button.			Dock = Dock.Left;
 			panel.button.			Text = text;
-			panel.button.			Size = new(96);
+			panel.button.WithIcon(icon);
+			panel.button.Size = new(124);
 			panel.button.BorderSize = 0;
 			panel.button.OnButtonClick += (v1, v3) => panel.OnSelected?.Invoke(panel, v3);
 
@@ -105,6 +124,8 @@ namespace Nucleus.ModelEditor
 				floatEdit.SetHelperText("");
 				floatEdit.Value = 0;
 				floatEdit.BorderSize = 0;
+				floatEdit.ScrollToChange = true;
+				floatEdit.ScrollStep = property == KeyframeProperty.Bone_Scale ? 0.01 : 1;
 				floatEdit.OnValueChanged += (self, oldV, newV) => {
 					panel.FloatChanged?.Invoke(i, (float)newV);
 				};

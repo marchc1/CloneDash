@@ -21,6 +21,7 @@ namespace Nucleus.ModelEditor
 	{
 		OutlinerButton Visibility;
 		OutlinerButton Keyframe;
+		public Element KeyButton => Keyframe;
 		OutlinerButton Expander;
 		Nucleus.UI.Elements.Image Image;
 
@@ -106,6 +107,7 @@ namespace Nucleus.ModelEditor
 				foreach (var child in Children) {
 					child.SetVisible(__expanded);
 				}
+				Outliner?.InvalidateLayout();
 			}
 		}
 
@@ -180,17 +182,30 @@ namespace Nucleus.ModelEditor
 			Dock = Dock.Top;
 		}
 
-		private void Keyframe_MouseClickEvent(Element self, ButtonCode button) {
-			IEditorType? editorItem = GetRepresentingObject();
-			if (editorItem == null) return;
+		/// <summary>
+		/// Keyed by the key button when the node has no item of its own, like Draw Order
+		/// </summary>
+		public (IEditorType Target, KeyframeProperty Property)? KeyTarget { get; set; }
 
-			if (
-				button == ButtonCode.Mouse1
+		private bool KeyParameters([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out IEditorType? target, out KeyframeProperty property, out int index) {
+			IEditorType? editorItem = GetRepresentingObject();
+			if (editorItem == null && KeyTarget != null) {
+				target = KeyTarget.Value.Target;
+				property = KeyTarget.Value.Property;
+				index = -1;
+				return true;
+			}
+			target = null;
+			property = KeyframeProperty.None;
+			index = -1;
+			return editorItem != null && editorItem.CanKeyframe() && editorItem.GetKeyframeParameters(out target, out property, out index);
+		}
+
+		private void Keyframe_MouseClickEvent(Element self, ButtonCode button) {
+			if (button == ButtonCode.Mouse1
 				&& ModelEditor.Active.CanInsertKeyframes()
-				&& editorItem.CanKeyframe()
-				&& editorItem.GetKeyframeParameters(out var target, out var prop, out var index)
-			)
-				ModelEditor.Active.File.InsertKeyframe(target, prop, index);
+				&& KeyParameters(out var target, out var property, out var index))
+				ModelEditor.Active.File.InsertKeyframe(target, property, index);
 			else // Redirect the click event to expander
 				Expander_MouseReleaseEvent(self, button);
 		}
@@ -199,11 +214,30 @@ namespace Nucleus.ModelEditor
 			IEditorType? editorItem = GetRepresentingObject();
 			if (editorItem == null) return;
 
-			if (editorItem.GetVisible())
+			bool hide = editorItem.GetVisible();
+			if (button == ButtonCode.Mouse2)
+				// the whole branch, bones and slots only
+				SetBranchVisible(this, !hide, true);
+			else if (hide)
 				ModelEditor.Active.File.HideEditorItem(editorItem);
 			else
 				ModelEditor.Active.File.ShowEditorItem(editorItem);
 		}
+
+		private static void SetBranchVisible(OutlinerNode node, bool visible, bool top) {
+			if (node.GetRepresentingObject() is IEditorType item && (top || item.CanHide()) && item.GetVisible() != visible) {
+				if (visible)
+					ModelEditor.Active.File.ShowEditorItem(item);
+				else
+					ModelEditor.Active.File.HideEditorItem(item);
+			}
+			foreach (var child in node.Children)
+				SetBranchVisible(child, visible, false);
+		}
+
+		public void ToggleBranch() => Expander_MouseReleaseEvent(this, ButtonCode.Mouse2);
+
+		public void SetBranchExpanded(bool expanded) => __setExpandedRecursive(expanded);
 
 		private void __setExpandedRecursive(bool state) {
 			foreach (var childNode in Children)
@@ -248,6 +282,7 @@ namespace Nucleus.ModelEditor
 			Expander.SetVisible(Children.Count > 0);
 
 			SetTextAlignment(Anchor.CenterLeft);
+			TextOverflowMode = TextOverflowMode.None;
 			SetTextPadding(new((Image.Position.X + Image.Size.X + 8), 0));
 		}
 
@@ -259,8 +294,34 @@ namespace Nucleus.ModelEditor
 			Outliner.InvalidateChildren();
 		}
 
+		public override void PaintBackground(float width, float height) {
+			base.PaintBackground(width, height);
+			if (GetRepresentingObject()?.Selected ?? false) {
+				Graphics2D.SetDrawColor(55, 105, 175, 210);
+				Graphics2D.DrawRectangle(0, 0, width, height);
+			}
+		}
+
 		public override void Paint(float width, float height) {
-			{ var baseBg = GetBgColor(); SetBgColor((GetRepresentingObject()?.Selected ?? false) ? baseBg.Adjust(0, 0.5, 2.4) : baseBg); }
+			// attachments of an inactive skin read dim
+			switch (GetRepresentingObject()) {
+				case EditorAttachment { Skin: EditorSkin skin } attachment:
+					SetTextColor(attachment.GetModel().ActiveSkin == skin ? Color.White : new Color(140, 140, 150));
+					break;
+				// skin required, not in the active skin
+				case EditorBone bone:
+					if (!bone.IsActive)
+						SetTextColor(new Color(140, 140, 150));
+					else
+						SetTextColor(GetSelectable() ? Color.White : Color.Gray);
+					break;
+				case EditorConstraint constraint:
+					if (!constraint.IsActiveIn(constraint.Model.ActiveSkin))
+						SetTextColor(new Color(140, 140, 150));
+					else
+						SetTextColor(GetSelectable() ? Color.White : Color.Gray);
+					break;
+			}
 			base.Paint(width, height);
 			if (Layer > 0 && ParentNode != null) {
 				int count = ParentNode.Children.Count;
@@ -288,19 +349,9 @@ namespace Nucleus.ModelEditor
 		}
 
 		private void Keyframe_PaintOverride(Element self, float width, float height) {
-			IEditorType? editorItem = GetRepresentingObject();
-
-			if (editorItem == null) return;
 			if (!ModelEditor.Active.CanInsertKeyframes()) return;
-			if (!editorItem.CanKeyframe()) return;
-			if (!editorItem.GetKeyframeParameters(out var target, out var property, out var index)) return;
-
-			// Search for the timeline, set up KeyframeState enum for rendering
-			var anim = ModelEditor.Active.File.ActiveAnimation;
-			if (anim == null) return;
-
-			var timeline = anim.SearchTimelineByProperty(target, property, index, false);
-			KeyframeState state = timeline?.KeyframedAt(ModelEditor.Active.File.Timeline.Frame) ?? KeyframeState.NotKeyframed;
+			if (!KeyParameters(out var target, out var property, out var index)) return;
+			KeyframeState state = ModelEditor.Active.File.KeyState(target, property, index);
 
 			Color color = state switch {
 				KeyframeState.NotKeyframed => KeyframeButton.KEYFRAME_COLOR_NOT_KEYFRAMED,
@@ -335,6 +386,55 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
+
+		// drag onto another node to reparent
+		Vector2F? dragFrom;
+		Panel? dropHighlight;
+
+		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
+			dragFrom ??= state.Mouse.MousePos;
+			var target = (state.Mouse.MousePos - dragFrom.Value).Length > 6 ? Outliner.DropTarget(this, state.Mouse.MousePos) : null;
+			if (target == null) {
+				dropHighlight?.SetVisible(false);
+			}
+			else {
+				if (!IValidatable.IsValid(dropHighlight)) {
+					dropHighlight = new Panel(UI);
+					dropHighlight.SetPassthru(true);
+					dropHighlight.SetBgColor(new Color(120, 170, 255, 50));
+					dropHighlight.SetFgColor(new Color(140, 185, 255, 220));
+				}
+				dropHighlight.SetVisible(true);
+				dropHighlight.Position = target.GetGlobalPosition();
+				dropHighlight.Size = target.GetRenderBounds().Size;
+			}
+			return base.MouseDrag(self, state, delta);
+		}
+
+		protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
+			bool dragged = dragFrom != null && (state.Mouse.MousePos - dragFrom.Value).Length > 6;
+			dragFrom = null;
+			dropHighlight?.Remove();
+			dropHighlight = null;
+
+			if (dragged && GetRepresentingObject() is ModelImage image && ModelEditor.Active.Editor.IsWindowPointInside(state.Mouse.MousePos)) {
+				ModelEditor.Active.DropImages(ModelEditor.Active.DraggedImages(image), state.Mouse.MousePos);
+				return true;
+			}
+
+			if (dragged && Outliner.DropTarget(this, state.Mouse.MousePos) is OutlinerNode target) {
+				var item = GetRepresentingObject();
+				var parent = target.GetRepresentingObject();
+				if (item is ModelImage dropped && parent != null) {
+					foreach (var each in ModelEditor.Active.DraggedImages(dropped))
+						ModelEditor.Active.File.DropImageOnto(each, parent);
+				}
+				else if (item != null && parent != null)
+					ModelEditor.Active.File.Reparent(item, parent);
+				return true;
+			}
+			return base.MouseRelease(self, state, button);
+		}
 
 		public OutlinerNode AddNode(string text, string? icon = null) {
 			OutlinerNode node = OutlinerPanel.SetupNode<OutlinerNode>(Outliner, Layer + 1, p => new(p), this, text, icon);

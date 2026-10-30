@@ -49,11 +49,30 @@ namespace Nucleus.Models
 		}
 
 		public void SetKeyframeTime(IKeyframe keyframe, double time) {
-#if DEBUG
 			Debug.Assert(Keyframes.Contains(keyframe));
 			keyframe.SetTime(time);
 			valid = false;
-#endif
+		}
+
+		public IKeyframe KeyAt(int index) => this[index];
+
+		public void RemoveKeyframe(IKeyframe keyframe) {
+			if (keyframe is Keyframe<T> typedKeyframe)
+				RemoveKeyframe(typedKeyframe);
+		}
+
+		public IKeyframe DuplicateKeyframe(IKeyframe keyframe, double time) {
+			var source = (Keyframe<T>)keyframe;
+			var copy = source.Copy();
+			double delta = time - source.Time;
+			copy.Time = time;
+			if (copy.LeftHandle is KeyframeHandle<T> left)
+				copy.LeftHandle = left with { Time = left.Time + delta };
+			if (copy.RightHandle is KeyframeHandle<T> right)
+				copy.RightHandle = right with { Time = right.Time + delta };
+			Keyframes.Add(copy);
+			valid = false;
+			return copy;
 		}
 
 		public Keyframe<T> this[int index] {
@@ -156,6 +175,45 @@ namespace Nucleus.Models
 		}
 
 		[JsonIgnore] public bool Invalid => !valid;
+
+		private record SavedKeyframe(Keyframe<T> Keyframe, Keyframe<T> Values);
+
+		public object SaveKeyframes() {
+			var saved = new SavedKeyframe[Keyframes.Count];
+			for (int i = 0; i < Keyframes.Count; i++)
+				saved[i] = new SavedKeyframe(Keyframes[i], Keyframes[i].Copy());
+			return saved;
+		}
+
+		public void LoadKeyframes(object saved) {
+			Keyframes.Clear();
+			foreach (var item in (SavedKeyframe[])saved) {
+				var keyframe = item.Keyframe;
+				keyframe.Time = item.Values.Time;
+				keyframe.Value = item.Values.Value;
+				keyframe.LeftHandle = item.Values.LeftHandle;
+				keyframe.RightHandle = item.Values.RightHandle;
+				keyframe.Interpolation = item.Values.Interpolation;
+				keyframe.Easing = item.Values.Easing;
+				Keyframes.Add(keyframe);
+			}
+			valid = false;
+		}
+
+		public bool MatchesKeyframes(object saved) {
+			var items = (SavedKeyframe[])saved;
+			if (items.Length != Keyframes.Count) return false;
+			for (int i = 0; i < items.Length; i++) {
+				var keyframe = items[i].Keyframe;
+				var values = items[i].Values;
+				var now = Keyframes[i];
+				if (now != keyframe || now.Time != values.Time || !EqualityComparer<T>.Default.Equals(now.Value, values.Value)
+					|| !Nullable.Equals(now.LeftHandle, values.LeftHandle) || !Nullable.Equals(now.RightHandle, values.RightHandle)
+					|| now.Interpolation != values.Interpolation || now.Easing != values.Easing)
+					return false;
+			}
+			return true;
+		}
 
 		public void UpdateAutoHandles(int index) {
 			if (typeof(T) != typeof(float) || index < 0 || index >= Keyframes.Count)

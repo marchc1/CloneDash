@@ -5,6 +5,7 @@ using Nucleus.Models;
 using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using Nucleus.UI;
+using Nucleus.UI.Elements;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -33,9 +34,33 @@ namespace Nucleus.ModelEditor
 		public EditorAttachment? ActiveAttachment { get; set; } = null;
 
 		public Color GetColor() => AnimationMode ? Color : SetupColor;
-		public Color GetDarkColor() => AnimationMode ? DarkColor : SetupColor;
+		public Color GetDarkColor() => AnimationMode ? DarkColor : SetupDarkColor;
 
-		public EditorAttachment? GetActiveAttachment() => AnimationMode ? ActiveAttachment : SetupActiveAttachment;
+		public EditorAttachment? GetActiveAttachment() => Resolve(AnimationMode ? ActiveAttachment : SetupActiveAttachment);
+
+		/// <summary>
+		/// What an attachment reference shows as under the model's active skin
+		/// </summary>
+		public EditorAttachment? Resolve(EditorAttachment? attachment) {
+			if (attachment == null) return null;
+			var skin = Bone.Model.ActiveSkin;
+			var key = attachment.SkinKey;
+
+			// active skin first, then the default skin
+			if (skin != null) {
+				if (attachment.Skin == skin && Attachments.Contains(attachment)) return attachment;
+				foreach (var other in Attachments) {
+					if (other.Skin == skin && other.SkinKey == key)
+						return other;
+				}
+			}
+			if (attachment.Skin == null) return Attachments.Contains(attachment) ? attachment : null;
+			foreach (var other in Attachments) {
+				if (other.Skin == null && other.SkinKey == key)
+					return other;
+			}
+			return null;
+		}
 
 		public void SetActiveAttachment(EditorAttachment? attachment) {
 			if (attachment != null && !Attachments.Contains(attachment))
@@ -49,7 +74,12 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		public EditorAttachment? FindAttachment(string name) => Attachments.FirstOrDefault(x => x.Name == name);
+		public EditorAttachment? FindAttachment(string name) => Attachments.FirstOrDefault(x => x.Name == name && x.Skin == null)
+				?? Attachments.FirstOrDefault(x => x.Name == name);
+		/// <summary>
+		/// Names only have to be unique within a skin.
+		/// </summary>
+		public bool IsAttachmentNameTaken(string name, EditorSkin? skin) => Attachments.Any(x => x.Name == name && x.Skin == skin);
 		public bool TryFindAttachment(string name, out EditorAttachment? attachment) {
 			attachment = FindAttachment(name);
 			return attachment != null;
@@ -83,31 +113,75 @@ namespace Nucleus.ModelEditor
 		private bool AnimationMode => ModelEditor.Active.AnimationMode;
 
 		public void BuildProperties(Panel props, PreUIDeterminations determinations) {
+			var file = ModelEditor.Active.File;
+			bool animating = AnimationMode;
+			bool separated = animating && file.ActiveAnimation?.SeparatedColors.Contains(this) == true;
+
 			var slotColorRow = PropertiesPanel.NewRow(props, "Color", "models/colorwheel.png");
 
-			var slotColorSelector = PropertiesPanel.AddColorSelector(slotColorRow, this, KeyframeProperty.Slot_Color, -1, AnimationMode ? Color : SetupColor);
+			// separated, the left button keys alpha and the right one keys color
+			List<ColorSelector> colorSelectors = separated ? [
+					PropertiesPanel.AddColorSelector(slotColorRow, this, KeyframeProperty.Slot_Color, 1, Color),
+					PropertiesPanel.AddColorSelector(slotColorRow, this, KeyframeProperty.Slot_Color, 0, Color)
+				] : [
+					PropertiesPanel.AddColorSelector(slotColorRow, this, KeyframeProperty.Slot_Color, -1, animating ? Color : SetupColor)
+				];
+			if (separated) {
+				colorSelectors[0].Swatch = ColorSwatch.WithAlpha;
+				colorSelectors[1].Swatch = ColorSwatch.Opaque;
+			}
 			var slotDarkColorSelector = PropertiesPanel.AddColorSelector(slotColorRow, AnimationMode ? DarkColor : SetupDarkColor);
 			var slotTintCheck = PropertiesPanel.AddLabeledCheckbox(slotColorRow, "Tint black?", TintBlack);
 
 			slotDarkColorSelector.GetParent()!.SetVisible(TintBlack);
 
-			slotColorSelector.SelectedColor = Color;
-			slotColorSelector.OnColorChanged += (_, ref nc) => Color = nc;
+			foreach (var selector in colorSelectors) {
+				selector.SelectedColor = GetColor();
+				selector.OnColorChanged += (self, ref newColor) => {
+					var before = animating ? Color : SetupColor;
+					file.SetProperty(this, "color", newColor,
+						() => animating ? Color : SetupColor,
+						value => {
+							if (!animating)
+								SetupColor = value;
+							Color = value;
+						});
+					if (animating)
+						file.SlotColorEdited(this, before, newColor);
+					foreach (var other in colorSelectors) {
+						if (other != self)
+							other.SetColorNoUpdate(newColor);
+					}
+				};
+			}
 
-			slotDarkColorSelector.SelectedColor = Color;
-			slotDarkColorSelector.OnColorChanged += (_, ref nc) => DarkColor = nc;
+			slotDarkColorSelector.SelectedColor = GetDarkColor();
+			slotDarkColorSelector.OnColorChanged += (_, ref newColor) => file.SetProperty(this, "dark color", newColor,
+				() => animating ? DarkColor : SetupDarkColor,
+				value => {
+					if (!animating)
+						SetupDarkColor = value;
+					DarkColor = value;
+				});
 
 			slotTintCheck.OnCheckedChanged += (s) => {
-				TintBlack = s.Checked;
+				file.SetProperty(this, "tint black", s.Checked, () => TintBlack, v => TintBlack = v);
 				slotDarkColorSelector.GetParent()!.SetVisible(TintBlack);
 				slotColorRow.InvalidateLayout();
 			};
+
+			if (animating) {
+				var separateRow = PropertiesPanel.NewRow(props, "Separate", "models/separate.png");
+				var alpha = PropertiesPanel.AddLabeledCheckbox(separateRow, "Alpha", separated);
+				alpha.OnCheckedChanged += (s) => file.SetSlotColorSeparated(this, s.Checked);
+			}
 
 			var slotBlendRow = PropertiesPanel.NewRow(props, "Blending", "models/blending.png");
 			var blending = PropertiesPanel.AddEnumComboBox(slotBlendRow, Blending);
 			// think hook needed; todo
 			blending.OnSelectionChanged += (_, _, v) => {
-				if (!AnimationMode) Blending = v;
+				if (!AnimationMode)
+					file.SetProperty(this, "blending", v, () => Blending, b => Blending = b);
 			};
 		}
 
@@ -115,7 +189,8 @@ namespace Nucleus.ModelEditor
 			PropertiesPanel.NewMenu(buttons, [
 				new("Clipping", () => PropertiesPanel.NewClippingDialog(ModelEditor.Active.File, this))
 				]);
-			PropertiesPanel.ButtonIcon(buttons, "Set Parent", "models/setparent.png");
+			PropertiesPanel.OperatorButton<UI.Operators.SetParentOperator>(buttons, "Set Parent",
+				"models/setparent.png");
 		}
 
 		public string? GetName() => Name;
