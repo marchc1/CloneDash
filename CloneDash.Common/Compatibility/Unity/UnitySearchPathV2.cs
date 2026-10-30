@@ -496,12 +496,17 @@ public class UnitySearchAsset : UnitySearchBase
 
 	public readonly object DependencyKey;
 	public readonly string Name;
+	/// <summary>
+	/// The object's name inside its bundle, can differ from Name
+	/// </summary>
+	public readonly string ObjectName;
 	public readonly CatalogResourceType Type;
 	readonly object sync = new();
 
-	public UnitySearchAsset(object dependencyKey, string name, CatalogResourceType type, AddressablesCatalog catalog) {
+	public UnitySearchAsset(object dependencyKey, string name, string objectName, CatalogResourceType type, AddressablesCatalog catalog) {
 		DependencyKey = dependencyKey;
 		Name = name;
+		ObjectName = objectName;
 		Type = type;
 		Catalog = catalog;
 	}
@@ -604,8 +609,17 @@ public class UnitySearchDirectory : UnitySearchBase
 		if (Files.TryGetValue(pk, out var ret))
 			return null;
 
-		ret = Files[pk] = new(dependencyKey, pk, type, Catalog);
+		ret = Files[pk] = new(dependencyKey, pk, ObjectNameFromInternalId(Name), type, Catalog);
 		return ret;
+	}
+
+	private static string ObjectNameFromInternalId(string? lastPiece) {
+		if (string.IsNullOrEmpty(lastPiece))
+			return "";
+		int open = lastPiece.IndexOf('[');
+		if (open >= 0 && lastPiece.EndsWith(']'))
+			return lastPiece.Substring(open + 1, lastPiece.Length - open - 2);
+		return Path.GetFileNameWithoutExtension(lastPiece);
 	}
 }
 
@@ -877,7 +891,7 @@ public class UnitySearchPathV2 : SearchPath
 	private static AssetStudio.Object? FindInBundle<T>(SerializedFile bundle, ReadOnlySpan<char> name) where T : AssetStudio.Object {
 		for (int i = 0, c = bundle.Objects.Count; i < c; i++) {
 			AssetStudio.Object? o = bundle.Objects[i];
-			if (o != null && o is T && o.GetUnityName() == name)
+			if (o != null && o is T && name.SequenceEqual(o.GetUnityName()))
 				return o;
 		}
 		return null;
@@ -1004,7 +1018,7 @@ public class UnitySearchPathV2 : SearchPath
 				if (entry is not UnitySearchAsset searchAsset)
 					continue;
 
-				var result = SearchAssetInBundles<T>(searchAsset, name);
+				var result = SearchAssetInBundles<T>(searchAsset, string.IsNullOrEmpty(searchAsset.ObjectName) ? name : searchAsset.ObjectName);
 				if (result != null)
 					return result;
 			}
