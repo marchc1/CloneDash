@@ -12,6 +12,7 @@ public class MainMenuButton : Button
 {
 	public const float Height = 64;
 	public const float Spacing = 16;
+	public const float HoverOffset = 50;
 
 	public float Offscreen { get; set; }
 
@@ -42,7 +43,7 @@ public class MainMenuButton : Button
 		base.OnThink();
 
 		RenderOffset = new Vector2F(
-			sos.Update(Offscreen != 0 ? EngineCore.GetWindowWidth() / 2 * Offscreen : IsHovered() ? -50 : 0), 0
+			sos.Update(Offscreen != 0 ? EngineCore.GetWindowWidth() / 2 * Offscreen : IsHovered() ? -HoverOffset : 0), 0
 		);
 	}
 

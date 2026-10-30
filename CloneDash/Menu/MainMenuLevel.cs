@@ -659,6 +659,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		Character.
 		Position = new(x, 0);
+		Character.ExpressionRightLimit = active is MainMenuPanel menuPanel ? menuPanel.GetButtonsLeft() : float.MaxValue;
 		Character.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Curtime * 1.5, 0, 1))) * -(FrameState.WindowWidth / 2), 0);
 	}
 

@@ -164,6 +164,19 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		}
 	}
 
+	public float GetButtonsLeft() {
+		if (!buttons.TryPeek(out List<MainMenuButton>? current) || current.Count == 0)
+			return float.MaxValue;
+
+		float left = float.MaxValue;
+		foreach (MainMenuButton btn in current)
+			left = MathF.Min(left, btn.GetRenderBounds().X - MainMenuButton.HoverOffset);
+		if (back.IsVisible())
+			left = MathF.Min(left, back.GetRenderBounds().X);
+
+		return GetGlobalPosition().X + left;
+	}
+
 	IMainMenuLevel mainMenu = null!;
 	public IMainMenuLevel GetMainMenu() => mainMenu;
 	public void SetMainMenu(IMainMenuLevel level) => mainMenu = level;
