@@ -1,13 +1,10 @@
-﻿namespace CloneDash.Characters;
+using CloneDash.Common.Compatibility;
+
+namespace CloneDash.Characters;
 
 /// <summary>
-/// Provides a way to get <see cref="ICharacterDescriptor"/>'s by name and a total list of available <see cref="ICharacterDescriptor"/> names.
+/// Provides <see cref="ICharacterDescriptor"/>'s to <see cref="CharacterMod"/>.
 /// <br/>
 /// By implementing this interface, it will auto-register with Clone Dash.
 /// </summary>
-public interface ICharacterProvider
-{
-	public ICharacterDescriptor? FindByName(string name);
-	public int Priority { get; }
-	public IEnumerable<string> GetAvailable();
-}
+public interface ICharacterProvider : ICloneDashModProvider<ICharacterDescriptor>;

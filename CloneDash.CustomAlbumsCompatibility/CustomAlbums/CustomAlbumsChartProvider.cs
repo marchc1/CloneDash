@@ -1,5 +1,6 @@
-﻿using CloneDash.Charts;
+using CloneDash.Charts;
 using CloneDash.Common;
+using CloneDash.Common.Compatibility;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Compatibility.MuseDash;
@@ -29,12 +30,12 @@ public class CustomAlbumsChartSource : BaseContiguousSongSource
 }
 
 [MarkForStaticConstruction]
-public class CustomAlbumsChartProvider : IChartSongProvider
+public class CustomAlbumsChartProvider() : ModProvider<ISong>("Custom Albums", "musedash1customs"), IChartSongProvider
 {
 	public static readonly ConVar cam_lastsong = new ConVar(nameof(cam_lastsong), "", FCvar.Saved, "The last selected song ID");
 	public static readonly ConVar cam_lastfilter = new ConVar(nameof(cam_lastfilter), "", FCvar.Saved, "The last selected song filter");
 	public IChartSongFilter? GetSavedFilter() => cam_lastfilter.GetString().IsEmpty ? null : JSON.Deserialize<BaseContiguousChartSongFilter>(new(cam_lastfilter.GetString()));
-	public ISong? GetSavedSong() => cam_lastsong.GetString().IsEmpty ? null : GetCustomSongs().FirstOrDefault(x => x.GetUUID().Equals(cam_lastsong.GetString(), StringComparison.InvariantCultureIgnoreCase));
+	public ISong? GetSavedSong() => ChartMod.Instance.GetDescriptorByUID(cam_lastsong.GetString());
 	public void UpdateSavedFilter(IChartSongFilter? filter) => cam_lastfilter.SetValue(filter == null ? "" : JSON.Serialize((BaseContiguousChartSongFilter)filter));
 	public void UpdateSavedSong(ISong? selectedSong) => cam_lastsong.SetValue(selectedSong == null ? "" : selectedSong.GetUUID());
 
@@ -47,12 +48,18 @@ public class CustomAlbumsChartProvider : IChartSongProvider
 		return null;
 	}
 
-	public IEnumerable<ISong> GetAvailableSongs() {
+	public override IEnumerable<string> GetAvailableIDs() {
 		foreach (var song in GetCustomSongs())
-			yield return song;
+			yield return song.GetID();
 	}
 
-	public ReadOnlySpan<char> GetName() => "Custom Albums";
+	public override ISong? FindByID(ReadOnlySpan<char> id) {
+		foreach (var song in GetCustomSongs())
+			if (id.Equals(song.GetID(), StringComparison.Ordinal))
+				return song;
+		return null;
+	}
+
 	public ISongSourceState NewState() => new CustomAlbumsChartSource();
 
 
@@ -97,12 +104,11 @@ public class CustomAlbumsChartProvider : IChartSongProvider
 		}
 	}
 
-	public int GetSortIndex() => 1000;
+	public override int GetSortIndex() => 1000;
 	public IChartSongProvider.NavigationButtonInstructions GetNavigationButtonInstructions() => new() {
 		Name = "Play Custom Charts", 
 		Description = "Play a custom chart (.mdm format).", 
 		Hue = 310,
 		Icon = "icons/orange-slice.png"
 	};
-	public bool IsEnabled() => true;
 }

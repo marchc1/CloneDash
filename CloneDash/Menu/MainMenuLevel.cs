@@ -1,4 +1,4 @@
-﻿using CloneDash.Charts;
+using CloneDash.Charts;
 using CloneDash.Common;
 using CloneDash.Common.Songs;
 using CloneDash.Common.UI;
@@ -163,7 +163,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 				return false;
 
 			// If not in song selector, enter.
-			SongSelector? selector = GetOrEnterSongSelector(ChartMod.GetChartSongProviderByName("Custom Albums"));
+			SongSelector? selector = GetOrEnterSongSelector(ChartMod.Instance.GetProviderByID("musedash1customs"));
 			if (selector == null)
 				return false;
 

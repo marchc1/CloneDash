@@ -1,6 +1,7 @@
-﻿using AssetStudio;
+using AssetStudio;
 using CloneDash.Charts;
 using CloneDash.Common;
+using CloneDash.Common.Compatibility;
 using CloneDash.Common.Compatibility.Valve;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.Unity;
@@ -211,12 +212,12 @@ public class UnbeatableWhiteLabelChartSource : BaseContiguousSongSource
 }
 
 [MarkForStaticConstruction]
-public class UnbeatableWhiteLabelChartProvider : IChartSongProvider
+public class UnbeatableWhiteLabelChartProvider() : ModProvider<ISong>("UNBEATABLE: White Label", "unbeatable_whitelabel"), IChartSongProvider
 {
 	public static readonly ConVar ubwl_lastsong = new ConVar(nameof(ubwl_lastsong), "", FCvar.Saved, "The last selected song ID");
 	public static readonly ConVar ubwl_lastfilter = new ConVar(nameof(ubwl_lastfilter), "", FCvar.Saved, "The last selected song filter");
 	public IChartSongFilter? GetSavedFilter() => ubwl_lastfilter.GetString().IsEmpty ? null : JSON.Deserialize<BaseContiguousChartSongFilter>(new(ubwl_lastfilter.GetString()));
-	public ISong? GetSavedSong() => ubwl_lastsong.GetString().IsEmpty ? null : UnbeatableWhiteLabelCompatibility.BeatmapIndex.Songs.FirstOrDefault(x => x.GetUUID().Equals(ubwl_lastsong.GetString(), StringComparison.InvariantCultureIgnoreCase));
+	public ISong? GetSavedSong() => ChartMod.Instance.GetDescriptorByUID(ubwl_lastsong.GetString());
 	public void UpdateSavedFilter(IChartSongFilter? filter) => ubwl_lastfilter.SetValue(filter == null ? "" : JSON.Serialize((BaseContiguousChartSongFilter)filter));
 	public void UpdateSavedSong(ISong? selectedSong) => ubwl_lastsong.SetValue(selectedSong == null ? "" : selectedSong.GetUUID());
 
@@ -229,20 +230,26 @@ public class UnbeatableWhiteLabelChartProvider : IChartSongProvider
 		return null;
 	}
 
-	public IEnumerable<ISong> GetAvailableSongs() {
+	public override IEnumerable<string> GetAvailableIDs() {
 		foreach (var song in UnbeatableWhiteLabelCompatibility.BeatmapIndex.Songs)
-			yield return song;
+			yield return song.GetID();
 	}
 
-	public ReadOnlySpan<char> GetName() => "Custom Albums";
+	public override ISong? FindByID(ReadOnlySpan<char> id) {
+		foreach (var song in UnbeatableWhiteLabelCompatibility.BeatmapIndex.Songs)
+			if (id.Equals(song.GetID(), StringComparison.Ordinal))
+				return song;
+		return null;
+	}
+
 	public ISongSourceState NewState() => new UnbeatableWhiteLabelChartSource();
 
-	public int GetSortIndex() => 40000;
+	public override int GetSortIndex() => 40000;
 	public IChartSongProvider.NavigationButtonInstructions GetNavigationButtonInstructions() => new() {
 		Name = "Play UNBEATABLE: White Label charts",
 		Description = "Play a chart from UNBEATABLE: White Label",
 		Hue = 348,
 		Icon = "icons/play.png"
 	};
-	public bool IsEnabled() => UnbeatableWhiteLabelCompatibility.unbeatablewhitelabel_enabled.GetBool();
+	public override bool IsEnabled() => UnbeatableWhiteLabelCompatibility.unbeatablewhitelabel_enabled.GetBool();
 }

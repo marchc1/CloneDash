@@ -16,10 +16,7 @@ namespace CloneDash.Menu.Character
 		private int _lastSelectedIdx = -1;
 
 		public CharacterSelectorScroller(Element? parent) : base(parent) {
-			foreach (string characterIdx in CharacterMod.GetAvailableCharacters()) {
-				ICharacterDescriptor? character = CharacterMod.GetCharacterData(characterIdx);
-				Debug.Assert(character != null);
-
+			foreach (ICharacterDescriptor character in CharacterMod.Instance.GetAllDescriptors()) {
 				CharacterButton lbl = new(this, character.GetThumbnailTexture());
 				lbl.OnButtonClick += (_, _) => PerformPick(character);
 				_chars.Add((lbl, character));

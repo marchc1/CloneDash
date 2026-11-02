@@ -1,5 +1,6 @@
-﻿using AssetStudio;
+using AssetStudio;
 using CloneDash.Common;
+using CloneDash.Common.Compatibility;
 using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
@@ -77,26 +78,23 @@ public class MuseDash1CharacterExpression : ICharacterMainMenuExpression
 	}
 }
 
-public class MuseDash1CharacterRetriever : ICharacterProvider
+public class MuseDash1CharacterRetriever() : ModProvider<ICharacterDescriptor>("Muse Dash 1", "musedash1"), ICharacterProvider
 {
-	int ICharacterProvider.Priority => 0;
+	public static string GetID(CharacterConfigData cfd) => cfd.BGM.Replace("_bgm", "");
 
-	public string GetName(CharacterConfigData cfd) => $"character/musedash1/{cfd.BGM.Replace("_bgm", "")}";
-
-	IEnumerable<string> ICharacterProvider.GetAvailable() {
-		foreach (var character in MuseDash1Compatibility.Characters) {
-			yield return GetName(character);
-		}
+	public override IEnumerable<string> GetAvailableIDs() {
+		foreach (var character in MuseDash1Compatibility.Characters)
+			yield return GetID(character);
 	}
 
-	ICharacterDescriptor? ICharacterProvider.FindByName(string name) {
+	public override ICharacterDescriptor? FindByID(ReadOnlySpan<char> id) {
 		if (MuseDash1Compatibility.Characters == null)
 			return null;
 
 		foreach (var character in MuseDash1Compatibility.Characters) {
-			if (name != GetName(character)) continue;
+			if (!id.Equals(GetID(character), StringComparison.Ordinal)) continue;
 
-			return new MuseDash1CharacterDescriptor(character, name);
+			return new MuseDash1CharacterDescriptor(character, this);
 		}
 
 		return null;
@@ -104,19 +102,24 @@ public class MuseDash1CharacterRetriever : ICharacterProvider
 }
 
 [Nucleus.MarkForStaticConstruction]
-public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string name) : ICharacterDescriptor
+public class MuseDash1CharacterDescriptor(CharacterConfigData configData, ICloneDashModProvider provider) : ModDescriptor, ICharacterDescriptor
 {
 	internal readonly CharacterConfigData ConfigData = configData;
 
-	public ReadOnlySpan<char> GetUUID() => name;
+	public override string GetID() => MuseDash1CharacterRetriever.GetID(ConfigData);
+	public override ICloneDashModProvider GetProvider() => provider;
 
 	public static ConCommand nextmdchar = new(nameof(nextmdchar), (_, in _) => {
-		var chvar = cvar.FindVar(nameof(CharacterMod.character))!;
+		var store = CharacterMod.Instance;
+		var provider = store.GetProviderByID("musedash1");
+		if (provider == null) return;
+
+		var chvar = CharacterMod.character;
 		var clonedash_character_value = chvar.GetString();
-		ICharacterProvider retriever = new MuseDash1CharacterRetriever();
 		bool next = false;
-		foreach (var character in retriever.GetAvailable()) {
-			if (character == clonedash_character_value) next = true;
+		foreach (var id in provider.GetAvailableIDs()) {
+			var character = store.BuildUID(provider, id);
+			if (clonedash_character_value.Equals(character, StringComparison.Ordinal)) next = true;
 			else if (next) {
 				chvar.SetValue(character);
 				Logs.Info($"Selecting '{character}'");
@@ -177,7 +180,7 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 	}
 
 	// cosplay name and character name clash over returnedLanguage, this should be fixed...
-	public ReadOnlySpan<char> GetName() => $"{GetCosplayName()} {GetCharacterName()}";
+	public override string GetName() => $"{GetCosplayName()} {GetCharacterName()}";
 	public ReadOnlySpan<char> GetCosplayName() => ConfigData.CosName;
 	public ReadOnlySpan<char> GetCharacterName() => ConfigData.CharacterName;
 	public ITexture? GetThumbnailTexture() => MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<Texture2D>(ConfigData.Skins.First().HeadName)!);
@@ -228,7 +231,7 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 	}
 
 	public void ApplyQuirks(ref MuseDash1GameplayQuirks quirks) {
-		MuseDash1GameplayQuirks.ApplyCharacterQuirks(name, ref quirks);
+		MuseDash1GameplayQuirks.ApplyCharacterQuirks(GetUniqueID(), ref quirks);
 	}
 
 	// I hate this!

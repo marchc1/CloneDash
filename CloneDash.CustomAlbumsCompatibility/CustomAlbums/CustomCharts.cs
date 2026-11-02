@@ -1,4 +1,6 @@
-﻿using CloneDash.Common.Data;
+using CloneDash.Charts;
+using CloneDash.Common.Compatibility;
+using CloneDash.Common.Data;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Compatibility.MDMC;
 using CloneDash.Compatibility.MuseDash;
@@ -80,7 +82,8 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				AddLocalizedInfo(ILocalize.English, webChart.TitleRomanized, webChart.Artist);
 			}
 
-			public override ReadOnlySpan<char> GetUUID() => UsesWebChart ? $"song/musedash1customs/{WebChart.ID}" : $"song/musedash1customs/{Filepath}";
+			public override string GetID() => UsesWebChart ? WebChart.ID : Filepath ?? "";
+			public override ICloneDashModProvider GetProvider() => ChartMod.Instance.GetProviderByID(UsesWebChart ? "mdmc" : "musedash1customs")!;
 
 			public MD1_CustomChartsSong(string filepath) : base() {
 				Filepath = filepath;

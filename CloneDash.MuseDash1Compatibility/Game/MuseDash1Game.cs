@@ -1,4 +1,4 @@
-﻿using CloneDash.Characters;
+using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes;
@@ -789,7 +789,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			backgroundOverrideOpacity = gamemodeData.BackgroundTextureOpacity;
 
 			using (StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
-				var charData = CharacterMod.GetCharacterData();
+				var charData = CharacterMod.Instance.GetActive();
 				if (charData == null) throw new ArgumentNullException(nameof(charData));
 				Quirks = MuseDash1GameplayQuirks.Default;
 				charData.ApplyQuirks(ref Quirks);
@@ -797,7 +797,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				if (Character == null)
 					throw new Exception("The character isn't supported for Muse Dash 1");
 
-				var sceneData = SceneMod.GetSceneData();
+				var sceneData = SceneMod.Instance.GetActive();
 				IMuseDash1SceneInstance? sceneToActivate = null;
 				if (sceneData != null) {
 					// Ignore scene changes. Only use this scene.
@@ -807,7 +807,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					CanSceneChange = false;
 				}
 				else {
-					sceneData = SceneMod.GetSceneData(gamemodeData.InitialScene);
+					sceneData = SceneMod.Instance.GetDescriptorByUID(gamemodeData.InitialScene);
 					if (sceneData == null)
 						throw new ArgumentNullException(nameof(sceneData));
 
@@ -818,7 +818,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					// Process scene changes
 					CanSceneChange = true;
 					foreach (var sceneChange in gamemodeData.SceneChanges) {
-						ISceneDescriptor? sceneDescToChangeTo = SceneMod.GetSceneData(sceneChange.SceneUID);
+						ISceneDescriptor? sceneDescToChangeTo = SceneMod.Instance.GetDescriptorByUID(sceneChange.SceneUID);
 
 						var sceneChangeInstance = AddOrGetScene(sceneDescToChangeTo);
 						if (sceneChangeInstance != null) {

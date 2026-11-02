@@ -1,4 +1,4 @@
-﻿using CloneDash.Charts;
+using CloneDash.Charts;
 using CloneDash.Common.Systems.Discord;
 using CloneDash.Common.UI.Searching;
 using CloneDash.Game;
@@ -100,7 +100,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		CreateNavigationMenu();
 
-		foreach (var provider in ChartMod.GetAll()) {
+		foreach (var provider in ChartMod.Instance.GetAllProviders()) {
 			if (!provider.IsEnabled())
 				continue;
 

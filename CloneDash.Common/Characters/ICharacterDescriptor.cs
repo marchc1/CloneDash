@@ -1,4 +1,5 @@
-﻿using CloneDash.Common;
+using CloneDash.Common;
+using CloneDash.Common.Compatibility;
 using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
@@ -13,9 +14,8 @@ namespace CloneDash.Characters;
 /// <summary>
 /// An interface for character operations and information.
 /// </summary>
-public interface ICharacterDescriptor : IUniquelyIdentifiableObject
+public interface ICharacterDescriptor : ICloneDashModDescriptor
 {
-	ReadOnlySpan<char> GetName();
 	/// <summary>
 	/// Gets the human-friendly character name
 	/// </summary>

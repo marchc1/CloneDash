@@ -1,4 +1,4 @@
-﻿using CloneDash.Characters;
+using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.UI;
 using CloneDash.Game;
@@ -35,7 +35,7 @@ public class MainMenuCharacter : Panel
 			return character != null;
 
 		if (character != null)
-			CharacterMod_CharacterUpdated(character);
+			CharacterMod_CharacterUpdated(null, character);
 
 		return character != null;
 	}
@@ -62,15 +62,15 @@ public class MainMenuCharacter : Panel
 		ExpressionLabel.TextOverflowMode = TextOverflowMode.WordWrap;
 		ExpressionLabel.SetTextPadding(new Vector2F(64, 24));
 
-		if (SetCharacter(CharacterMod.GetCharacterData()))
-			CharacterMod.CharacterUpdated += CharacterMod_CharacterUpdated;
+		if (SetCharacter(CharacterMod.Instance.GetActive()))
+			CharacterMod.Instance.PostChange += CharacterMod_CharacterUpdated;
 		else
-			CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
+			CharacterMod.Instance.PostChange -= CharacterMod_CharacterUpdated;
 	}
 
 	protected override void OnRemoval() {
 		base.OnRemoval();
-		CharacterMod.CharacterUpdated -= CharacterMod_CharacterUpdated;
+		CharacterMod.Instance.PostChange -= CharacterMod_CharacterUpdated;
 		CharacterInstance?.Dispose();
 	}
 
@@ -206,7 +206,7 @@ public class MainMenuCharacter : Panel
 		CharacterInstance.Standby();
 	}
 
-	private void CharacterMod_CharacterUpdated(ICharacterDescriptor? charDescriptor) {
+	private void CharacterMod_CharacterUpdated(ICharacterDescriptor? previous, ICharacterDescriptor? charDescriptor) {
 		if (charDescriptor == null) return;
 		if (CharacterInstance != null && charDescriptor != null && CharacterInstance.GetCharacter().UUIDEquals(charDescriptor)) return;
 

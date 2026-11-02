@@ -1,6 +1,7 @@
-﻿using AssetStudio;
+using AssetStudio;
 using CloneDash.Characters;
 using CloneDash.Common;
+using CloneDash.Common.Compatibility;
 using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash;
@@ -309,26 +310,32 @@ public record class MuseDash1SceneInfo
 	public UIFactoryFn UIFactory = (scene, game) => new MD1SceneUI(scene, game);
 }
 public delegate IMuseDash1SceneUI UIFactoryFn(IMuseDash1SceneInstance scene, IGame game);
-public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
+public class MuseDash1SceneDescriptor : ModDescriptor, IMuseDash1SceneDescriptor
 {
 	public readonly MuseDash1SceneInfo SceneInfo;
+	readonly ICloneDashModProvider provider;
 
-	public MuseDash1SceneDescriptor(MuseDash1SceneInfo info) {
+	public MuseDash1SceneDescriptor(ICloneDashModProvider provider, MuseDash1SceneInfo info) {
+		this.provider = provider;
 		SceneInfo = info;
 	}
 
-	public static MuseDash1SceneDescriptor? GetScene(ReadOnlySpan<char> name) {
+	public static MuseDash1SceneDescriptor? GetScene(ICloneDashModProvider provider, ReadOnlySpan<char> name) {
 		var sceneInfo = MuseDash1SceneInfo.GetSceneInfo(name);
 		if (sceneInfo == null)
 			return null;
 
 		if (sceneInfo.Unusable) {
 			Logs.Warn($"The scene '{sceneInfo.OfficialName}' is currently broken, so 'Space Station' will be selected as a fallback for this scene.");
-			return GetScene("scene_01"); // Fall back to Space Station...
+			return GetScene(provider, "scene_01"); // Fall back to Space Station...
 		}
 
-		return new(sceneInfo);
+		return new(provider, sceneInfo);
 	}
+
+	public override string GetName() => SceneInfo.OfficialName;
+	public override string GetID() => SceneInfo.MapName;
+	public override ICloneDashModProvider GetProvider() => provider;
 
 	public T? CreateInGame<T>(IGame game) where T : ISceneInstance {
 		var uuid = game.GetGamemode().GetUUID();
@@ -346,8 +353,6 @@ public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
 			Artists = "PeroPeroGames",
 		};
 	}
-
-	public ReadOnlySpan<char> GetUUID() => ISceneDescriptor.ConstructUUID("musedash1", SceneInfo.MapName);
 
 	public bool SupportsGamemode(IGamemodeDescriptor gamemodeDescriptor) {
 		var uuid = gamemodeDescriptor.GetUUID();

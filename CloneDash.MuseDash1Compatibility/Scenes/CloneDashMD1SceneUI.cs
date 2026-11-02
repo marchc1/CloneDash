@@ -1,4 +1,4 @@
-﻿using CloneDash.Characters;
+using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes.MuseDash;
@@ -43,7 +43,7 @@ public class StatisticsPanel : Panel
 		if (chart == null) return;
 		start = globals.CurTime;
 
-		ICharacterDescriptor? character = CharacterMod.GetCharacterData();
+		ICharacterDescriptor? character = CharacterMod.Instance.GetActive();
 		if (character == null) return;
 
 		victory = character.CreateVictory();

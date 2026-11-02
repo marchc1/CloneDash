@@ -1,5 +1,7 @@
-﻿using AssetStudio;
+using AssetStudio;
+using CloneDash.Charts;
 using CloneDash.Common;
+using CloneDash.Common.Compatibility;
 using CloneDash.Common.Compatibility.Valve;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
@@ -69,7 +71,7 @@ public class MuseDashSongInfoJSON
 
 public delegate void ChartCoverAvailableToMainThreadFn(MD1_SongCover? cover);
 
-public class MD1_Song : ISong, IHasLowToHighDifficulties
+public class MD1_Song : ModDescriptor, ISong, IHasLowToHighDifficulties
 {
 	private bool __gotDemoTrack = false;
 	private bool __gotCover = false;
@@ -238,7 +240,9 @@ public class MD1_Song : ISong, IHasLowToHighDifficulties
 		};
 	}
 
-	public virtual ReadOnlySpan<char> GetUUID() => $"song/musedash1/{GetInfo()?.Music}";
+	public override string GetName() => FetchMetadata().Name.ToString();
+	public override string GetID() => GetInfo()?.Music ?? "";
+	public override ICloneDashModProvider GetProvider() => ChartMod.Instance.GetProviderByID("musedash1")!;
 
 	~MD1_Song() {
 		MainThread.RunASAP(() => {
