@@ -10,7 +10,7 @@ namespace CloneDash.Game.Entities
 			DoesDamagePlayer = true;
 		}
 
-		protected override void OnHit(PathwaySide side, double distanceToHit) {
+		protected override void OnHit(PathwayId pathway, double distanceToHit) {
 			Kill();
 			GetStats().Hit(this, distanceToHit);
 		}
@@ -18,7 +18,7 @@ namespace CloneDash.Game.Entities
 		protected override void OnMiss() {
 			PunishPlayer();
 			GetStats().Miss(this);
-			if (Level.As<MuseDash1Game>().Pathway == this.Pathway) {
+			if (Level.As<MuseDash1Game>().IsCharacterOn(Pathway)) {
 				DamagePlayer();
 			}
 		}

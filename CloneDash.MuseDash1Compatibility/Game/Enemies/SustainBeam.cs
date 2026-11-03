@@ -36,7 +36,7 @@ namespace CloneDash.Game.Entities
 			StopAcceptingInput = false;
 		}
 
-		protected override void OnHit(PathwaySide attackedPath, double distanceToHit) {
+		protected override void OnHit(PathwayId attackedPath, double distanceToHit) {
 			if (HeldState == true)
 				return;
 			if (StopAcceptingInput == true)
@@ -83,8 +83,8 @@ namespace CloneDash.Game.Entities
 			var tex = start;
 			if (tex == null) return;
 
-			var xpos = (HeldState ? game.GetPathway(Pathway).Position.X : (float)XPosFromTimeOffset(x));
-			var ypos = -game.GetPathway(Pathway).Position.Y;
+			var xpos = (HeldState ? game.GetPathway(this).Position.X : (float)XPosFromTimeOffset(x));
+			var ypos = -game.GetPathway(this).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
 
 			var w = tex.GetWidth() * MuseDash1Game.GlobalScale;
@@ -101,7 +101,7 @@ namespace CloneDash.Game.Entities
 			if (tex == null) return;
 
 			var xpos = (float)XPosFromTimeOffset(x);
-			var ypos = -game.GetPathway(Pathway).Position.Y;
+			var ypos = -game.GetPathway(this).Position.Y;
 			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
 
 			var w = tex.GetWidth() * MuseDash1Game.GlobalScale;
@@ -121,9 +121,9 @@ namespace CloneDash.Game.Entities
 
 			float voffset = -(float)InputSettings.VisualOffset;
 			var xStart = (float)XPosFromTimeOffset(voffset);
-			var xMid = HeldState ? game.GetPathway(Pathway).Position.X : xStart;
+			var xMid = HeldState ? game.GetPathway(this).Position.X : xStart;
 			var xEnd = (float)XPosFromTimeOffset((float)Length + voffset);
-			var ypos = -game.GetPathway(Pathway).Position.Y + yOffset;
+			var ypos = -game.GetPathway(this).Position.Y + yOffset;
 			var height = tex.GetHeight() * MuseDash1Game.GlobalScale;
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
@@ -190,7 +190,7 @@ namespace CloneDash.Game.Entities
 
 		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
 			base.OnBuildVisuals(visuals);
-			visuals.Scene.GetSustainResources(Pathway, out start, out end, out body, out up, out down, out RotationDegsPerSecond);
+			visuals.Scene.GetSustainResources(GetGameLevel().PrimaryPathway(Pathway), out start, out end, out body, out up, out down, out RotationDegsPerSecond);
 			XPosSetup(visuals);
 		}
 

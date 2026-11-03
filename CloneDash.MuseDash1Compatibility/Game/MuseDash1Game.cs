@@ -126,11 +126,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public readonly MuseDash1EventManager EventManager = new();
 	public HashSet<DashEvent> ActiveEvents = [];
 
-	public int CurrentAirSpeed;
-	public int CurrentGroundSpeed;
 	public int EnemySortIndexCounter;
 	public readonly List<DashEvent> Events = [];
 	public int EventSortIndexCounter;
+	public readonly int[] PathwaySpeeds = new int[PathwayLayout.MAX_PATHWAYS];
 	public readonly HashSet<DashEvent> HandledEvents = [];
 	public readonly List<ICloneDashInputSystem> InputReceivers = [];
 	public PollResult LastPollResult = PollResult.Empty;
@@ -167,7 +166,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	// Player input system
 	InputState InputState;
 	double LastIFrameGivenTime = -200000;
-	PathwaySide LastAttackPathway;
+	PathwayId LastAttackPathway;
 	double LastAttackTime;
 	double LastCombo = -2000;
 	double LastHologramJumpTIme = -2000000000000d;
@@ -192,13 +191,23 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	SecondOrderSystem? YOffsetSOS;
 	double Speed = 1;
 
-	public delegate void AttackEvent(MuseDash1Game game, PathwaySide side);
+	public delegate void AttackEvent(MuseDash1Game game, PathwayId pathway);
 	delegate bool ExecuteShaderFn(IShader shader, ref ScreenspaceEffectState state);
 
 	public event AttackEvent? OnAirAttack;
 	public event AttackEvent? OnGroundAttack;
 
 	public static float GlobalScale => 1 / 200f;
+
+	public PathwaySet AirSidePathways {
+		get {
+			var set = PathwaySet.None;
+			for (int i = 0; i < Layout.Count; i++)
+				if (Layout.IsAirSide(Layout.PathwayAt(i)))
+					set = set.With(Layout.PathwayAt(i));
+			return set;
+		}
+	}
 
 	public AutoPlayer AutoPlayer { get; private set; } = null!;
 
@@ -208,14 +217,23 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	// public MD1_SpineActionController HologramPlayerController { get; set; }
 	public Boss Boss { get; set; } = null!;
 
-	public Pathway BottomPathway { get; set; } = null!;
-
 	/// <summary>
 	/// Can the player jump right now?
 	/// </summary>
 	public bool CanJump => !InAir;
 
 	public IMuseDash1CharacterInstance Character { get; set; } = null!;
+
+	/// <summary>
+	/// Gets the current pathway the player is on. Returns Top if jumping, else bottom.
+	/// </summary>
+	public PathwaySet CharacterPathways {
+		get {
+			var state = Sustains.GetSustainState();
+			if (state.IsEmpty) return (InAir ? JumpPathway : GroundPathway).AsSet;
+			return state;
+		}
+	}
 
 	/// <summary>
 	/// Current combo of the player (how many successful hits/avoids in a row)
@@ -246,6 +264,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// Current health of the player<br></br>
 	/// Default: 250
 	/// </summary>
+	public PathwayId GroundPathway => Layout.PathwayAt(Layout.Count - 1);
+
+	public PathwaySet GroundSidePathways => Layout.All & PathwaySet.FromBits(~AirSidePathways.Bits);
+
 	public float Health { get; private set; }
 
 	public double Hologram_AirTime => (Conductor.Time - LastHologramJumpTIme);
@@ -278,16 +300,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// </summary>
 	public bool IsSeeking { get; private set; } = false;
 
-	/// <summary>
-	/// Gets the current pathway the player is on. Returns Top if jumping, else bottom.
-	/// </summary>
-	public PathwaySide Pathway {
-		get {
-			var state = Sustains.GetSustainState();
-			if (state == PathwaySide.None) return InAir ? PathwaySide.Top : PathwaySide.Bottom;
-			return state;
-		}
-	}
+	public PathwayId JumpPathway => Layout.PathwayAt(0);
+
+	public PathwayLayout Layout { get; private set; } = PathwayLayout.MuseDash;
+
+	public Pathway[] Pathways { get; private set; } = [];
 
 	public Panel? PauseWindow { get; private set; }
 
@@ -317,7 +334,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	//public CD_BaseMEntity? HoldingBottomPathwaySustain { get; private set; } = null;
 	public double TimeToAnimationEnds => Character.GetPrimary().GetAnimationDuration() - (Conductor.Time - LastJumpTime);
 
-	public Pathway TopPathway { get; set; } = null!;
 
 	/// <summary>
 	/// Is the game currently paused
@@ -413,11 +429,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		SceneUI?.UpdateScore(Score);
 	}
 
-	public bool AttackAir(in PollResult result) {
+	public bool AttackAir(PathwayId pathway, in PollResult result) {
 		if (InMashState) {
 			PlayCharacterAnimation(CharacterAnimationType.JumpHit);
 
-			OnAirAttack?.Invoke(this, PathwaySide.Top);
+			OnAirAttack?.Invoke(this, pathway);
 			return true;
 		}
 
@@ -432,7 +448,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				else
 					PlayCharacterAnimation(result.IsPerfect ? CharacterAnimationType.JumpHit : CharacterAnimationType.JumpHitGreat);
 
-			OnAirAttack?.Invoke(this, PathwaySide.Top);
+			OnAirAttack?.Invoke(this, pathway);
 
 			if (Sustains.IsSustaining())
 				LastHologramJumpTIme = Conductor.Time;
@@ -444,7 +460,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		else if (CanJump) {
 			if (!Sustains.IsSustaining())
 				PlayCharacterAnimation(CharacterAnimationType.Jump);
-			OnAirAttack?.Invoke(this, PathwaySide.Top);
+			OnAirAttack?.Invoke(this, pathway);
 
 			if (Sustains.IsSustaining())
 				LastHologramJumpTIme = Conductor.Time;
@@ -457,10 +473,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		return false;
 	}
 
-	public void AttackGround(PollResult result) {
+	public void AttackGround(PathwayId pathway, PollResult result) {
 		if (InMashState) {
 			PlayCharacterAnimation(CharacterAnimationType.AttackPerfect);
-			OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
+			OnGroundAttack?.Invoke(this, pathway);
 			return;
 		}
 
@@ -482,7 +498,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		LastJumpTime = -2000000000000d;
 		LastHologramJumpTIme = -2000000000000d;
-		OnGroundAttack?.Invoke(this, PathwaySide.Bottom);
+		OnGroundAttack?.Invoke(this, pathway);
 	}
 
 	public bool BreaksAvoids() => Quirks.BreaksAvoids;
@@ -504,11 +520,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		//cam.Target = cam.Offset;
 	}
 
-	public bool CanHit(PathwaySide pathway) {
+	public bool CanHit(PathwayId pathway) {
 		if (Sustains.IsSustaining(pathway))
 			return false;
 
-		if (pathway == PathwaySide.Top && InAir)
+		if (Layout.IsAirSide(pathway) && InAir)
 			return false;
 
 		return true;
@@ -518,24 +534,15 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		DeadEntityVisibility deadVis = GameSettings.DeadEntityVisibility;
 		foreach (DashEnemy ent in visibleEnemies) {
 			if (!enemyPredicate(ent)) continue;
+			RenderVisibleEntity(frameState, ent, deadVis);
+		}
+	}
 
-			if (ent.Dead) {
-				switch (deadVis) {
-					case DeadEntityVisibility.UseGamemodeDefaults:
-					case DeadEntityVisibility.FullyVisible:
-						Model4System.PushRenderBlend(new(255, 255, 255));
-						break;
-					case DeadEntityVisibility.Dimmed:
-						Model4System.PushRenderBlend(new(70, 70, 70));
-						break;
-					case DeadEntityVisibility.Invisible:
-						continue;
-				}
-			}
-
-			ent.Render(frameState);
-			Rlgl.DrawRenderBatchActive();
-			Model4System.PopRenderBlend();
+	public void ConditionallyRenderVisibleEntities(FrameState frameState, PathwaySet exactPathways, Span<DashEnemy> visibleEnemies) {
+		DeadEntityVisibility deadVis = GameSettings.DeadEntityVisibility;
+		foreach (DashEnemy ent in visibleEnemies) {
+			if (ent.Type == MuseDash1EntityType.SustainBeam || ent.Pathway != exactPathways) continue;
+			RenderVisibleEntity(frameState, ent, deadVis);
 		}
 	}
 
@@ -672,7 +679,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public double GetBgScrollSpeedMultiplier() => 1 - GetCurrentInterpolatedValue(ref ScreenspaceEffectStates[(int)ScreenspaceEffectType.BgFreeze]);
 
+	public Vector2F GetCenterPosition() => HasActiveScene(out var scene) ? scene.GetCenterPosition() : default;
+
 	public ISongChart? GetChart() => gameParameters.Chart;
+
+	public Vector2F GetEntityPosition(PathwaySet pathways) => Layout.Clamp(pathways).Count == 1 ? GetPathwayPosition(pathways.First) : GetCenterPosition();
 	IConductor IGame.GetConductor() => Conductor;
 
 	public virtual IGamemodeDescriptor GetGamemode() => GamemodeMod.GetGamemode(MuseDash1Gamemode.UUID)!;
@@ -683,46 +694,23 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public int GetNumScenes() => scenes.Count;
 
-	/// <summary>
-	/// Gets the games <see cref="Pathway"/> from a <see cref="PathwaySide"/><br></br>
-	/// Note: If strict is off (default), it will return the bottom pathway if PathwaySide.Middle is passed, otherwise it will throw an exception.
-	/// </summary>
-	/// <param name="pathway"></param>
-	/// <param name="strict"></param>
-	/// <returns></returns>
-	/// <exception cref="ArgumentException"></exception>
-	public Pathway GetPathway(PathwaySide pathway, bool strict = false) {
-		switch (pathway) {
-			case PathwaySide.Top:
-				return TopPathway;
-			case PathwaySide.Bottom:
-				return BottomPathway;
-			case PathwaySide.Both:
-				if (strict)
-					break;
-				else
-					return BottomPathway;
-			case PathwaySide.None:
-				break;
-		}
+	public Pathway GetPathway(PathwayId pathway) => Pathways[pathway.Index];
 
-		throw new ArgumentException("pathway");
-	}
-
-	public Pathway GetPathway(DashEnemy ent) => GetPathway(ent.Pathway);
+	public Pathway GetPathway(DashEnemy ent) => GetPathway(PrimaryPathway(ent.Pathway));
 
 	// Its own function in case we have player-specific overrides (not sure if this exists yet)
-	public Vector2F GetPathwayPosition(PathwaySide side) => HasActiveScene(out var scene) ? scene.GetPathwayPosition(side) : default;
+	public Vector2F GetPathwayPosition(PathwayId pathway) => HasActiveScene(out var scene) ? scene.GetPathwayPosition(pathway) : default;
+
 
 	public float GetPlayerY(bool secondary) {
 		var height = EngineCore.GetWindowHeight();
 
-		var bot = GetPathwayPosition(PathwaySide.Bottom);
+		var bot = GetPathwayPosition(GroundPathway);
 		var character = secondary ? Character.GetSecondary() : Character.GetPrimary();
 		if (!character.IsInAir())
 			return bot.Y + -1f;
 
-		var top = GetPathwayPosition(PathwaySide.Top);
+		var top = GetPathwayPosition(JumpPathway);
 		float ratio = (float)NMath.Remap(character.GetTimeToAnimationEnd(), character.GetAnimationDuration(), 0, 0, 1, clampOutput: true);
 		return (float)NMath.Remap(NMath.Ease.InCirc(NMath.Ease.InExpo(ratio)), 0, 1, top.Y, bot.Y) + -1f; // TODO: re-evaluate
 	}
@@ -786,6 +774,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				throw new Exception("Gamemode data was not MD1");
 
 			backgroundOverride = gamemodeData.BackgroundTextureOverride;
+			Layout = gamemodeData.Layout;
 			backgroundOverrideOpacity = gamemodeData.BackgroundTextureOpacity;
 
 			using (StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
@@ -883,8 +872,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			using (StaticSequentialProfiler.StartStackFrame("Setup Internal Ents")) {
 				AutoPlayer = Add<AutoPlayer>();
 				AutoPlayer.Enabled = gameParameters.Autoplay;
-				TopPathway = Add<Pathway>(PathwaySide.Top);
-				BottomPathway = Add<Pathway>(PathwaySide.Bottom);
+				Pathways = new Pathway[Layout.Count];
+				for (int i = 0; i < Layout.Count; i++)
+					Pathways[i] = Add<Pathway>(Layout.PathwayAt(i));
 				Interlude.Spin();
 
 				Conductor = Add<Conductor>();
@@ -983,6 +973,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public void InitSpeedFromCvar() {
 		SetSpeed(musicspeed.GetDouble());
 	}
+
+	public bool IsCharacterOn(PathwaySet pathways) => CharacterPathways == Layout.Clamp(pathways);
 
 	public bool IsDead() => Dead;
 
@@ -1088,7 +1080,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <param name="wasSustainingBefore"></param>
 	/// <param name="isSustainingNow"></param>
 	/// <param name="sustainCount"></param>
-	public void OnSustainCallback(SustainBeam sustain, PathwaySide pathway, bool wasSustainingBefore, bool isSustainingNow, int sustainCount) {
+	public void OnSustainCallback(SustainBeam sustain, PathwayId pathway, bool wasSustainingBefore, bool isSustainingNow, int sustainCount) {
 		bool nowInsustain = Sustains.ActiveSustains() > 0;
 
 		// todo
@@ -1103,7 +1095,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			PlayCharacterAnimation(CharacterAnimationType.Press);
 		}
 		else if (!nowInsustain) {
-			if (pathway == PathwaySide.Top)
+			if (Layout.IsAirSide(pathway))
 				PlayCharacterAnimation(CharacterAnimationType.UpPressEnd);
 			else
 				PlayCharacterAnimation(CharacterAnimationType.Run);
@@ -1185,7 +1177,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				case EntityInteractivity.Hit:
 				case EntityInteractivity.Sustain:
 					bool isValidHit = entity.Interactivity != EntityInteractivity.Sustain ? !entity.Dead : !(entity as SustainBeam)!.HeldState;
-					if (isValidHit && Game.Pathway.ComparePathwayType(entity.Pathway, parms.Pathway)) {
+					if (isValidHit && entity.Pathway.Contains(parms.Pathway)) {
 						double distance = entity.GetJudgementTimeUntilHit();
 						double pregreat = -entity.PreGreatRange, postgreat = entity.PostGreatRange;
 						double preperfect = -entity.PrePerfectRange, postperfect = entity.PostPerfectRange;
@@ -1256,6 +1248,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Boss.Position = new(0, 2.25f);
 	}
 
+	public PathwayId PrimaryPathway(PathwaySet pathways) {
+		var clamped = Layout.Clamp(pathways);
+		return clamped.Count == 1 ? clamped.First : GroundPathway;
+	}
+
 	public override void Render(FrameState frameState) {
 		Rlgl.DrawRenderBatchActive();
 
@@ -1269,8 +1266,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		SceneUI?.PreRenderWorldspace();
 
 		// Pathways
-		TopPathway.Render();
-		BottomPathway.Render();
+		foreach (var pathway in Pathways)
+			pathway.Render();
 
 		if (RenderNotes) {
 			Span<DashEnemy> visibleEnemies = EnemyManager.GetLastVisible();
@@ -1282,8 +1279,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			Boss.Render();
 
 			// The other entities, that aren't sustain beams, in order of top -> bottom pathway
-			ConditionallyRenderVisibleEntities(frameState, static x => x.Type != MuseDash1EntityType.SustainBeam && x.Pathway == PathwaySide.Top, visibleEnemies);
-			ConditionallyRenderVisibleEntities(frameState, static x => x.Type != MuseDash1EntityType.SustainBeam && x.Pathway == PathwaySide.Bottom, visibleEnemies);
+			for (int i = 0; i < Layout.Count; i++)
+				ConditionallyRenderVisibleEntities(frameState, Layout.PathwayAt(i).AsSet, visibleEnemies);
 		}
 
 		AddDebugString("Visible Entities", EnemyManager.GetLastVisible().Length);
@@ -1387,8 +1384,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public void ResetPathwaySpeeds() {
-		CurrentAirSpeed = 1;
-		CurrentGroundSpeed = 1;
+		Array.Fill(PathwaySpeeds, 1);
 	}
 
 	public void ResetScreenScroll() {
@@ -1399,6 +1395,14 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public void ResetScreenspaceEffects() {
 		Array.Clear(ScreenspaceEffectStates);
+	}
+
+	public float? ResolveCharacterY(PathwaySet held) {
+		if (held.Count >= 2 || InMashState)
+			return GetCenterPosition().Y;
+		if (held.Count == 1)
+			return GetPathwayPosition(held.First).Y;
+		return null;
 	}
 
 	public void Restart() => SeekTo(0);
@@ -1517,13 +1521,13 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						case Masher masher: // Mashers need a bit more trickery
 							EnterMashState(masher);
 							for (int i = 0; i < masher.MaxHits; i++)
-								masher.Hit(mEnt.Pathway, 0);
+								masher.Hit(PrimaryPathway(mEnt.Pathway), 0);
 							ExitMashState();
 							masher.RewardPlayer();
 							AutoPlayer.MarkEntityAsPassed(mEnt);
 							break;
 						case SustainBeam sustain:
-							sustain.Hit(sustain.Pathway, 0);
+							sustain.Hit(PrimaryPathway(sustain.Pathway), 0);
 							sustain.RewardPlayer();
 
 							AutoPlayer.MarkSustainAsActive(sustain);
@@ -1543,11 +1547,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						default:
 							switch (mEnt.Interactivity) {
 								case EntityInteractivity.Hit:
-									mEnt.Hit(mEnt.Pathway, 0);
+									mEnt.Hit(PrimaryPathway(mEnt.Pathway), 0);
 									mEnt.RewardPlayer();
 									break;
 								case EntityInteractivity.SamePath:
-									mEnt.Hit(mEnt.Pathway, 0);
+									mEnt.Hit(PrimaryPathway(mEnt.Pathway), 0);
 									mEnt.RewardPlayer();
 									break;
 								case EntityInteractivity.Avoid:
@@ -1587,15 +1591,13 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		RenderNotes = visible;
 	}
 
-	public void SetPathwaySpeed(PathwaySide pathway, int speed) {
+	public void SetPathwaySpeed(PathwaySet pathways, int speed) {
 		System.Diagnostics.Debug.Assert(speed >= 1);
 		System.Diagnostics.Debug.Assert(speed <= 3);
 
-		if ((pathway & PathwaySide.Top) != 0)
-			CurrentAirSpeed = speed;
-
-		if ((pathway & PathwaySide.Bottom) != 0)
-			CurrentGroundSpeed = speed;
+		for (int i = 0; i < Layout.Count; i++)
+			if (pathways.Contains(Layout.PathwayAt(i)))
+				PathwaySpeeds[i] = speed;
 	}
 
 	public bool SetPauseGuarded(bool paused) {
@@ -1673,7 +1675,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			if (InMashState) {
 				UpdateMashTextEffect();
 				if (CheckMashHit())
-					MashingEntity.Hit(PathwaySide.Bottom, 0);
+					MashingEntity.Hit(GroundPathway, 0);
 			}
 
 			if (InputState.PauseButton) {
@@ -1764,14 +1766,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		float? yoff = null;
 
-		bool holdingTop = Sustains.IsSustaining(PathwaySide.Top), holdingBottom = Sustains.IsSustaining(PathwaySide.Bottom);
-		bool holding = holdingTop || holdingBottom;
-		if ((holdingTop && holdingBottom) || InMashState)
-			yoff = GetPathwayPosition(PathwaySide.Both).Y;
-		else if (holdingTop)
-			yoff = GetPathwayPosition(PathwaySide.Top).Y;
-		else if (holdingBottom)
-			yoff = GetPathwayPosition(PathwaySide.Bottom).Y;
+		yoff = ResolveCharacterY(Sustains.GetSustainState());
 
 		if (yoff.HasValue) {
 			if (YOffsetSOS == null)
@@ -1788,7 +1783,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		conductorInTime = 1 - NMath.Ease.OutQuad(conductorInTime);
 
 		// This sucks... todo, figure out how to get this proper
-		var leftPlayer = GetPathwayPosition(PathwaySide.Both).X;
+		var leftPlayer = GetCenterPosition().X;
 
 		Character.GetPrimary().SetPos(new Vector2F(
 			(leftPlayer - 1) - (conductorInTime * 1),
@@ -1845,8 +1840,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		// Start input processing.
 		// Bottom is executed first, so if two pathway attacks happen on the same frame, it can exit the jump state
 		// before jumping again, allowing the attack to work as expected
-		HitLogic(PathwaySide.Bottom);
-		HitLogic(PathwaySide.Top);
+		for (int pathway = Layout.Count - 1; pathway >= 0; pathway--)
+			HitLogic(Layout.PathwayAt(pathway));
 
 		// This loop is mostly for per-tick polls that need to occur, ie. when entities have been fully missed.
 		// It is ran after input processing.
@@ -1856,8 +1851,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				case EntityInteractivity.Hit:
 				case EntityInteractivity.Sustain:
 					if (!entity.Dead) {
-						PathwaySide currentPathway = Pathway;
-
 						// Is it too late for the player to hit this entity anyway?
 						if (timeToHit < -entity.PreGreatRange
 							&& !(entity is SustainBeam se && se.HeldState == true)
@@ -1870,9 +1863,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					break;
 				case EntityInteractivity.SamePath:
 					if (NMath.InRange(timeToHit, -entity.PreGreatRange, 0)) {
-						PathwaySide pathCurrentCharacter = Pathway;
-						if ((pathCurrentCharacter == PathwaySide.Both || pathCurrentCharacter == entity.Pathway) && entity.Hits == 0) {
-							entity.Hit(pathCurrentCharacter, 0);
+						PathwaySet characterPathways = CharacterPathways;
+						if ((characterPathways.Count >= 2 || IsCharacterOn(entity.Pathway)) && entity.Hits == 0) {
+							entity.Hit(characterPathways.Count >= 2 ? PrimaryPathway(entity.Pathway) : characterPathways.First, 0);
 							PlaySceneSound(entity.Type switch {
 								MuseDash1EntityType.Heart => SceneSound.GotHeart,
 								MuseDash1EntityType.Score => SceneSound.GotScore,
@@ -1883,17 +1876,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					break;
 				case EntityInteractivity.Avoid:
 					// If the player is sustaining on the pathway this entity is on, then ignore
-					if (Sustains.IsSustaining(entity.Pathway))
+					if (Sustains.IsSustaining(Layout.Clamp(entity.Pathway)))
 						break;
 
 					// Checks if the player has completely failed to avoid the entity, and if so, damages the player.
 
 					bool broken = false;
-					if (Pathway == entity.Pathway && timeToHit < -entity.PrePerfectRange && !entity.DidRewardPlayer) {
+					if (IsCharacterOn(entity.Pathway) && timeToHit < -entity.PrePerfectRange && !entity.DidRewardPlayer) {
 						//entity.Hit(Game.PlayerController.Pathway);
 						if (BreaksAvoids()) {
 							if (entity.Hits == 0)
-								entity.Hit(Pathway, 0);
+								entity.Hit(PrimaryPathway(entity.Pathway), 0);
 							broken = true;
 						}
 						else
@@ -1901,7 +1894,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					}
 
 					// If the player is now avoiding the entity, then reward the player for missing it, and make it so they cant be damaged by it)
-					if (!broken && Pathway != entity.Pathway && timeToHit < 0 && !entity.DidDamagePlayer) {
+					if (!broken && !IsCharacterOn(entity.Pathway) && timeToHit < 0 && !entity.DidDamagePlayer) {
 						entity.Pass();
 					}
 
@@ -1910,8 +1903,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			//entity.WhenVisible();
 		}
 
-		AddDebugString("HoldingTopPathwaySustain", Sustains.GetSustainsActiveCount(PathwaySide.Top));
-		AddDebugString("HoldingBottomPathwaySustain", Sustains.GetSustainsActiveCount(PathwaySide.Top));
+		AddDebugString("HoldingTopPathwaySustain", Sustains.GetSustainsActiveCount(JumpPathway));
+		AddDebugString("HoldingBottomPathwaySustain", Sustains.GetSustainsActiveCount(GroundPathway));
 
 		if (HasActiveScene(out var scene)) {
 			scene.Think(GetBgScrollSpeedMultiplier());
@@ -1935,7 +1928,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	internal void SetEnemyKilledPosition(DashEnemy ent) {
-		var pos = GetPathwayPosition(ent.Pathway);
+		var pos = GetEntityPosition(ent.Pathway);
 		ent.Position = new(pos.X, -pos.Y);
 	}
 
@@ -2115,8 +2108,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		return double.Lerp(state.LastValue, state.CurrentValue, t);
 	}
 
-	private void HitLogic(PathwaySide pathway) {
-		int amountOfTimesHit = pathway == PathwaySide.Top ? InputState.TopClicked : InputState.BottomClicked;
+	private void HitLogic(PathwayId pathway) {
+		int amountOfTimesHit = InputState.ClickCount(Layout[pathway].Action);
 		bool keyHitOnThisSide = amountOfTimesHit > 0;
 
 		if (!keyHitOnThisSide)
@@ -2159,9 +2152,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						// Mashers don't create perfects, they'll start the mash hit UI
 						if (pollResult.HitEntity.Type != MuseDash1EntityType.Masher) {
 							if (pollResult.IsPerfect)
-								SceneUI?.CreatePerfectHitText(pollResult.Precision, pathway, InFever, earlylate);
+								SceneUI?.CreatePerfectHitText(pollResult.Precision, pathway.AsSet, InFever, earlylate);
 							else {
-								SceneUI?.CreateGreatHitText(pollResult.Precision, pathway, InFever, earlylate);
+								SceneUI?.CreateGreatHitText(pollResult.Precision, pathway.AsSet, InFever, earlylate);
 								SceneUI?.UpdateAllPerfect(false);
 							}
 							SceneUI?.UpdateHit();
@@ -2195,10 +2188,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 			// Trigger animation events on the player controller
 			var hitSomething = pollResult.Hit;
-			if (pathway == PathwaySide.Top)
-				AttackAir(pollResult);
+			if (Layout.IsAirSide(pathway))
+				AttackAir(pathway, pollResult);
 			else
-				AttackGround(pollResult);
+				AttackGround(pathway, pollResult);
 
 			ExitHitState();
 
@@ -2301,6 +2294,26 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		shader.SetUniform("uStrength", (float)value);
 
 		return true;
+	}
+
+	private void RenderVisibleEntity(FrameState frameState, DashEnemy ent, DeadEntityVisibility deadVis) {
+		if (ent.Dead) {
+			switch (deadVis) {
+				case DeadEntityVisibility.UseGamemodeDefaults:
+				case DeadEntityVisibility.FullyVisible:
+					Model4System.PushRenderBlend(new(255, 255, 255));
+					break;
+				case DeadEntityVisibility.Dimmed:
+					Model4System.PushRenderBlend(new(70, 70, 70));
+					break;
+				case DeadEntityVisibility.Invisible:
+					return;
+			}
+		}
+
+		ent.Render(frameState);
+		Rlgl.DrawRenderBatchActive();
+		Model4System.PopRenderBlend();
 	}
 
 	private void ResetSceneSoundsPlayedThisFrame() {

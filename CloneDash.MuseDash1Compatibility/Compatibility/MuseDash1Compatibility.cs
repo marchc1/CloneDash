@@ -350,10 +350,15 @@ namespace CloneDash.Compatibility.MuseDash
 		/// </summary>
 		/// <param name="bundlename"></param>
 		/// <returns></returns>
-		public static MD1_GamemodeData ConvertStageInfoToMD1GamemodeData(MD1_Song song, StageInfo MDinfo, IEnumerable<TempoChange>? tempoChanges = null, IEnumerable<TimeSignatureChange>? timeSignatureChanges = null) {
+		public static MD1_GamemodeData ConvertStageInfoToMD1GamemodeData(MD1_Song song, StageInfo MDinfo, IEnumerable<TempoChange>? tempoChanges = null, IEnumerable<TimeSignatureChange>? timeSignatureChanges = null, PathwayLayout? layout = null) {
 			measureFunctionTime.Reset();
 			measureFunctionTime.Start();
 			MD1_GamemodeData gamemodeData = new();
+			if (layout != null)
+				gamemodeData.Layout = layout;
+
+			var topPathway = gamemodeData.Layout.PathwayAt(0);
+			var bottomPathway = gamemodeData.Layout.PathwayAt(gamemodeData.Layout.Count - 1);
 
 			gamemodeData.InitialScene = "scene/musedash1/" + MDinfo.scene;
 			gamemodeData.SceneChanges.AddRange(MDinfo.sceneEvents.Select(x => new ChartSceneChange() {
@@ -380,16 +385,19 @@ namespace CloneDash.Compatibility.MuseDash
 					var tick_hit = (double)s.configData.time;
 					var tick_show = tick_hit - ((tick_hit - ((double)s.showTick - gamemodeData.StartOffset)) / (double)s.dt);
 
-					PathwaySide pathwayType = PathwaySide.Both;
+					PathwaySet pathwayType = PathwaySet.Any;
 
 					switch (s.noteData.pathway) {
 						case 1:
-							pathwayType = PathwaySide.Top;
+							pathwayType = topPathway.AsSet;
 							break;
 						case 0:
-							pathwayType = PathwaySide.Bottom;
+							pathwayType = bottomPathway.AsSet;
 							break;
 					}
+
+					if (s.configData.pathway_name != null && gamemodeData.Layout.Find(s.configData.pathway_name) is PathwayId namedPathway)
+						pathwayType = namedPathway.AsSet;
 
 					var blood = s.configData.blood;
 

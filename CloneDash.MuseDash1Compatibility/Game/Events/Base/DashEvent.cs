@@ -68,17 +68,17 @@ public class DashEvent : IDashChunkable
 			case EventType.BossFar2End: ret = new BossFar2End(game); break;
 			case EventType.BossFar2To1: ret = new BossFar2To1(game); break;
 
-			case EventType.AirSpeed1: ret = new SpeedChange(game, PathwaySide.Top, 1); break;
-			case EventType.AirSpeed2: ret = new SpeedChange(game, PathwaySide.Top, 2); break;
-			case EventType.AirSpeed3: ret = new SpeedChange(game, PathwaySide.Top, 3); break;
+			case EventType.AirSpeed1: ret = new SpeedChange(game, game.AirSidePathways, 1); break;
+			case EventType.AirSpeed2: ret = new SpeedChange(game, game.AirSidePathways, 2); break;
+			case EventType.AirSpeed3: ret = new SpeedChange(game, game.AirSidePathways, 3); break;
 
-			case EventType.GroundSpeed1: ret = new SpeedChange(game, PathwaySide.Bottom, 1); break;
-			case EventType.GroundSpeed2: ret = new SpeedChange(game, PathwaySide.Bottom, 2); break;
-			case EventType.GroundSpeed3: ret = new SpeedChange(game, PathwaySide.Bottom, 3); break;
+			case EventType.GroundSpeed1: ret = new SpeedChange(game, game.GroundSidePathways, 1); break;
+			case EventType.GroundSpeed2: ret = new SpeedChange(game, game.GroundSidePathways, 2); break;
+			case EventType.GroundSpeed3: ret = new SpeedChange(game, game.GroundSidePathways, 3); break;
 
-			case EventType.DoubleSpeed1: ret = new SpeedChange(game, PathwaySide.Both, 1); break;
-			case EventType.DoubleSpeed2: ret = new SpeedChange(game, PathwaySide.Both, 2); break;
-			case EventType.DoubleSpeed3: ret = new SpeedChange(game, PathwaySide.Both, 3); break;
+			case EventType.DoubleSpeed1: ret = new SpeedChange(game, game.Layout.All, 1); break;
+			case EventType.DoubleSpeed2: ret = new SpeedChange(game, game.Layout.All, 2); break;
+			case EventType.DoubleSpeed3: ret = new SpeedChange(game, game.Layout.All, 3); break;
 
 			case EventType.ScreenScrollUp: ret = new ScreenScrollEffect(game, ScreenScrollDirection.Up); break;
 			case EventType.ScreenScrollDown: ret = new ScreenScrollEffect(game, ScreenScrollDirection.Down); break;

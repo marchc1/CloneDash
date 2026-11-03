@@ -16,8 +16,8 @@ namespace CloneDash.Game.Entities
 		public override void OnReset() {
 			base.OnReset();
 		}
-		protected override void OnHit(PathwaySide side, double distanceToHit) {
-			base.OnHit(side, distanceToHit);
+		protected override void OnHit(PathwayId pathway, double distanceToHit) {
+			base.OnHit(pathway, distanceToHit);
 			Kill();
 			GetStats().Hit(this, distanceToHit);
 		}
@@ -25,7 +25,7 @@ namespace CloneDash.Game.Entities
 		protected override void OnMiss() {
 			PunishPlayer();
 			GetStats().Miss(this);
-			if (Level.As<MuseDash1Game>().Pathway == this.Pathway) {
+			if (Level.As<MuseDash1Game>().IsCharacterOn(Pathway)) {
 				DamagePlayer();
 			}
 		}

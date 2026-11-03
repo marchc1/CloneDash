@@ -1,33 +1,27 @@
-﻿namespace CloneDash.Game.Input
+﻿using CloneDash.Settings;
+using System.Runtime.CompilerServices;
+
+namespace CloneDash.Game.Input
 {
+	[InlineArray(InputState.ACTION_SLOTS)]
+	public struct InputActionCounts
+	{
+		int element;
+	}
+
 	public struct InputState
 	{
-		/// <summary>
-		/// How many times has the top key been clicked this frame
-		/// </summary>
-		public int TopClicked;
-		/// <summary>
-		/// How many times has the bottom key been clicked this frame
-		/// </summary>
-		public int BottomClicked;
+		public const int ACTION_SLOTS = 32;
 
 		/// <summary>
-		/// Is the top key held?
+		/// How many times each action's keys were clicked this frame, indexed by <see cref="InputAction"/>
 		/// </summary>
-		public readonly bool TopHeld => TopHeldCount > 0;
-		/// <summary>
-		/// Is the bottom key held?
-		/// </summary>
-		public readonly bool BottomHeld => BottomHeldCount > 0;
+		public InputActionCounts Clicked;
 
 		/// <summary>
-		/// Is the top key held?
+		/// How many of each action's keys are held, indexed by <see cref="InputAction"/>
 		/// </summary>
-		public int TopHeldCount;
-		/// <summary>
-		/// Is the bottom key held?
-		/// </summary>
-		public int BottomHeldCount;
+		public InputActionCounts HeldCount;
 
 		/// <summary>
 		/// Was the fever key pressed?
@@ -43,11 +37,16 @@
 			Reset();
 		}
 
+		public readonly int ClickCount(InputAction action) => Clicked[(int)action];
+		public readonly int HeldKeys(InputAction action) => HeldCount[(int)action];
+		public readonly bool IsHeld(InputAction action) => HeldCount[(int)action] > 0;
+
+		public void Click(InputAction action, int count = 1) => Clicked[(int)action] += count;
+		public void Hold(InputAction action, int count = 1) => HeldCount[(int)action] += count;
+
 		public void Reset() {
-			TopClicked = 0;
-			BottomClicked = 0;
-			TopHeldCount = 0;
-			BottomHeldCount = 0;
+			Clicked = default;
+			HeldCount = default;
 			TryFever = false;
 			PauseButton = false;
 		}

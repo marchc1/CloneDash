@@ -21,7 +21,7 @@ public class BossMasher(MuseDash1Game game, int type) : DashEvent(game)
 		Debug.Assert(time != 0);
 		Game.LoadEntity(new() {
 			Type = MuseDash1EntityType.Masher,
-			Pathway = PathwaySide.Both,
+			Pathway = PathwaySet.Any,
 			Variant = type == 1 ? EntityVariant.BossMasher : EntityVariant.BossMasherEnd,
 			ShowTime = Time - time,
 			HitTime = Time,

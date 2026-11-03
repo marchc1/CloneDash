@@ -16,7 +16,7 @@ namespace CloneDash.Game.Entities
 			base.Initialize();
 		}
 
-		protected override void OnHit(PathwaySide side, double distanceToHit) {
+		protected override void OnHit(PathwayId pathway, double distanceToHit) {
 			Kill();
 			GetStats().Hit(this, distanceToHit);
 		}

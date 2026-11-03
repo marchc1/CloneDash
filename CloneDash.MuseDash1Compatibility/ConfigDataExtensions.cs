@@ -41,6 +41,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 			config.note_uid = node["note_uid"]?.GetValue<string>() ?? string.Empty;
 			config.length = node["length"].GetValue<decimal>();
 			config.pathway = node["pathway"]?.GetValue<int>() ?? 0;
+			config.pathway_name = node["pathway_name"]?.GetValue<string>();
 			config.blood = node["blood"]?.GetValue<bool>() ?? false;
 
 			return config;

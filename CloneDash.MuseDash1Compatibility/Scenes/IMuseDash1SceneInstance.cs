@@ -21,7 +21,7 @@ public interface IMuseDash1SceneInstance : ISceneInstance
 
 	void Think(double scrollSpeed);
 	void RenderBackground();
-	void RenderPathway(PathwaySide side, float alpha, float size, float rotation);
+	void RenderPathway(PathwayId pathway, float alpha, float size, float rotation);
 	void RenderOverlay();
 
 	void Activate(IMuseDash1SceneInstance? transitioningTo);
@@ -44,13 +44,19 @@ public interface IMuseDash1SceneInstance : ISceneInstance
 	public double PlayBossAnimation(BossAnimationType type, AnimationHandler anim) => PlayBossAnimation(0, type, anim);
 	public double PlayBossAnimation(int channel, DashEnemy fired, AnimationHandler anim) =>
 		fired.Variant == EntityVariant.Boss1
-			? fired.Pathway == PathwaySide.Top ? PlayBossAnimation(BossAnimationType.AttackAir1, anim) : PlayBossAnimation(BossAnimationType.AttackGround1, anim)
-			: fired.Pathway == PathwaySide.Top ? PlayBossAnimation(BossAnimationType.AttackAir2, anim) : PlayBossAnimation(BossAnimationType.AttackGround2, anim);
+			? IsAirTarget(fired.Pathway) ? PlayBossAnimation(BossAnimationType.AttackAir1, anim) : PlayBossAnimation(BossAnimationType.AttackGround1, anim)
+			: IsAirTarget(fired.Pathway) ? PlayBossAnimation(BossAnimationType.AttackAir2, anim) : PlayBossAnimation(BossAnimationType.AttackGround2, anim);
 	string? GetEnemyApproachAnimation(DashEnemy enemy, out double time);
-	ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway);
+	ref readonly PathwayInformation GetPathwayInformation(PathwayId pathway);
+	ref readonly PathwayInformation GetCenterInformation();
 	string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType hitType);
 	BoneInstance? GetHPMount(DashEnemyVisuals enemy);
-	void GetSustainResources(PathwaySide pathway, out ITexture? start, out ITexture? end, out ITexture? body, out ITexture? up, out ITexture? down, out float rotationDegsPerSecond);
-	Color GetPathwayColor(PathwaySide side);
-	Vector2F GetPathwayPosition(PathwaySide side);
+	void GetSustainResources(PathwayId pathway, out ITexture? start, out ITexture? end, out ITexture? body, out ITexture? up, out ITexture? down, out float rotationDegsPerSecond);
+	Color GetPathwayColor(PathwayId pathway);
+	Vector2F GetPathwayPosition(PathwayId pathway);
+	Vector2F GetCenterPosition();
+	bool UsesAirAssets(PathwayId pathway);
+	float GetPathwayHueShift(PathwayId pathway);
+	bool IsAirPathway(PathwayId pathway);
+	bool IsAirTarget(PathwaySet pathways);
 }

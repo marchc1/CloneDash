@@ -15,7 +15,7 @@ namespace CloneDash.Game.Entities
 			DoesDamagePlayer = true;
 		}
 
-		protected override void OnHit(PathwaySide side, double distanceToHit) {
+		protected override void OnHit(PathwayId pathway, double distanceToHit) {
 			RewardPlayer();
 			Kill();
 		}

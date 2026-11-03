@@ -22,6 +22,7 @@ public class MD1_GamemodeData
 	public readonly List<TempoChange> TempoChanges = [];
 	public readonly List<TimeSignatureChange> TimeSignatureChanges = [];
 	public readonly List<ChartSceneChange> SceneChanges = [];
+	public PathwayLayout Layout = PathwayLayout.MuseDash;
 	public string? InitialScene;
 	public double StartOffset;
 
