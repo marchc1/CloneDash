@@ -28,7 +28,6 @@
 		<PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.12" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="4.1.745802" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-		<PackageReference Include="SixLabors.ImageSharp" Version="3.2.0" />
 		<PackageReference Include="VCollab.DiscordRichPresence" Version="1.7.0" />
 		<PackageReference Include="Velopack" Version="0.0.1298" />
 	</ItemGroup>

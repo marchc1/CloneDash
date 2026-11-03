@@ -14,7 +14,6 @@ using Nucleus.Common.Audio;
 using Nucleus.Core;
 using Nucleus.Util;
 using OdinSerializer;
-using SixLabors.ImageSharp.Drawing;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;

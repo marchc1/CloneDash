@@ -16,8 +16,6 @@ using Nucleus.Common.Localization;
 using Nucleus.Core;
 using Nucleus.Files;
 using Raylib_cs;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.ColorSpaces;
 
 namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 {

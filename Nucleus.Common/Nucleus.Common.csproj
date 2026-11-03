@@ -23,6 +23,7 @@
 		<PackageReference Include="ppy.SDL3-CS" Version="2026.722.0" />
 		<PackageReference Include="StbImageResizeSharp" Version="0.97.1" />
 		<PackageReference Include="StbImageSharp" Version="2.30.16" />
+		<PackageReference Include="StbImageWriteSharp" Version="1.16.7" />
 		<PackageReference Include="TinyDialogsNet" Version="2.0.0" />
 	</ItemGroup>
 

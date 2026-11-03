@@ -1,6 +1,6 @@
 ﻿// https://github.com/nesrak1/AssetStudio/tree/switch-tex-deswizzle
 
-using SixLabors.ImageSharp;
+using System.Drawing;
 using System;
 
 namespace AssetStudio
