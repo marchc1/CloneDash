@@ -359,20 +359,20 @@ public class DashEnemy : Entity, IDashChunkable
 	/// </summary>
 	public double XPos { get; protected set; }
 
+	public double ScrollSpeed => 13.87 / (Dt <= 0 ? 1 : Dt);
+
 	public double XPosFromTimeOffset(float timeOffset = 0) {
 		var level = GetGameLevel();
 
-		var dt = Dt <= 0 ? 1 : Dt;
-
 		if (TimeRemap != null) {
 			var now = GetConductor().Time - (InputSettings.offset_visual.GetFloat() / 1000);
-			return level.GetEntityPosition(Pathway).X + TimeRemap.Distance(this.GetVisualHitTime() + timeOffset, now) * (13.87 / dt);
+			return level.GetEntityPosition(Pathway).X + TimeRemap.Distance(this.GetVisualHitTime() + timeOffset, now) * ScrollSpeed;
 		}
 
 		var current = GetConductor().Time - timeOffset - (InputSettings.offset_visual.GetFloat() / 1000);
 		var tickHit = this.GetVisualHitTime();
 
-		return level.GetEntityPosition(Pathway).X + (tickHit - current) * (13.87 / dt);
+		return level.GetEntityPosition(Pathway).X + (tickHit - current) * ScrollSpeed;
 	}
 
 	public bool Shown { get; protected set; } = false;

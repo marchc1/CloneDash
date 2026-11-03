@@ -1405,11 +1405,21 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public float? ResolveCharacterY(PathwaySet held) {
-		if (held.Count >= 2 || InMashState)
+		if (InMashState)
 			return GetCenterPosition().Y;
-		if (held.Count == 1)
-			return GetPathwayPosition(held.First).Y;
-		return null;
+
+		float sum = 0;
+		int count = 0;
+		for (int i = 0; i < Layout.Count; i++) {
+			var pathway = Layout.PathwayAt(i);
+			if (!held.Contains(pathway))
+				continue;
+
+			sum += Sustains.GetActiveSustain(pathway)?.GetHeldY() ?? GetPathwayPosition(pathway).Y;
+			count++;
+		}
+
+		return count == 0 ? null : sum / count;
 	}
 
 	public void Restart() => SeekTo(0);
