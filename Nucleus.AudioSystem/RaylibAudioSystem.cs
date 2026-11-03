@@ -188,6 +188,8 @@ public struct PlaybackProcessor(AudioCallbackFn fn, object? userdata)
 
 internal unsafe class PlaybackChannel
 {
+	const int DEVICE_CHANNELS = 2;
+
 	public ulong Generation;
 	public BaseAudioClip? Clip;
 	public AudioPlaybackSettings Settings;
@@ -230,7 +232,7 @@ internal unsafe class PlaybackChannel
 	private unsafe void InitializeAudioProcessor() {
 		FUCKFUCKFUCKFUCK = new((buffer, frames) => {
 			foreach (var proc in Processors)
-				proc.Fn(new(buffer, (int)frames), proc.UserData);
+				proc.Fn(new(buffer, (int)frames * DEVICE_CHANNELS), proc.UserData);
 		});
 	}
 

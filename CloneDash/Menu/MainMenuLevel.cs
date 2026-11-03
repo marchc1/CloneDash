@@ -374,7 +374,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 				for (int i = 0; i < frames.Length; i++) {
 					float val = frames[i];
 					currentAvgVolume += val;
-					if (i % 256 == 0)
+					if (i % 512 == 0)
 						framesOverTime.Add(val);
 				}
 				currentAvgVolume /= frames.Length;
