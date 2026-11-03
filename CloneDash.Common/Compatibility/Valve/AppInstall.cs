@@ -1,7 +1,4 @@
-﻿
-#if COMPILED_WINDOWS
-using System.Diagnostics.CodeAnalysis;
-#endif
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Common.Compatibility.Valve;
 
