@@ -786,6 +786,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				throw new Exception("Gamemode data was not MD1");
 
 			backgroundOverride = gamemodeData.BackgroundTextureOverride;
+			layerRemaps = gamemodeData.LayerRemaps;
 			backgroundOverrideOpacity = gamemodeData.BackgroundTextureOpacity;
 
 			using (StaticSequentialProfiler.StartStackFrame("Get Descriptors")) {
@@ -1006,6 +1007,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// Loads an entity from a <see cref="ChartEntity"/> representation, builds a <see cref="MapEntity"/> out of it, and adds it to <see cref="GameplayManager.Entities"/>.
 	/// </summary>
 	/// <param name="ChartEntity"></param>
+	IReadOnlyDictionary<int, MD1_TimeRemap>? layerRemaps;
+
 	public virtual DashEnemy? LoadEntity(MD1_SongChartEntity ChartEntity) {
 		Interlude.Spin(submessage: "Loading entities...");
 
@@ -1025,6 +1028,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ent.Dt = ChartEntity.Dt;
 		ent.Flipped = ChartEntity.Flipped;
 		ent.Blood = ChartEntity.Blood;
+		ent.SetTimeRemap(layerRemaps?.GetValueOrDefault(ChartEntity.Layer));
 
 		ent.FeverGiven = ChartEntity.Fever;
 		ent.DamageTaken = ChartEntity.Damage;

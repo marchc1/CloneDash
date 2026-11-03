@@ -553,6 +553,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				fixedConfigData.length = data.configData.length;
 				fixedConfigData.note_uid = phaseGearConfig.uid;
 				fixedConfigData.pathway = data.configData.pathway;
+				fixedConfigData.layer = data.configData.layer;
 				fixedConfigData.time = data.configData.time;
 
 				var fixedGear = new MusicData();

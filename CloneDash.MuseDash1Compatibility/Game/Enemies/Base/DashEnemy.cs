@@ -191,8 +191,12 @@ public class DashEnemy : Entity, IDashChunkable
 	public double GetVisualHitTime() => HitTime + InputSettings.VisualOffset;
 	public double GetJudgementShowTime() => GetShowTime() + InputSettings.JudgementOffset;
 	public double GetJudgementHitTime() => HitTime + InputSettings.JudgementOffset;
-	public double GetVisualTimeUntilHit() => DistanceToHit + InputSettings.VisualOffset;
-	public double GetVisualTimeUntilEnd() => DistanceToEnd + InputSettings.VisualOffset;
+	public double GetVisualTimeUntilHit() => TimeRemap == null
+		? DistanceToHit + InputSettings.VisualOffset
+		: VisualDistance(HitTime + InputSettings.VisualOffset, GetConductor().Time);
+	public double GetVisualTimeUntilEnd() => TimeRemap == null
+		? DistanceToEnd + InputSettings.VisualOffset
+		: VisualDistance(HitTime + Length + InputSettings.VisualOffset, GetConductor().Time);
 	public double GetJudgementTimeUntilHit() => DistanceToHit + InputSettings.JudgementOffset;
 	public double GetJudgementTimeUntilEnd() => DistanceToEnd + InputSettings.JudgementOffset;
 
@@ -203,6 +207,23 @@ public class DashEnemy : Entity, IDashChunkable
 	public double Length { get; set; }
 	public int Speed { get; set; }
 	public double Dt { get; set; }
+
+	public MD1_TimeRemap? TimeRemap { get; private set; }
+	double remapChunkStart;
+	double remapChunkLength;
+
+	public void SetTimeRemap(MD1_TimeRemap? remap) {
+		TimeRemap = remap == null || remap.KeyCount == 0 ? null : remap;
+		if (TimeRemap == null)
+			return;
+
+		double margin = 4 + 2 * Math.Max(Dt, 0);
+		TimeRemap.VisibleWindow(HitTime, HitTime + Length, margin, margin, 60, out double start, out double end);
+		remapChunkStart = Math.Max(0, start);
+		remapChunkLength = Math.Max(0, end - remapChunkStart);
+	}
+
+	public double VisualDistance(double target, double now) => TimeRemap == null ? target - now : TimeRemap.Distance(target, now);
 
 	public virtual void OnSignalReceived(DashEnemy? from, EntitySignalType signalType, object? data = null) {
 
@@ -341,9 +362,15 @@ public class DashEnemy : Entity, IDashChunkable
 	public double XPosFromTimeOffset(float timeOffset = 0) {
 		var level = GetGameLevel();
 
+		var dt = Dt <= 0 ? 1 : Dt;
+
+		if (TimeRemap != null) {
+			var now = GetConductor().Time - (InputSettings.offset_visual.GetFloat() / 1000);
+			return level.GetPathwayPosition(Pathway).X + TimeRemap.Distance(this.GetVisualHitTime() + timeOffset, now) * (13.87 / dt);
+		}
+
 		var current = GetConductor().Time - timeOffset - (InputSettings.offset_visual.GetFloat() / 1000);
 		var tickHit = this.GetVisualHitTime();
-		var dt = Dt <= 0 ? 1 : Dt;
 
 		return level.GetPathwayPosition(Pathway).X + (tickHit - current) * (13.87 / dt);
 	}
@@ -373,7 +400,7 @@ public class DashEnemy : Entity, IDashChunkable
 	}
 
 	public virtual bool VisTest(float gamewidth, float gameheight, float xPosition) {
-		return xPosition >= -gamewidth * 1.5f && GetConductor().Time >= (GetVisualShowTime());
+		return xPosition >= -gamewidth * 1.5f && (TimeRemap == null ? GetConductor().Time >= GetVisualShowTime() : AnimationTime >= 0);
 	}
 
 	/// <summary>
@@ -598,7 +625,9 @@ public class DashEnemy : Entity, IDashChunkable
 	}
 
 
-	public double AnimationTime => (GetVisualShowTime() - GetConductor().Time) * -1;
+	public double AnimationTime => TimeRemap == null
+		? (GetVisualShowTime() - GetConductor().Time) * -1
+		: (GetVisualHitTime() - GetVisualShowTime()) - VisualDistance(GetVisualHitTime(), GetConductor().Time);
 	private double tth => HitTime - GetShowTime(); // debugging, places enemy at exact frame position
 
 	public virtual void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
@@ -650,8 +679,8 @@ public class DashEnemy : Entity, IDashChunkable
 		RenderHeartMount(visuals);
 	}
 
-	public double GetChunkableTime() => HitTime;
-	public double GetChunkablePostLength() => Length;
+	public double GetChunkableTime() => TimeRemap == null ? HitTime : remapChunkStart;
+	public double GetChunkablePostLength() => TimeRemap == null ? Length : remapChunkLength;
 	public bool IsChunkableNow() => (CheckVisTest() || ForceDraw) && ShouldDraw;
 	public int GetChunkableSortIndex() => SortIndex;
 }

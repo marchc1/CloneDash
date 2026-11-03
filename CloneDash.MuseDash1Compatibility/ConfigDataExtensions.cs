@@ -42,6 +42,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 			config.length = node["length"].GetValue<decimal>();
 			config.pathway = node["pathway"]?.GetValue<int>() ?? 0;
 			config.blood = node["blood"]?.GetValue<bool>() ?? false;
+			config.layer = node["layer"]?.GetValue<int>() ?? 0;
 
 			return config;
 		}

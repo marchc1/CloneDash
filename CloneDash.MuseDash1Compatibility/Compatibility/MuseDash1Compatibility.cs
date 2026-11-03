@@ -401,6 +401,7 @@ namespace CloneDash.Compatibility.MuseDash
 							HitTime = tick_hit,
 							ShowTime = tick_show,
 							Dt = (double)s.dt,
+							Layer = s.configData.layer,
 
 							Fever = s.noteData.fever,
 							Damage = s.noteData.damage,
@@ -625,6 +626,7 @@ namespace CloneDash.Compatibility.MuseDash
 								HitTime = tick_hit,
 								ShowTime = tick_show,
 								Dt = (double)s.dt,
+								Layer = s.configData.layer,
 								Flipped = flipped,
 
 								Fever = s.noteData.fever,

@@ -8,6 +8,7 @@ public class MusicConfigData
 	public decimal length;
 	public bool blood;
 	public int pathway;
+	public int layer;
 
 	public MusicConfigData Copy() {
 		return new MusicConfigData() {
@@ -16,7 +17,8 @@ public class MusicConfigData
 			note_uid = note_uid,
 			length = length,
 			blood = blood,
-			pathway = pathway
+			pathway = pathway,
+			layer = layer
 		};
 	}
 }
