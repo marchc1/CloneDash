@@ -48,7 +48,7 @@ namespace CloneDash.Game.Entities
 			ForceDraw = true;
 			lastCheckTime = lvl.Conductor.Time;
 			lvl.Sustains.StartSustainBeam(this);
-			lvl.AddCombo();
+			lvl.Combo.Add();
 			lvl.AddFever(FeverGiven, this);
 		}
 
@@ -202,7 +202,7 @@ namespace CloneDash.Game.Entities
 			ShouldDraw = false;
 			RewardPlayer();
 
-			lvl.AddCombo();
+			lvl.Combo.Add();
 			lvl.AddFever(FeverGiven, this);
 			lvl.Sustains.CompleteSustainBeam(this);
 			lvl.PlaySceneSound(SceneSound.StartedHold, 1);
@@ -226,7 +226,7 @@ namespace CloneDash.Game.Entities
 			var delta = now - lastCheckTime;
 			if (delta >= 0.1) { // Give 10 score for every 100ms held (should this be done differently?)
 				lastCheckTime = now;
-				lvl.AddScore(10);
+				lvl.AddScore(10, this);
 			}
 		}
 	}

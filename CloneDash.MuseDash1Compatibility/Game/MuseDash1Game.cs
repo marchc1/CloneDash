@@ -125,17 +125,21 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public readonly MuseDash1EnemyManager EnemyManager = new();
 	public readonly MuseDash1EventManager EventManager = new();
 	public HashSet<DashEvent> ActiveEvents = [];
+	public ComboComponent Combo = null!;
 
 	public int EnemySortIndexCounter;
 	public readonly List<DashEvent> Events = [];
 	public int EventSortIndexCounter;
+	public FeverComponent Fever = null!;
 	public readonly int[] PathwaySpeeds = new int[PathwayLayout.MAX_PATHWAYS];
 	public readonly HashSet<DashEvent> HandledEvents = [];
+	public HealthComponent Health = null!;
 	public readonly List<ICloneDashInputSystem> InputReceivers = [];
 	public PollResult LastPollResult = PollResult.Empty;
 	public DashEnemy? MashingEntity;
 	public AudioPlaybackHandle Music;
 
+	public readonly ScoreComponent Score = new();
 	public StatisticsData Stats = null!;
 	public ISustainManager Sustains = new StackBasedSustainManager();
 
@@ -156,7 +160,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	IMuseDash1SceneInstance? ActiveScene;
 	int AttackP = 0;
 	bool CanSceneChange = false;
-	bool Dead;
 	double DeathTime = -2000000;
 	bool DeferringAsync = false;
 	int FailP = 0;
@@ -165,10 +168,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	Color flashbangColor = new(255, 255, 255, 255);
 	// Player input system
 	InputState InputState;
-	double LastIFrameGivenTime = -200000;
 	PathwayId LastAttackPathway;
 	double LastAttackTime;
-	double LastCombo = -2000;
 	double LastHologramJumpTIme = -2000000000000d;
 	double LastJumpTime = -2000000000000d;
 	double LastMasherAttemptedHit;
@@ -236,11 +237,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	/// <summary>
-	/// Current combo of the player (how many successful hits/avoids in a row)
-	/// </summary>
-	public int Combo { get; private set; } = 0;
-
-	/// <summary>
 	/// Timing system.
 	/// </summary>
 	public Conductor Conductor { get; private set; } = null!;
@@ -249,26 +245,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public double DeltaUnpauseTime => Realtime - UnpauseTime;
 
-	/// <summary>
-	/// Current fever bar.<br></br>
-	/// Default: 0
-	/// </summary>
-	public float Fever { get; private set; } = 0;
-
-	/// <summary>
-	/// How much fever time is left?
-	/// </summary>
-	public double FeverTimeLeft => Quirks.FeverDuration - (Conductor.Time - WhenDidFeverStart);
-
-	/// <summary>
-	/// Current health of the player<br></br>
-	/// Default: 250
-	/// </summary>
 	public PathwayId GroundPathway => Layout.PathwayAt(Layout.Count - 1);
 
 	public PathwaySet GroundSidePathways => Layout.All & PathwaySet.FromBits(~AirSidePathways.Bits);
-
-	public float Health { get; private set; }
 
 	public double Hologram_AirTime => (Conductor.Time - LastHologramJumpTIme);
 
@@ -279,17 +258,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// </summary>
 	public bool InAir => (Conductor.Time - LastJumpTime) < Character.GetJumpDuration();
 
-	/// <summary>
-	/// Is the player currently in fever?
-	/// </summary>
-	public bool InFever { get; private set; } = false;
-
 	public bool InHit { get; private set; } = false;
-
-	/// <summary>
-	/// Currently in an invincibility frame?
-	/// </summary>
-	public bool InIFrame => TimeSinceLastIFrame < Quirks.IFrameLength;
 
 	[MemberNotNullWhen(true, nameof(MashingEntity))] public bool InMashState { get; private set; }
 
@@ -312,17 +281,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public float PlayScale => 1 / 200f;
 
-	/// <summary>
-	/// Current score of the player.
-	/// </summary>
-	public int Score { get; private set; } = 0;
-
 	public bool SuppressHitMessages { get; set; }
-
-	/// <summary>
-	/// Time since the last invincibility frame was given
-	/// </summary>
-	public double TimeSinceLastIFrame => Conductor.Time - LastIFrameGivenTime;
 
 	/// <summary>
 	/// Which entity is being held on the top pathway
@@ -340,25 +299,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// </summary>
 	public double UnpauseTime { get; private set; } = 0;
 
-	/// <summary>
-	/// When did the fever start?
-	/// </summary>
-	public double WhenDidFeverStart { get; private set; } = -1000000d;
-
 	// todo: confirm this is the right behavior
 	static bool PathwayTransitionAnimation => true;
 
 	static float TEMP_PLAYER_OFFSET => 0;
-
-	/// <summary>
-	/// Returns the fever time left as a value of 0-1, where 0 is the end and 1 is the start. Good for animation.
-	/// </summary>
-	private double FeverRatio => 1f - ((Conductor.Time - WhenDidFeverStart) / Quirks.FeverDuration);
-
-	/// <summary>
-	/// Should the player exit fever?
-	/// </summary>
-	private bool ShouldExitFever => (Conductor.Time - WhenDidFeverStart) >= Quirks.FeverDuration;
 
 	public void ActivateEvent(DashEvent ev) {
 		ActiveEvents.Add(ev);
@@ -372,28 +316,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	/// <summary>
-	/// Adds 1 to the players combo.
-	/// </summary>
-	public void AddCombo(DashEnemy? responsible = null) {
-		Combo++;
-		LastCombo = Conductor.Time;
-	}
-
-	/// <summary>
 	/// Adds to the players fever value, and automatically enters fever when the player has maxed out the fever bar.
 	/// </summary>
 	/// <param name="fever"></param>
 	public void AddFever(float fever, DashEnemy? responsible = null) {
-		if (InFever) return;
+		if (Fever.InFever) return;
 
 		double feverD = (double)fever;
 		if (Quirks.FeverModifier != null) Quirks.FeverModifier.Invoke(ProduceSnapshot(responsible), ref feverD);
 		fever = (float)feverD;
 
-		Fever = Math.Clamp(Fever + fever, 0, Quirks.MaxFever);
-		SceneUI?.UpdateFeverProgress(Fever, Quirks.MaxFever);
-		if (Fever >= Quirks.MaxFever)
-			EnterFever();
+		Fever.Add(fever);
 	}
 
 	public IMuseDash1SceneInstance? AddOrGetScene(ISceneDescriptor? descriptor) {
@@ -422,11 +355,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <param name="score"></param>
 	public void AddScore(int score, DashEnemy? responsible = null) {
 		double s = (double)score;
+		if (responsible != null && responsible.Type != 0) s *= Quirks.ScoreMultipliers[responsible.Type.GetBit()];
 		if (Quirks.ScoreModifier != null) Quirks.ScoreModifier.Invoke(ProduceSnapshot(responsible), ref s);
 		score = (int)(float)s;
 
-		Score += (int)(float)s;
-		SceneUI?.UpdateScore(Score);
+		Score.Add((int)(float)s);
+		SceneUI?.UpdateScore(Score.Value);
 	}
 
 	public bool AttackAir(PathwayId pathway, in PollResult result) {
@@ -552,7 +486,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// <param name="entity"></param>
 	/// <param name="damage"></param>
 	public void Damage(float damage, DashEnemy? responsible) {
-		if (InFever && Quirks.InvincibleInFever)
+		if (Fever.InFever && Quirks.InvincibleInFever)
 			return;
 
 		double damageD = (double)damage;
@@ -560,18 +494,17 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		damage = (float)damageD;
 		damage = Math.Max(0, damage);
 
-		if (!InIFrame) {
-			Health = Math.Clamp(Health - damage, 0, Quirks.MaxHP);
-			SetIFrameTime();
-			if (Health <= 0)
-				TriggerDeath();
+		if (Quirks.ConsumeFeverBeforeHealth && !Health.Invincible)
+			damage -= Fever.Consume(damage);
+
+		if (Health.Damage(damage)) {
 			if (InAir)
 				PlayCharacterAnimation(CharacterAnimationType.JumpHurt);
 			else
 				PlayCharacterAnimation(CharacterAnimationType.Hurt);
 		}
 
-		ResetCombo();
+		Combo.Break();
 		SceneUI?.UpdateFullCombo(false);
 	}
 
@@ -613,17 +546,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Rlgl.Viewport(0, 0, (int)EngineCore.Window.Size.W, (int)EngineCore.Window.Size.H);
 
 		(read, write) = (write, read);
-	}
-
-	/// <summary>
-	/// Drains health from the player, triggering death if the player has died, but does not call any other events unlike Damage
-	/// </summary>
-	/// <param name="damage"></param>
-	/// <param name="responsible"></param>
-	public void DrainHealth(double damage) {
-		Health = Math.Clamp(Health - (float)damage, 0, Quirks.MaxHP);
-		if (Health <= 0)
-			TriggerDeath();
 	}
 
 	public void EnterHitState() {
@@ -740,10 +662,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		return sceneLUT.ContainsKey(descriptor.GetUUID().Hash());
 	}
 
-	public void Heal(float health, DashEnemy? responsible = null) {
-		Health = Math.Clamp(Health + health, 0, Quirks.MaxHP);
-	}
-
 	ITexture? backgroundOverride;
 	float backgroundOverrideOpacity;
 
@@ -845,7 +763,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			Interlude.Spin();
 
 			Render3D = false;
-			Health = Quirks.MaxHP;
 
 			Interlude.Spin(submessage: "Initializing input...");
 			using (StaticSequentialProfiler.StartStackFrame("Build Input Systems"))
@@ -878,6 +795,24 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				Interlude.Spin();
 
 				Conductor = Add<Conductor>();
+				Combo = new(Conductor);
+				Combo.MissForgiveness = Quirks.MissComboForgiveness;
+				Health = new(Conductor);
+				Health.Max = Quirks.MaxHP;
+				Health.IFrameLength = Quirks.IFrameLength;
+				Health.BonusGranted = Quirks.HealthBonusGranted;
+				Health.BonusThreshold = Quirks.HealthBonusThreshold;
+				Health.BonusTimes = Quirks.HealthBonusTimes;
+				Health.DyingSeconds = Quirks.DyingSeconds;
+				Health.OnDeath += TriggerDeath;
+				Health.Reset();
+				Fever = new(Conductor);
+				Fever.Max = Quirks.MaxFever;
+				Fever.Duration = Quirks.FeverDuration;
+				Fever.DismissalTime = Quirks.PostFeverDismissalTime;
+				Fever.OnChanged += UpdateFeverProgress;
+				Fever.OnEnter += EnterFever;
+				Fever.OnExit += ExitFever;
 				Interlude.Spin();
 			}
 
@@ -976,7 +911,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public bool IsCharacterOn(PathwaySet pathways) => CharacterPathways == Layout.Clamp(pathways);
 
-	public bool IsDead() => Dead;
+	public bool IsDead() => Health.Dead && !Quirks.PlayableAfterDeath;
 
 	public void IterateEvents() {
 		foreach (var ev in EventManager.GetLastVisible()) {
@@ -1336,7 +1271,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		SceneUI?.SetSeeking(true);
 		SceneUI?.UpdateScore(0);
 		SceneUI?.UpdateCombo(0);
-		SceneUI?.UpdateHP(Quirks.MaxHP, Quirks.MaxHP);
+		SceneUI?.UpdateHP(Health.Max, Health.Max);
 		SceneUI?.UpdateFeverProgress(0, 0);
 
 		Character.Reset();
@@ -1358,13 +1293,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Boss.Reset();
 		ResetPathwaySpeeds();
 
-		Combo = 0;
-		Health = Quirks.MaxHP;
-		InFever = false;
-		WhenDidFeverStart = -1000000d;
+		Combo.Reset();
+		Health.Reset();
+		Fever.Reset();
 		LastNoteHit = false;
-		Score = 0;
-		Fever = 0;
+		Score.Reset();
 		Sustains.Reset();
 		AutoPlayer.Reset();
 		LastJumpTime = -2000000000000d;
@@ -1372,15 +1305,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		DeathTime = -2000000d;
 		ActiveEvents.Clear();
 		HandledEvents.Clear();
-		LastIFrameGivenTime = -10000d;
-		Dead = false;
-	}
-
-	/// <summary>
-	/// Resets the players combo.
-	/// </summary>
-	public void ResetCombo(DashEnemy? responsible = null) {
-		Combo = 0;
 	}
 
 	public void ResetPathwaySpeeds() {
@@ -1514,8 +1438,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					Conductor.ForceTimeTo(mEnt.GetJudgementHitTime()); // Hack...
 
 					// Evaluate if fever must end
-					if (ShouldExitFever && InFever)
-						ExitFever();
+					if (Fever.ShouldExit && Fever.InFever)
+						Fever.Exit();
 
 					switch (mEnt) {
 						case Masher masher: // Mashers need a bit more trickery
@@ -1567,7 +1491,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			}
 
 			// HACK - but it solves fever FX not playing
-			if (InFever) FeverFX?.Activate();
+			if (Fever.InFever) FeverFX?.Activate();
 
 			// ALSO A HACK - but it solves some animation issues when mid-sustain.
 			if (Sustains.IsSustaining())
@@ -1636,7 +1560,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ResetSceneSoundsPlayedThisFrame();
 
 		if (Music.IsValid() && LastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Chart != null && SceneUI != null && !SceneUI.ShowingVictoryScreen()) {
-			Stats.UploadScore(Score);
+			if (!Health.Dead)
+				Stats.UploadScore(Score.Value);
 			SceneUI?.OpenVictory(Stats);
 			audiosystem.PauseSound(Music);
 			return;
@@ -1646,14 +1571,20 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			return;
 		}
 
-		if (ShouldExitFever && InFever)
-			ExitFever();
+		if (Fever.ShouldExit && Fever.InFever)
+			Fever.Exit();
 
 		// Health drain
 		if (Quirks.HealthLossPerSecond != null && Conductor.GetTime() >= 0) {
 			double loss = 0;
 			Quirks.HealthLossPerSecond(ProduceSnapshot(), ref loss);
-			DrainHealth(loss * Conductor.TimeDelta);
+			Health.Drain(loss * Conductor.TimeDelta);
+		}
+
+		if (Quirks.FeverGainPerSecond != null && Conductor.GetTime() >= 0) {
+			double gain = 0;
+			Quirks.FeverGainPerSecond(ProduceSnapshot(), ref gain);
+			Fever.Add((float)(gain * Conductor.TimeDelta));
 		}
 
 		EnemyManager.Rebuild(Conductor.Time);
@@ -1801,14 +1732,14 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		var sceneUI = SceneUI;
 		if (sceneUI != null) {
-			sceneUI.UpdateCombo(Combo);
-			if (InFever)
-				sceneUI.UpdateInFever(FeverTimeLeft, Quirks.FeverDuration);
+			sceneUI.UpdateCombo(Combo.Value);
+			if (Fever.InFever)
+				sceneUI.UpdateInFever(Fever.TimeLeft, Fever.Duration);
 
 			if (MashingEntity != null)
 				sceneUI.UpdateMultiHitText(MashingEntity.Hits);
 
-			sceneUI.UpdateHP(Health, Quirks.MaxHP);
+			sceneUI.UpdateHP(Health.Value, Health.Max);
 		}
 
 		var visibleEnemies = EnemyManager.GetLastVisible();
@@ -1950,23 +1881,16 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	/// <summary>
-	/// Gives the player an invincibility frame. No checks are performed here
-	/// </summary>
-	internal void SetIFrameTime() {
-		LastIFrameGivenTime = Conductor.Time;
-	}
-
-	/// <summary>
 	/// Produces a quirks snapshot for use with the current gameplay quirks
 	/// </summary>
 	protected MuseDash1GameplayQuirks.GameSnapshot ProduceSnapshot(DashEnemy? enemy = null, MuseDash1GameplayQuirks.Judgement judgement = 0) {
 		MuseDash1GameplayQuirks.GameSnapshot snapshot = new() {
 			Difficulty = gameParameters.Chart?.GetRatingNumber() ?? 0,
-			CurrentCombo = Combo,
-			CurrentScore = Score,
-			InFever = InFever,
-			Health = Health,
-			MaxHealth = Quirks.MaxHP,
+			CurrentCombo = Combo.Value,
+			CurrentScore = Score.Value,
+			InFever = Fever.InFever,
+			Health = Health.Value,
+			MaxHealth = Health.Max,
 			Judgement = judgement
 		};
 
@@ -2071,26 +1995,15 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		return false;
 	}
 
-	/// <summary>
-	/// Enters fever.
-	/// </summary>
 	private void EnterFever() {
-		InFever = true;
-		WhenDidFeverStart = Conductor.Time;
 		if (!IsSeeking) {
 			FeverFX?.Activate();
 			PlaySceneSound(SceneSound.Fever, 0);
 		}
-		SceneUI?.UpdateInFever(FeverTimeLeft, Quirks.FeverDuration);
+		SceneUI?.UpdateInFever(Fever.TimeLeft, Fever.Duration);
 	}
 
-	/// <summary>
-	/// Exits fever.
-	/// </summary>
 	private void ExitFever() {
-		InFever = false;
-		Fever = 0;
-		WhenDidFeverStart = -1000000d;
 		FeverFX?.Cancel();
 	}
 
@@ -2152,9 +2065,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						// Mashers don't create perfects, they'll start the mash hit UI
 						if (pollResult.HitEntity.Type != MuseDash1EntityType.Masher) {
 							if (pollResult.IsPerfect)
-								SceneUI?.CreatePerfectHitText(pollResult.Precision, pathway.AsSet, InFever, earlylate);
+								SceneUI?.CreatePerfectHitText(pollResult.Precision, pathway.AsSet, Fever.InFever, earlylate);
 							else {
-								SceneUI?.CreateGreatHitText(pollResult.Precision, pathway.AsSet, InFever, earlylate);
+								SceneUI?.CreateGreatHitText(pollResult.Precision, pathway.AsSet, Fever.InFever, earlylate);
 								SceneUI?.UpdateAllPerfect(false);
 							}
 							SceneUI?.UpdateHit();
@@ -2374,12 +2287,15 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		LastMasherAttemptedHit = Conductor.Time;
 	}
 	void TriggerDeath() {
-		if (IsDead()) return;
-		if (Health <= 0) {
-			Dead = true;
-			DeathTime = Curtime;
-			Character.GetPrimary().PlayAnimation(CharacterAnimationType.Die);
-		}
+		if (Quirks.PlayableAfterDeath)
+			return;
+
+		DeathTime = Curtime;
+		Character.GetPrimary().PlayAnimation(CharacterAnimationType.Die);
+	}
+
+	void UpdateFeverProgress() {
+		SceneUI?.UpdateFeverProgress(Fever.Value, Fever.Max);
 	}
 
 	struct ScreenspaceEffectState

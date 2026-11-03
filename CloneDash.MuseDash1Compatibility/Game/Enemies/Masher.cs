@@ -38,7 +38,7 @@ namespace CloneDash.Game.Entities
 
 		private void Complete() {
 			var level = Level.As<MuseDash1Game>();
-			level.GetSceneUI()?.CreatePerfectHitText(0, PathwaySet.Any, level.InFever, 0);
+			level.GetSceneUI()?.CreatePerfectHitText(0, PathwaySet.Any, level.Fever.InFever, 0);
 			Kill();
 			ForceDraw = false;
 			level.ExitMashState();

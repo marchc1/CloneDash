@@ -251,7 +251,7 @@ public class DashEnemy : Entity, IDashChunkable
 	}
 
 	protected virtual void OnPunishment() {
-		GetGameLevel().ResetCombo();
+		GetGameLevel().Combo.Break();
 	}
 
 	public void RewardPlayer(bool heal = false) {
@@ -266,12 +266,12 @@ public class DashEnemy : Entity, IDashChunkable
 			return;
 
 		if (heal) {
-			level.Heal(HealthGiven, this);
+			level.Health.Heal(HealthGiven);
 			level.GetSceneUI()?.CreateHealthText(HealthGiven, Pathway);
 		}
 
 		if (Blood) {
-			level.Heal(MD1_SongChartEntity.DEFAULT_HP, this);
+			level.Health.Heal(MD1_SongChartEntity.DEFAULT_HP);
 			level.GetSceneUI()?.CreateHealthText(MD1_SongChartEntity.DEFAULT_HP, Pathway);
 			level.GetActiveScene()?.PlaySound(SceneSound.GotHeart, 0);
 		}
@@ -284,7 +284,7 @@ public class DashEnemy : Entity, IDashChunkable
 
 	protected virtual void OnReward() {
 		var game = GetGameLevel();
-		game.AddScore(CDUtils.DetermineScoreMultiplied(game, ScoreGiven, game.LastPollResult));
+		game.AddScore(CDUtils.DetermineScoreMultiplied(game, ScoreGiven, game.LastPollResult), this);
 	}
 
 	/// <summary>
@@ -305,7 +305,7 @@ public class DashEnemy : Entity, IDashChunkable
 		Dead = true;
 
 		if (DeathAddsToCombo)
-			level.AddCombo();
+			level.Combo.Add();
 
 		level.AddFever((int)this.FeverGiven, this);
 
