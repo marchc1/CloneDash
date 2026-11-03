@@ -1,4 +1,5 @@
 using CloneDash.Common.Data;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
 using Nucleus;
@@ -205,8 +206,8 @@ public static class MdcpmfConverter
 		return ret;
 	}
 
-	static void AddNote(Result result, ref int objectId, decimal time, NoteConfigData config, decimal length, int pathway, int layer) {
-		result.Notes.Add(new JsonObject {
+	static void AddNote(Result result, ref int objectId, decimal time, NoteConfigData config, decimal length, int pathway, int layer, JsonArray? curve = null) {
+		var note = new JsonObject {
 			["id"] = objectId++,
 			["time"] = time,
 			["note_uid"] = config.uid,
@@ -214,7 +215,38 @@ public static class MdcpmfConverter
 			["pathway"] = pathway,
 			["layer"] = layer,
 			["blood"] = false
-		});
+		};
+		if (curve != null)
+			note["curve"] = curve;
+		result.Notes.Add(note);
+	}
+
+	static JsonArray? CurveToJson(MdcpmfNote note) {
+		var curve = note.Curve;
+		if (curve == null || curve.Count == 0)
+			return null;
+
+		var ret = new JsonArray {
+			new JsonObject {
+				["time"] = note.Time,
+				["value"] = note.Lane switch { MdcpmfLane.Air => 1, MdcpmfLane.Middle => 0.5, _ => 0 },
+				["ease"] = MD1_CurveEase.Linear.ToString()
+			}
+		};
+		foreach (var node in curve) {
+			var ease = node.Op switch {
+				MdcpmfCurveOp.Bezier => MD1_CurveEase.Smooth,
+				MdcpmfCurveOp.EaseIn => MD1_CurveEase.EaseIn,
+				MdcpmfCurveOp.EaseOut => MD1_CurveEase.EaseOut,
+				_ => MD1_CurveEase.Linear
+			};
+			ret.Add(new JsonObject {
+				["time"] = node.Time,
+				["value"] = node.Value,
+				["ease"] = ease.ToString()
+			});
+		}
+		return ret;
 	}
 
 	public static Result Convert(MdcpmfChart chart) {
@@ -288,8 +320,6 @@ public static class MdcpmfConverter
 					break;
 			}
 
-			if (note.IsCurve)
-				result.Approximate("TODO: curve sustains");
 			if (note.IsReverseTrack)
 				result.Approximate("TODO: reverse track");
 			if (note.Modifiers != null)
@@ -314,7 +344,7 @@ public static class MdcpmfConverter
 				continue;
 			}
 
-			AddNote(result, ref objectId, time, config, length, pathway, note.Layer);
+			AddNote(result, ref objectId, time, config, length, pathway, note.Layer, note.IsCurve ? CurveToJson(note) : null);
 		}
 
 		foreach (var timing in chart.Timings) {

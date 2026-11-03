@@ -402,6 +402,7 @@ namespace CloneDash.Compatibility.MuseDash
 							ShowTime = tick_show,
 							Dt = (double)s.dt,
 							Layer = s.configData.layer,
+							Curve = s.configData.curve,
 
 							Fever = s.noteData.fever,
 							Damage = s.noteData.damage,

@@ -693,6 +693,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public ref readonly InputState GetInputState() => ref InputState;
 
+	public Vector2F GetNormalizedPosition(float normalizedY) => HasActiveScene(out var scene) ? scene.GetNormalizedPosition(normalizedY) : default;
+
 	public int GetNumScenes() => scenes.Count;
 
 	public Pathway GetPathway(PathwayId pathway) => Pathways[pathway.Index];
@@ -1020,6 +1022,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ent.Flipped = ChartEntity.Flipped;
 		ent.Blood = ChartEntity.Blood;
 		ent.SetTimeRemap(layerRemaps?.GetValueOrDefault(ChartEntity.Layer));
+		if (ent is SustainBeam beam)
+			beam.Curve = ChartEntity.Curve;
 
 		ent.FeverGiven = ChartEntity.Fever;
 		ent.DamageTaken = ChartEntity.Damage;

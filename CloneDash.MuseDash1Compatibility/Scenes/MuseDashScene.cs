@@ -371,6 +371,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 	readonly bool[] pathwayAirAssets;
 	readonly float[] pathwayHueShift;
 	PathwayInformation centerInfo;
+	PathwayInformation airAnchor, roadAnchor;
 
 	static readonly string[] providedAssetSets = [PathwayLayout.ASSETS_AIR, PathwayLayout.ASSETS_ROAD];
 	public readonly MuseDash1SceneDescriptor Descriptor;
@@ -398,7 +399,6 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 			pathwayChildren.Add((child.Object, pos));
 		}
 
-		PathwayInformation airAnchor = default, roadAnchor = default;
 		if (pathwayChildren.Count >= 2) {
 			pathwayChildren.Sort((a, b) => b.pos.Y.CompareTo(a.pos.Y));
 			airAnchor = new(pathwayChildren[0].pos.X, pathwayChildren[0].pos.Y, pathwayChildren[0].obj);
@@ -414,10 +414,11 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		pathwayHueShift = new float[layout.Count];
 		for (int i = 0; i < layout.Count; i++) {
 			var def = layout.Definitions[i];
+			var normalized = GetNormalizedPosition(def.NormalizedY);
 			pathwayInfo[i] = def.NormalizedY switch {
 				1 => airAnchor,
 				0 => roadAnchor,
-				_ => new(PathwayLayout.LerpY(def.NormalizedY, roadAnchor.Position.X, airAnchor.Position.X), PathwayLayout.LerpY(def.NormalizedY, roadAnchor.Position.Y, airAnchor.Position.Y), null)
+				_ => new(normalized.X, normalized.Y, null)
 			};
 			pathwayInfo[i].Color = def.Color;
 			ResolvePathwayAssets(layout, layout.PathwayAt(i), out pathwayAirAssets[i], out pathwayHueShift[i]);
@@ -1136,6 +1137,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 	public Color GetPathwayColor(PathwayId pathway) => pathwayInfo[pathway.Index].Color;
 	public Vector2F GetPathwayPosition(PathwayId pathway) => pathwayInfo[pathway.Index].Position;
 	public Vector2F GetCenterPosition() => centerInfo.Position;
+	public Vector2F GetNormalizedPosition(float normalizedY) => new(PathwayLayout.LerpY(normalizedY, roadAnchor.Position.X, airAnchor.Position.X), PathwayLayout.LerpY(normalizedY, roadAnchor.Position.Y, airAnchor.Position.Y));
 	public bool UsesAirAssets(PathwayId pathway) => pathwayAirAssets[pathway.Index];
 	public float GetPathwayHueShift(PathwayId pathway) => pathwayHueShift[pathway.Index];
 	public bool IsAirPathway(PathwayId pathway) => Game.Layout.IsAirSide(pathway);
