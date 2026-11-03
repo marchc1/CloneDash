@@ -10,6 +10,21 @@ public enum MdcpmfLane
 	Middle
 }
 
+public enum MdcpmfCurveOp
+{
+	Straight,
+	Bezier,
+	EaseIn,
+	EaseOut
+}
+
+public struct MdcpmfCurveNode
+{
+	public MdcpmfCurveOp Op;
+	public double Time;
+	public double Value;
+}
+
 public class MdcpmfNote
 {
 	public string Kind = "";
@@ -22,6 +37,7 @@ public class MdcpmfNote
 	public string? Extra;
 	public int Speed = 2;
 	public string? Modifiers;
+	public List<MdcpmfCurveNode>? Curve;
 
 	public int Layer;
 
@@ -207,6 +223,31 @@ public class MdcpmfChart
 		else if (note.Kind.EndsWith("_air")) { note.Lane = MdcpmfLane.Air; note.BaseKind = note.Kind[..^4]; }
 		else if (note.Kind.EndsWith("_middle")) { note.Lane = MdcpmfLane.Middle; note.BaseKind = note.Kind[..^7]; }
 
+		if (note.IsCurve && note.Extra != null)
+			note.Curve = ReadCurve(note.Extra);
+
 		return note;
+	}
+
+	static List<MdcpmfCurveNode> ReadCurve(string spec) {
+		List<MdcpmfCurveNode> ret = [];
+		foreach (var token in spec.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)) {
+			var parts = token.Split(':');
+			if (parts.Length < 3)
+				continue;
+
+			MdcpmfCurveOp? op = parts[0] switch {
+				"s" => MdcpmfCurveOp.Straight,
+				"b" => MdcpmfCurveOp.Bezier,
+				"ei" => MdcpmfCurveOp.EaseIn,
+				"eo" => MdcpmfCurveOp.EaseOut,
+				_ => null
+			};
+			if (op == null)
+				continue;
+
+			ret.Add(new() { Op = op.Value, Time = ParseDouble(parts[1]), Value = ParseDouble(parts[2]) });
+		}
+		return ret;
 	}
 }

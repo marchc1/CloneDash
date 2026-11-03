@@ -55,6 +55,7 @@ public interface IMuseDash1SceneInstance : ISceneInstance
 	Color GetPathwayColor(PathwayId pathway);
 	Vector2F GetPathwayPosition(PathwayId pathway);
 	Vector2F GetCenterPosition();
+	Vector2F GetNormalizedPosition(float normalizedY);
 	bool UsesAirAssets(PathwayId pathway);
 	float GetPathwayHueShift(PathwayId pathway);
 	bool IsAirPathway(PathwayId pathway);

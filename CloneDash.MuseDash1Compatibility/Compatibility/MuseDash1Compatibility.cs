@@ -410,6 +410,7 @@ namespace CloneDash.Compatibility.MuseDash
 							ShowTime = tick_show,
 							Dt = (double)s.dt,
 							Layer = s.configData.layer,
+							Curve = s.configData.curve,
 							LeftGreatRange = (double)s.noteData.left_great_range,
 							LeftPerfectRange = (double)s.noteData.left_perfect_range,
 							RightGreatRange = (double)s.noteData.right_great_range,

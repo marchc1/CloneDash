@@ -1,4 +1,7 @@
-﻿namespace CloneDash.Compatibility.MuseDash;
+﻿using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+using System.Text.Json.Serialization;
+
+namespace CloneDash.Compatibility.MuseDash;
 
 public class MusicConfigData
 {
@@ -10,6 +13,7 @@ public class MusicConfigData
 	public int pathway;
 	public string? pathway_name;
 	public int layer;
+	[JsonIgnore] public MD1_CurvePath? curve;
 
 	public MusicConfigData Copy() {
 		return new MusicConfigData() {
@@ -20,7 +24,8 @@ public class MusicConfigData
 			blood = blood,
 			pathway = pathway,
 			pathway_name = pathway_name,
-			layer = layer
+			layer = layer,
+			curve = curve
 		};
 	}
 }

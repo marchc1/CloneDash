@@ -25,6 +25,7 @@ public class MD1_SongChartEntity
 	public EntityVariant Variant;
 
 	public int Layer;
+	public MD1_CurvePath? Curve;
 
 	public double HitTime;
 	public double ShowTime;
