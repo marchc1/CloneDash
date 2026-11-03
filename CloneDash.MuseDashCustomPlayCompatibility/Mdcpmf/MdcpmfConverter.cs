@@ -206,7 +206,7 @@ public static class MdcpmfConverter
 		return ret;
 	}
 
-	static void AddNote(Result result, ref int objectId, decimal time, NoteConfigData config, decimal length, int pathway, int layer, JsonArray? curve = null) {
+	static void AddNote(Result result, ref int objectId, decimal time, NoteConfigData config, decimal length, int pathway, int layer, JsonArray? curve = null, string? pathwayName = null) {
 		var note = new JsonObject {
 			["id"] = objectId++,
 			["time"] = time,
@@ -218,6 +218,8 @@ public static class MdcpmfConverter
 		};
 		if (curve != null)
 			note["curve"] = curve;
+		if (pathwayName != null)
+			note["pathway_name"] = pathwayName;
 		result.Notes.Add(note);
 	}
 
@@ -291,12 +293,6 @@ public static class MdcpmfConverter
 				continue;
 			}
 
-			if (note.Lane == MdcpmfLane.Middle) {
-				// todo: middle lane needs gamemode support
-				result.Drop($"TODO: {note.BaseKind} middle lane");
-				continue;
-			}
-
 			var ibms = GetIBMS(note);
 			if (ibms == null) {
 				if (!silentKinds.Contains(note.BaseKind) && !note.BaseKind.StartsWith("effect_"))
@@ -337,14 +333,15 @@ public static class MdcpmfConverter
 				continue;
 			}
 
-			int pathway = note.Lane == MdcpmfLane.Air ? 1 : 0;
+			int pathway = note.Lane is MdcpmfLane.Air or MdcpmfLane.Middle ? 1 : 0;
 			var config = FindConfig(ibms, pathway, speed, result.Scene);
 			if (config == null) {
 				result.Drop($"{note.Kind} (no note config for {ibms}, pathway {pathway}, speed {speed})");
 				continue;
 			}
 
-			AddNote(result, ref objectId, time, config, length, pathway, note.Layer, note.IsCurve ? CurveToJson(note) : null);
+			var pathwayName = note.Lane == MdcpmfLane.Middle ? CustomPlayPathways.MIDDLE : null;
+			AddNote(result, ref objectId, time, config, length, pathway, note.Layer, note.IsCurve ? CurveToJson(note) : null, pathwayName);
 		}
 
 		foreach (var timing in chart.Timings) {

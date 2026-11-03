@@ -154,7 +154,7 @@ public class MD1_CustomPlaySong : MD1_Song
 		stageInfo.bpm = (float)Chart.BPM;
 		stageInfo.sceneEvents.AddRange(converted.SceneEvents);
 
-		var data = MuseDash1Compatibility.ConvertStageInfoToMD1GamemodeData(this, stageInfo, converted.TempoChanges);
+		var data = MuseDash1Compatibility.ConvertStageInfoToMD1GamemodeData(this, stageInfo, converted.TempoChanges, layout: CustomPlayPathways.Layout);
 		foreach (var (layer, keys) in converted.TimeRemaps)
 			data.LayerRemaps[layer] = new TimeRemap(keys);
 
