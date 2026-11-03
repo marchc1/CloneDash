@@ -1,5 +1,6 @@
 using CloneDash.Charts;
 using CloneDash.Common.Compatibility;
+using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
@@ -153,6 +154,10 @@ public class MD1_CustomPlaySong : MD1_Song
 		stageInfo.bpm = (float)Chart.BPM;
 		stageInfo.sceneEvents.AddRange(converted.SceneEvents);
 
-		return MuseDash1Compatibility.ConvertStageInfoToMD1GamemodeData(this, stageInfo, converted.TempoChanges);
+		var data = MuseDash1Compatibility.ConvertStageInfoToMD1GamemodeData(this, stageInfo, converted.TempoChanges);
+		foreach (var (layer, keys) in converted.TimeRemaps)
+			data.LayerRemaps[layer] = new TimeRemap(keys);
+
+		return data;
 	}
 }

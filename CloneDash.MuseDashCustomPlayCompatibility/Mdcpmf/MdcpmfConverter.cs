@@ -14,6 +14,7 @@ public static class MdcpmfConverter
 		public readonly List<SceneEvent> SceneEvents = [];
 		public readonly List<TempoChange> TempoChanges = [];
 		public string Scene = "scene_01";
+		public readonly Dictionary<int, List<(double Time, double Speed)>> TimeRemaps = [];
 
 		public readonly Dictionary<string, int> Dropped = [];
 		public readonly Dictionary<string, int> Approximated = [];
@@ -204,13 +205,14 @@ public static class MdcpmfConverter
 		return ret;
 	}
 
-	static void AddNote(Result result, ref int objectId, decimal time, NoteConfigData config, decimal length, int pathway) {
+	static void AddNote(Result result, ref int objectId, decimal time, NoteConfigData config, decimal length, int pathway, int layer) {
 		result.Notes.Add(new JsonObject {
 			["id"] = objectId++,
 			["time"] = time,
 			["note_uid"] = config.uid,
 			["length"] = length,
 			["pathway"] = pathway,
+			["layer"] = layer,
 			["blood"] = false
 		});
 	}
@@ -241,7 +243,7 @@ public static class MdcpmfConverter
 
 			if (note.Kind == "boss_ra_atk_1_to_2" || note.Kind == "boss_ra_atk_2_to_1") {
 				var swap = FindConfig(note.Kind == "boss_ra_atk_1_to_2" ? "1G" : "1H", 0, Math.Clamp(note.Speed + 1, 1, 3), result.Scene);
-				if (swap != null) AddNote(result, ref objectId, (decimal)note.Time, swap, 0, 0);
+				if (swap != null) AddNote(result, ref objectId, (decimal)note.Time, swap, 0, 0, note.Layer);
 				continue;
 			}
 
@@ -251,7 +253,7 @@ public static class MdcpmfConverter
 					result.Approximate($"unknown scene '{note.InType}', using scene_01");
 				var sceneConfig = FindConfig(sceneToggleIBMS[idx - 1], 0, 1, "0");
 				if (sceneConfig != null)
-					AddNote(result, ref objectId, (decimal)note.Time, sceneConfig, 0, 0);
+					AddNote(result, ref objectId, (decimal)note.Time, sceneConfig, 0, 0, note.Layer);
 				else
 					result.SceneEvents.Add(new SceneEvent { time = (decimal)note.Time, uid = $"SceneEvent/{idx:00}" });
 				continue;
@@ -300,8 +302,8 @@ public static class MdcpmfConverter
 					result.Drop($"{note.Kind} (no note config)");
 					continue;
 				}
-				AddNote(result, ref objectId, time, bottom, 0, 0);
-				AddNote(result, ref objectId, time, top, 0, 1);
+				AddNote(result, ref objectId, time, bottom, 0, 0, note.Layer);
+				AddNote(result, ref objectId, time, top, 0, 1, note.Layer);
 				continue;
 			}
 
@@ -312,11 +314,14 @@ public static class MdcpmfConverter
 				continue;
 			}
 
-			AddNote(result, ref objectId, time, config, length, pathway);
+			AddNote(result, ref objectId, time, config, length, pathway, note.Layer);
 		}
 
-		if (chart.Timings.Count > 0)
-			result.Dropped["timing (scroll speed)"] = chart.Timings.Count;
+		foreach (var timing in chart.Timings) {
+			if (!result.TimeRemaps.TryGetValue(timing.Layer, out var keys))
+				result.TimeRemaps[timing.Layer] = keys = [];
+			keys.Add((timing.Time, timing.Value));
+		}
 
 		return result;
 	}
