@@ -89,7 +89,7 @@ public interface IAudioSystem
 	/// <br/><br/> <b>NOTE:</b> The identifier can be default, in which case no duplicate checks are performed.
 	/// <br/> <b>NOTE:</b> If the identifier hash-conflicts with another audio clip that is not of the same <see cref="AudioClipSource"/>, this method will return null.
 	/// </summary>
-	[Pure] IAudioClip? CreateDynamicAudioClip(AudioCallbackFn fn, ReadOnlySpan<char> identifier = default);
+	[Pure] IAudioClip? CreateDynamicAudioClip(AudioCallbackFn fn, int sampleRate, int channels, ReadOnlySpan<char> identifier = default);
 
 	/// <summary>
 	/// Attempts to load an audio clip from a file on the mounted filesystem, relative to the "audio" path ID.

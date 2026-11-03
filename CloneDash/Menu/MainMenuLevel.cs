@@ -7,6 +7,7 @@ using CloneDash.Common.UI.Searching;
 using CloneDash.Compatibility.MDMC;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
+using CloneDash.MuseDashCustomPlayCompatibility;
 using CloneDash.Menu;
 using CloneDash.Menu.Character;
 using CloneDash.Menu.Main;
@@ -158,12 +159,13 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 	public override bool OnFileDropped(string filepath, Vector2F pos) {
 		try {
-			var song = CustomAlbumsChartProvider.LoadSong(filepath);
+			bool customPlay = MD1_CustomPlaySong.IsCustomPlayPath(filepath);
+			ISong? song = customPlay ? CustomPlayChartProvider.LoadSong(filepath) : CustomAlbumsChartProvider.LoadSong(filepath);
 			if (song == null)
 				return false;
 
 			// If not in song selector, enter.
-			SongSelector? selector = GetOrEnterSongSelector(ChartMod.Instance.GetProviderByID("musedash1customs"));
+			SongSelector? selector = GetOrEnterSongSelector(ChartMod.Instance.GetProviderByID(customPlay ? CustomPlayChartProvider.PROVIDER_ID : "musedash1customs"));
 			if (selector == null)
 				return false;
 
