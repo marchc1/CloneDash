@@ -36,7 +36,7 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 		return GamemodeMod.GetGamemode("gamemode/musedash1/standard")!;
 	}
 
-	void AddOneEntity(MuseDash1EntityType entityType, NoteInfo noteInfo, PathwaySide? pathwayOverride = null){
+	void AddOneEntity(MuseDash1EntityType entityType, NoteInfo noteInfo, PathwaySet? pathwayOverride = null){
 		GamemodeData!.Entities.Add(new() {
 			Type = entityType,
 			Damage = 30,
@@ -51,7 +51,7 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 				_ => 1
 			},
 			Length = entityType == MuseDash1EntityType.SustainBeam && noteInfo.hasEndTime ? (noteInfo.GetEndTime() / 1000d) - (noteInfo.time / 1000d) : 0,
-			Pathway = pathwayOverride ?? noteInfo.height switch { Height.Low => PathwaySide.Bottom, Height.Mid => PathwaySide.Bottom, Height.Top => PathwaySide.Top, _ => PathwaySide.Bottom },
+			Pathway = pathwayOverride ?? noteInfo.height switch { Height.Low => PathwayLayout.MuseDashBottom.AsSet, Height.Mid => PathwayLayout.MuseDashBottom.AsSet, Height.Top => PathwayLayout.MuseDashTop.AsSet, _ => PathwayLayout.MuseDashBottom.AsSet },
 			Speed = noteInfo.speed switch {
 				NoteInfo.NoteSpeed.Standard => 2,
 				NoteInfo.NoteSpeed.Fast => 3,
@@ -103,8 +103,8 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 					};
 
 					if (entityType == MuseDash1EntityType.Double) {
-						AddOneEntity(entityType, noteInfo, PathwaySide.Top);
-						AddOneEntity(entityType, noteInfo, PathwaySide.Bottom);
+						AddOneEntity(entityType, noteInfo, PathwayLayout.MuseDashTop.AsSet);
+						AddOneEntity(entityType, noteInfo, PathwayLayout.MuseDashBottom.AsSet);
 					}
 					else
 						AddOneEntity(entityType, noteInfo, null);

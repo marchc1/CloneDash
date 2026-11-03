@@ -23,14 +23,14 @@ public interface IMuseDash1SceneUI : IDisposable
 	void UpdateFullCombo(bool fullCombo);
 	void UpdateCombo(int currentCombo);
 
-	void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate);
-	void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate);
-	void CreatePassText(double precision, PathwaySide pathway);
+	void CreatePerfectHitText(double precision, PathwaySet pathways, bool inFever, EarlyLate earlylate);
+	void CreateGreatHitText(double precision, PathwaySet pathways, bool inFever, EarlyLate earlylate);
+	void CreatePassText(double precision, PathwaySet pathways);
 	void StartMultiHitText();
 	void UpdateMultiHitText(int hits);
 	void EndMultiHitText();
-	void CreateScoreText(int scoreGiven, PathwaySide pathway);
-	void CreateHealthText(float healthGiven, PathwaySide pathway);
+	void CreateScoreText(int scoreGiven, PathwaySet pathways);
+	void CreateHealthText(float healthGiven, PathwaySet pathways);
 	void StartWarning();
 	void EndWarning();
 	void SetSeeking(bool seeking);

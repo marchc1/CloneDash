@@ -10,7 +10,20 @@ public enum InputAction
 	AirAttack,
 	GroundAttack,
 	FeverStart,
-	PauseGame
+	PauseGame,
+	MiddleAttack,
+	ExtraPathway1,
+	ExtraPathway2,
+	ExtraPathway3,
+	ExtraPathway4,
+	ExtraPathway5,
+	ExtraPathway6,
+	ExtraPathway7,
+	ExtraPathway8,
+	ExtraPathway9,
+	ExtraPathway10,
+	ExtraPathway11,
+	ExtraPathway12
 }
 
 public record class KeyBinding

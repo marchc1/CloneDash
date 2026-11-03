@@ -23,6 +23,7 @@ public class MD1_GamemodeData
 	public readonly List<TimeSignatureChange> TimeSignatureChanges = [];
 	public readonly List<ChartSceneChange> SceneChanges = [];
 	public readonly Dictionary<int, MD1_TimeRemap> LayerRemaps = [];
+	public PathwayLayout Layout = PathwayLayout.MuseDash;
 	public string? InitialScene;
 	public double StartOffset;
 

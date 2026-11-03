@@ -380,14 +380,14 @@ namespace CloneDash.Compatibility.MuseDash
 					var tick_hit = (double)s.configData.time;
 					var tick_show = tick_hit - ((tick_hit - ((double)s.showTick - gamemodeData.StartOffset)) / (double)s.dt);
 
-					PathwaySide pathwayType = PathwaySide.Both;
+					PathwaySet pathwayType = PathwaySet.Any;
 
 					switch (s.noteData.pathway) {
 						case 1:
-							pathwayType = PathwaySide.Top;
+							pathwayType = PathwayLayout.MuseDashTop.AsSet;
 							break;
 						case 0:
-							pathwayType = PathwaySide.Bottom;
+							pathwayType = PathwayLayout.MuseDashBottom.AsSet;
 							break;
 					}
 

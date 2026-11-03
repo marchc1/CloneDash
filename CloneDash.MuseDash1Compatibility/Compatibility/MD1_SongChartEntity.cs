@@ -14,7 +14,7 @@ public class MD1_SongChartEntity
 	/// <summary>
 	/// Entity pathway
 	/// </summary>
-	public PathwaySide Pathway;
+	public PathwaySet Pathway;
 	/// <summary>
 	/// Vertical direction (or right-side) for this entity.
 	/// </summary>

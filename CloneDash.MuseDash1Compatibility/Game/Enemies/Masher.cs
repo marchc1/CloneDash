@@ -38,7 +38,7 @@ namespace CloneDash.Game.Entities
 
 		private void Complete() {
 			var level = Level.As<MuseDash1Game>();
-			level.GetSceneUI()?.CreatePerfectHitText(0, PathwaySide.Both, level.InFever, 0);
+			level.GetSceneUI()?.CreatePerfectHitText(0, PathwaySet.Any, level.InFever, 0);
 			Kill();
 			ForceDraw = false;
 			level.ExitMashState();
@@ -49,8 +49,8 @@ namespace CloneDash.Game.Entities
 		public override void Think(FrameState frameState) {
 			CheckIfComplete();
 		}
-		protected override void OnHit(PathwaySide side, double distanceToHit) {
-			base.OnHit(side, distanceToHit);
+		protected override void OnHit(PathwayId pathway, double distanceToHit) {
+			base.OnHit(pathway, distanceToHit);
 			var level = Level.As<MuseDash1Game>();
 
 			if (!level.IsSeeking)
@@ -113,7 +113,7 @@ namespace CloneDash.Game.Entities
 			}
 
 			if (StartedHitting) {
-				Position = GetGameLevel().GetPathwayPosition(PathwaySide.Both);
+				Position = GetGameLevel().GetCenterPosition();
 				currentAnim?.Apply(visuals.Model, (GetConductor().Time - lastHitTime));
 				return;
 			}

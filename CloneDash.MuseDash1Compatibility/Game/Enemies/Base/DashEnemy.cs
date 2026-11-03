@@ -177,7 +177,7 @@ public class DashEnemy : Entity, IDashChunkable
 	/// <summary>
 	/// What pathway is this entity on
 	/// </summary>
-	public PathwaySide Pathway { get; set; }
+	public PathwaySet Pathway { get; set; }
 
 	/// <summary>
 	/// When does this entity need to be hit, in seconds. <b>WILL NOT ACCOUNT FOR OFFSETS! See GetVisual/GetJudgement methods.</b>
@@ -366,13 +366,13 @@ public class DashEnemy : Entity, IDashChunkable
 
 		if (TimeRemap != null) {
 			var now = GetConductor().Time - (InputSettings.offset_visual.GetFloat() / 1000);
-			return level.GetPathwayPosition(Pathway).X + TimeRemap.Distance(this.GetVisualHitTime() + timeOffset, now) * (13.87 / dt);
+			return level.GetEntityPosition(Pathway).X + TimeRemap.Distance(this.GetVisualHitTime() + timeOffset, now) * (13.87 / dt);
 		}
 
 		var current = GetConductor().Time - timeOffset - (InputSettings.offset_visual.GetFloat() / 1000);
 		var tickHit = this.GetVisualHitTime();
 
-		return level.GetPathwayPosition(Pathway).X + (tickHit - current) * (13.87 / dt);
+		return level.GetEntityPosition(Pathway).X + (tickHit - current) * (13.87 / dt);
 	}
 
 	public bool Shown { get; protected set; } = false;
@@ -406,7 +406,7 @@ public class DashEnemy : Entity, IDashChunkable
 	/// <summary>
 	/// Overridden method for when the entity is hit. Applicable to Hit, Avoid, and Sustain interactivity types.
 	/// </summary>
-	protected virtual void OnHit(PathwaySide side, double distanceToHit) {
+	protected virtual void OnHit(PathwayId pathway, double distanceToHit) {
 		if (Variant.IsBoss())
 			SendSignal(GetGameLevel().Boss, EntitySignalType.Hit);
 	}
@@ -426,7 +426,7 @@ public class DashEnemy : Entity, IDashChunkable
 
 	}
 
-	public delegate void EntityPathwayEvent(DashEnemy entity, PathwaySide side);
+	public delegate void EntityPathwayEvent(DashEnemy entity, PathwayId pathway);
 	public delegate void EntityNoArgumentEvent(DashEnemy entity);
 
 	/// <summary>
@@ -463,7 +463,7 @@ public class DashEnemy : Entity, IDashChunkable
 	public int Hits { get; set; } = 0;
 	public bool WasHitPerfect { get; set; } = false;
 	public double LastHitTime { get; set; }
-	public void Hit(PathwaySide pathway, double distanceToHit) {
+	public void Hit(PathwayId pathway, double distanceToHit) {
 		Hits++;
 		LastHitTime = GetConductor().Time;
 		OnHit(pathway, distanceToHit);
@@ -507,7 +507,7 @@ public class DashEnemy : Entity, IDashChunkable
 
 	private Color? __hitColor;
 	public Color HitColor {
-		get { return __hitColor.HasValue ? __hitColor.Value : Level.As<MuseDash1Game>().GetPathway(Pathway).Color; }
+		get { return __hitColor.HasValue ? __hitColor.Value : Level.As<MuseDash1Game>().GetPathway(this).Color; }
 		set { __hitColor = value; }
 	}
 

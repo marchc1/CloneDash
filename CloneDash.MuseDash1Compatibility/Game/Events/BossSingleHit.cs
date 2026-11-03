@@ -21,7 +21,7 @@ public class BossSingleHit(MuseDash1Game game) : DashEvent(game)
 
 		Game.LoadEntity(new() {
 			Type = MuseDash1EntityType.Single,
-			Pathway = PathwaySide.Both,
+			Pathway = PathwaySet.Any,
 			Variant = BossAction == "boss_close_atk_2" ? EntityVariant.BossHitFast : EntityVariant.BossHitSlow,
 			ShowTime = Time - speed,
 			HitTime = Time

@@ -629,35 +629,38 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		combo2model = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.MonoBehaviour>("fx_combo_2_SkeletonData")!)?.Instantiate();
 	}
 
-	public virtual void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
+	Vector2F TextPosition(PathwaySet pathways) => pathways.Count == 1 ? scene.GetPathwayPosition(pathways.First) : scene.GetCenterPosition();
+	bool IsAirText(PathwaySet pathways) => pathways.Count == 1 && scene.IsAirPathway(pathways.First);
+
+	public virtual void CreateGreatHitText(double precision, PathwaySet pathways, bool inFever, EarlyLate earlylate) {
 		Color color = inFever ? new(255, 108, 0) : new(146, 55, 255);
-		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), inFever ? GoldGreat : ScoreGreat, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : pathway == PathwaySide.Top ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
+		var text = new TextImageRenderItem(Time, 0.5, TextPosition(pathways), 0, new(TextScale), inFever ? GoldGreat : ScoreGreat, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : IsAirText(pathways) ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
 		text.Worldspace = true;
 		BackgroundItems.Add(text);
 	}
 
-	public virtual void CreateHealthText(float healthGiven, PathwaySide pathway) {
-		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(MinorTextScale), $"{Math.Round(healthGiven)}", "Snaps Taste", new(107, 226, 0), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
+	public virtual void CreateHealthText(float healthGiven, PathwaySet pathways) {
+		var text = new TextImageRenderItem(Time, 0.5, TextPosition(pathways), 0, new(MinorTextScale), $"{Math.Round(healthGiven)}", "Snaps Taste", new(107, 226, 0), IsAirText(pathways) ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
 		text.Worldspace = true;
 		ForegroundItems.Add(text);
 	}
 
-	public virtual void CreatePassText(double precision, PathwaySide pathway) {
-		var pos = scene.GetPathwayPosition(pathway);
+	public virtual void CreatePassText(double precision, PathwaySet pathways) {
+		var pos = TextPosition(pathways);
 		pos.X -= 0.8f;
 		var text = new TextImageRenderItem(Time, 0.5, pos, 0, new(TextScale), ScorePass, Color.White, UITextAnimationFns.UpwardFadeoutMoveLeft);
 		text.Worldspace = true;
 		BackgroundItems.Add(text);
 	}
 
-	public virtual void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
-		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), inFever ? GoldPerfect : ScorePerfect, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : pathway == PathwaySide.Top ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
+	public virtual void CreatePerfectHitText(double precision, PathwaySet pathways, bool inFever, EarlyLate earlylate) {
+		var text = new TextImageRenderItem(Time, 0.5, TextPosition(pathways), 0, new(TextScale), inFever ? GoldPerfect : ScorePerfect, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : IsAirText(pathways) ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
 		text.Worldspace = true;
 		BackgroundItems.Add(text);
 	}
 
-	public virtual void CreateScoreText(int scoreGiven, PathwaySide pathway) {
-		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(MinorTextScale), $"{scoreGiven}", "Snaps Taste", new(0, 191, 255), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
+	public virtual void CreateScoreText(int scoreGiven, PathwaySet pathways) {
+		var text = new TextImageRenderItem(Time, 0.5, TextPosition(pathways), 0, new(MinorTextScale), $"{scoreGiven}", "Snaps Taste", new(0, 191, 255), IsAirText(pathways) ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
 		text.Worldspace = true;
 		ForegroundItems.Add(text);
 	}

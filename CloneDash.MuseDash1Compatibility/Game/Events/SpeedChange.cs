@@ -2,12 +2,12 @@
 
 namespace CloneDash.Game.Events;
 
-public class SpeedChange(MuseDash1Game game, PathwaySide side, int speed) : DashEvent(game){
-	public PathwaySide Side => side;
+public class SpeedChange(MuseDash1Game game, PathwaySet pathways, int speed) : DashEvent(game){
+	public PathwaySet Pathways => pathways;
 	public int Speed => speed;
 
 	public override void Activate() {
 		base.Activate();
-		Game.SetPathwaySpeed(Side, Speed);
+		Game.SetPathwaySpeed(Pathways, Speed);
 	}
 }

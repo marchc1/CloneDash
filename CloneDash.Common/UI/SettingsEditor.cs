@@ -466,13 +466,13 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 
 		switch (action) {
 			case InputAction.AirAttack:
-				SetBgColor(PathwayExts.GetColor(PathwaySide.Top).Adjust(0, -0.2, -0.5));
-				SetFgColor(PathwayExts.GetColor(PathwaySide.Top));
+				SetBgColor(PathwayLayout.MUSEDASH_TOP_COLOR.Adjust(0, -0.2, -0.5));
+				SetFgColor(PathwayLayout.MUSEDASH_TOP_COLOR);
 				InvalidateKeys();
 				break;
 			case InputAction.GroundAttack:
-				SetBgColor(PathwayExts.GetColor(PathwaySide.Bottom).Adjust(0, -0.2, -0.5));
-				SetFgColor(PathwayExts.GetColor(PathwaySide.Bottom));
+				SetBgColor(PathwayLayout.MUSEDASH_BOTTOM_COLOR.Adjust(0, -0.2, -0.5));
+				SetFgColor(PathwayLayout.MUSEDASH_BOTTOM_COLOR);
 				InvalidateKeys();
 				break;
 			default: throw new InvalidOperationException($"Unsupported {nameof(InputAction)} provided to {nameof(InputActionKeybindingButtonsPanel)}.{nameof(SetInputAction)}");
