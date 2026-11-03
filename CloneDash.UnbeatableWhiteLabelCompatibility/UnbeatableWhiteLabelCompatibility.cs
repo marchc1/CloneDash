@@ -43,7 +43,7 @@ public static partial class UnbeatableWhiteLabelCompatibility
 #if COMPILED_WINDOWS
 		return INIT_WINDOWS();
 #else
-			return UWLCompatLayerInitResult.OperatingSystemNotCompatible;
+			return AppStatus.OperatingSystemNotCompatible;
 #endif
 	}
 	const uint UNBEATABLE_WHITELABEL_APPID = 1290490;
