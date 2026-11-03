@@ -254,11 +254,21 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 	}
 
 	public float? ResolveCharacterY(PathwaySet held) {
-		if (held.Count >= 2 || Mash.InMashState)
+		if (Mash.InMashState)
 			return Scenes.GetCenterPosition().Y;
-		if (held.Count == 1)
-			return Scenes.GetPathwayPosition(held.First).Y;
-		return null;
+
+		float sum = 0;
+		int count = 0;
+		for (int i = 0; i < Pathways.Layout.Count; i++) {
+			var pathway = Pathways.Layout.PathwayAt(i);
+			if (!held.Contains(pathway))
+				continue;
+
+			sum += Sustains.GetActiveSustain(pathway)?.GetHeldY() ?? Scenes.GetPathwayPosition(pathway).Y;
+			count++;
+		}
+
+		return count == 0 ? null : sum / count;
 	}
 
 	public void Think(FrameState frameState) {
