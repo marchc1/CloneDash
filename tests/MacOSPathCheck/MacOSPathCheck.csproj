@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <InitializerSource Condition="'$(InitializerSource)' == ''">../../CloneDash.MuseDash1Compatibility/Compatibility/Platform Initializers/InitOSX.cs</InitializerSource>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(InitializerSource)" Link="InitOSX.cs" />
+    <Compile Include="../../CloneDash.MuseDash1Compatibility/Compatibility/MD1CompatLayerInitResult.cs" Link="MD1CompatLayerInitResult.cs" />
+  </ItemGroup>
+</Project>
