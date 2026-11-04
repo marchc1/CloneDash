@@ -718,6 +718,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				Interlude.Spin();
 
 				Conductor = Add<Conductor>();
+				Conductor.Music = Music;
+				Conductor.CanSeek = () => !IsDead();
+				Conductor.SeekTo = SeekTo;
 				Combo = new(Conductor);
 				Combo.MissForgiveness = Quirks.MissComboForgiveness;
 				Health = new(Conductor, GameEvents);
@@ -737,6 +740,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				GameEvents.Listen<FeverStartGameEvent>(EnterFever);
 				GameEvents.Listen<FeverEndGameEvent>(ExitFever);
 				Pause = new(this, this, Music, GameEvents);
+				Conductor.Pause = Pause;
 				GameEvents.Listen<PauseRequestGameEvent>(GuardPause);
 				GameEvents.Listen<UnpauseStartGameEvent>(PlayUnpauseSound);
 				Results = new(this, Music, GameEvents);
