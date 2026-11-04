@@ -17,7 +17,7 @@ public interface IMuseDash1FeverProvider : ICloneDashModProvider<IMuseDash1Fever
 
 public interface IMuseDash1FeverDescriptor : ICloneDashModDescriptor
 {
-	IMuseDash1FeverRuntime? Instantiate(IGame game);
+	IMuseDash1FeverRuntime? Instantiate(RhythmGameLevel game);
 }
 
 public interface IMuseDash1FeverRuntime
@@ -46,7 +46,7 @@ public sealed class FeverMod : ActiveModStore<IMuseDash1FeverProvider, IMuseDash
 		BindConVar(fever);
 	}
 
-	internal static IMuseDash1FeverRuntime? InstantiateCurrentFever(IGame game) => Instance.GetActive()?.Instantiate(game);
+	internal static IMuseDash1FeverRuntime? InstantiateCurrentFever(RhythmGameLevel game) => Instance.GetActive()?.Instantiate(game);
 }
 
 public class MuseDash1FeverProvider : ModProvider<IMuseDash1FeverDescriptor>, IMuseDash1FeverProvider
@@ -76,7 +76,7 @@ public class MuseDash1FeverProvider : ModProvider<IMuseDash1FeverDescriptor>, IM
 public class MuseDash1FeverDescriptor(string name, ICloneDashModProvider provider) : SimpleModDescriptor(name, name, provider), IMuseDash1FeverDescriptor
 {
 	public readonly string Name = name;
-	public IMuseDash1FeverRuntime? Instantiate(IGame game) {
+	public IMuseDash1FeverRuntime? Instantiate(RhythmGameLevel game) {
 		return new MuseDash1FeverRuntime(this, (MuseDash1Game)game);
 	}
 }

@@ -12,7 +12,7 @@ public interface ICharacterVictoryInstance
 	/// Plays the audio track this character says.
 	/// </summary>
 	void PlayAudio();
-	void Initialize(IGame game);
+	void Initialize(RhythmGameLevel game);
 	/// <summary>
 	/// Renders the model.
 	/// </summary>

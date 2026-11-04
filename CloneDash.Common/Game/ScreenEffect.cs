@@ -1,4 +1,5 @@
-﻿using Nucleus.Engine;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 
@@ -8,7 +9,7 @@ public abstract class ScreenEffect
 {
 	double CurrentValue;
 	Func<double, double>? Easing;
-	IGame game = null!;
+	RhythmGameLevel game = null!;
 	double LastValue;
 	double Length;
 	double Time;
@@ -25,7 +26,7 @@ public abstract class ScreenEffect
 		}
 	}
 
-	protected IConductor Conductor => game.GetConductor();
+	protected IConductor Conductor => game.GetRequiredService<IConductor>();
 
 	protected ScreenEffectsComponent Effects { get; private set; } = null!;
 
@@ -56,7 +57,7 @@ public abstract class ScreenEffect
 		Easing = easing;
 	}
 
-	internal void Attach(Level level, IGame game, ScreenEffectsComponent effects) {
+	internal void Attach(Level level, RhythmGameLevel game, ScreenEffectsComponent effects) {
 		Level = level;
 		this.game = game;
 		Effects = effects;

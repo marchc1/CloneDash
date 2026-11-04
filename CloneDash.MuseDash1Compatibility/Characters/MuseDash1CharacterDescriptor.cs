@@ -433,7 +433,7 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 	public ICharacterVictoryInstance CreateVictory() => new MuseDashCharacterVictoryInstance(this);
 	public ICharacterFailureInstance CreateFailure() => new MuseDashCharacterFailureInstance(this);
 
-	public T? CreateInGame<T>(IGame game) where T : ICharacterInGameInstance {
+	public T? CreateInGame<T>(RhythmGameLevel game) where T : ICharacterInGameInstance {
 		switch (game.GetGamemode().GetUUID()) {
 			case MuseDash1Gamemode.UUID: return (T)(object)(new MuseDash1CharacterInstance(this, (MuseDash1Game)game));
 			case MuseDash1TouhouGamemode.UUID: return (T)(object)(new MuseDash1CharacterInstance(this, (MuseDash1Game)game));

@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Common.Game;
 
-public class ScoreComponent : IGameComponent
+public class ScoreComponent : IRhythmGameComponent
 {
 	/// <summary>
 	/// Current score of the player.

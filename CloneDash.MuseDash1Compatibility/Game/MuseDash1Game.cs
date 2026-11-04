@@ -1,4 +1,4 @@
-using CloneDash.Characters;
+/*using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes;
@@ -143,7 +143,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public ISustainManager Sustains = new StackBasedSustainManager();
 
 	const double TIME_BETWEEN_MASH_HITS = (1d / Masher.MASHER_PLAYER_MAX_HITS_PER_SECOND);
-	readonly List<IGameComponent> Components = [];
+	readonly List<IRhythmGameComponent> Components = [];
 	readonly List<SceneChange> sceneChanges = [];
 	readonly Dictionary<UtlSymId_t, IMuseDash1SceneInstance> sceneLUT = [];
 	readonly List<IMuseDash1SceneInstance> scenes = [];
@@ -1826,14 +1826,5 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		SceneUI?.UpdateFeverProgress(ev.Value, ev.Max);
 	}
 
-	/// <summary>
-	/// Creates an event from an EventType enumeration, and adds it to <see cref="GameplayManager.Events"/>.
-	/// </summary>
-	/// <param name="t"></param>
-	/// <returns></returns>
-	/*public CD_BaseEvent AddEvent(EventType t) {
-            CD_BaseEvent e = CD_BaseEvent.CreateFromType(this.Game, t);
-            return e;
-        }*/
 	// Last time a combo occured in game-time
-}
+}*/

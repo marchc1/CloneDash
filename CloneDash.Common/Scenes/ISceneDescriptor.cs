@@ -13,13 +13,13 @@ public struct SceneMetadata
 
 public interface ISceneInstance
 {
-	IGame GetGame();
+	RhythmGameLevel GetGame();
 	ISceneDescriptor GetScene();
 }
 
 public interface ISceneDescriptor : ICloneDashModDescriptor
 {
 	SceneMetadata FetchMetadata();
-	T? CreateInGame<T>(IGame game) where T : ISceneInstance;
+	T? CreateInGame<T>(RhythmGameLevel game) where T : ISceneInstance;
 	bool SupportsGamemode(IGamemodeDescriptor gamemodeDescriptor);
 }

@@ -1,5 +1,6 @@
 ﻿using AssetStudio;
 using CloneDash.Common;
+using CloneDash.Common.Compatibility;
 using CloneDash.Common.Data;
 using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash;
@@ -33,7 +34,7 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 	}
 
 	public IGamemodeDescriptor GetGamemode() {
-		return GamemodeMod.GetGamemode("gamemode/musedash1/standard")!;
+		return ModStores.Get<GamemodeMod>().GetDescriptorByUID("gamemode/musedash1/standard")!;
 	}
 
 	void AddOneEntity(MuseDash1EntityType entityType, NoteInfo noteInfo, PathwaySet? pathwayOverride = null){

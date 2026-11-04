@@ -4,6 +4,7 @@
 
 using CloneDash.Common;
 using CloneDash.Common.Compatibility.Valve;
+using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Systems.Discord;
 using CloneDash.Common.UI.Searching;
@@ -54,7 +55,7 @@ internal class Program
 		VelopackApp.Build().Run();
 
 		LevelTransitions.OnLoadMainMenu += () => EngineCore.LoadLevel(new MainMenuLevel());
-		LevelTransitions.OnLoadSongChart += (chart, parms) => chart.GetGamemode().Load(chart, parms);
+		LevelTransitions.OnLoadSongChart += (chart, parms) => EngineCore.LoadLevel(chart.GetGamemode().Load(chart, parms));
 		LevelTransitions.OnLoadSongSelector += LevelTransitions_OnLoadSongSelector;
 
 		if (!NucleusSingleton.TryRedirect("Clone Dash", Environment.CommandLine))
@@ -286,9 +287,9 @@ public class GameDLL : IGameDLL
 			var chart = song.GetSheet(difficulty);
 
 			if (chart != null)
-				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new() {
-					Autoplay = cmd.FindParm("-autoplay") != 0
-				});
+				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new RhythmGameLoadParameters()
+					.Set(RhythmGameLoadParameters.AUTOPLAY, cmd.FindParm("-autoplay") != 0)
+				);
 		}
 
 		else if (cmd.HasParm("-cam_level")) {
@@ -308,10 +309,10 @@ public class GameDLL : IGameDLL
 						break;
 				}
 				if (chart != null)
-					LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new() {
-						Autoplay = cmd.FindParm("-autoplay") != 0,
-						StartMeasure = cmd.ParmValue("-startmeasure", 0)
-					});
+					LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new RhythmGameLoadParameters() 
+						.Set(RhythmGameLoadParameters.AUTOPLAY, cmd.FindParm("-autoplay") != 0)
+						.Set(RhythmGameLoadParameters.START_MEASURE, cmd.ParmValue("-startmeasure", 0))
+					);
 			}
 			else
 				LevelTransitions.LoadMainMenu();

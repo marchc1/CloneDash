@@ -45,7 +45,8 @@ public interface ISongChart
 	IAudioClip GetAudioTrack();
 
 	/// <summary>
-	/// The gamemode this chart targets
+	/// The gamemode this chart targets. An adapter can attempt to convert to a different gamemode;
+	/// this just tells you what the chart was made for
 	/// </summary>
 	IGamemodeDescriptor GetGamemode();
 	/// <summary>

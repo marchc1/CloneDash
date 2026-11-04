@@ -12,7 +12,7 @@ public class MuseDashCharacterVictoryInstance(MuseDash1CharacterDescriptor descr
 	ModelInstance? model;
 	readonly AnimationHandler anims = new();
 
-	public void Initialize(IGame game){
+	public void Initialize(RhythmGameLevel game){
 		model = Descriptor.GetVictoryModel(EngineCore.Level).Instantiate();
 		anims.SetModel(model);
 		anims.SetAnimation(0, "in");

@@ -7,7 +7,7 @@ using Color = Nucleus.Common.Types.Color;
 
 namespace CloneDash.Common.Game;
 
-public class ScreenEffectsComponent(Level level, IGame game) : IGameComponent
+public class ScreenEffectsComponent(Level level, RhythmGameLevel game) : IRhythmGameComponent
 {
 	static int nextTypeId;
 

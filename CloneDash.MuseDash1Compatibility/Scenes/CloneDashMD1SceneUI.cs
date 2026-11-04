@@ -32,10 +32,10 @@ public class StatisticsPanel : Panel
 	ISongChart? chart;
 	double start = 0;
 	double Time() => globals.CurTime - start;
-	IGame game;
+	RhythmGameLevel game;
 	StatisticsData stats;
 
-	public StatisticsPanel(Element? parent, IGame game, StatisticsData stats) : base(parent){
+	public StatisticsPanel(Element? parent, RhythmGameLevel game, StatisticsData stats) : base(parent){
 		this.game = game;
 		this.stats = stats;
 
@@ -480,7 +480,7 @@ public enum ComboGrade
 	High = 30
 }
 
-public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1SceneUI
+public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : IMuseDash1SceneUI
 {
 	protected StatisticsPanel? CurrentStatisticsPanel;
 
@@ -1175,7 +1175,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	}
 }
 
-public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, IGame game) : MD1SceneUI(scene, game)
+public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, RhythmGameLevel game) : MD1SceneUI(scene, game)
 {
 	protected TextImageRenderItem ComboLabel = null!;
 
@@ -1227,7 +1227,7 @@ public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, IGame game) 
 	}
 }
 
-public class CloneDashMD1SceneUIArknights(IMuseDash1SceneInstance scene, IGame game) : MD1SceneUI(scene, game)
+public class CloneDashMD1SceneUIArknights(IMuseDash1SceneInstance scene, RhythmGameLevel game) : MD1SceneUI(scene, game)
 {
 
 }

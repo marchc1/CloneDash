@@ -1,4 +1,5 @@
-﻿using CloneDash.Common.Data;
+﻿using CloneDash.Common.Compatibility;
+using CloneDash.Common.Data;
 using CloneDash.Common.Game;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
@@ -51,10 +52,11 @@ public class MD1_SongChart : ISongChart
 	}
 	public ISong GetSong() => Song;
 	public IGamemodeDescriptor GetGamemode() {
-		if (Difficulty == MuseDashDifficulty.Touhou)
-			return GamemodeMod.GetGamemode(MuseDash1TouhouGamemode.UUID)!;
-		else
-			return GamemodeMod.GetGamemode(MuseDash1Gamemode.UUID)!;
+		return ModStores.Get<GamemodeMod>().GetDescriptorByUID(
+			Difficulty == MuseDashDifficulty.Touhou
+				? "gamemode/musedash1/touhou"
+				: "gamemode/musedash1/standard"
+			)!;
 	}
 	public object GetGamemodeData() => (GamemodeData ?? Song.ProduceGamemodeData(this, (int)Difficulty))
 									?? throw new Exception("uninitialized gamemode data");

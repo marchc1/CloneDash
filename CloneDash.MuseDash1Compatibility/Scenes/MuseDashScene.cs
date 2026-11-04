@@ -309,7 +309,7 @@ public record class MuseDash1SceneInfo
 
 	public UIFactoryFn UIFactory = (scene, game) => new MD1SceneUI(scene, game);
 }
-public delegate IMuseDash1SceneUI UIFactoryFn(IMuseDash1SceneInstance scene, IGame game);
+public delegate IMuseDash1SceneUI UIFactoryFn(IMuseDash1SceneInstance scene, RhythmGameLevel game);
 public class MuseDash1SceneDescriptor : ModDescriptor, IMuseDash1SceneDescriptor
 {
 	public readonly MuseDash1SceneInfo SceneInfo;
@@ -337,7 +337,7 @@ public class MuseDash1SceneDescriptor : ModDescriptor, IMuseDash1SceneDescriptor
 	public override string GetID() => SceneInfo.MapName;
 	public override ICloneDashModProvider GetProvider() => provider;
 
-	public T? CreateInGame<T>(IGame game) where T : ISceneInstance {
+	public T? CreateInGame<T>(RhythmGameLevel game) where T : ISceneInstance {
 		var uuid = game.GetGamemode().GetUUID();
 
 		switch (uuid) {
@@ -1182,7 +1182,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 	public void Deactivate(IMuseDash1SceneInstance? transitioningFrom) { }
 	public int GetSceneArrayIndex() => arrayIndex;
 	public void SetSceneArrayIndex(int idx) => arrayIndex = idx;
-	public IGame GetGame() => Game;
+	public RhythmGameLevel GetGame() => Game;
 	public ISceneDescriptor GetScene() => Descriptor;
 
 	public void RenderOverlay() {

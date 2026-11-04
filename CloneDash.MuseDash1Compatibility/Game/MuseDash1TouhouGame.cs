@@ -1,4 +1,5 @@
-﻿using CloneDash.Common.Game;
+﻿using CloneDash.Common.Compatibility;
+using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
@@ -8,24 +9,16 @@ using Nucleus;
 namespace CloneDash.Game;
 
 [Nucleus.MarkForStaticConstruction]
-public partial class MuseDash1TouhouGamemode : IGamemodeDescriptor
+public partial class MuseDash1TouhouGamemode(ICloneDashModProvider provider) : MuseDash1Gamemode(provider)
 {
-	public ReadOnlySpan<char> GetUUID() => UUID;
-
-	public IGame Load(ISongChart chart, in GameLoadGenericParameters parms) {
-		var game = new MuseDash1TouhouGame(new((MD1_SongChart)chart) {
-			Autoplay = parms.Autoplay,
-			Measure = parms.StartMeasure ?? 0
-		});
-		EngineCore.LoadLevel(game);
-		return game;
-	}
+	public override string GetName() => "Muse Dash 1 (Touhou)";
+	public override string GetID() => "touhou";
 
 	public const string UUID = "gamemode/musedash1/touhou";
 }
 
 [MarkForStaticConstruction]
-public partial class MuseDash1TouhouGame(DashGameParams gameParameters) : MuseDash1Game(gameParameters), IGame
+public partial class MuseDash1TouhouGame(DashGameParams gameParameters) : MuseDash1Game(gameParameters)
 {
 	public override DashEnemy? LoadEntity(MD1_SongChartEntity ChartEntity) {
 		DashEnemy? enemy = base.LoadEntity(ChartEntity);

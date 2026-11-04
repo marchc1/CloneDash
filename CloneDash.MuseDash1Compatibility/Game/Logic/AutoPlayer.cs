@@ -14,7 +14,7 @@ using System.Diagnostics;
 
 namespace CloneDash.Game.Logic
 {
-	public class AutoPlayer : LogicalEntity, IInputReceiver, IGameComponent
+	public class AutoPlayer : LogicalEntity, IInputReceiver, IRhythmGameComponent
 	{
 		/// <summary>
 		/// Used to store which sustains are currently being held.

@@ -4,7 +4,7 @@ using CloneDash.Game.Entities;
 
 namespace CloneDash.Game.Logic;
 
-public interface ISustainManager : IGameComponent
+public interface ISustainManager : IRhythmGameComponent
 {
 	public void StartSustainBeam(SustainBeam sustain);
 	public void FailSustainBeam(SustainBeam sustain);

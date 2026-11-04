@@ -1,5 +1,6 @@
 using CloneDash.Charts;
 using CloneDash.Common;
+using CloneDash.Common.Game;
 using CloneDash.Common.Songs;
 using CloneDash.Common.UI;
 using CloneDash.Common.UI.Binding;
@@ -601,9 +602,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 
 	public void LoadChartSheetLevel(ISongChart chart, bool autoplay) {
-		LevelTransitions.LoadSongChart($"Loading '{chart.GetSong().FetchMetadata().Name}'...", chart, new() {
-			Autoplay = autoplay
-		});
+		LevelTransitions.LoadSongChart($"Loading '{chart.GetSong().FetchMetadata().Name}'...", chart, new RhythmGameLoadParameters()
+			.Set(RhythmGameLoadParameters.AUTOPLAY, autoplay)
+		);
 	}
 
 

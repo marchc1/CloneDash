@@ -55,7 +55,7 @@ public interface ICharacterDescriptor : ICloneDashModDescriptor
 	/// <summary>
 	/// If the gamemode is not supported, this will return null!
 	/// </summary>
-	T? CreateInGame<T>(IGame game) where T : ICharacterInGameInstance;
+	T? CreateInGame<T>(RhythmGameLevel game) where T : ICharacterInGameInstance;
 
 	void ApplyQuirks(ref MuseDash1GameplayQuirks quirks);
 }

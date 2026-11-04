@@ -9,7 +9,7 @@ using Nucleus.UI.Elements;
 
 namespace CloneDash.Common.Game;
 
-public class PauseComponent(Level level, IGame game, MusicComponent music, GameEventManager events)
+public class PauseComponent(Level level, RhythmGameLevel game, MusicComponent music, GameEventManager events)
 {
 	public double DeltaUnpauseTime => level.Realtime - UnpauseTime;
 
