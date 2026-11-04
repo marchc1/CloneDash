@@ -1,16 +1,12 @@
 ﻿namespace CloneDash.Common.Game;
 
-public class FeverComponent(IConductor conductor)
+public class FeverComponent(IConductor conductor, GameEventManager events)
 {
 	public double DismissalTime;
 	public double Duration = 6;
 	public float Max;
 
 	double LastExitTime = -1000000d;
-
-	public event Action? OnChanged;
-	public event Action? OnEnter;
-	public event Action? OnExit;
 
 	public bool Dismissed => (conductor.GetTime() - LastExitTime) < DismissalTime;
 
@@ -53,7 +49,7 @@ public class FeverComponent(IConductor conductor)
 		if (InFever || Dismissed) return;
 
 		Value = Math.Clamp(Value + fever, 0, Max);
-		OnChanged?.Invoke();
+		events.Fire(new FeverChangedGameEvent(Value, Max));
 		if (Value >= Max)
 			Enter();
 	}
@@ -63,7 +59,7 @@ public class FeverComponent(IConductor conductor)
 
 		var consumed = Math.Min(Value, amount);
 		Value -= consumed;
-		OnChanged?.Invoke();
+		events.Fire(new FeverChangedGameEvent(Value, Max));
 		return consumed;
 	}
 
@@ -73,7 +69,7 @@ public class FeverComponent(IConductor conductor)
 	public void Enter() {
 		InFever = true;
 		WhenDidFeverStart = conductor.GetTime();
-		OnEnter?.Invoke();
+		events.Fire(new FeverStartGameEvent(Duration));
 	}
 
 	/// <summary>
@@ -84,7 +80,7 @@ public class FeverComponent(IConductor conductor)
 		Value = 0;
 		WhenDidFeverStart = -1000000d;
 		LastExitTime = conductor.GetTime();
-		OnExit?.Invoke();
+		events.Fire(new FeverEndGameEvent());
 	}
 
 	public void Reset() {

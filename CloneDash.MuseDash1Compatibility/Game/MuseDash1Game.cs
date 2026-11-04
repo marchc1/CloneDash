@@ -131,6 +131,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public readonly List<DashEvent> Events = [];
 	public int EventSortIndexCounter;
 	public FeverComponent Fever = null!;
+	public readonly GameEventManager GameEvents = new();
 	public readonly int[] PathwaySpeeds = new int[PathwayLayout.MAX_PATHWAYS];
 	public readonly HashSet<DashEvent> HandledEvents = [];
 	public HealthComponent Health = null!;
@@ -797,22 +798,22 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				Conductor = Add<Conductor>();
 				Combo = new(Conductor);
 				Combo.MissForgiveness = Quirks.MissComboForgiveness;
-				Health = new(Conductor);
+				Health = new(Conductor, GameEvents);
 				Health.Max = Quirks.MaxHP;
 				Health.IFrameLength = Quirks.IFrameLength;
 				Health.BonusGranted = Quirks.HealthBonusGranted;
 				Health.BonusThreshold = Quirks.HealthBonusThreshold;
 				Health.BonusTimes = Quirks.HealthBonusTimes;
 				Health.DyingSeconds = Quirks.DyingSeconds;
-				Health.OnDeath += TriggerDeath;
+				GameEvents.Listen<PlayerDeathGameEvent>(TriggerDeath);
 				Health.Reset();
-				Fever = new(Conductor);
+				Fever = new(Conductor, GameEvents);
 				Fever.Max = Quirks.MaxFever;
 				Fever.Duration = Quirks.FeverDuration;
 				Fever.DismissalTime = Quirks.PostFeverDismissalTime;
-				Fever.OnChanged += UpdateFeverProgress;
-				Fever.OnEnter += EnterFever;
-				Fever.OnExit += ExitFever;
+				GameEvents.Listen<FeverChangedGameEvent>(UpdateFeverProgress);
+				GameEvents.Listen<FeverStartGameEvent>(EnterFever);
+				GameEvents.Listen<FeverEndGameEvent>(ExitFever);
 				Interlude.Spin();
 			}
 
@@ -1041,6 +1042,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public override void OnUnload() {
+		GameEvents.Clear();
 		SceneUI?.Dispose();
 		SceneUI = null;
 
@@ -1995,15 +1997,15 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		return false;
 	}
 
-	private void EnterFever() {
+	private void EnterFever(ref FeverStartGameEvent ev) {
 		if (!IsSeeking) {
 			FeverFX?.Activate();
 			PlaySceneSound(SceneSound.Fever, 0);
 		}
-		SceneUI?.UpdateInFever(Fever.TimeLeft, Fever.Duration);
+		SceneUI?.UpdateInFever(Fever.TimeLeft, ev.Duration);
 	}
 
-	private void ExitFever() {
+	private void ExitFever(ref FeverEndGameEvent ev) {
 		FeverFX?.Cancel();
 	}
 
@@ -2286,7 +2288,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			return;
 		LastMasherAttemptedHit = Conductor.Time;
 	}
-	void TriggerDeath() {
+	void TriggerDeath(ref PlayerDeathGameEvent ev) {
 		if (Quirks.PlayableAfterDeath)
 			return;
 
@@ -2294,8 +2296,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Character.GetPrimary().PlayAnimation(CharacterAnimationType.Die);
 	}
 
-	void UpdateFeverProgress() {
-		SceneUI?.UpdateFeverProgress(Fever.Value, Fever.Max);
+	void UpdateFeverProgress(ref FeverChangedGameEvent ev) {
+		SceneUI?.UpdateFeverProgress(ev.Value, ev.Max);
 	}
 
 	struct ScreenspaceEffectState

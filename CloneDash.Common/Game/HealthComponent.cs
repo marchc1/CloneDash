@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Common.Game;
 
-public class HealthComponent(IConductor conductor)
+public class HealthComponent(IConductor conductor, GameEventManager events)
 {
 	public double BonusGranted = 1;
 	public double BonusThreshold;
@@ -13,8 +13,6 @@ public class HealthComponent(IConductor conductor)
 	bool DyingUsed;
 	double DyingUntil = -200000;
 	double LastIFrameGivenTime = -200000;
-
-	public event Action? OnDeath;
 
 	public bool Dead { get; private set; }
 
@@ -102,7 +100,7 @@ public class HealthComponent(IConductor conductor)
 			}
 
 			Dead = true;
-			OnDeath?.Invoke();
+			events.Fire(new PlayerDeathGameEvent());
 		}
 	}
 }
