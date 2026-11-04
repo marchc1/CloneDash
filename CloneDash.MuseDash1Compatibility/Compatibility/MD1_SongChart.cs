@@ -1,4 +1,5 @@
 ﻿using CloneDash.Common.Data;
+using CloneDash.Common.Game;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
@@ -22,7 +23,7 @@ public class MD1_GamemodeData
 	public readonly List<TempoChange> TempoChanges = [];
 	public readonly List<TimeSignatureChange> TimeSignatureChanges = [];
 	public readonly List<ChartSceneChange> SceneChanges = [];
-	public readonly Dictionary<int, MD1_TimeRemap> LayerRemaps = [];
+	public readonly Dictionary<int, TimeRemap> LayerRemaps = [];
 	public PathwayLayout Layout = PathwayLayout.MuseDash;
 	public string? InitialScene;
 	public double StartOffset;

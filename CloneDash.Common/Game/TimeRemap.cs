@@ -1,12 +1,12 @@
-﻿namespace CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+﻿namespace CloneDash.Common.Game;
 
-public sealed class MD1_TimeRemap
+public sealed class TimeRemap
 {
 	readonly double[] times;
 	readonly double[] speeds;
 	readonly double[] positions;
 
-	public MD1_TimeRemap(IEnumerable<(double Time, double Speed)> keys) {
+	public TimeRemap(IEnumerable<(double Time, double Speed)> keys) {
 		var sorted = keys.OrderBy(static k => k.Time).ToArray();
 		times = new double[sorted.Length];
 		speeds = new double[sorted.Length];

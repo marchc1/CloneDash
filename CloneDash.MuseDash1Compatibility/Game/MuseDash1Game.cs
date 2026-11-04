@@ -133,7 +133,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public int EventSortIndexCounter;
 	public FeverComponent Fever = null!;
 	public readonly GameEventManager GameEvents = new();
-	public readonly int[] PathwaySpeeds = new int[PathwayLayout.MAX_PATHWAYS];
 	public readonly HashSet<DashEvent> HandledEvents = [];
 	public HealthComponent Health = null!;
 	public readonly List<ICloneDashInputSystem> InputReceivers = [];
@@ -144,6 +143,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public ResultComponent Results = null!;
 	public readonly ScoreComponent Score = new();
+	public readonly ScrollComponent Scroll = new();
 	public StatisticsData Stats = null!;
 	public ISustainManager Sustains = new StackBasedSustainManager();
 
@@ -170,7 +170,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	double LastJumpTime = -2000000000000d;
 	double LastMasherAttemptedHit;
 	double LastMasherRealHit;
-	IReadOnlyDictionary<int, MD1_TimeRemap>? layerRemaps;
 	readonly SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
 	MuseDash1GameplayQuirks Quirks = new();
 	readonly List<DashEnemy> ReadyToBuildEntities = [];
@@ -598,7 +597,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	float backgroundOverrideOpacity;
 
 	public override void Initialize(params object[] _) {
-		ResetPathwaySpeeds();
 		Effects = new(this, this);
 
 		Stats = new(gameParameters.Chart);
@@ -624,7 +622,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				throw new Exception("Gamemode data was not MD1");
 
 			backgroundOverride = gamemodeData.BackgroundTextureOverride;
-			layerRemaps = gamemodeData.LayerRemaps;
+			Scroll.Add(new LayerRemapScrollModifier(gamemodeData.LayerRemaps));
 			Layout = gamemodeData.Layout;
 			backgroundOverrideOpacity = gamemodeData.BackgroundTextureOpacity;
 
@@ -880,9 +878,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ent.Length = ChartEntity.Length;
 		ent.Speed = ChartEntity.Speed;
 		ent.Dt = ChartEntity.Dt;
+		ent.Layer = ChartEntity.Layer;
+		ent.ScrollSpeed = 13.87 / (ChartEntity.Dt <= 0 ? 1 : ChartEntity.Dt);
 		ent.Flipped = ChartEntity.Flipped;
 		ent.Blood = ChartEntity.Blood;
-		ent.SetTimeRemap(layerRemaps?.GetValueOrDefault(ChartEntity.Layer));
+		ent.SetTimeRemap(Scroll.GetRemap(ent));
 
 		ent.FeverGiven = ChartEntity.Fever;
 		ent.DamageTaken = ChartEntity.Damage;
@@ -1165,7 +1165,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 
 		Boss.Reset();
-		ResetPathwaySpeeds();
 
 		Combo.Reset();
 		Health.Reset();
@@ -1178,10 +1177,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		LastHologramJumpTIme = -2000000000000d;
 		ActiveEvents.Clear();
 		HandledEvents.Clear();
-	}
-
-	public void ResetPathwaySpeeds() {
-		Array.Fill(PathwaySpeeds, 1);
 	}
 
 	public float? ResolveCharacterY(PathwaySet held) {
@@ -1299,15 +1294,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public void SendEntitySignal(DashEnemy? entityFrom, DashEnemy? entityTo, EntitySignalType signalType, object? data = null) {
 		entityTo?.OnSignalReceived(entityFrom, signalType, data);
-	}
-
-	public void SetPathwaySpeed(PathwaySet pathways, int speed) {
-		System.Diagnostics.Debug.Assert(speed >= 1);
-		System.Diagnostics.Debug.Assert(speed <= 3);
-
-		for (int i = 0; i < Layout.Count; i++)
-			if (pathways.Contains(Layout.PathwayAt(i)))
-				PathwaySpeeds[i] = speed;
 	}
 
 	public bool SetScene(IMuseDash1SceneInstance? scene) {

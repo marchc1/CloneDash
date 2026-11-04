@@ -1,4 +1,5 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Scenes;
@@ -49,7 +50,7 @@ public class DashEnemyVisuals
 	public void SetShowTimeDirect(double showtime) => ShowTime = showtime;
 }
 
-public class DashEnemy : Entity, IDashChunkable
+public class DashEnemy : Entity, IDashChunkable, IScrollable
 {
 	public DashEnemyVisuals[] Visuals = null!;
 
@@ -207,12 +208,14 @@ public class DashEnemy : Entity, IDashChunkable
 	public double Length { get; set; }
 	public int Speed { get; set; }
 	public double Dt { get; set; }
+	public int Layer { get; set; }
+	public double ScrollSpeed { get; set; }
 
-	public MD1_TimeRemap? TimeRemap { get; private set; }
+	public TimeRemap? TimeRemap { get; private set; }
 	double remapChunkStart;
 	double remapChunkLength;
 
-	public void SetTimeRemap(MD1_TimeRemap? remap) {
+	public void SetTimeRemap(TimeRemap? remap) {
 		TimeRemap = remap == null || remap.KeyCount == 0 ? null : remap;
 		if (TimeRemap == null)
 			return;
@@ -362,17 +365,17 @@ public class DashEnemy : Entity, IDashChunkable
 	public double XPosFromTimeOffset(float timeOffset = 0) {
 		var level = GetGameLevel();
 
-		var dt = Dt <= 0 ? 1 : Dt;
+		var scrollSpeed = level.Scroll.GetScrollSpeed(this);
 
 		if (TimeRemap != null) {
 			var now = GetConductor().Time - (InputSettings.offset_visual.GetFloat() / 1000);
-			return level.GetEntityPosition(Pathway).X + TimeRemap.Distance(this.GetVisualHitTime() + timeOffset, now) * (13.87 / dt);
+			return level.GetEntityPosition(Pathway).X + TimeRemap.Distance(this.GetVisualHitTime() + timeOffset, now) * scrollSpeed;
 		}
 
 		var current = GetConductor().Time - timeOffset - (InputSettings.offset_visual.GetFloat() / 1000);
 		var tickHit = this.GetVisualHitTime();
 
-		return level.GetEntityPosition(Pathway).X + (tickHit - current) * (13.87 / dt);
+		return level.GetEntityPosition(Pathway).X + (tickHit - current) * scrollSpeed;
 	}
 
 	public bool Shown { get; protected set; } = false;

@@ -8,6 +8,5 @@ public class SpeedChange(MuseDash1Game game, PathwaySet pathways, int speed) : D
 
 	public override void Activate() {
 		base.Activate();
-		Game.SetPathwaySpeed(Pathways, Speed);
 	}
 }
