@@ -74,14 +74,6 @@ public partial class MuseDash1Gamemode : IGamemodeDescriptor
 [MarkForStaticConstruction]
 public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 {
-	public const float PLAYER_OFFSET_HIT_Y = -0.267f;
-	public const float PLAYER_OFFSET_X = 0.25f;
-	public const float PLAYER_OFFSET_Y = 0.775f;
-	public const string STRING_COMBO = "COMBO";
-	public const string STRING_FEVERN = "FEVER: {0}/{1}";
-	public const string STRING_FEVERY = "FEVER! {0}s";
-	public const string STRING_HP = "HP: {0}";
-	public const string STRING_SCORE = "SCORE";
 	public static readonly ConVar md1_debugevents = new ConVar(nameof(md1_debugevents), "0", 0, "Prints event debugging to console.");
 	public static readonly ConVar musicspeed = new(nameof(musicspeed), "1", FCvar.None, "Sets the music speed for the game.", 0.1, 4, (cv, _, _) => {
 		if (EngineCore.Level is MuseDash1Game game)
@@ -122,8 +114,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	});
 
 	public static ConVar profilegameload = new(nameof(profilegameload), "0", FCvar.None, "Profiles the game during loading, then triggers an engine interrupt afterwards to tell you how long each individual component took.");
-	public readonly MuseDash1EnemyManager EnemyManager = new();
-	public readonly MuseDash1EventManager EventManager = new();
+	
+	public readonly TimeBasedChunkedManager<DashEnemy> EnemyManager = new();
+	public readonly TimeBasedChunkedManager<DashEvent> EventManager = new();
 	public HashSet<DashEvent> ActiveEvents = [];
 	public ICameraRig CameraRig = null!;
 	public ComboComponent Combo = null!;
@@ -707,9 +700,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				Boss.RendersItself = false;
 			}
 
-			Interlude.Spin(submessage: "Loading internal entities...");
+			Interlude.Spin(submessage: "Connecting components...");
 
-			using (StaticSequentialProfiler.StartStackFrame("Setup Internal Ents")) {
+			// TODO: Wider Nucleus review. Do we want to keep the logical entity concept? How should
+			// entities really work? They were added in the original engine but make less sense nowadays...
+			// given Nucleus is meant to be more dynamic
+			using (StaticSequentialProfiler.StartStackFrame("Component Connection")) {
 				AutoPlayer = Add<AutoPlayer>();
 				AutoPlayer.Enabled = gameParameters.Autoplay;
 				Input.Receivers.Add(AutoPlayer);
@@ -722,31 +718,40 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				Conductor.Music = Music;
 				Conductor.CanSeek = () => !IsDead();
 				Conductor.SeekTo = SeekTo;
-				Combo = new(Conductor);
-				Combo.MissForgiveness = Quirks.MissComboForgiveness;
-				Health = new(Conductor, GameEvents);
-				Health.Max = Quirks.MaxHP;
-				Health.IFrameLength = Quirks.IFrameLength;
-				Health.BonusGranted = Quirks.HealthBonusGranted;
-				Health.BonusThreshold = Quirks.HealthBonusThreshold;
-				Health.BonusTimes = Quirks.HealthBonusTimes;
-				Health.DyingSeconds = Quirks.DyingSeconds;
+
+				Combo = new(Conductor) {
+					MissForgiveness = Quirks.MissComboForgiveness
+				};
+
+				Health = new(Conductor, GameEvents) {
+					Max = Quirks.MaxHP,
+					IFrameLength = Quirks.IFrameLength,
+					BonusGranted = Quirks.HealthBonusGranted,
+					BonusThreshold = Quirks.HealthBonusThreshold,
+					BonusTimes = Quirks.HealthBonusTimes,
+					DyingSeconds = Quirks.DyingSeconds
+				};
 				GameEvents.Listen<PlayerDeathGameEvent>(TriggerDeath);
 				Health.Reset();
-				Fever = new(Conductor, GameEvents);
-				Fever.Max = Quirks.MaxFever;
-				Fever.Duration = Quirks.FeverDuration;
-				Fever.DismissalTime = Quirks.PostFeverDismissalTime;
+
+				Fever = new(Conductor, GameEvents) {
+					Max = Quirks.MaxFever,
+					Duration = Quirks.FeverDuration,
+					DismissalTime = Quirks.PostFeverDismissalTime
+				};
 				GameEvents.Listen<FeverChangedGameEvent>(UpdateFeverProgress);
 				GameEvents.Listen<FeverStartGameEvent>(EnterFever);
 				GameEvents.Listen<FeverEndGameEvent>(ExitFever);
+
 				Pause = new(this, this, Music, GameEvents);
 				Conductor.Pause = Pause;
 				GameEvents.Listen<PauseRequestGameEvent>(GuardPause);
 				GameEvents.Listen<UnpauseStartGameEvent>(PlayUnpauseSound);
+
 				Results = new(this, Music, GameEvents);
 				GameEvents.Listen<SongClearedGameEvent>(ShowVictory);
 				GameEvents.Listen<SongFailedGameEvent>(ShowFailure);
+
 				Components.Add(Effects);
 				Components.Add(Combo);
 				Components.Add(Health);
@@ -755,6 +760,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				Components.Add(Score);
 				Components.Add(Sustains);
 				Components.Add(AutoPlayer);
+
 				Interlude.Spin();
 			}
 
