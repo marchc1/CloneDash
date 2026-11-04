@@ -2,7 +2,7 @@
 
 namespace CloneDash.Common.Game;
 
-public class ResultComponent
+public class ResultComponent : IGameComponent
 {
 	readonly GameEventManager events;
 	readonly Level level;

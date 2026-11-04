@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Common.Game;
 
-public class FeverComponent(IConductor conductor, GameEventManager events)
+public class FeverComponent(IConductor conductor, GameEventManager events) : IGameComponent
 {
 	public double DismissalTime;
 	public double Duration = 6;

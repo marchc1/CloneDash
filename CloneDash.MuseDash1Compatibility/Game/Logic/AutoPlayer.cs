@@ -1,4 +1,5 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Game.Entities;
 using CloneDash.Game.Input;
@@ -13,7 +14,7 @@ using System.Diagnostics;
 
 namespace CloneDash.Game.Logic
 {
-	public class AutoPlayer : LogicalEntity, IInputReceiver
+	public class AutoPlayer : LogicalEntity, IInputReceiver, IGameComponent
 	{
 		/// <summary>
 		/// Used to store which sustains are currently being held.

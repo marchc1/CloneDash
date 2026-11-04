@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Common.Game;
 
-public class ComboComponent(IConductor conductor)
+public class ComboComponent(IConductor conductor) : IGameComponent
 {
 	public int MissForgiveness;
 

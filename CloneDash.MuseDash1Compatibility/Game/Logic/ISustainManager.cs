@@ -1,9 +1,10 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Game.Entities;
 
 namespace CloneDash.Game.Logic;
 
-public interface ISustainManager
+public interface ISustainManager : IGameComponent
 {
 	public void StartSustainBeam(SustainBeam sustain);
 	public void FailSustainBeam(SustainBeam sustain);
@@ -18,6 +19,4 @@ public interface ISustainManager
 	public void ThinkSustainBeam(SustainBeam sustain);
 
 	public int ActiveSustains();
-
-	public void Reset();
 }

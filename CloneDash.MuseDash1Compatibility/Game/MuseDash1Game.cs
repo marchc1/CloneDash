@@ -150,6 +150,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public ISustainManager Sustains = new StackBasedSustainManager();
 
 	const double TIME_BETWEEN_MASH_HITS = (1d / Masher.MASHER_PLAYER_MAX_HITS_PER_SECOND);
+	readonly List<IGameComponent> Components = [];
 	readonly List<SceneChange> sceneChanges = [];
 	readonly Dictionary<UtlSymId_t, IMuseDash1SceneInstance> sceneLUT = [];
 	readonly List<IMuseDash1SceneInstance> scenes = [];
@@ -746,6 +747,14 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				Results = new(this, Music, GameEvents);
 				GameEvents.Listen<SongClearedGameEvent>(ShowVictory);
 				GameEvents.Listen<SongFailedGameEvent>(ShowFailure);
+				Components.Add(Effects);
+				Components.Add(Combo);
+				Components.Add(Health);
+				Components.Add(Fever);
+				Components.Add(Results);
+				Components.Add(Score);
+				Components.Add(Sustains);
+				Components.Add(AutoPlayer);
 				Interlude.Spin();
 			}
 
@@ -1123,7 +1132,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// </summary>
 	public virtual void Reset() {
 		ExitMashState();
-		Effects.Reset();
 		FeverFX?.Reset();
 
 		if (Sustains.IsSustaining() && HasActiveScene(out var scene))
@@ -1152,13 +1160,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		Boss.Reset();
 
-		Combo.Reset();
-		Health.Reset();
-		Fever.Reset();
-		Results.Reset();
-		Score.Reset();
-		Sustains.Reset();
-		AutoPlayer.Reset();
+		foreach (var component in Components)
+			component.Reset();
 		LastJumpTime = -2000000000000d;
 		LastHologramJumpTIme = -2000000000000d;
 		ActiveEvents.Clear();

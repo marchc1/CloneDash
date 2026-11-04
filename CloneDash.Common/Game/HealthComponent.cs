@@ -1,6 +1,6 @@
 ﻿namespace CloneDash.Common.Game;
 
-public class HealthComponent(IConductor conductor, GameEventManager events)
+public class HealthComponent(IConductor conductor, GameEventManager events) : IGameComponent
 {
 	public double BonusGranted = 1;
 	public double BonusThreshold;
