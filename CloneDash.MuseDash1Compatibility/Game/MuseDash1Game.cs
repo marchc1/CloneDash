@@ -126,6 +126,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public readonly MuseDash1EventManager EventManager = new();
 	public HashSet<DashEvent> ActiveEvents = [];
 	public ComboComponent Combo = null!;
+	public ScreenEffectsComponent Effects = null!;
 
 	public int EnemySortIndexCounter;
 	public readonly List<DashEvent> Events = [];
@@ -147,19 +148,13 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public ISustainManager Sustains = new StackBasedSustainManager();
 
 	const double TIME_BETWEEN_MASH_HITS = (1d / Masher.MASHER_PLAYER_MAX_HITS_PER_SECOND);
-	readonly FCurve<float> flashbangIntensity = new();
 	// This helps with doubles/sustains played in the same frame...
 	// probably a better way to handle it, but this works
 	readonly bool[] PlayedSceneSoundThisFrame = new bool[(int)SceneSound.Count];
 	readonly List<SceneChange> sceneChanges = [];
 	readonly Dictionary<UtlSymId_t, IMuseDash1SceneInstance> sceneLUT = [];
 	readonly List<IMuseDash1SceneInstance> scenes = [];
-	readonly Action<IShader>?[] ScreenspaceEffectPostActivateFns = new Action<IShader>?[(int)ScreenspaceEffectType.Count];
-	readonly ExecuteShaderFn?[] ScreenspaceEffectShaderFns = new ExecuteShaderFn?[(int)ScreenspaceEffectType.Count];
-	readonly IShader?[] ScreenspaceEffectShaders = new IShader?[(int)ScreenspaceEffectType.Count];
-	readonly ScreenspaceEffectState[] ScreenspaceEffectStates = new ScreenspaceEffectState[(int)ScreenspaceEffectType.Count];
 
-	char[]? ActiveEffectsBuffer;
 	IMuseDash1SceneInstance? ActiveScene;
 	int AttackP = 0;
 	bool CanSceneChange = false;
@@ -167,7 +162,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	int FailP = 0;
 	IMuseDash1FeverRuntime? FeverFX;
 	IMuseDash1SceneInstance? FirstScene;
-	Color flashbangColor = new(255, 255, 255, 255);
 	// Player input system
 	InputState InputState;
 	PathwayId LastAttackPathway;
@@ -177,23 +171,13 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	double LastMasherAttemptedHit;
 	double LastMasherRealHit;
 	readonly SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
-	ITexture? OldFilmDustTex;
-	ITexture? OldFilmScratchesTex;
 	MuseDash1GameplayQuirks Quirks = new();
 	readonly List<DashEnemy> ReadyToBuildEntities = [];
 	readonly List<DashEvent> ReadyToBuildEvents = [];
-	bool RenderBackgroundFx = true;
-	bool RenderNotes = true;
-	Nucleus.ManagedMemory.RenderTexture? RenderTexture;
-	Nucleus.ManagedMemory.RenderTexture? RenderTexture2;
 	IMuseDash1SceneUI? SceneUI;
-	double ScreenScrollLastTime;
-	double ScreenScrollProgress;
-	double ScreenScrollRate;
 	SecondOrderSystem? YOffsetSOS;
 
 	public delegate void AttackEvent(MuseDash1Game game, PathwayId pathway);
-	delegate bool ExecuteShaderFn(IShader shader, ref ScreenspaceEffectState state);
 
 	public event AttackEvent? OnAirAttack;
 	public event AttackEvent? OnGroundAttack;
@@ -509,36 +493,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 	}
 
-	public void DoOneEffect(ScreenspaceEffectType effect, ref Nucleus.ManagedMemory.RenderTexture read, ref Nucleus.ManagedMemory.RenderTexture write) {
-		var shaderFn = ScreenspaceEffectShaderFns[(int)effect];
-		ref ScreenspaceEffectState state = ref ScreenspaceEffectStates[(int)effect];
-		var shader = ScreenspaceEffectShaders[(int)effect];
-		if (shader == null) return;
-
-		if (shaderFn == null || shaderFn(shader, ref state) == false)
-			return;
-
-		Rlgl.DrawRenderBatchActive();
-		Rlgl.EnableFramebuffer(write.Framebuffer);
-		Rlgl.ClearScreenBuffers();
-
-		shader.Activate();
-		ScreenspaceEffectPostActivateFns[(int)effect]?.Invoke(shader);
-		Raylib.DrawTextureRec(
-			read.Texture,
-			new Rectangle(0, 0, read.GetWidth(), -read.GetHeight()),
-			System.Numerics.Vector2.Zero,
-			Color.White
-		);
-		shader.Deactivate();
-
-		Rlgl.DrawRenderBatchActive();
-		Rlgl.EnableFramebuffer(0);
-		Rlgl.Viewport(0, 0, (int)EngineCore.Window.Size.W, (int)EngineCore.Window.Size.H);
-
-		(read, write) = (write, read);
-	}
-
 	public void EnterHitState() {
 		InHit = true;
 		SuppressHitMessages = false;
@@ -580,7 +534,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public IReadOnlyList<IMuseDash1SceneInstance> GetAllScenes() => scenes;
 
-	public double GetBgScrollSpeedMultiplier() => 1 - GetCurrentInterpolatedValue(ref ScreenspaceEffectStates[(int)ScreenspaceEffectType.BgFreeze]);
+	public double GetBgScrollSpeedMultiplier() => 1 - Effects.Get<BgFreezeScreenEffect>().Value;
 
 	public Vector2F GetCenterPosition() => HasActiveScene(out var scene) ? scene.GetCenterPosition() : default;
 
@@ -644,7 +598,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public override void Initialize(params object[] _) {
 		ResetPathwaySpeeds();
-		ResetScreenspaceEffects();
+		Effects = new(this, this);
 
 		Stats = new(gameParameters.Chart);
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.RichPresenceUpdate")) {
@@ -943,8 +897,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		return ent;
 	}
 
-	FlashbangEffect? lastFlashbangEffect;
-
 	/// <summary>
 	/// Loads an event from a <see cref="ChartEvent"/> representation, builds a <see cref="MapEvent"/> out of it, and adds it to  <see cref="GameplayManager.Events"/>.
 	/// </summary>
@@ -965,18 +917,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ReadyToBuildEvents.Add(ev);
 		EventManager.Add(ev);
 		// This is a hack... whatever
-		if (ev is FlashbangEffect flash) {
-			// This is a hack on top of a hack! This fixes spontaneous middle flashbangs
-			// I want to use constant interpolation, but I think I messed up my fcurve implementation...
-			KeyframeInterpolation interpolation = KeyframeInterpolation.Linear;
-			if ((lastFlashbangEffect == null || lastFlashbangEffect.Type == FlashbangParam.End) && flash.Type == FlashbangParam.High){
-				flashbangIntensity.AddKeyframe(new() { Time = flash.Time - 0.001, Value = 0, Interpolation = KeyframeInterpolation.Linear });
-				flashbangIntensity.AddKeyframe(new() { Time = flash.Time, Value = 1, Interpolation = KeyframeInterpolation.Linear });
-			}
-			else
-				flashbangIntensity.AddKeyframe(new() { Time = flash.Time, Value = (float)flash.TargetValue, Interpolation = KeyframeInterpolation.Linear });
-			lastFlashbangEffect = flash;
-		}
+		if (ev is FlashbangEffect flash)
+			Effects.Get<FlashbangScreenEffect>().AddFlashbang(flash);
 	}
 
 	public bool NeedsToHoldSustains() => !Quirks.AutoHoldsSustains;
@@ -1109,8 +1051,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		SceneUI?.RenderUI();
 
-		RenderTexture?.End();
-		ScreenspaceDraw(frameState);
+		Effects.End();
+		Effects.Draw(frameState);
 	}
 
 	public override void PostRenderEntities(FrameState frameState) {
@@ -1122,23 +1064,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public override void PreRender(FrameState frameState) {
 		float width = EngineCore.GetWindowWidth(), height = EngineCore.GetWindowHeight();
-		// Evaluate if complex render texture needs to be remade
-		// This is only the case if null or bounds changed
-		if (RenderTexture == null || (RenderTexture.GetWidth() != width || RenderTexture.GetHeight() != height)) {
-			RenderTexture?.Dispose();
-			RenderTexture2?.Dispose();
-			// TODO: If complex render textures are too slow for this (and they might be), then
-			// comment out this line to remove it from the rendering pipeline here - you just won't get screenspace effects, 
-			// when i have that working
-			RenderTexture = (Nucleus.ManagedMemory.RenderTexture)textures.CreateRenderTexture((int)width, (int)height, samples: 4);
-			RenderTexture2 = (Nucleus.ManagedMemory.RenderTexture)textures.CreateRenderTexture((int)width, (int)height, samples: 4);
-		}
-
-		RenderTexture?.Begin();
+		Effects.Begin(width, height);
 		EngineCore.Window.ClearBackground(Color.Blank);
 		base.PreRender(frameState);
 		//Stopwatch test = Stopwatch.StartNew();
-		if (RenderBackgroundFx) {
+		if (Effects.Get<BackgroundVisibilityScreenEffect>().Visible) {
 			if (backgroundOverride != null) {
 				backgroundOverride.Download(); // call regenerator?
 				Graphics2D.SetTexture(backgroundOverride);
@@ -1179,7 +1109,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		foreach (var pathway in Pathways)
 			pathway.Render();
 
-		if (RenderNotes) {
+		if (Effects.Get<NoteVisibilityScreenEffect>().Visible) {
 			Span<DashEnemy> visibleEnemies = EnemyManager.GetLastVisible();
 
 			// Hold notes
@@ -1194,36 +1124,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 
 		AddDebugString("Visible Entities", EnemyManager.GetLastVisible().Length);
-		AddDebugString("Active Effects", GetActiveEffects());
+		AddDebugString("Active Effects", Effects.GetActiveEffects());
 
 		Rlgl.DrawRenderBatchActive();
-	}
-
-	private ReadOnlySpan<char> GetActiveEffects() {
-		if (!EngineCore.developer.GetBool())
-			return "";
-
-		ActiveEffectsBuffer ??= new char[1024];
-		Span<char> writeBuf = ActiveEffectsBuffer.AsSpan();
-		int ptr = 0;
-		for (int i = 0; i < (int)ScreenspaceEffectType.Count; i++) {
-			ref ScreenspaceEffectState state = ref ScreenspaceEffectStates[i];
-			if (state.CurrentValue != 0) {
-				string? name = Enum.GetName((ScreenspaceEffectType)i);
-				if (name == null)
-					continue;
-
-				if (ptr != 0) {
-					", ".CopyTo(writeBuf[ptr..]);
-					ptr += 2;
-				}
-
-				name.CopyTo(writeBuf[ptr..]);
-				ptr += name.Length;
-			}
-		}
-
-		return writeBuf[..ptr];
 	}
 
 	/// <summary>
@@ -1231,11 +1134,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	/// </summary>
 	public virtual void Reset() {
 		ExitMashState();
-		ResetScreenspaceEffects();
+		Effects.Reset();
 		FeverFX?.Reset();
-		RenderBackgroundFx = true;
-		RenderNotes = true;
-		flashbangColor = new(255, 255, 255, 255);
 
 		if (Sustains.IsSustaining() && HasActiveScene(out var scene))
 			scene.OnPressStateChange(false, true);
@@ -1252,10 +1152,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Character.Reset();
 
 		SetScene(FirstScene);
-
-		ScreenScrollLastTime = 0;
-		ScreenScrollRate = 0;
-		ScreenScrollProgress = 0;
 
 		Stats.Reset();
 		foreach (var entity in Entities) {
@@ -1285,16 +1181,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Array.Fill(PathwaySpeeds, 1);
 	}
 
-	public void ResetScreenScroll() {
-		ScreenScrollProgress = 0;
-		ScreenScrollRate = 0;
-		ScreenScrollLastTime = Conductor.Time;
-	}
-
-	public void ResetScreenspaceEffects() {
-		Array.Clear(ScreenspaceEffectStates);
-	}
-
 	public float? ResolveCharacterY(PathwaySet held) {
 		if (held.Count >= 2 || InMashState)
 			return GetCenterPosition().Y;
@@ -1304,72 +1190,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public void Restart() => SeekTo(0);
-
-	// TODO: Verify effect order...
-	public void ScreenspaceDraw(FrameState frameState) {
-		if (RenderTexture == null || RenderTexture2 == null)
-			return;
-
-		Nucleus.ManagedMemory.RenderTexture read = RenderTexture;
-		Nucleus.ManagedMemory.RenderTexture write = RenderTexture2;
-		DoOneEffect(ScreenspaceEffectType.Sepia, ref read, ref write);
-		DoOneEffect(ScreenspaceEffectType.ChromaticAberration, ref read, ref write);
-		DoOneEffect(ScreenspaceEffectType.Mosaic, ref read, ref write);
-		DoOneEffect(ScreenspaceEffectType.Scanlines, ref read, ref write);
-		DoOneEffect(ScreenspaceEffectType.FilmGrain, ref read, ref write);
-		DoOneEffect(ScreenspaceEffectType.Vignette, ref read, ref write);
-
-		// this draws the screen scroll effect, its done as a texture shift instead here
-		double screenScrollDirection = ScreenspaceEffectStates[(int)ScreenspaceEffectType.ScreenScroll].CurrentValue;
-		if (screenScrollDirection == -1)
-			ScreenScrollRate = -0.7;
-		else if (screenScrollDirection == 1)
-			ScreenScrollRate = 1;
-
-		if (ScreenScrollRate != 0 && !Paused) {
-			double deltaTime = Conductor.Time - ScreenScrollLastTime;
-			ScreenScrollLastTime = Conductor.Time;
-			ScreenScrollProgress += ScreenScrollRate * deltaTime * frameState.WindowHeight * 8 * musicspeed.GetDouble();
-
-			double windowH = frameState.WindowHeight;
-
-			if (ScreenScrollRate > 0 && ScreenScrollProgress >= windowH) {
-				ScreenScrollProgress = 0;
-				if (screenScrollDirection == 0) ScreenScrollRate = 0;
-			}
-			else if (ScreenScrollRate < 0 && ScreenScrollProgress <= -windowH) {
-				ScreenScrollProgress = 0;
-				if (screenScrollDirection == 0) ScreenScrollRate = 0;
-			}
-		}
-
-		DoOneEffect(ScreenspaceEffectType.TVStatic, ref read, ref write);
-
-		if (ScreenScrollRate != 0) {
-			float offset = (float)(ScreenScrollProgress % frameState.WindowHeight);
-			float gap = frameState.WindowHeight * 0.02f;
-			if (ScreenScrollRate > 0) {
-				read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, offset + gap), Color.White);
-				read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, offset - frameState.WindowHeight - gap), Color.White);
-			}
-			else {
-				read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, offset - gap), Color.White);
-				read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, offset + frameState.WindowHeight + gap), Color.White);
-			}
-		}
-		else {
-			read.Draw(new(0, 0, frameState.WindowWidth, -frameState.WindowHeight), new(0, 0), Color.White);
-		}
-
-		// this draws flashbangs
-		double flashbangBrightness = flashbangIntensity.DetermineValueAtTime(Conductor.GetTime());
-		if (flashbangBrightness > 0) {
-			Rlgl.DrawRenderBatchActive();
-			Graphics2D.SetDrawColor(flashbangColor.R, flashbangColor.G, flashbangColor.B, (int)(float)(255 * flashbangBrightness)); // todo: flashbang color interp
-			Graphics2D.DrawRectangle(0, 0, frameState.WindowWidth, frameState.WindowHeight);
-			Rlgl.DrawRenderBatchActive();
-		}
-	}
 
 	public void SeekTo(double time) {
 		time = Math.Clamp(time, 0, Music.Duration);
@@ -1478,14 +1298,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		entityTo?.OnSignalReceived(entityFrom, signalType, data);
 	}
 
-	public void SetBackgroundVisibleFx(bool visible) {
-		RenderBackgroundFx = visible;
-	}
-
-	public void SetNoteVisibleFx(bool visible) {
-		RenderNotes = visible;
-	}
-
 	public void SetPathwaySpeed(PathwaySet pathways, int speed) {
 		System.Diagnostics.Debug.Assert(speed >= 1);
 		System.Diagnostics.Debug.Assert(speed <= 3);
@@ -1513,7 +1325,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			SetScene(instance);
 	}
 
-	public bool ShouldFreezeNoteAnimations() => GetCurrentInterpolatedValue(ref ScreenspaceEffectStates[(int)ScreenspaceEffectType.NoteFreeze]) >= 1;
+	public bool ShouldFreezeNoteAnimations() => Effects.Get<NoteFreezeScreenEffect>().Value >= 1;
 
 	public override void Think(FrameState frameState) {
 		ResetSceneSoundsPlayedThisFrame();
@@ -1719,15 +1531,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		FeverFX?.Think();
 	}
 
-	public void TriggerScreenspaceEffectStart(ScreenspaceEffectType type, double effectParams, double length, Func<double, double>? easing = null) {
-		ref ScreenspaceEffectState state = ref ScreenspaceEffectStates[(int)type];
-		state.LastValue = GetCurrentInterpolatedValue(ref state);
-		state.CurrentValue = effectParams;
-		state.Length = length;
-		state.Time = Conductor.Time;
-		state.Easing = easing;
-	}
-
 	public void UpdateMashTextEffect() {
 		if (!IValidatable.IsValid(MashingEntity)) return;
 		SceneUI?.UpdateMultiHitText(MashingEntity.Hits);
@@ -1740,19 +1543,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	internal void SetEnemyPosition(DashEnemy ent) {
 		ent.Position = new(0, 2.25f);
-	}
-
-	internal void SetFlashbangColor(FlashbangColor color) {
-		switch (color) {
-			case FlashbangColor.White: flashbangColor = new(255, 255, 255, 255); break;
-			case FlashbangColor.Black: flashbangColor = new(0, 0, 0, 255); break;
-			case FlashbangColor.Red: flashbangColor = new(255, 0, 0, 255); break;
-			case FlashbangColor.Green: flashbangColor = new(0, 255, 0, 255); break;
-			case FlashbangColor.Blue: flashbangColor = new(0, 0, 255, 255); break;
-			case FlashbangColor.Cyan: flashbangColor = new(0, 255, 255, 255); break;
-			case FlashbangColor.Magenta: flashbangColor = new(255, 0, 255, 255); break;
-			case FlashbangColor.Yellow: flashbangColor = new(255, 255, 0, 255); break;
-		}
 	}
 
 	/// <summary>
@@ -1823,11 +1613,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			Autoplay = args.Arg(3, 0) == 1
 		});
 	}
-	private void BindOldFilmTextures(IShader shader) {
-		if (OldFilmScratchesTex != null) shader.SetTexture("uScratchesTex", OldFilmScratchesTex);
-		if (OldFilmDustTex != null) shader.SetTexture("uDustTex", OldFilmDustTex);
-	}
-
 	void BuildQueues() {
 		// This prepares the arrays...
 		foreach (var ent in ReadyToBuildEntities) {
@@ -1880,14 +1665,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	private void ExitFever(ref FeverEndGameEvent ev) {
 		FeverFX?.Cancel();
-	}
-
-	private double GetCurrentInterpolatedValue(ref ScreenspaceEffectState state) {
-		if (state.Length <= 0) return state.CurrentValue;
-
-		double t = Math.Clamp((Conductor.Time - state.Time) / state.Length, 0.0, 1.0);
-		if (state.Easing != null) t = state.Easing(t);
-		return double.Lerp(state.LastValue, state.CurrentValue, t);
 	}
 
 	private void GuardPause(ref PauseRequestGameEvent ev) {
@@ -1990,104 +1767,28 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		//Console.WriteLine($"poll.Hit = {hitSomething}, entity = {((pollResult.HasValue && pollResult.Value.Hit) ? pollResult.Value.HitEntity.ToString() : "NULL")}");
 	}
 
-	private ITexture? LoadOldFilmTexture(string name) {
-		var tex2d = MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(name);
-		if (tex2d == null) return null;
-		var tex = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, tex2d);
-		tex.SetWrap(TextureWrap.Repeat); // so the scratches/dust tile as they scroll
-		return tex;
-	}
-
 	private void PlayUnpauseSound(ref UnpauseStartGameEvent ev) {
 		if (HasActiveScene(out var scene))
 			scene.PlaySound(SceneSound.Unpause, 0);
 	}
 
-	private bool PrepareChromaticAberration(IShader shader, ref ScreenspaceEffectState state) {
-		double value = GetCurrentInterpolatedValue(ref state);
-		if (value <= 0.0) return false;
-
-		float widthPx = RenderTexture?.GetWidth() ?? 1920;
-		shader.SetUniform("uOffset", (float)value * 4.0f / widthPx);
-
-		return true;
-	}
-
-	private bool PrepareFilmGrain(IShader shader, ref ScreenspaceEffectState state) {
-		double value = GetCurrentInterpolatedValue(ref state);
-		if (value <= 0.0) return false;
-
-		shader.SetUniform("uTime", (float)Conductor.GetTime());
-		shader.SetUniform("uStrength", (float)value * 1f);
-
-		return true;
-	}
-
-	private bool PrepareMosaic(IShader shader, ref ScreenspaceEffectState state) {
-		double value = GetCurrentInterpolatedValue(ref state);
-		if (value <= 0.0) return false;
-
-		shader.SetUniform("uStrength", (float)value * 0.05f);
-		shader.SetUniform("uResolution", new System.Numerics.Vector2(RenderTexture?.GetWidth() ?? 1, RenderTexture?.GetHeight() ?? 1));
-
-		return true;
-	}
-
-	private bool PrepareScanlines(IShader shader, ref ScreenspaceEffectState state) {
-		double value = GetCurrentInterpolatedValue(ref state);
-		if (value <= 0.0) return false;
-
-		shader.SetUniform("uTime", (float)Conductor.GetTime());
-		shader.SetUniform("uStrength", 0.3f);
-
-		return true;
-	}
-
-	private bool PrepareSepia(IShader shader, ref ScreenspaceEffectState state) {
-		double value = GetCurrentInterpolatedValue(ref state);
-		if (value <= 0.0) return false;
-
-		shader.SetUniform("uStrength", (float)value * 1f);
-
-		return true;
-	}
-
-	private void PrepareShader(ScreenspaceEffectType type, string shaderName, ExecuteShaderFn shaderFn) {
-		ScreenspaceEffectShaders[(int)type] = Shaders.LoadFragmentShaderFromFile("shaders", $"{shaderName}.fs");
-		ScreenspaceEffectShaderFns[(int)type] = shaderFn;
-	}
-
 	private void PrepareShaders() {
-		PrepareShader(ScreenspaceEffectType.ChromaticAberration, "chromatic_aberration", PrepareChromaticAberration);
-		PrepareShader(ScreenspaceEffectType.Vignette, "vignette", PrepareVignette);
-		PrepareShader(ScreenspaceEffectType.Mosaic, "mosaic", PrepareMosaic);
-		PrepareShader(ScreenspaceEffectType.Sepia, "sepia", PrepareSepia);
-		PrepareShader(ScreenspaceEffectType.FilmGrain, "filmgrain", PrepareFilmGrain);
-		PrepareShader(ScreenspaceEffectType.TVStatic, "tvstatic", PrepareTVStatic);
-		PrepareShader(ScreenspaceEffectType.Scanlines, "scanlines", PrepareScanlines);
-
-		OldFilmScratchesTex = LoadOldFilmTexture("ScratchesTex");
-		OldFilmDustTex = LoadOldFilmTexture("DustTex");
-		ScreenspaceEffectPostActivateFns[(int)ScreenspaceEffectType.FilmGrain] = BindOldFilmTextures;
-	}
-
-	private bool PrepareTVStatic(IShader shader, ref ScreenspaceEffectState state) {
-		double value = GetCurrentInterpolatedValue(ref state);
-		if (value <= 0.0) return false;
-
-		shader.SetUniform("uTime", (float)Conductor.GetTime());
-		shader.SetUniform("uResolution", new System.Numerics.Vector2(RenderTexture?.GetWidth() ?? 1, RenderTexture?.GetHeight() ?? 1));
-
-		return true;
-	}
-
-	private bool PrepareVignette(IShader shader, ref ScreenspaceEffectState state) {
-		double value = GetCurrentInterpolatedValue(ref state);
-		if (value <= 0.0) return false;
-
-		shader.SetUniform("uStrength", (float)value);
-
-		return true;
+		// TODO: Verify effect order...
+		Effects.Add(new SepiaScreenEffect());
+		Effects.Add(new ChromaticAberrationScreenEffect());
+		Effects.Add(new MosaicScreenEffect());
+		Effects.Add(new ScanlinesScreenEffect());
+		Effects.Add(new FilmGrainScreenEffect());
+		Effects.Add(new VignetteScreenEffect());
+		Effects.Add(new ScreenScrollScreenEffect());
+		Effects.Add(new TVStaticScreenEffect());
+		Effects.Add(new FlashbangScreenEffect());
+		Effects.Add(new NoteFreezeScreenEffect());
+		Effects.Add(new BgFreezeScreenEffect());
+		Effects.Add(new FocusLinesScreenEffect());
+		Effects.Add(new NoteVisibilityScreenEffect());
+		Effects.Add(new BackgroundVisibilityScreenEffect());
+		Effects.Initialize();
 	}
 
 	private void RenderVisibleEntity(FrameState frameState, DashEnemy ent, DeadEntityVisibility deadVis) {
@@ -2153,15 +1854,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	void UpdateFeverProgress(ref FeverChangedGameEvent ev) {
 		SceneUI?.UpdateFeverProgress(ev.Value, ev.Max);
-	}
-
-	struct ScreenspaceEffectState
-	{
-		public double CurrentValue;
-		public Func<double, double>? Easing;
-		public double LastValue;
-		public double Length;
-		public double Time;
 	}
 
 	/// <summary>
