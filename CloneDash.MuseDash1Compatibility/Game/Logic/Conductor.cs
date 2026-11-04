@@ -52,7 +52,7 @@ namespace CloneDash.Game
 		public void InvalidateTime() {
 			var game = Level.As<MuseDash1Game>();
 			if (!game.Music.IsValid()) return;
-			audiosystem.GetSoundPlayhead(game.Music, out currentInaccurateTime);
+			currentInaccurateTime = game.Music.GetPlayhead();
 		}
 
 		private class CD_Conductor_UIBar : Element
@@ -122,7 +122,7 @@ namespace CloneDash.Game
 		private bool wasPaused = false;
 		private double? dragSeconds;
 
-		private double uiSeconds => Math.Clamp(UIBar.XToSeconds(UIBar.GetMousePos().X), 0, audiosystem.GetPlaybackDuration(Level.As<MuseDash1Game>().Music));
+		private double uiSeconds => Math.Clamp(UIBar.XToSeconds(UIBar.GetMousePos().X), 0, Level.As<MuseDash1Game>().Music.Duration);
 
 		private void UIBar_DragUpdate() {
 			var game = Level.As<MuseDash1Game>();
@@ -255,7 +255,7 @@ namespace CloneDash.Game
 			var game = Level.As<MuseDash1Game>();
 			Level.AddDebugString("Conductor Time", Time);
 
-			var speed = game.GetSpeed();
+			var speed = game.Music.GetSpeed();
 
 			if (firstTick) {
 				currentInaccurateTime = (float)-PreStartTime;
@@ -268,9 +268,9 @@ namespace CloneDash.Game
 				currentInaccurateTime += ft * speed;
 			}
 			else if (game.Music.IsValid()) {
-				audiosystem.UpdatePlayback(game.Music);
-				audiosystem.GetSoundPlayhead(game.Music, out double now);
-				bool paused = audiosystem.IsPlaybackPaused(game.Music);
+				game.Music.Update();
+				double now = game.Music.GetPlayhead();
+				bool paused = game.Music.IsPaused;
 
 				if (lastTimeFromFunctionCall != now && !paused) {
 					lastTimeFromFunctionCall = (float)now;
@@ -286,9 +286,9 @@ namespace CloneDash.Game
 			}
 
 			if (game.Music.IsValid()) {
-				audiosystem.GetSoundPlayhead(game.Music, out double now);
+				double now = game.Music.GetPlayhead();
 				UIBar.Playhead = (float)now;
-				UIBar.Duration = (float)audiosystem.GetPlaybackDuration(game.Music);
+				UIBar.Duration = (float)game.Music.Duration;
 			}
 			firstTick = false;
 			TimeDelta = Time - lastTime;

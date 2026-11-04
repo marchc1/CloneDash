@@ -138,7 +138,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public readonly List<ICloneDashInputSystem> InputReceivers = [];
 	public PollResult LastPollResult = PollResult.Empty;
 	public DashEnemy? MashingEntity;
-	public AudioPlaybackHandle Music;
+	public readonly MusicComponent Music = new();
 
 	public readonly ScoreComponent Score = new();
 	public StatisticsData Stats = null!;
@@ -191,7 +191,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	double ScreenScrollProgress;
 	double ScreenScrollRate;
 	SecondOrderSystem? YOffsetSOS;
-	double Speed = 1;
 
 	public delegate void AttackEvent(MuseDash1Game game, PathwayId pathway);
 	delegate bool ExecuteShaderFn(IShader shader, ref ScreenspaceEffectState state);
@@ -585,12 +584,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public void ForcePause() {
-		audiosystem.PauseSound(in Music);
+		Music.Pause();
 		SetPauseGuarded(true);
 	}
 
 	public void ForceUnpause() {
-		audiosystem.ResumeSound(in Music);
+		Music.Resume();
 		SetPauseGuarded(false);
 	}
 
@@ -652,10 +651,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	ISong? IGame.GetSong() => gameParameters.Chart?.GetSong();
 
 	ISongChart? IGame.GetSongChart() => gameParameters.Chart;
-
-	public double GetSpeed() {
-		return Speed;
-	}
 
 	public bool HasActiveScene([NotNullWhen(true)] out IMuseDash1SceneInstance? scene) => (scene = ActiveScene) != null;
 
@@ -858,20 +853,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 			using (StaticSequentialProfiler.StartStackFrame("Sheet.Song.GetAudioTrack()")) {
 				if (gameParameters.Chart != null) {
-					Music = audiosystem.CreatePlayback(gameParameters.Chart.GetAudioTrack(), AudioPlaybackSettings.Unaltered with {
-						Looping = false,
-						ManuallyUpdate = true,
-						DoNotAutoDestroy = true,
-						Stream = true
-					});
-
-					audiosystem.PlaySound(Music);
+					Music.Load(gameParameters.Chart.GetAudioTrack());
 					InitSpeedFromCvar();
 					if (gameParameters.Measure != 0)
 						SeekTo(Conductor.MeasureToSeconds(gameParameters.Measure));
 				}
-				else
-					Music = AudioPlaybackHandle.Null;
 			}
 
 			SceneUI?.Initialize();
@@ -907,7 +893,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public void InitSpeedFromCvar() {
-		SetSpeed(musicspeed.GetDouble());
+		Music.SetSpeed(musicspeed.GetDouble());
 	}
 
 	public bool IsCharacterOn(PathwaySet pathways) => CharacterPathways == Layout.Clamp(pathways);
@@ -1400,15 +1386,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public void SeekTo(double time) {
-		time = Math.Clamp(time, 0, audiosystem.GetPlaybackDuration(in Music));
+		time = Math.Clamp(time, 0, Music.Duration);
 		IsSeeking = true;
 
 		Reset();
 
-		if (time < 0.06f)
-			audiosystem.RestartSound(Music);
-		else
-			audiosystem.SetSoundPlayhead(Music, time);
+		Music.SeekTo(time);
 
 		if (time > 0) {
 			foreach (var ev in Events) {
@@ -1552,20 +1535,16 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			SetScene(instance);
 	}
 
-	public void SetSpeed(double speed) {
-		this.Speed = speed;
-		audiosystem.SetSoundPitchControl(Music, (float)speed);
-	}
 	public bool ShouldFreezeNoteAnimations() => GetCurrentInterpolatedValue(ref ScreenspaceEffectStates[(int)ScreenspaceEffectType.NoteFreeze]) >= 1;
 
 	public override void Think(FrameState frameState) {
 		ResetSceneSoundsPlayedThisFrame();
 
-		if (Music.IsValid() && LastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Chart != null && SceneUI != null && !SceneUI.ShowingVictoryScreen()) {
+		if (Music.IsValid() && LastNoteHit && Music.IsComplete && gameParameters.Chart != null && SceneUI != null && !SceneUI.ShowingVictoryScreen()) {
 			if (!Health.Dead)
 				Stats.UploadScore(Score.Value);
 			SceneUI?.OpenVictory(Stats);
-			audiosystem.PauseSound(Music);
+			Music.Pause();
 			return;
 		}
 
@@ -1612,7 +1591,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			}
 
 			if (InputState.PauseButton) {
-				if (Music.IsValid() && audiosystem.IsPlaybackPaused(Music)) {
+				if (Music.IsValid() && Music.IsPaused) {
 					startUnpause();
 					if (IValidatable.IsValid(PauseWindow))
 						PauseWindow.Remove();
@@ -2010,7 +1989,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	private void fullUnpause() {
-		audiosystem.ResumeSound(in Music);
+		Music.Resume();
 		SetPauseGuarded(false);
 		UnpauseTime = 0;
 	}
@@ -2267,7 +2246,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			return false;
 
 		if (SetPauseGuarded(true)) {
-			audiosystem.PauseSound(in Music);
+			Music.Pause();
 			UnpauseTime = 0;
 			return true;
 		}
