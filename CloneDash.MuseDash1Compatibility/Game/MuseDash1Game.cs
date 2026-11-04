@@ -137,7 +137,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public readonly HashSet<DashEvent> HandledEvents = [];
 	public HealthComponent Health = null!;
 	public HitsoundComponent Hitsounds = null!;
-	public readonly List<ICloneDashInputSystem> InputReceivers = [];
+	public InputComponent Input = null!;
 	public PollResult LastPollResult = PollResult.Empty;
 	public DashEnemy? MashingEntity;
 	public readonly MusicComponent Music = new();
@@ -161,8 +161,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	int FailP = 0;
 	IMuseDash1FeverRuntime? FeverFX;
 	IMuseDash1SceneInstance? FirstScene;
-	// Player input system
-	InputState InputState;
 	PathwayId LastAttackPathway;
 	double LastAttackTime;
 	double LastHologramJumpTIme = -2000000000000d;
@@ -537,8 +535,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	object? IGame.GetGamemodeData() => gameParameters.Chart?.GetGamemodeData();
 
-	public ref readonly InputState GetInputState() => ref InputState;
-
 	public int GetNumScenes() => scenes.Count;
 
 	public Pathway GetPathway(PathwayId pathway) => Pathways[pathway.Index];
@@ -691,7 +687,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 			Interlude.Spin(submessage: "Initializing input...");
 			using (StaticSequentialProfiler.StartStackFrame("Build Input Systems"))
-				InputReceivers.AddRange(ICloneDashInputSystem.InstantiateAllInputSystems());
+				Input = new(this);
+				Input.Initialize();
 
 			Interlude.Spin(submessage: "Initializing your character...");
 			using (StaticSequentialProfiler.StartStackFrame("Initialize Character")) {
@@ -714,6 +711,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			using (StaticSequentialProfiler.StartStackFrame("Setup Internal Ents")) {
 				AutoPlayer = Add<AutoPlayer>();
 				AutoPlayer.Enabled = gameParameters.Autoplay;
+				Input.Receivers.Add(AutoPlayer);
 				Pathways = new Pathway[Layout.Count];
 				for (int i = 0; i < Layout.Count; i++)
 					Pathways[i] = Add<Pathway>(Layout.PathwayAt(i));
@@ -1330,18 +1328,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		EnemyManager.Rebuild(Conductor.Time);
 		EventManager.Rebuild(Conductor.Time);
 
-		InputState.Reset();
+		Input.Reset();
 		if (!IsDead()) {
-			if (AutoPlayer.Enabled) {
-				AutoPlayer.Play(ref InputState);
-				foreach (ICloneDashInputSystem playerInput in InputReceivers)
-					playerInput.Poll(frameState, ref InputState, InputAction.PauseGame);
-			}
-
-			else if (!IValidatable.IsValid(RootPanel.GetKeyboardFocusedElement())) {
-				foreach (ICloneDashInputSystem playerInput in InputReceivers)
-					playerInput.Poll(frameState, ref InputState);
-			}
+			Input.Poll(frameState);
 
 			if (InMashState) {
 				UpdateMashTextEffect();
@@ -1349,7 +1338,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 					MashingEntity.Hit(GroundPathway, 0);
 			}
 
-			if (InputState.PauseButton) {
+			if (Input.State.PauseButton) {
 				Pause.TogglePauseMenu();
 				return;
 			}
@@ -1648,7 +1637,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	private void HitLogic(PathwayId pathway) {
-		int amountOfTimesHit = InputState.ClickCount(Layout[pathway].Action);
+		int amountOfTimesHit = Input.State.ClickCount(Layout[pathway].Action);
 		bool keyHitOnThisSide = amountOfTimesHit > 0;
 
 		if (!keyHitOnThisSide)

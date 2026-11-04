@@ -15,9 +15,9 @@ namespace CloneDash.Game;
 public class Pathway : LogicalEntity
 {
 	InputAction Action => Level.As<MuseDash1Game>().Layout[Id].Action;
-	public bool IsClicked() => Level.As<MuseDash1Game>().GetInputState().ClickCount(Action) > 0;
-	public bool IsPressed() => Level.As<MuseDash1Game>().GetInputState().IsHeld(Action);
-	public int PressedKeysCount => Level.As<MuseDash1Game>().GetInputState().HeldKeys(Action);
+	public bool IsClicked() => Level.As<MuseDash1Game>().Input.State.ClickCount(Action) > 0;
+	public bool IsPressed() => Level.As<MuseDash1Game>().Input.State.IsHeld(Action);
+	public int PressedKeysCount => Level.As<MuseDash1Game>().Input.State.HeldKeys(Action);
 
 	public PathwayId Id { get; }
 

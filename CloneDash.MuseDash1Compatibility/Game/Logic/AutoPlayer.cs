@@ -13,7 +13,7 @@ using System.Diagnostics;
 
 namespace CloneDash.Game.Logic
 {
-	public class AutoPlayer : LogicalEntity
+	public class AutoPlayer : LogicalEntity, IInputReceiver
 	{
 		/// <summary>
 		/// Used to store which sustains are currently being held.
@@ -93,6 +93,12 @@ namespace CloneDash.Game.Logic
 		/// <param name="entity"></param>
 		/// <returns></returns>
 		private bool PassedEntity(DashEnemy entity) => Passed.Contains(entity);
+
+		public bool ClaimsGameplayInput => Enabled;
+
+		public void Poll(FrameState frameState, ref InputState inputState, InputAction? actionFilter = null) {
+			Play(ref inputState);
+		}
 
 		/// <summary>
 		/// This method automatically scans the visible entities for the next entity to hit at an almost-perfect time, and then hits the entity by simulating input presses
