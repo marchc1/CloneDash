@@ -485,7 +485,7 @@ public static class EngineCore
 		LoadingLevel = false;
 	}
 
-	private static bool _running = true;
+	private static volatile bool _running = true;
 	private static bool _blockClosure = false;
 
 	public static bool Running {
@@ -519,7 +519,10 @@ public static class EngineCore
 	}
 
 	public static void ExitWindow() {
+		// AppKit window destruction must run on the main thread, after rendering stops.
+#if !COMPILED_OSX
 		Window.Close();
+#endif
 		_running = false;
 	}
 
@@ -885,13 +888,13 @@ public static class EngineCore
 
 		while (Running) {
 			OSWindow.PumpOSEvents();
-			if (Running)
-				continue;
-
-			if (Window.IsValid())
-				Window.Close();
-			return;
 		}
+
+#if COMPILED_OSX
+		GameThread.Join();
+#endif
+		if (Window.IsValid())
+			Window.Close();
 	}
 
 	public static Vector2F GetWindowSize() => Window.Size;
