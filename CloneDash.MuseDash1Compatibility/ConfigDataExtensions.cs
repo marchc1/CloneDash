@@ -43,6 +43,7 @@ namespace CloneDash.Compatibility.CustomAlbums
 			config.pathway = node["pathway"]?.GetValue<int>() ?? 0;
 			config.pathway_name = node["pathway_name"]?.GetValue<string>();
 			config.blood = node["blood"]?.GetValue<bool>() ?? false;
+			config.layer = node["layer"]?.GetValue<int>() ?? 0;
 
 			return config;
 		}

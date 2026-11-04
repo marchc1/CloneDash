@@ -9,6 +9,7 @@ public class MusicConfigData
 	public bool blood;
 	public int pathway;
 	public string? pathway_name;
+	public int layer;
 
 	public MusicConfigData Copy() {
 		return new MusicConfigData() {
@@ -18,7 +19,8 @@ public class MusicConfigData
 			length = length,
 			blood = blood,
 			pathway = pathway,
-			pathway_name = pathway_name
+			pathway_name = pathway_name,
+			layer = layer
 		};
 	}
 }

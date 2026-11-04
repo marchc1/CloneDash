@@ -24,6 +24,8 @@ public class MD1_SongChartEntity
 	/// </summary>
 	public EntityVariant Variant;
 
+	public int Layer;
+
 	public double HitTime;
 	public double ShowTime;
 	public double Length;

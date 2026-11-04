@@ -170,6 +170,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	double LastJumpTime = -2000000000000d;
 	double LastMasherAttemptedHit;
 	double LastMasherRealHit;
+	IReadOnlyDictionary<int, MD1_TimeRemap>? layerRemaps;
 	readonly SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
 	MuseDash1GameplayQuirks Quirks = new();
 	readonly List<DashEnemy> ReadyToBuildEntities = [];
@@ -623,6 +624,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				throw new Exception("Gamemode data was not MD1");
 
 			backgroundOverride = gamemodeData.BackgroundTextureOverride;
+			layerRemaps = gamemodeData.LayerRemaps;
 			Layout = gamemodeData.Layout;
 			backgroundOverrideOpacity = gamemodeData.BackgroundTextureOpacity;
 
@@ -880,6 +882,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ent.Dt = ChartEntity.Dt;
 		ent.Flipped = ChartEntity.Flipped;
 		ent.Blood = ChartEntity.Blood;
+		ent.SetTimeRemap(layerRemaps?.GetValueOrDefault(ChartEntity.Layer));
 
 		ent.FeverGiven = ChartEntity.Fever;
 		ent.DamageTaken = ChartEntity.Damage;
