@@ -135,6 +135,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public readonly GameEventManager GameEvents = new();
 	public readonly HashSet<DashEvent> HandledEvents = [];
 	public HealthComponent Health = null!;
+	public HitsoundComponent Hitsounds = null!;
 	public readonly List<ICloneDashInputSystem> InputReceivers = [];
 	public PollResult LastPollResult = PollResult.Empty;
 	public DashEnemy? MashingEntity;
@@ -148,9 +149,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public ISustainManager Sustains = new StackBasedSustainManager();
 
 	const double TIME_BETWEEN_MASH_HITS = (1d / Masher.MASHER_PLAYER_MAX_HITS_PER_SECOND);
-	// This helps with doubles/sustains played in the same frame...
-	// probably a better way to handle it, but this works
-	readonly bool[] PlayedSceneSoundThisFrame = new bool[(int)SceneSound.Count];
 	readonly List<SceneChange> sceneChanges = [];
 	readonly Dictionary<UtlSymId_t, IMuseDash1SceneInstance> sceneLUT = [];
 	readonly List<IMuseDash1SceneInstance> scenes = [];
@@ -598,6 +596,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public override void Initialize(params object[] _) {
 		Effects = new(this, this);
+		Hitsounds = new(() => IsSeeking);
+		Hitsounds.RegisterEnum<SceneSound>("musedash1");
+		Hitsounds.AddOutput(new MuseDash1SceneHitsoundOutput(this));
 
 		Stats = new(gameParameters.Chart);
 		using (StaticSequentialProfiler.StartStackFrame("CD_GameLevel.RichPresenceUpdate")) {
@@ -1002,16 +1003,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		}
 	}
 
-	public void PlaySceneSound(SceneSound sound, int hits = 0) {
-		if (IsSeeking)
-			return;
-		if (PlayedSceneSoundThisFrame[(int)sound])
-			return;
-		PlayedSceneSoundThisFrame[(int)sound] = true;
-		if (HasActiveScene(out var scene))
-			scene.PlaySound(sound, hits);
-	}
-
 	/// <summary>
 	/// Polling function which figures out the closest, potentially-hit entity and returns the result.
 	/// </summary>
@@ -1317,7 +1308,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public bool ShouldFreezeNoteAnimations() => Effects.Get<NoteFreezeScreenEffect>().Value >= 1;
 
 	public override void Think(FrameState frameState) {
-		ResetSceneSoundsPlayedThisFrame();
+		Hitsounds.ResetFrame();
 
 		if (gameParameters.Chart != null && SceneUI != null && !SceneUI.ShowingVictoryScreen() && Results.TryClear()) {
 			return;
@@ -1425,7 +1416,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			Results.MarkLastNoteHit();
 			if (Stats.CalculateFullCombo()) {
 				Logs.Info("Full combo achieved.");
-				PlaySceneSound(SceneSound.FullCombo, 0);
+				Hitsounds.Play(SceneSound.FullCombo, 0);
 			}
 		}
 
@@ -1473,7 +1464,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 						PathwaySet characterPathways = CharacterPathways;
 						if ((characterPathways.Count >= 2 || IsCharacterOn(entity.Pathway)) && entity.Hits == 0) {
 							entity.Hit(characterPathways.Count >= 2 ? PrimaryPathway(entity.Pathway) : characterPathways.First, 0);
-							PlaySceneSound(entity.Type switch {
+							Hitsounds.Play(entity.Type switch {
 								MuseDash1EntityType.Heart => SceneSound.GotHeart,
 								MuseDash1EntityType.Score => SceneSound.GotScore,
 								_ => SceneSound.GotScore
@@ -1647,7 +1638,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	private void EnterFever(ref FeverStartGameEvent ev) {
 		if (!IsSeeking) {
 			FeverFX?.Activate();
-			PlaySceneSound(SceneSound.Fever, 0);
+			Hitsounds.Play(SceneSound.Fever, 0);
 		}
 		SceneUI?.UpdateInFever(Fever.TimeLeft, ev.Duration);
 	}
@@ -1715,7 +1706,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 							SceneUI?.UpdateHit();
 						}
 
-						PlaySceneSound(pollResult.HitEntity.Type switch {
+						Hitsounds.Play(pollResult.HitEntity.Type switch {
 							MuseDash1EntityType.Single => pollResult.HitEntity.Variant switch {
 								EntityVariant.Small => SceneSound.HitSmall,
 								EntityVariant.Medium1 => SceneSound.HitMedium1,
@@ -1798,11 +1789,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		ent.Render(frameState);
 		Rlgl.DrawRenderBatchActive();
 		Model4System.PopRenderBlend();
-	}
-
-	private void ResetSceneSoundsPlayedThisFrame() {
-		for (int i = 0; i < PlayedSceneSoundThisFrame.Length; i++)
-			PlayedSceneSoundThisFrame[i] = false;
 	}
 
 	private bool shouldActivateEvent(DashEvent ev) => ev.TriggerType switch {
