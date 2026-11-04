@@ -139,7 +139,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public PollResult LastPollResult = PollResult.Empty;
 	public DashEnemy? MashingEntity;
 	public readonly MusicComponent Music = new();
+	public PauseComponent Pause = null!;
 
+	public ResultComponent Results = null!;
 	public readonly ScoreComponent Score = new();
 	public StatisticsData Stats = null!;
 	public ISustainManager Sustains = new StackBasedSustainManager();
@@ -161,7 +163,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	IMuseDash1SceneInstance? ActiveScene;
 	int AttackP = 0;
 	bool CanSceneChange = false;
-	double DeathTime = -2000000;
 	bool DeferringAsync = false;
 	int FailP = 0;
 	IMuseDash1FeverRuntime? FeverFX;
@@ -175,7 +176,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	double LastJumpTime = -2000000000000d;
 	double LastMasherAttemptedHit;
 	double LastMasherRealHit;
-	bool LastNoteHit = false;
 	readonly SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
 	ITexture? OldFilmDustTex;
 	ITexture? OldFilmScratchesTex;
@@ -243,8 +243,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public bool Debug { get; set; } = true;
 
-	public double DeltaUnpauseTime => Realtime - UnpauseTime;
-
 	public PathwayId GroundPathway => Layout.PathwayAt(Layout.Count - 1);
 
 	public PathwaySet GroundSidePathways => Layout.All & PathwaySet.FromBits(~AirSidePathways.Bits);
@@ -275,8 +273,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	public Pathway[] Pathways { get; private set; } = [];
 
-	public Panel? PauseWindow { get; private set; }
-
 	public float PlayerScale => 1 / 200f;
 
 	public float PlayScale => 1 / 200f;
@@ -293,11 +289,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	//public CD_BaseMEntity? HoldingBottomPathwaySustain { get; private set; } = null;
 	public double TimeToAnimationEnds => Character.GetPrimary().GetAnimationDuration() - (Conductor.Time - LastJumpTime);
 
-
-	/// <summary>
-	/// Is the game currently paused
-	/// </summary>
-	public double UnpauseTime { get; private set; } = 0;
 
 	// todo: confirm this is the right behavior
 	static bool PathwayTransitionAnimation => true;
@@ -583,16 +574,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		LastMasherAttemptedHit = double.NaN;
 	}
 
-	public void ForcePause() {
-		Music.Pause();
-		SetPauseGuarded(true);
-	}
-
-	public void ForceUnpause() {
-		Music.Resume();
-		SetPauseGuarded(false);
-	}
-
 	public IMuseDash1SceneInstance? GetActiveScene() => ActiveScene;
 
 	public int GetActiveSceneIdx() => ActiveScene?.GetSceneArrayIndex() ?? -1;
@@ -809,6 +790,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				GameEvents.Listen<FeverChangedGameEvent>(UpdateFeverProgress);
 				GameEvents.Listen<FeverStartGameEvent>(EnterFever);
 				GameEvents.Listen<FeverEndGameEvent>(ExitFever);
+				Pause = new(this, this, Music, GameEvents);
+				GameEvents.Listen<PauseRequestGameEvent>(GuardPause);
+				GameEvents.Listen<UnpauseStartGameEvent>(PlayUnpauseSound);
+				Results = new(this, Music, GameEvents);
+				GameEvents.Listen<SongClearedGameEvent>(ShowVictory);
+				GameEvents.Listen<SongFailedGameEvent>(ShowFailure);
 				Interlude.Spin();
 			}
 
@@ -1284,13 +1271,12 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		Combo.Reset();
 		Health.Reset();
 		Fever.Reset();
-		LastNoteHit = false;
+		Results.Reset();
 		Score.Reset();
 		Sustains.Reset();
 		AutoPlayer.Reset();
 		LastJumpTime = -2000000000000d;
 		LastHologramJumpTIme = -2000000000000d;
-		DeathTime = -2000000d;
 		ActiveEvents.Clear();
 		HandledEvents.Clear();
 	}
@@ -1509,14 +1495,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				PathwaySpeeds[i] = speed;
 	}
 
-	public bool SetPauseGuarded(bool paused) {
-		if (IsDead())
-			return false;
-
-		Paused = paused;
-		return true;
-	}
-
 	public bool SetScene(IMuseDash1SceneInstance? scene) {
 		ActiveScene?.Deactivate(scene);
 		var oldScene = ActiveScene;
@@ -1540,15 +1518,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public override void Think(FrameState frameState) {
 		ResetSceneSoundsPlayedThisFrame();
 
-		if (Music.IsValid() && LastNoteHit && Music.IsComplete && gameParameters.Chart != null && SceneUI != null && !SceneUI.ShowingVictoryScreen()) {
-			if (!Health.Dead)
-				Stats.UploadScore(Score.Value);
-			SceneUI?.OpenVictory(Stats);
-			Music.Pause();
+		if (gameParameters.Chart != null && SceneUI != null && !SceneUI.ShowingVictoryScreen() && Results.TryClear()) {
 			return;
 		}
 
-		if (IsDead() && ShowDeathTrigger()) {
+		if (Results.TryFail(IsDead())) {
 			return;
 		}
 
@@ -1591,87 +1565,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			}
 
 			if (InputState.PauseButton) {
-				if (Music.IsValid() && Music.IsPaused) {
-					startUnpause();
-					if (IValidatable.IsValid(PauseWindow))
-						PauseWindow.Remove();
-				}
-				else {
-					if (startPause()) {
-						PauseWindow = new Panel(this.RootPanel);
-						PauseWindow.Size = new(300, 400);
-						PauseWindow.Center();
-
-						var flex = new FlexPanel(PauseWindow);
-						flex.Dock = Dock.Fill;
-						flex.Direction = Axis.Vertical;
-						flex.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-						flex.DockPadding = RectangleF.TLRB(4);
-
-						var play = new PauseMenuButton(flex, "ui/pause_play.png");
-						play.BorderSize = 0;
-						play.Text = "Return to Game";
-						play.TextSize = 24;
-						play.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
-							PauseWindow.Remove();
-							startUnpause();
-						};
-
-						var restart = new PauseMenuButton(flex, "ui/pause_restart.png");
-						restart.BorderSize = 0;
-						restart.Text = "Restart Level";
-						restart.TextSize = 24;
-						restart.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
-							// Interlude.Begin($"Reloading '{gameParameters.Chart?.Song?.Name ?? "<NULL>"}'...");
-							// 
-							// if (profilegameload.GetBool())
-							// 	StaticSequentialProfiler.Start();
-							// 
-							// EngineCore.LoadLevel(new MuseDash1Game(gameParameters));
-
-							// Maybe seeking is stable enough now to justify this though?
-							SeekTo(0);
-							PauseWindow.Remove();
-							fullUnpause();
-						};
-
-						var settings = new PauseMenuButton(flex, "ui/pause_settings.png");
-						settings.BorderSize = 0;
-						settings.Text = "Open Preferences...";
-						settings.TextSize = 24;
-						settings.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
-							var panel = new Panel(RootPanel);
-							panel.SetPaintBackgroundEnabled(false);
-							panel.Anchor = Anchor.Center;
-							panel.Origin = Anchor.Center;
-							panel.DynamicallySized = true;
-							panel.Size = new(0.9f);
-
-							var titlebar = new Titlebar(panel);
-							titlebar.Dock = Dock.Top;
-							titlebar.MinimizeButton.SetVisible(false);
-							titlebar.MaximizeButton.SetVisible(false);
-							titlebar.CloseButton.OnButtonClick += (_, _) => {
-								panel.Remove();
-							};
-							titlebar.SetText("Settings");
-
-							var settings = new SettingsEditor(panel);
-							settings.Dock = Dock.Fill;
-							settings.DockMargin = RectangleF.TLRB(0, 8, 8, 0);
-
-							panel.MakePopup();
-						};
-
-						var back2menu = new PauseMenuButton(flex, "ui/pause_exit.png");
-						back2menu.BorderSize = 0;
-						back2menu.Text = "Exit to Menu";
-						back2menu.TextSize = 24;
-						back2menu.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
-							LevelTransitions.LoadMainMenu();
-						};
-					}
-				}
+				Pause.TogglePauseMenu();
 				return;
 			}
 		}
@@ -1726,8 +1620,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		var visibleEnemies = EnemyManager.GetLastVisible();
 		var lastEntity = EnemyManager.GetLast();
 
-		if (lastEntity != null && lastEntity.GetJudgementHitTime() + lastEntity.Length < Conductor.Time && !LastNoteHit) {
-			LastNoteHit = true;
+		if (lastEntity != null && lastEntity.GetJudgementHitTime() + lastEntity.Length < Conductor.Time && !Results.LastNoteHit) {
+			Results.MarkLastNoteHit();
 			if (Stats.CalculateFullCombo()) {
 				Logs.Info("Full combo achieved.");
 				PlaySceneSound(SceneSound.FullCombo, 0);
@@ -1988,18 +1882,19 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		FeverFX?.Cancel();
 	}
 
-	private void fullUnpause() {
-		Music.Resume();
-		SetPauseGuarded(false);
-		UnpauseTime = 0;
-	}
-
 	private double GetCurrentInterpolatedValue(ref ScreenspaceEffectState state) {
 		if (state.Length <= 0) return state.CurrentValue;
 
 		double t = Math.Clamp((Conductor.Time - state.Time) / state.Length, 0.0, 1.0);
 		if (state.Easing != null) t = state.Easing(t);
 		return double.Lerp(state.LastValue, state.CurrentValue, t);
+	}
+
+	private void GuardPause(ref PauseRequestGameEvent ev) {
+		if (ev.FromMenu && (Results.LastNoteHit || Conductor.Time < 0))
+			ev.Cancel = true;
+		if (IsDead())
+			ev.Cancel = true;
 	}
 
 	private void HitLogic(PathwayId pathway) {
@@ -2101,6 +1996,11 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		var tex = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, tex2d);
 		tex.SetWrap(TextureWrap.Repeat); // so the scratches/dust tile as they scroll
 		return tex;
+	}
+
+	private void PlayUnpauseSound(ref UnpauseStartGameEvent ev) {
+		if (HasActiveScene(out var scene))
+			scene.PlaySound(SceneSound.Unpause, 0);
 	}
 
 	private bool PrepareChromaticAberration(IShader shader, ref ScreenspaceEffectState state) {
@@ -2227,39 +2127,16 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		_ => false
 	};
 
-	bool ShowDeathTrigger() {
-		if ((Curtime - DeathTime) > 5) {
-			if (SceneUI != null && !SceneUI.ShowingFailureScreen())
-				SceneUI.OpenFailure();
-			// always return true if curtime - deathtime > 5
-			return true;
-		}
-		return false;
+	void ShowFailure(ref SongFailedGameEvent ev) {
+		if (SceneUI != null && !SceneUI.ShowingFailureScreen())
+			SceneUI.OpenFailure();
 	}
 
-	// WIP pausing
-	// return false to not spawn the pause menu
-	private bool startPause() {
-		if (LastNoteHit)
-			return false;
-		if (Conductor.Time < 0)
-			return false;
-
-		if (SetPauseGuarded(true)) {
-			Music.Pause();
-			UnpauseTime = 0;
-			return true;
-		}
-		return false;
-	}
-
-	private void startUnpause() {
-		if (HasActiveScene(out var scene))
-			scene.PlaySound(SceneSound.Unpause, 0);
-		UnpauseTime = Realtime;
-		Timers.Simple(3, () => {
-			fullUnpause();
-		});
+	void ShowVictory(ref SongClearedGameEvent ev) {
+		if (!Health.Dead)
+			Stats.UploadScore(Score.Value);
+		SceneUI?.OpenVictory(Stats);
+		Music.Pause();
 	}
 
 	private void SubmitMashHit() {
@@ -2271,7 +2148,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (Quirks.PlayableAfterDeath)
 			return;
 
-		DeathTime = Curtime;
 		Character.GetPrimary().PlayAnimation(CharacterAnimationType.Die);
 	}
 
@@ -2288,40 +2164,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		public double Time;
 	}
 
-	public class PauseMenuButton : Button
-	{
-		Image? iconImage;
-		public PauseMenuButton(Element parent, string image) : base(parent) {
-			if (image != null) {
-				iconImage = new Image(this);
-				iconImage.Texture = textures.LoadTextureFromFile(image);
-				iconImage.ImageOrientation = ImageOrientation.Zoom;
-				iconImage.ImagePadding = new(4);
-				iconImage.Dock = Dock.Left;
-			}
-		}
-
-		public override void Paint(float width, float height) {
-			var backpre = GetBgColor();
-
-			var back = Element.MixColorBasedOnMouseState(this, backpre, new(0, 0.8f, 2.4f, 1f), new(0, 1.2f, 0.6f, 1f));
-			var fore = Element.MixColorBasedOnMouseState(this, GetFgColor(), new(0, 0.8f, 1.8f, 1f), new(0, 1.2f, 0.6f, 1f));
-
-			Graphics2D.SetDrawColor(back);
-			Graphics2D.DrawRectangle(0, 0, width, height);
-			var text = Text;
-			var tSize = Graphics2D.GetTextSize(text, Font, TextSize);
-			Graphics2D.SetDrawColor(255, 255, 255);
-			Graphics2D.DrawText(new((width / 2) + (height / 4), height / 2), text, Font, TextSize, Anchor.Center);
-		}
-
-		protected override void PerformLayout(float width, float height) {
-			base.PerformLayout(width, height);
-			if (iconImage != null) {
-				iconImage.Size = new(height, height);
-			}
-		}
-	}
 	/// <summary>
 	/// Creates an event from an EventType enumeration, and adds it to <see cref="GameplayManager.Events"/>.
 	/// </summary>

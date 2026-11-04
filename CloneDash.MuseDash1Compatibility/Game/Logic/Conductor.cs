@@ -141,7 +141,7 @@ namespace CloneDash.Game
 				game.SeekTo(dragSeconds.Value);
 
 			if (!wasPaused)
-				game.ForceUnpause();
+				game.Pause.ForceUnpause();
 
 			dragSeconds = null;
 		}
@@ -152,7 +152,7 @@ namespace CloneDash.Game
 
 			wasPaused = game.Paused;
 			if (!wasPaused)
-				game.ForcePause();
+				game.Pause.ForcePause();
 
 			dragSeconds = uiSeconds;
 		}
