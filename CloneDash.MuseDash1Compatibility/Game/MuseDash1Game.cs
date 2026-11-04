@@ -125,6 +125,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public readonly MuseDash1EnemyManager EnemyManager = new();
 	public readonly MuseDash1EventManager EventManager = new();
 	public HashSet<DashEvent> ActiveEvents = [];
+	public ICameraRig CameraRig = null!;
 	public ComboComponent Combo = null!;
 	public ScreenEffectsComponent Effects = null!;
 
@@ -168,7 +169,6 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	double LastJumpTime = -2000000000000d;
 	double LastMasherAttemptedHit;
 	double LastMasherRealHit;
-	readonly SecondOrderSystem MashZoomSOS = new(1.1f, 0.9f, 2f, 0);
 	MuseDash1GameplayQuirks Quirks = new();
 	readonly List<DashEnemy> ReadyToBuildEntities = [];
 	readonly List<DashEvent> ReadyToBuildEvents = [];
@@ -416,15 +416,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public override void CalcView2D(FrameState frameState, ref Camera2D cam) {
-		var zoomValue = MashZoomSOS.Update(InMashState ? 1 : 0) * .5f;
-		cam.Zoom = ((frameState.WindowHeight / 900) * 120) + (zoomValue * 45) * 0.5f;
-		cam.Rotation = 0.0f;
-		cam.Offset = new(frameState.WindowWidth / 2, frameState.WindowHeight / 2);
-		cam.Target = new(zoomValue * -5, 0);
-		cam.Offset += cam.Target;
-
-		//cam.Offset = new(frameState.WindowWidth * Game.Pathway.PATHWAY_LEFT_PERCENTAGE * .5f, frameState.WindowHeight * 0.5f);
-		//cam.Target = cam.Offset;
+		CameraRig.CalcView2D(frameState, ref cam);
 	}
 
 	public bool CanHit(PathwayId pathway) {
@@ -595,6 +587,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	float backgroundOverrideOpacity;
 
 	public override void Initialize(params object[] _) {
+		CameraRig = new MuseDash1CameraRig(this);
 		Effects = new(this, this);
 		Hitsounds = new(() => IsSeeking);
 		Hitsounds.RegisterEnum<SceneSound>("musedash1");
