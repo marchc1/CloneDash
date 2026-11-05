@@ -318,6 +318,19 @@ public class GameDLL : IGameDLL
 				LevelTransitions.LoadMainMenu();
 		}
 
+		else if (cmd.HasParm("-ubwl_level")) {
+			string ubwl_level = cmd.ParmValue("-ubwl_level", "");
+			int difficulty = cmd.ParmValue("-difficulty", 0);
+			BeatmapIndexSong? song = UnbeatableWhiteLabelCompatibility.BeatmapIndex?.Songs.FirstOrDefault(x => x.Name.Equals(ubwl_level, StringComparison.InvariantCultureIgnoreCase));
+
+			if (song != null && difficulty >= 0 && difficulty < song.Beatmaps.Length)
+				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", song.Beatmaps[difficulty], new RhythmGameLoadParameters()
+					.Set(RhythmGameLoadParameters.AUTOPLAY, cmd.FindParm("-autoplay") != 0)
+				);
+			else
+				LevelTransitions.LoadMainMenu();
+		}
+
 		else if (first) {
 			LevelTransitions.LoadMainMenu();
 		}

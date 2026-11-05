@@ -38,6 +38,7 @@ class DecodedClip
 	}
 
 	public CurveData[] Curves;
+	public List<PPtr<AssetStudio.Object>> PPtrMapping = [];
 	public float StartTime, StopTime;
 	public bool LoopTime;
 
@@ -54,11 +55,14 @@ class DecodedClip
 		}
 
 		var muscleClip = clip.m_MuscleClip.m_Clip.data;
+		result.PPtrMapping = bindings.pptrCurveMapping ?? [];
 
 		int totalCurves = 0;
+		List<bool> pptrCurves = [];
 		foreach (var b in bindings.genericBindings) {
+			int bindingCurves = 1;
 			if (b.typeID == ClassIDType.Transform) {
-				totalCurves += b.attribute switch {
+				bindingCurves = b.attribute switch {
 					1 => 3,
 					2 => 4,
 					3 => 3,
@@ -66,9 +70,9 @@ class DecodedClip
 					_ => 1
 				};
 			}
-			else {
-				totalCurves++;
-			}
+			totalCurves += bindingCurves;
+			for (int f = 0; f < bindingCurves; f++)
+				pptrCurves.Add(b.isPPtrCurve == 1);
 		}
 
 		var curveLists = new List<(float time, float value, float inSlope, float outSlope)>[totalCurves];
@@ -78,10 +82,11 @@ class DecodedClip
 		if (muscleClip.m_StreamedClip?.data != null && muscleClip.m_StreamedClip.data.Length > 0) {
 			var frames = muscleClip.m_StreamedClip.ReadData();
 			foreach (var frame in frames) {
-				if (frame.time < -1e30f) continue; // skip sentinel frame
+				bool sentinel = frame.time < -1e30f;
 				foreach (var key in frame.keyList) {
-					if (key.index >= 0 && key.index < totalCurves)
-						curveLists[key.index].Add((frame.time, key.value, key.inSlope, key.outSlope));
+					if (key.index < 0 || key.index >= totalCurves) continue;
+					if (sentinel && !pptrCurves[key.index]) continue; // skip sentinel frame
+					curveLists[key.index].Add((sentinel ? result.StartTime : frame.time, key.value, key.inSlope, key.outSlope));
 				}
 			}
 		}
@@ -141,6 +146,16 @@ class DecodedClip
 
 		result.Curves = curveDataList.ToArray();
 		return result;
+	}
+
+	public static float EvalStepped(List<(float time, float value, float inSlope, float outSlope)> keys, float t) {
+		if (keys.Count == 0) return 0;
+		float value = keys[0].value;
+		foreach (var key in keys) {
+			if (key.time > t) break;
+			value = key.value;
+		}
+		return value;
 	}
 
 	public static float Eval(List<(float time, float value, float inSlope, float outSlope)> keys, float t) {
@@ -213,6 +228,13 @@ public class SceneTransform : SceneComponent
 		sx = LocalScaleX; sy = LocalScaleY;
 		var p = Parent;
 		while (p != null) { sx *= p.LocalScaleX; sy *= p.LocalScaleY; p = p.Parent; }
+	}
+
+	public System.Numerics.Matrix4x4 GetWorldMatrix() {
+		var matrix = System.Numerics.Matrix4x4.CreateScale(LocalScaleX, LocalScaleY, LocalScaleZ)
+			* System.Numerics.Matrix4x4.CreateFromQuaternion(new(LocalRotationX, LocalRotationY, LocalRotationZ, LocalRotationW))
+			* System.Numerics.Matrix4x4.CreateTranslation(LocalX, LocalY, LocalZ);
+		return Parent == null ? matrix : matrix * Parent.GetWorldMatrix();
 	}
 
 	public float GetWorldRotationZ() {
@@ -293,6 +315,7 @@ public class SceneSpriteRenderer : SceneRenderer
 {
 	public SpriteRenderer UnitySpriteRenderer { get; }
 	ITexture? texture;
+	Sprite? currentSprite;
 	float texRectX, texRectY, texRectW, texRectH;
 	int atlasW, atlasH;
 	float unitW, unitH;
@@ -300,6 +323,12 @@ public class SceneSpriteRenderer : SceneRenderer
 	bool flipX, flipY;
 	System.Numerics.Vector4 color;
 	private SpriteMaskInteraction MaskInteraction;
+	float pixelSize = 0.01f;
+	float trimX, trimY;
+	bool outlined;
+	float outlineWidth;
+	System.Numerics.Vector4 outlineColor;
+	System.Numerics.Vector4 materialColor = new(1, 1, 1, 1);
 
 	bool useMesh;
 	float[] mPosX = null!, mPosY = null!, mU = null!, mV = null!;
@@ -307,6 +336,11 @@ public class SceneSpriteRenderer : SceneRenderer
 
 	public SceneSpriteRenderer(SpriteRenderer sr) { UnitySpriteRenderer = sr; }
 	public bool HasTexture => texture != null;
+	public System.Numerics.Vector4 Color { get => color; set => color = value; }
+	public int SpriteDrawMode => UnitySpriteRenderer.m_DrawMode;
+	public bool FlipX { get => flipX; set => flipX = value; }
+	public bool FlipY { get => flipY; set => flipY = value; }
+	public System.Numerics.Vector2 Size { get; set; }
 
 	public override void Awake() {
 		if (UnitySpriteRenderer.m_MaskInteraction != SpriteMaskInteraction.None) {
@@ -318,6 +352,7 @@ public class SceneSpriteRenderer : SceneRenderer
 		var tex2d = sprite.m_RD.GetTexture();
 		if (tex2d == null) return;
 
+		currentSprite = sprite;
 		texture = ((UnitySimScene)Object.Scene).LoadTexture(tex2d);
 		atlasW = (int)texture.GetWidth(); atlasH = (int)texture.GetHeight();
 		texRectX = sprite.m_RD.textureRect.x; texRectY = sprite.m_RD.textureRect.y;
@@ -327,7 +362,11 @@ public class SceneSpriteRenderer : SceneRenderer
 		if (ppu <= 0) ppu = 100f;
 		unitW = sprite.m_Rect.width / ppu; unitH = sprite.m_Rect.height / ppu;
 		pivotX = sprite.m_Pivot.X; pivotY = sprite.m_Pivot.Y;
+		pixelSize = 1 / ppu;
+		trimX = sprite.m_RD.textureRectOffset.X; trimY = sprite.m_RD.textureRectOffset.Y;
 		flipX = UnitySpriteRenderer.m_FlipX; flipY = UnitySpriteRenderer.m_FlipY;
+		Size = new(UnitySpriteRenderer.m_Size.X, UnitySpriteRenderer.m_Size.Y);
+		ReadMaterial();
 
 		var c = UnitySpriteRenderer.m_Color;
 		color = new(c.R, c.G, c.B, c.A);
@@ -392,6 +431,25 @@ public class SceneSpriteRenderer : SceneRenderer
 		return true;
 	}
 
+	void ReadMaterial() {
+		if (UnitySpriteRenderer.m_Materials == null || UnitySpriteRenderer.m_Materials.Count == 0) return;
+		if (!UnitySpriteRenderer.m_Materials[0].TryGet(out var material)) return;
+
+		var properties = material.m_SavedProperties;
+		foreach (var property in properties.m_Floats) {
+			if (property.Key != "_OutlineWidth") continue;
+			outlined = true;
+			outlineWidth = property.Value;
+		}
+		if (!outlined) return;
+
+		foreach (var property in properties.m_Colors) {
+			var c = property.Value;
+			if (property.Key == "_OutlineColor") outlineColor = new(c.R, c.G, c.B, c.A);
+			else if (property.Key == "_Color") materialColor = new(c.R, c.G, c.B, c.A);
+		}
+	}
+
 	static int FmtSize(int f) => f switch {
 		0 => 4,
 		1 => 2,
@@ -418,8 +476,10 @@ public class SceneSpriteRenderer : SceneRenderer
 	};
 
 	public void SetSprite(Sprite sprite, UnitySimScene scene) {
+		if (sprite == currentSprite) return;
 		var tex2d = sprite.m_RD.GetTexture();
 		if (tex2d == null) return;
+		currentSprite = sprite;
 		texture = scene.LoadTexture(tex2d);
 		atlasW = (int)texture.GetWidth(); atlasH = (int)texture.GetHeight();
 		texRectX = sprite.m_RD.textureRect.x; texRectY = sprite.m_RD.textureRect.y;
@@ -428,6 +488,8 @@ public class SceneSpriteRenderer : SceneRenderer
 		if (ppu <= 0) ppu = 100f;
 		unitW = sprite.m_Rect.width / ppu; unitH = sprite.m_Rect.height / ppu;
 		pivotX = sprite.m_Pivot.X; pivotY = sprite.m_Pivot.Y;
+		pixelSize = 1 / ppu;
+		trimX = sprite.m_RD.textureRectOffset.X; trimY = sprite.m_RD.textureRectOffset.Y;
 		mPosX = null!; mPosY = null!; mU = null!; mV = null!; mIdx = null!;
 		useMesh = TryLoadMesh(sprite);
 	}
@@ -440,6 +502,10 @@ public class SceneSpriteRenderer : SceneRenderer
 		// if (useMesh && mIdx != null)
 		// 	RenderMesh();
 		// else if (texRectW > 0 && texRectH > 0)
+		if (scene.RenderSpriteMeshes && useMesh && mIdx != null) {
+			RenderMesh();
+			return;
+		}
 		RenderQuad();
 	}
 
@@ -448,37 +514,41 @@ public class SceneSpriteRenderer : SceneRenderer
 		Transform.GetWorldScale(out float sx, out float sy);
 		float rotDeg = Transform.GetWorldRotationZ();
 		uint texId = texture!.GetTextureHandle();
-		var fcolor = this.color * this.Object.GetColor();
-		bool doFlipX = flipX, doFlipY = flipY;
+		bool flipV = texture.HasPublicFlags(PublicTextureFlags.RequiresFlippedV);
+		var fcolor = this.color * materialColor * this.Object.GetColor();
 
-		float uMin = float.MaxValue, uMax = float.MinValue;
-		float vMin = float.MaxValue, vMax = float.MinValue;
-		for (int j = 0; j < mU.Length; j++) {
-			if (mU[j] < uMin) uMin = mU[j]; if (mU[j] > uMax) uMax = mU[j];
-			if (mV[j] < vMin) vMin = mV[j]; if (mV[j] > vMax) vMax = mV[j];
+		if (outlined) {
+			float distance = outlineWidth * pixelSize * MathF.Abs(sx);
+			var ocolor = outlineColor;
+			ocolor.W *= fcolor.W;
+			for (int i = 0; i < 8; i++) {
+				float angle = i * MathF.PI / 4;
+				DrawMesh(wx + MathF.Cos(angle) * distance, wy + MathF.Sin(angle) * distance, sx, sy, rotDeg, texId, flipV, ocolor);
+			}
 		}
 
-		bool hasRot = MathF.Abs(rotDeg) > 0.01f;
-		float cos = 1f, sin = 0f;
-		if (hasRot) { float rad = -rotDeg * (MathF.PI / 180f); cos = MathF.Cos(rad); sin = MathF.Sin(rad); }
-		bool flipV = texture!.HasPublicFlags(PublicTextureFlags.RequiresFlippedV);
+		DrawMesh(wx, wy, sx, sy, rotDeg, texId, flipV, fcolor);
+	}
 
+	void DrawMesh(float wx, float wy, float sx, float sy, float rotDeg, uint texId, bool flipV, System.Numerics.Vector4 fcolor) {
+		float rad = -rotDeg * (MathF.PI / 180f);
+		float cos = MathF.Cos(rad), sin = MathF.Sin(rad);
+
+		Rlgl.DisableBackfaceCulling();
 		Rlgl.SetTexture(texId);
-		Rlgl.Begin(DrawMode.QUADS);
+		Rlgl.Begin(DrawMode.TRIANGLES);
 		Rlgl.Color4f(fcolor.X, fcolor.Y, fcolor.Z, fcolor.W);
 		for (int i = 0; i + 2 < mIdx.Length; i += 3) {
-			for (int t = 0; t < 4; t++) {
-				int vi = mIdx[i + (t < 3 ? t : 2)];
+			for (int t = 0; t < 3; t++) {
+				int vi = mIdx[i + t];
 				float lx = mPosX[vi] * sx, ly = mPosY[vi] * sy;
-				float svx, svy;
-				if (hasRot) { float rx = lx, ry = -ly; svx = wx + rx * cos - ry * sin; svy = -wy + rx * sin + ry * cos; }
-				else { svx = wx + lx; svy = -wy - ly; }
-				float u = mU[vi], v = mV[vi];
-				if (doFlipX) u = uMin + uMax - u;
-				if (doFlipY) v = vMin + vMax - v;
+				if (flipX) lx = -lx;
+				if (flipY) ly = -ly;
+				float rx = lx, ry = -ly;
+				float v = mV[vi];
 				if (flipV) v = 1f - v;
-				Rlgl.TexCoord2f(u, v);
-				Rlgl.Vertex2f(svx, svy);
+				Rlgl.TexCoord2f(mU[vi], v);
+				Rlgl.Vertex2f(wx + rx * cos - ry * sin, -wy + rx * sin + ry * cos);
 			}
 		}
 		Rlgl.End();
@@ -492,10 +562,19 @@ public class SceneSpriteRenderer : SceneRenderer
 		Transform.GetWorldPosition(out float wx, out float wy, out _);
 		Transform.GetWorldScale(out float sx, out float sy);
 
-		float w = unitW * sx, h = unitH * sy;
-		float effPivotX = flipX ? (1f - pivotX) : pivotX;
-		float effPivotY = flipY ? pivotY : (1f - pivotY);
-		float offX = -effPivotX * w, offY = -effPivotY * h;
+		float w, h, left, bottom;
+		if (SpriteDrawMode != 0) {
+			w = Size.X * sx; h = Size.Y * sy;
+			left = -pivotX * w; bottom = -pivotY * h;
+		}
+		else {
+			w = texRectW * pixelSize * sx; h = texRectH * pixelSize * sy;
+			left = (trimX * pixelSize - pivotX * unitW) * sx;
+			bottom = (trimY * pixelSize - pivotY * unitH) * sy;
+		}
+		if (flipX) left = -left - w;
+		if (flipY) bottom = -bottom - h;
+		float offX = left, offY = -(bottom + h);
 
 
 		float flippedY = atlasH - texRectY - texRectH;
@@ -515,10 +594,25 @@ public class SceneSpriteRenderer : SceneRenderer
 		if (flipX) (u0, u1) = (u1, u0);
 		if (flipY) (v0, v1) = (v1, v0);
 
-		float screenX = wx + offX, screenY = -wy + offY;
 		float rotDeg = Transform.GetWorldRotationZ();
 		uint texId = texture.GetTextureHandle();
-		var fcolor = this.color * this.Object.GetColor();
+		var fcolor = this.color * materialColor * this.Object.GetColor();
+
+		if (outlined) {
+			float distance = outlineWidth * pixelSize * MathF.Abs(sx);
+			var ocolor = outlineColor;
+			ocolor.W *= fcolor.W;
+			for (int i = 0; i < 8; i++) {
+				float angle = i * MathF.PI / 4;
+				DrawQuad(wx + MathF.Cos(angle) * distance, wy + MathF.Sin(angle) * distance, offX, offY, w, h, u0, v0, u1, v1, rotDeg, texId, ocolor);
+			}
+		}
+
+		DrawQuad(wx, wy, offX, offY, w, h, u0, v0, u1, v1, rotDeg, texId, fcolor);
+	}
+
+	static void DrawQuad(float wx, float wy, float offX, float offY, float w, float h, float u0, float v0, float u1, float v1, float rotDeg, uint texId, System.Numerics.Vector4 fcolor) {
+		float screenX = wx + offX, screenY = -wy + offY;
 
 		if (MathF.Abs(rotDeg) > 0.01f) {
 			float cx = wx, cy = -wy;
@@ -547,6 +641,28 @@ public class SceneSpriteRenderer : SceneRenderer
 	}
 }
 
+public class SceneMeshMaterial
+{
+	public System.Numerics.Vector4 Color = new(1, 1, 1, 1);
+	public bool Hidden;
+	public ITexture? Texture;
+	public System.Numerics.Vector2 TextureOffset;
+	public System.Numerics.Vector2 TextureScale = new(1, 1);
+	public bool Transparent;
+}
+
+public class SceneMeshRenderer : SceneComponent
+{
+	public SceneMeshRenderer(MeshRenderer renderer, MeshFilter? filter) {
+		UnityMeshFilter = filter;
+		UnityMeshRenderer = renderer;
+	}
+
+	public bool StaticBatched => UnityMeshRenderer.m_StaticBatchInfo?.subMeshCount > 0;
+	public MeshFilter? UnityMeshFilter { get; }
+	public MeshRenderer UnityMeshRenderer { get; }
+}
+
 class RuntimeClip
 {
 	public record struct TargetCurve(
@@ -566,10 +682,16 @@ class RuntimeClip
 		int IsActive
 	);
 
+	public record struct SpriteCurve(
+		SceneSpriteRenderer Target,
+		int Sprite
+	);
+
 	public DecodedClip Decoded;
 	public List<TargetCurve> TransformTargets = [];
 	public List<ColorCurve> ColorTargets = [];
 	public List<ActiveCurve> ActiveTargets = [];
+	public List<SpriteCurve> SpriteTargets = [];
 	public float Duration;
 	public bool Loop;
 }
@@ -683,6 +805,7 @@ public class SceneAnimator : SceneComponent
 			var grouped = new Dictionary<uint, (int posX, int posY, int posZ, int rotX, int rotY, int rotZ, int rotW, int scX, int scY, int scZ)>();
 			var colorGrouped = new Dictionary<uint, (int r, int g, int b, int a)>();
 			var activeGrouped = new Dictionary<uint, int>();
+			var spriteGrouped = new Dictionary<uint, int>();
 
 			for (int i = 0; i < decoded.Curves.Length; i++) {
 				ref var curve = ref decoded.Curves[i];
@@ -720,6 +843,9 @@ public class SceneAnimator : SceneComponent
 
 					grouped[pathHash] = g;
 				}
+				else if (curve.Binding.typeID == ClassIDType.SpriteRenderer && curve.Binding.isPPtrCurve == 1) {
+					spriteGrouped[pathHash] = i;
+				}
 				else if (curve.Binding.typeID == ClassIDType.SpriteRenderer) {
 					if (!colorGrouped.TryGetValue(pathHash, out var c))
 						c = (-1, -1, -1, -1);
@@ -753,7 +879,14 @@ public class SceneAnimator : SceneComponent
 				runtime.ActiveTargets.Add(new(target.Object, idx));
 			}
 
-			if (runtime.TransformTargets.Count > 0 || runtime.ColorTargets.Count > 0 || runtime.ActiveTargets.Count > 0)
+			foreach (var (pathHash, idx) in spriteGrouped) {
+				if (!hashToTransform.TryGetValue(pathHash, out var target)) continue;
+				var spriteRenderer = target.Object.GetComponent<SceneSpriteRenderer>();
+				if (spriteRenderer != null)
+					runtime.SpriteTargets.Add(new(spriteRenderer, idx));
+			}
+
+			if (runtime.TransformTargets.Count > 0 || runtime.ColorTargets.Count > 0 || runtime.ActiveTargets.Count > 0 || runtime.SpriteTargets.Count > 0)
 				runtimeClips.Add(runtime);
 		}
 
@@ -892,6 +1025,12 @@ public class SceneAnimator : SceneComponent
 				var obj = target.Target;
 				if (target.IsActive >= 0) obj.Active = DecodedClip.Eval(clip.Decoded.Curves[target.IsActive].Keys, t) > 0.5f;
 			}
+
+			foreach (var target in clip.SpriteTargets) {
+				int index = (int)DecodedClip.EvalStepped(clip.Decoded.Curves[target.Sprite].Keys, t);
+				if (index >= 0 && index < clip.Decoded.PPtrMapping.Count && clip.Decoded.PPtrMapping[index].TryGet(out var obj) && obj is Sprite sprite)
+					target.Target.SetSprite(sprite, Object.Scene);
+			}
 		}
 	}
 }
@@ -1004,6 +1143,9 @@ public class SceneObject
 				case SceneAnimator anim:
 					clone.AddComponent(new SceneAnimator { UnityAnimator = anim.UnityAnimator });
 					break;
+				case SceneMeshRenderer mr:
+					clone.AddComponent(new SceneMeshRenderer(mr.UnityMeshRenderer, mr.UnityMeshFilter));
+					break;
 			}
 		}
 
@@ -1036,15 +1178,268 @@ public class SceneObject
 	}
 }
 
+sealed class SceneMeshBatch
+{
+	public System.Numerics.Vector3 Center;
+	public SceneMeshMaterial Material = null!;
+	public Raylib_cs.Mesh Mesh;
+}
+
+sealed class SceneMeshBatchBuilder(SceneMeshMaterial material)
+{
+	readonly List<byte> colors = [];
+	readonly List<ushort> indices = [];
+	readonly List<float> positions = [];
+	readonly List<float> uvs = [];
+	System.Numerics.Vector3 total;
+
+	public void Add(AssetStudio.Mesh mesh, int firstIndex, SubMesh subMesh, System.Numerics.Matrix4x4 matrix, List<SceneMeshBatch> batches) {
+		Dictionary<uint, ushort> remap = [];
+		bool flipV = material.Texture?.HasPublicFlags(PublicTextureFlags.RequiresFlippedV) ?? false;
+		for (int i = 0; i + 2 < subMesh.indexCount; i += 3) {
+			if (positions.Count / 3 + 3 > ushort.MaxValue) {
+				Flush(batches);
+				remap.Clear();
+			}
+
+			for (int corner = 0; corner < 3; corner++) {
+				uint source = mesh.m_Indices[firstIndex + i + corner] + subMesh.baseVertex;
+				if (!remap.TryGetValue(source, out var index)) {
+					index = AddVertex(mesh, (int)source, matrix, flipV);
+					remap[source] = index;
+				}
+				indices.Add(index);
+			}
+		}
+	}
+
+	public void Flush(List<SceneMeshBatch> batches) {
+		int vertexCount = positions.Count / 3;
+		if (vertexCount == 0 || indices.Count == 0) {
+			Clear();
+			return;
+		}
+
+		var mesh = new Raylib_cs.Mesh(vertexCount, indices.Count / 3);
+		mesh.AllocVertices();
+		mesh.AllocTexCoords();
+		mesh.AllocColors();
+		mesh.AllocIndices();
+		System.Runtime.InteropServices.CollectionsMarshal.AsSpan(positions).CopyTo(mesh.VerticesAs<float>());
+		System.Runtime.InteropServices.CollectionsMarshal.AsSpan(uvs).CopyTo(mesh.TexCoordsAs<float>());
+		System.Runtime.InteropServices.CollectionsMarshal.AsSpan(colors).CopyTo(mesh.ColorsAs<byte>());
+		System.Runtime.InteropServices.CollectionsMarshal.AsSpan(indices).CopyTo(mesh.IndicesAs<ushort>());
+		Raylib.UploadMesh(ref mesh, false);
+
+		batches.Add(new SceneMeshBatch { Center = total / vertexCount, Material = material, Mesh = mesh });
+		Clear();
+	}
+
+	ushort AddVertex(AssetStudio.Mesh mesh, int source, System.Numerics.Matrix4x4 matrix, bool flipV) {
+		int stride = mesh.m_Vertices.Length / mesh.m_VertexCount;
+		var position = System.Numerics.Vector3.Transform(new(mesh.m_Vertices[source * stride], mesh.m_Vertices[source * stride + 1], mesh.m_Vertices[source * stride + 2]), matrix);
+		position.Z = -position.Z;
+		positions.Add(position.X);
+		positions.Add(position.Y);
+		positions.Add(position.Z);
+		total += position;
+
+		float u = 0, v = 0;
+		if (mesh.m_UV0 != null && mesh.m_UV0.Length >= (source + 1) * 2) {
+			u = mesh.m_UV0[source * 2] * material.TextureScale.X + material.TextureOffset.X;
+			v = mesh.m_UV0[source * 2 + 1] * material.TextureScale.Y + material.TextureOffset.Y;
+		}
+		uvs.Add(u);
+		uvs.Add(flipV ? v : 1 - v);
+
+		var color = new System.Numerics.Vector4(1, 1, 1, 1);
+		if (mesh.m_Colors != null && mesh.m_Colors.Length >= (source + 1) * 4)
+			color = new(mesh.m_Colors[source * 4], mesh.m_Colors[source * 4 + 1], mesh.m_Colors[source * 4 + 2], 1);
+		color *= material.Color;
+		colors.Add((byte)(Math.Clamp(color.X, 0, 1) * 255));
+		colors.Add((byte)(Math.Clamp(color.Y, 0, 1) * 255));
+		colors.Add((byte)(Math.Clamp(color.Z, 0, 1) * 255));
+		colors.Add((byte)(Math.Clamp(color.W, 0, 1) * 255));
+
+		return (ushort)(positions.Count / 3 - 1);
+	}
+
+	void Clear() {
+		colors.Clear();
+		indices.Clear();
+		positions.Clear();
+		uvs.Clear();
+		total = default;
+	}
+}
+
 public abstract class UnitySimScene
 {
+	readonly List<SceneMeshBatch> meshBatches = [];
+	readonly Dictionary<long, SceneMeshMaterial> meshMaterials = [];
+	Raylib_cs.Material? meshDrawMaterial;
+	Raylib_cs.Texture2D meshWhiteTexture;
+	readonly Dictionary<long, int[]> subMeshStarts = [];
+
 	protected readonly List<SceneObject> allObjects = [];
 	protected readonly List<SceneRenderer> sortedRenderers = [];
 	protected readonly List<SceneAnimator> animators = [];
 	protected SceneObject? root;
 	protected readonly Dictionary<long, ITexture> textureCache = [];
+	public bool RenderSpriteMeshes { get; protected set; }
 	protected readonly Dictionary<long, SceneObject> pathIdToObject = [];
 
+
+	protected void BuildMeshes(params SceneObject?[] roots) {
+		Dictionary<SceneMeshMaterial, SceneMeshBatchBuilder> builders = [];
+		foreach (var root in roots)
+			if (root != null)
+				AddMeshes(root, builders);
+		foreach (var builder in builders.Values)
+			builder.Flush(meshBatches);
+	}
+
+	protected virtual SceneMeshMaterial CreateMeshMaterial(AssetStudio.Material material) {
+		var result = new SceneMeshMaterial();
+		var properties = material.m_SavedProperties;
+		foreach (var (key, color) in properties.m_Colors)
+			if (key == "_Color")
+				result.Color = new(color.R, color.G, color.B, color.A);
+		foreach (var (key, value) in properties.m_Floats)
+			if (key == "_Mode" && value >= 2)
+				result.Transparent = true;
+		foreach (var (key, environment) in properties.m_TexEnvs) {
+			if (key != "_MainTex" || !environment.m_Texture.TryGet(out var texture) || texture is not AssetStudio.Texture2D texture2D)
+				continue;
+
+			result.Texture = LoadTexture(texture2D);
+			result.Texture.SetWrap(TextureWrap.Repeat);
+			result.TextureOffset = new(environment.m_Offset.X, environment.m_Offset.Y);
+			result.TextureScale = new(environment.m_Scale.X, environment.m_Scale.Y);
+		}
+		return result;
+	}
+
+	protected unsafe void RenderMeshes(System.Numerics.Vector3 cameraPosition, System.Numerics.Quaternion cameraRotation, float fieldOfView, float aspect, float near, float far) {
+		if (meshBatches.Count == 0)
+			return;
+
+		if (meshDrawMaterial == null) {
+			var material = Raylib.LoadMaterialDefault();
+			meshWhiteTexture = material.Maps[0].Texture;
+			meshDrawMaterial = material;
+		}
+		var drawMaterial = meshDrawMaterial.Value;
+
+		var forward = System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitZ, cameraRotation);
+		var up = System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitY, cameraRotation);
+		var eye = cameraPosition with { Z = -cameraPosition.Z };
+		var target = eye + forward with { Z = -forward.Z };
+		up.Z = -up.Z;
+
+		Rlgl.DrawRenderBatchActive();
+		var modelview = Rlgl.GetMatrixModelview();
+		Rlgl.MatrixMode(MatrixMode.Projection);
+		Rlgl.PushMatrix();
+		Rlgl.LoadIdentity();
+		double top = near * Math.Tan(fieldOfView * 0.5 * Math.PI / 180);
+		Rlgl.Frustum(-top * aspect, top * aspect, -top, top, near, far);
+		Rlgl.MatrixMode(MatrixMode.ModelView);
+		Rlgl.LoadIdentity();
+		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(Raymath.MatrixLookAt(eye, target, up)));
+		Rlgl.EnableDepthTest();
+		Rlgl.EnableDepthMask();
+		Rlgl.DisableBackfaceCulling();
+
+		foreach (var batch in meshBatches)
+			if (!batch.Material.Transparent)
+				DrawMeshBatch(batch, drawMaterial);
+
+		Rlgl.DisableDepthMask();
+		foreach (var batch in meshBatches.Where(batch => batch.Material.Transparent).OrderByDescending(batch => System.Numerics.Vector3.DistanceSquared(batch.Center, eye)))
+			DrawMeshBatch(batch, drawMaterial);
+
+		Rlgl.DrawRenderBatchActive();
+		Rlgl.EnableDepthMask();
+		Rlgl.DisableDepthTest();
+		Rlgl.MatrixMode(MatrixMode.Projection);
+		Rlgl.PopMatrix();
+		Rlgl.MatrixMode(MatrixMode.ModelView);
+		Rlgl.SetMatrixModelView(modelview);
+	}
+
+	protected unsafe void UnloadMeshes() {
+		foreach (var batch in meshBatches) {
+			var mesh = batch.Mesh;
+			Raylib.UnloadMesh(ref mesh);
+		}
+		meshBatches.Clear();
+
+		if (meshDrawMaterial is Raylib_cs.Material material) {
+			material.Maps[0].Texture = meshWhiteTexture;
+			Raylib.UnloadMaterial(material);
+			meshDrawMaterial = null;
+		}
+	}
+
+	void AddMeshes(SceneObject obj, Dictionary<SceneMeshMaterial, SceneMeshBatchBuilder> builders) {
+		if (!obj.Active)
+			return;
+
+		foreach (var renderer in obj.GetComponents<SceneMeshRenderer>())
+			AddMesh(renderer, builders);
+		foreach (var child in obj.Transform.Children)
+			AddMeshes(child.Object, builders);
+	}
+
+	void AddMesh(SceneMeshRenderer renderer, Dictionary<SceneMeshMaterial, SceneMeshBatchBuilder> builders) {
+		var unityRenderer = renderer.UnityMeshRenderer;
+		if (!unityRenderer.m_Enabled || renderer.UnityMeshFilter == null || !renderer.UnityMeshFilter.m_Mesh.TryGet(out var mesh))
+			return;
+
+		if (!subMeshStarts.TryGetValue(mesh.m_PathID, out var starts)) {
+			mesh.ProcessData();
+			starts = new int[mesh.m_SubMeshes.Count];
+			for (int i = 1; i < starts.Length; i++)
+				starts[i] = starts[i - 1] + (int)mesh.m_SubMeshes[i - 1].indexCount;
+			subMeshStarts[mesh.m_PathID] = starts;
+		}
+		if (mesh.m_VertexCount == 0)
+			return;
+
+		bool batched = renderer.StaticBatched;
+		var matrix = batched ? System.Numerics.Matrix4x4.Identity : renderer.Transform.GetWorldMatrix();
+		int firstSubMesh = batched ? unityRenderer.m_StaticBatchInfo.firstSubMesh : 0;
+		for (int i = 0; i < unityRenderer.m_Materials.Count; i++) {
+			int subMesh = firstSubMesh + i;
+			if (subMesh >= mesh.m_SubMeshes.Count)
+				break;
+			if (!unityRenderer.m_Materials[i].TryGet(out var unityMaterial))
+				continue;
+
+			if (!meshMaterials.TryGetValue(unityMaterial.m_PathID, out var material))
+				meshMaterials[unityMaterial.m_PathID] = material = CreateMeshMaterial(unityMaterial);
+			if (material.Hidden)
+				continue;
+
+			if (!builders.TryGetValue(material, out var builder))
+				builders[material] = builder = new(material);
+			builder.Add(mesh, starts[subMesh], mesh.m_SubMeshes[subMesh], matrix, meshBatches);
+		}
+	}
+
+	unsafe void DrawMeshBatch(SceneMeshBatch batch, Raylib_cs.Material drawMaterial) {
+		var texture = batch.Material.Texture;
+		drawMaterial.Maps[0].Texture = texture == null ? meshWhiteTexture : new Raylib_cs.Texture2D {
+			Id = texture.GetTextureHandle(),
+			Width = texture.GetWidth(),
+			Height = texture.GetHeight(),
+			Mipmaps = 1,
+			Format = meshWhiteTexture.Format
+		};
+		drawMaterial.Maps[0].Color = new Nucleus.Common.Types.Color(255, 255, 255, 255);
+		Raylib.DrawMesh(batch.Mesh, drawMaterial, System.Numerics.Matrix4x4.Identity);
+	}
 
 	protected void RunThinkFuncs(double dt) {
 		foreach (var anim in animators) anim.Evaluate((float)dt);
@@ -1093,6 +1488,7 @@ public abstract class UnitySimScene
 			switch (comp) {
 				case SpriteRenderer sr: obj.AddComponent(new SceneSpriteRenderer(sr)); break;
 				case Animator animator: obj.AddComponent(new SceneAnimator { UnityAnimator = animator }); break;
+				case MeshRenderer mr: obj.AddComponent(new SceneMeshRenderer(mr, unityGO.GetFirstComponent<MeshFilter>())); break;
 			}
 		}
 
@@ -1121,7 +1517,7 @@ public abstract class UnitySimScene
 		});
 	}
 
-	internal static bool IsActiveInHierarchy(SceneObject obj) {
+	public static bool IsActiveInHierarchy(SceneObject obj) {
 		var current = obj;
 		while (current != null) {
 			if (!current.Active) return false;

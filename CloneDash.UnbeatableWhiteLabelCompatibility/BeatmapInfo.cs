@@ -29,12 +29,27 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 			Difficulty = "1",
 			DifficultyName = Difficulty,
 			Color = new Nucleus.Common.Types.Color(115, 55, 55),
-			GamemodeName = "Muse Dash 1",
+			GamemodeName = "UNBEATABLE [white label]",
 		};
 	}
 
 	public IGamemodeDescriptor GetGamemode() {
-		return ModStores.Get<GamemodeMod>().GetDescriptorByUID("gamemode/musedash1/standard")!;
+		return ModStores.Get<GamemodeMod>().GetDescriptorByUID(UnbeatableWhiteLabelGamemode.UUID)!;
+	}
+
+	public Beatmap GetBeatmap() {
+		if (Beatmap == null) {
+			Beatmap beatmap = new();
+
+			if (TextAsset.TryGet(out var textAsset)) {
+				BeatmapParserEngine parser = new();
+				parser.ReadBeatmap(Encoding.UTF8.GetString(textAsset.m_Script), ref beatmap);
+			}
+
+			Beatmap = beatmap;
+		}
+
+		return Beatmap;
 	}
 
 	void AddOneEntity(MuseDash1EntityType entityType, NoteInfo noteInfo, PathwaySet? pathwayOverride = null){
@@ -63,16 +78,16 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 		});
 	}
 
-	public object GetGamemodeData() {
+	public object GetGamemodeData() => GetBeatmap();
+
+	public MD1_GamemodeData GetMuseDash1Data() {
 		if (GamemodeData == null) {
 			GamemodeData = new MD1_GamemodeData();
 
-			if (!TextAsset.TryGet(out var textAsset))
+			if (!TextAsset.TryGet(out _))
 				return null!;
 
-			BeatmapParserEngine parser = new();
-			Beatmap = new();
-			parser.ReadBeatmap(Encoding.UTF8.GetString(textAsset.m_Script), ref Beatmap);
+			GetBeatmap();
 
 			GamemodeData.InitialScene = "scene/musedash1/scene_01";
 			foreach (var tp in Beatmap.timingPoints) {
@@ -122,7 +137,28 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 	public ISong GetSong() => song;
 
 	public IAudioClip GetAudioTrack() => AudioClip;
-	public ChartTiming GetTiming() => ((MD1_GamemodeData)GetGamemodeData()).GetTiming();
+	public ChartTiming GetTiming() {
+		List<TempoChange> tempoChanges = [];
+		double beat = 0, lastTime = 0, lastBPM = 0;
+
+		foreach (var timingPoint in GetBeatmap().timingPoints) {
+			if (!timingPoint.uninherited || timingPoint.beatLength <= 0)
+				continue;
+
+			double time = timingPoint.time / 1000d;
+			double bpm = 60000 / timingPoint.beatLength;
+			if (lastBPM > 0)
+				beat += (time - lastTime) * lastBPM / 240;
+			else if (time > 0)
+				tempoChanges.Add(new TempoChange(0, (int)Math.Round(-time * bpm / 240), bpm));
+
+			lastTime = time;
+			lastBPM = bpm;
+			tempoChanges.Add(new TempoChange(time, (int)Math.Round(beat), lastBPM));
+		}
+
+		return new(tempoChanges, []);
+	}
 
 	public IAudioClip AudioClip = null!;
 

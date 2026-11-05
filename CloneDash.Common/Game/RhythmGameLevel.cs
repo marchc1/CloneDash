@@ -234,8 +234,10 @@ public class RhythmGameLevel : Level, IServiceProvider
 
 	public override void PreRender(FrameState frameState) {
 		float width = EngineCore.GetWindowWidth(), height = EngineCore.GetWindowHeight();
-		effects?.Begin(width, height);
-		EngineCore.Window.ClearBackground(Color.Blank);
+		if (effects != null) {
+			effects.Begin(width, height);
+			EngineCore.Window.ClearBackground(Color.Blank);
+		}
 
 		foreach (var part in preRenderers)
 			part.PreRender(frameState);

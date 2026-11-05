@@ -69,6 +69,8 @@ namespace AssetStudio
     {
         public PPtr<Shader> m_Shader;
         public UnityPropertySheet m_SavedProperties;
+        public int m_CustomRenderQueue = -1;
+        public string[] m_ValidKeywords = [];
 
         public Material() { }
 
@@ -77,6 +79,8 @@ namespace AssetStudio
             var parsedMaterial = JsonSerializer.Deserialize<Material>(type, jsonOptions);
             m_Shader = parsedMaterial.m_Shader;
             m_SavedProperties = parsedMaterial.m_SavedProperties;
+            m_CustomRenderQueue = parsedMaterial.m_CustomRenderQueue;
+            m_ValidKeywords = parsedMaterial.m_ValidKeywords ?? [];
         }
 
         public Material(ObjectReader reader) : base(reader)
@@ -90,7 +94,7 @@ namespace AssetStudio
 
             if (version >= (2021, 2, 18)) //2021.2.18 and up
             {
-                var m_ValidKeywords = reader.ReadStringArray();
+                m_ValidKeywords = reader.ReadStringArray();
                 var m_InvalidKeywords = reader.ReadStringArray();
             }
             else if (version >= 5) //5.0 - 2021.2.17
@@ -112,7 +116,7 @@ namespace AssetStudio
 
             if (version >= (4, 3)) //4.3 and up
             {
-                var m_CustomRenderQueue = reader.ReadInt32();
+                m_CustomRenderQueue = reader.ReadInt32();
             }
 
             if (version >= (5, 1)) //5.1 and up

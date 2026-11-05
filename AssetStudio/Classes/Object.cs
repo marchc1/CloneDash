@@ -162,14 +162,29 @@ namespace AssetStudio
 				case ClassIDType.Avatar:
 					obj = new Avatar(objectReader);
 					break;
+				case ClassIDType.BoxCollider:
+					obj = new BoxCollider(objectReader);
+					break;
+				case ClassIDType.BoxCollider2D:
+					obj = new BoxCollider2D(objectReader);
+					break;
 				case ClassIDType.BuildSettings:
 					obj = new BuildSettings(objectReader);
+					break;
+				case ClassIDType.CanvasRenderer:
+					obj = new CanvasRenderer(objectReader);
+					break;
+				case ClassIDType.CapsuleCollider:
+					obj = new CapsuleCollider(objectReader);
 					break;
 				case ClassIDType.Font:
 					obj = new Font(objectReader);
 					break;
 				case ClassIDType.GameObject:
 					obj = new GameObject(objectReader);
+					break;
+				case ClassIDType.Light:
+					obj = new Light(objectReader);
 					break;
 				case ClassIDType.Material:
 					obj = objectReader.serializedType?.m_Type != null && loadViaTypeTree
@@ -178,6 +193,9 @@ namespace AssetStudio
 					break;
 				case ClassIDType.Mesh:
 					obj = new Mesh(objectReader);
+					break;
+				case ClassIDType.MeshCollider:
+					obj = new MeshCollider(objectReader);
 					break;
 				case ClassIDType.MeshFilter:
 					obj = new MeshFilter(objectReader);
@@ -208,6 +226,9 @@ namespace AssetStudio
 					break;
 				case ClassIDType.RectTransform:
 					obj = new RectTransform(objectReader);
+					break;
+				case ClassIDType.Rigidbody:
+					obj = new Rigidbody(objectReader);
 					break;
 				case ClassIDType.Shader:
 					if (objectReader.version < 2021)
@@ -240,6 +261,9 @@ namespace AssetStudio
 					break;
 				case ClassIDType.Transform:
 					obj = new Transform(objectReader);
+					break;
+				case ClassIDType.TrailRenderer:
+					obj = new TrailRenderer(objectReader);
 					break;
 				case ClassIDType.VideoClip:
 					obj = new VideoClip(objectReader);
