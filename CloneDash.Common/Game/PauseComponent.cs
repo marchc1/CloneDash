@@ -9,9 +9,11 @@ using Nucleus.UI.Elements;
 
 namespace CloneDash.Common.Game;
 
-public class PauseComponent(Level level, RhythmGameLevel game, MusicComponent music, GameEventManager events)
+public class PauseComponent(RhythmGameLevel level, MusicComponent music, GameEventManager events, InputComponent input) : IRhythmGameThinker
 {
 	public double DeltaUnpauseTime => level.Realtime - UnpauseTime;
+
+	public RhythmGameThinkPhase Phase => RhythmGameThinkPhase.Input;
 
 	public Panel? PauseWindow { get; private set; }
 
@@ -64,6 +66,13 @@ public class PauseComponent(Level level, RhythmGameLevel game, MusicComponent mu
 		});
 	}
 
+	public void Think(FrameState frameState) {
+		if (input.State.PauseButton) {
+			TogglePauseMenu();
+			level.EndFrame();
+		}
+	}
+
 	public void TogglePauseMenu() {
 		if (music.IsValid() && music.IsPaused) {
 			StartUnpause();
@@ -104,7 +113,7 @@ public class PauseComponent(Level level, RhythmGameLevel game, MusicComponent mu
 					// EngineCore.LoadLevel(new MuseDash1Game(gameParameters));
 
 					// Maybe seeking is stable enough now to justify this though?
-					game.Restart();
+					level.Restart();
 					PauseWindow.Remove();
 					FullUnpause();
 				};

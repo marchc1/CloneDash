@@ -9,7 +9,7 @@ namespace CloneDash.Game.Entities
 {
 	public class SingleHitEnemy : DashEnemy
 	{
-		public SingleHitEnemy() : base(MuseDash1EntityType.Single) {
+		public SingleHitEnemy(DashEnemyComponents components) : base(MuseDash1EntityType.Single, components) {
 			Interactivity = EntityInteractivity.Hit;
 		}
 
@@ -25,7 +25,7 @@ namespace CloneDash.Game.Entities
 		protected override void OnMiss() {
 			PunishPlayer();
 			GetStats().Miss(this);
-			if (Level.As<MuseDash1Game>().IsCharacterOn(Pathway)) {
+			if (Components.Character.IsCharacterOn(Pathway)) {
 				DamagePlayer();
 			}
 		}
@@ -52,20 +52,19 @@ namespace CloneDash.Game.Entities
 			if (visuals.Model == null) return;
 
 			if (Dead) {
-				GetGameLevel().SetEnemyKilledPosition(this);
+				Components.Scenes.SetEnemyKilledPosition(this);
 				var anim = WasHitPerfect ? visuals.PerfectHitAnimation : visuals.GreatHitAnimation;
 				anim?.Apply(visuals.Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
 
-			GetGameLevel().SetEnemyPosition(this);
+			Components.Scenes.SetEnemyPosition(this);
 			base.DetermineAnimationPlayback(visuals);
 		}
 		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
 			base.OnBuildVisuals(visuals);
 
 
-			var level = Level.As<MuseDash1Game>();
 			var scene = visuals.Scene;
 
 			switch (Variant) {

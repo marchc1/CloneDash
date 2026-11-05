@@ -7,7 +7,7 @@ using Color = Nucleus.Common.Types.Color;
 
 namespace CloneDash.Common.Game;
 
-public class ScreenEffectsComponent(Level level, RhythmGameLevel game) : IRhythmGameComponent
+public class ScreenEffectsComponent(Level level, IConductor conductor) : IRhythmGameComponent
 {
 	static int nextTypeId;
 
@@ -21,7 +21,7 @@ public class ScreenEffectsComponent(Level level, RhythmGameLevel game) : IRhythm
 	public RenderTexture? RenderTexture2 { get; private set; }
 
 	public T Add<T>(T effect) where T : ScreenEffect {
-		effect.Attach(level, game, this);
+		effect.Attach(level, conductor, this);
 		effects.Add(effect);
 
 		int id = TypeId<T>.Value;

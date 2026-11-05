@@ -1,4 +1,5 @@
-﻿using CloneDash.Common.Gamemodes;
+﻿using CloneDash.Common.Data;
+using CloneDash.Common.Gamemodes;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Types;
 
@@ -43,6 +44,8 @@ public interface ISongChart
 	ISong GetSong();
 
 	IAudioClip GetAudioTrack();
+
+	ChartTiming GetTiming();
 
 	/// <summary>
 	/// The gamemode this chart targets. An adapter can attempt to convert to a different gamemode;

@@ -5,6 +5,7 @@ using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 using Nucleus;
 using Nucleus.Commands;
@@ -183,7 +184,7 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 	public override string GetName() => $"{GetCosplayName()} {GetCharacterName()}";
 	public ReadOnlySpan<char> GetCosplayName() => ConfigData.CosName;
 	public ReadOnlySpan<char> GetCharacterName() => ConfigData.CharacterName;
-	public ITexture? GetThumbnailTexture() => MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<Texture2D>(ConfigData.Skins.First().HeadName)!);
+	public ITexture? GetThumbnailTexture() => UnityAssetUtils.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<Texture2D>(ConfigData.Skins.First().HeadName)!);
 	public ReadOnlySpan<char> GetDescription() => ConfigData.Description;
 	public ReadOnlySpan<char> GetAuthor() => ConfigData.Cv;
 	public ReadOnlySpan<char> GetPerk() => ConfigData.Skill;
@@ -421,24 +422,11 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 	public ModelData GetVictoryModel(Level level) => PullModelDataFromGameObject(level, ConfigData.VictoryShow);
 	public string GetVictoryStandby() => "standby";
 
-	public bool SupportsGamemode(IGamemodeDescriptor gamemodeDescriptor) {
-		return false;
-	}
-
-	public object? GetGamemodeParameters(IGamemodeDescriptor gamemodeDescriptor) {
-		throw new NotImplementedException();
-	}
-
 	public ICharacterMainMenuInstance CreateMainMenu() => new MuseDashCharacterMainMenuInstance(this);
 	public ICharacterVictoryInstance CreateVictory() => new MuseDashCharacterVictoryInstance(this);
 	public ICharacterFailureInstance CreateFailure() => new MuseDashCharacterFailureInstance(this);
 
-	public T? CreateInGame<T>(RhythmGameLevel game) where T : ICharacterInGameInstance {
-		switch (game.GetGamemode().GetUUID()) {
-			case MuseDash1Gamemode.UUID: return (T)(object)(new MuseDash1CharacterInstance(this, (MuseDash1Game)game));
-			case MuseDash1TouhouGamemode.UUID: return (T)(object)(new MuseDash1CharacterInstance(this, (MuseDash1Game)game));
-		}
+	public IGamemodeDescriptor GetGamemode() => ModStores.Get<GamemodeMod>().GetDescriptorByUID(MuseDash1Gamemode.UUID)!;
 
-		return default; // not supported
-	}
+	public Type GetRuntimeType() => typeof(MuseDash1CharacterInstance);
 }

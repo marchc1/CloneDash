@@ -31,6 +31,8 @@ public class MD1_GamemodeData
 
 	public ITexture? BackgroundTextureOverride;
 	public float BackgroundTextureOpacity;
+
+	public ChartTiming GetTiming() => new(TempoChanges, TimeSignatureChanges);
 }
 
 /// <summary>
@@ -90,5 +92,6 @@ public class MD1_SongChart : ISongChart
 	}
 
 	public IAudioClip GetAudioTrack() => Song.GetAudioTrack();
+	public ChartTiming GetTiming() => ((MD1_GamemodeData)GetGamemodeData()).GetTiming();
 	public int GetRatingNumber() => RatingNumber;
 }

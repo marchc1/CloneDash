@@ -14,14 +14,14 @@ using System.Diagnostics;
 
 namespace CloneDash.Game.Logic
 {
-	public class AutoPlayer : LogicalEntity, IInputReceiver, IRhythmGameComponent
+	public class AutoPlayer(MuseDash1CharacterComponent character, MuseDash1ChartComponent chart, Conductor conductor, MashComponent mash, PathwaysComponent pathways, ISustainManager sustains) : LogicalEntity, IInputReceiver, IRhythmGameComponent
 	{
 		/// <summary>
 		/// Used to store which sustains are currently being held.
 		/// </summary>
 		public readonly Stack<SustainBeam>[] CurrentSustains = StackBasedSustainManager.CreatePathwayStacks();
 
-		Stack<SustainBeam> StackOf(DashEnemy ent) => CurrentSustains[Level.As<MuseDash1Game>().PrimaryPathway(ent.Pathway).Index];
+		Stack<SustainBeam> StackOf(DashEnemy ent) => CurrentSustains[pathways.PrimaryPathway(ent.Pathway).Index];
 
 		/// <summary>
 		/// Mark an entity as passed. Only used externally during seeking, for the sake of not confusing the autoplayer
@@ -46,7 +46,7 @@ namespace CloneDash.Game.Logic
 		}
 
 		public void SustainHoldThink(ref InputState input) {
-			var layout = Level.As<MuseDash1Game>().Layout;
+			var layout = pathways.Layout;
 			for (int pathway = 0; pathway < layout.Count; pathway++) {
 				var stack = CurrentSustains[pathway];
 				// Is there a sustain in progress on this pathway?
@@ -87,7 +87,7 @@ namespace CloneDash.Game.Logic
 		/// <summary>
 		/// Ran-per-tick function to check if the delta-time since the last masher hit is greater than MAX_MASHHITS_PER_SECOND
 		/// </summary>
-		private bool CanHitMasher => (Level.As<MuseDash1Game>().Conductor.Time - LastMasherHit) > TIME_BETWEEN_MASH_HITS;
+		private bool CanHitMasher => (conductor.Time - LastMasherHit) > TIME_BETWEEN_MASH_HITS;
 		/// <summary>
 		/// Internal function to check the hashmap for passed-by entities.
 		/// </summary>
@@ -109,17 +109,15 @@ namespace CloneDash.Game.Logic
 			if (!Enabled)
 				return;
 
-			var level = Level.As<MuseDash1Game>();
-
 			// Mash state functionality
-			if (level.InMashState && CanHitMasher) {
+			if (mash.InMashState && CanHitMasher) {
 				input.Clicked[(int)InputAction.AirAttack] = 1; // Attack the masher
-				LastMasherHit = Level.As<MuseDash1Game>().Conductor.Time; // Set the masher
+				LastMasherHit = conductor.Time; // Set the masher
 				return;
 			}
 
 			// Sort the visible entities by closest to furthest
-			var ents = level.EnemyManager.GetLastVisible();
+			var ents = chart.EnemyManager.GetLastVisible();
 
 			// Find the closest interactive entity that hasnt been passed
 			var entIndex = GetClosestInteractiveIdx(ents);
@@ -131,7 +129,6 @@ namespace CloneDash.Game.Logic
 
 					// Is an entity visible?
 					if (ent != default) {
-						var pathway = level.GetPathway(ent);
 						var timeToHit = ent.GetJudgementTimeUntilHit();
 						switch (ent.Interactivity) {
 							// Same pathway system, either hit or just run into
@@ -139,12 +136,12 @@ namespace CloneDash.Game.Logic
 							case EntityInteractivity.Hit:
 							case EntityInteractivity.Sustain:
 								if (NMath.InRange((float)timeToHit, -ent.PrePerfectRange, 0.001f) && AvoidHittingAgain(ent)) {
-									if (ent.Pathway == level.JumpPathway.AsSet && !avoidedTop)
+									if (ent.Pathway == pathways.JumpPathway.AsSet && !avoidedTop)
 										input.Click(InputAction.AirAttack);
 									else if (!avoidedBottom) {
 										if (ent.Interactivity == EntityInteractivity.SamePath) {
 											// If currently in the air, always try to click a same path ... or if sustaining
-											if (level.InAir || level.Sustains.IsSustaining())
+											if (character.InAir || sustains.IsSustaining())
 												input.Click(InputAction.GroundAttack);
 										}
 										else
@@ -163,9 +160,9 @@ namespace CloneDash.Game.Logic
 							// Entities that need to be avoided
 							case EntityInteractivity.Avoid:
 								if (NMath.InRange((float)timeToHit, -ent.PrePerfectRange, -0.001f)) {
-									if (level.IsCharacterOn(ent.Pathway)) {
+									if (character.IsCharacterOn(ent.Pathway)) {
 										// The entity needs to be avoided, so pick the opposite side the entity is on
-										if (ent.Pathway == level.GroundPathway.AsSet && input.ClickCount(InputAction.AirAttack) <= 0) {
+										if (ent.Pathway == pathways.GroundPathway.AsSet && input.ClickCount(InputAction.AirAttack) <= 0) {
 											input.Click(InputAction.AirAttack);
 											avoidedTop = true;
 										}

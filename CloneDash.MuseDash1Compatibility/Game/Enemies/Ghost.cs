@@ -5,7 +5,7 @@ namespace CloneDash.Game.Entities
 {
 	public class Ghost : DashEnemy
 	{
-		public Ghost() : base(MuseDash1EntityType.Ghost) {
+		public Ghost(DashEnemyComponents components) : base(MuseDash1EntityType.Ghost, components) {
 			Interactivity = EntityInteractivity.Hit;
 			DoesDamagePlayer = false;
 			DoesPunishPlayer = false;
@@ -23,13 +23,13 @@ namespace CloneDash.Game.Entities
 
 		public override void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
 			if (Dead) {
-				GetGameLevel().SetEnemyKilledPosition(this);
+				Components.Scenes.SetEnemyKilledPosition(this);
 				var anim = WasHitPerfect ? visuals.PerfectHitAnimation : visuals.GreatHitAnimation;
 				anim?.Apply(visuals.Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
 
-			GetGameLevel().SetEnemyPosition(this);
+			Components.Scenes.SetEnemyPosition(this);
 			base.DetermineAnimationPlayback(visuals);
 		}
 		public override void OnBuildVisuals(DashEnemyVisuals visuals) {

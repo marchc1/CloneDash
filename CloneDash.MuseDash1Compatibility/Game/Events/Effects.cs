@@ -43,78 +43,78 @@ public enum FocusLineMode : sbyte
 
 
 
-public class ScreenspaceEffectEvent<TEffect>(MuseDash1Game game, double targetValue) : DashEvent(game) where TEffect : ScreenEffect
+public class ScreenspaceEffectEvent<TEffect>(DashEventComponents components, double targetValue) : DashEvent(components) where TEffect : ScreenEffect
 {
 	public double TargetValue = targetValue;
 	public virtual double? GetLengthOfEffect() => null;
 	public virtual Func<double, double>? GetEasing() => null;
 	public override void Activate() {
-		Game.Effects.Get<TEffect>().Trigger(TargetValue, GetLengthOfEffect() ?? Length, GetEasing());
+		Components.Effects.Get<TEffect>().Trigger(TargetValue, GetLengthOfEffect() ?? Length, GetEasing());
 	}
 }
 
-public class ScreenScrollEffect(MuseDash1Game game, ScreenScrollDirection direction) : ScreenspaceEffectEvent<ScreenScrollScreenEffect>(game, (double)direction){
+public class ScreenScrollEffect(DashEventComponents components, ScreenScrollDirection direction) : ScreenspaceEffectEvent<ScreenScrollScreenEffect>(components, (double)direction){
 
 	public override void Activate() {
-		Game.Effects.Get<ScreenScrollScreenEffect>().Trigger((int)direction, 0);
-		Game.Effects.Get<ScreenScrollScreenEffect>().ResetScreenScroll();
+		Components.Effects.Get<ScreenScrollScreenEffect>().Trigger((int)direction, 0);
+		Components.Effects.Get<ScreenScrollScreenEffect>().ResetScreenScroll();
 	}
 	public override double? GetLengthOfEffect() => 0;
 }
-public class ScanlinesEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent<ScanlinesScreenEffect>(game, active ? 1 : 0);
-public class ChromaticAberrationEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent<ChromaticAberrationScreenEffect>(game, active ? 1 : 0)
+public class ScanlinesEffect(DashEventComponents components, bool active) : ScreenspaceEffectEvent<ScanlinesScreenEffect>(components, active ? 1 : 0);
+public class ChromaticAberrationEffect(DashEventComponents components, bool active) : ScreenspaceEffectEvent<ChromaticAberrationScreenEffect>(components, active ? 1 : 0)
 {
 	public override double? GetLengthOfEffect() => 0.4;
 }
-public class VignetteEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent<VignetteScreenEffect>(game, active ? 1 : 0){
+public class VignetteEffect(DashEventComponents components, bool active) : ScreenspaceEffectEvent<VignetteScreenEffect>(components, active ? 1 : 0){
 	public override double? GetLengthOfEffect() => 0.4;
 	public override Func<double, double>? GetEasing() => active ? null : NMath.Ease.OutCubic;
 }
-public class TVStaticEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent<TVStaticScreenEffect>(game, active ? 1 : 0);
-public class FlashbangEffect(MuseDash1Game game, FlashbangParam parameter) : ScreenspaceEffectEvent<FlashbangScreenEffect>(game, parameter switch {
+public class TVStaticEffect(DashEventComponents components, bool active) : ScreenspaceEffectEvent<TVStaticScreenEffect>(components, active ? 1 : 0);
+public class FlashbangEffect(DashEventComponents components, FlashbangParam parameter) : ScreenspaceEffectEvent<FlashbangScreenEffect>(components, parameter switch {
 	FlashbangParam.Start => 0,
 	FlashbangParam.High => 1,
 	FlashbangParam.End => 0,
 }) {
 	public readonly FlashbangParam Type = parameter;
 }
-public class NoteFreezeEvent(MuseDash1Game game, bool freeze) : ScreenspaceEffectEvent<NoteFreezeScreenEffect>(game, freeze ? 1 : 0);
-public class BgFreezeEvent(MuseDash1Game game, bool freeze) : ScreenspaceEffectEvent<BgFreezeScreenEffect>(game, freeze ? 1 : 0);
-public class MosaicEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent<MosaicScreenEffect>(game, active ? 1 : 0){
+public class NoteFreezeEvent(DashEventComponents components, bool freeze) : ScreenspaceEffectEvent<NoteFreezeScreenEffect>(components, freeze ? 1 : 0);
+public class BgFreezeEvent(DashEventComponents components, bool freeze) : ScreenspaceEffectEvent<BgFreezeScreenEffect>(components, freeze ? 1 : 0);
+public class MosaicEffect(DashEventComponents components, bool active) : ScreenspaceEffectEvent<MosaicScreenEffect>(components, active ? 1 : 0){
 	public override double? GetLengthOfEffect() {
 		return 0;
 	}
 }
-public class SepiaEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent<SepiaScreenEffect>(game, active ? 1 : 0){
+public class SepiaEffect(DashEventComponents components, bool active) : ScreenspaceEffectEvent<SepiaScreenEffect>(components, active ? 1 : 0){
 	public override double? GetLengthOfEffect() => 0.4;
 }
-public class FocusLinesEffect(MuseDash1Game game, FocusLineMode mode) : ScreenspaceEffectEvent<FocusLinesScreenEffect>(game, (double)mode);
-public class FilmGrainEffect(MuseDash1Game game, bool active) : ScreenspaceEffectEvent<FilmGrainScreenEffect>(game, active ? 1 : 0)
+public class FocusLinesEffect(DashEventComponents components, FocusLineMode mode) : ScreenspaceEffectEvent<FocusLinesScreenEffect>(components, (double)mode);
+public class FilmGrainEffect(DashEventComponents components, bool active) : ScreenspaceEffectEvent<FilmGrainScreenEffect>(components, active ? 1 : 0)
 {
 	public override double? GetLengthOfEffect() => 0.2;
 }
-public class FlashBangEffectColorChange(MuseDash1Game game, FlashbangColor color) : ScreenspaceEffectEvent<FlashbangScreenEffect>(game, (double)color){
+public class FlashBangEffectColorChange(DashEventComponents components, FlashbangColor color) : ScreenspaceEffectEvent<FlashbangScreenEffect>(components, (double)color){
 	public override void Activate() {
-		game.Effects.Get<FlashbangScreenEffect>().SetFlashbangColor(color);
+		components.Effects.Get<FlashbangScreenEffect>().SetFlashbangColor(color);
 	}
 }
-public class AutoPlayEvent(MuseDash1Game game, bool active) : DashEvent(game)
+public class AutoPlayEvent(DashEventComponents components, bool active) : DashEvent(components)
 {
 	public bool Active = active;
 
 }
 
-public class NoteVisibilityEvent(MuseDash1Game game, bool visible) : DashEvent(game)
+public class NoteVisibilityEvent(DashEventComponents components, bool visible) : DashEvent(components)
 {
 	public bool Visible = visible;
 	public override void Activate() {
-		Game.Effects.Get<NoteVisibilityScreenEffect>().Visible = Visible;
+		Components.Effects.Get<NoteVisibilityScreenEffect>().Visible = Visible;
 	}
 }
-public class BackgroundVisibilityEvent(MuseDash1Game game, bool visible) : DashEvent(game)
+public class BackgroundVisibilityEvent(DashEventComponents components, bool visible) : DashEvent(components)
 {
 	public bool Visible = visible;
 	public override void Activate() {
-		Game.Effects.Get<BackgroundVisibilityScreenEffect>().Visible = Visible;
+		Components.Effects.Get<BackgroundVisibilityScreenEffect>().Visible = Visible;
 	}
 }

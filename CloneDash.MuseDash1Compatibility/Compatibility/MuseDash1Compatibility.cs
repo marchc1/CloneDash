@@ -820,15 +820,6 @@ namespace CloneDash.Compatibility.MuseDash
 			return true;
 		}
 
-		public static ITexture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
-			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib());
-			ITexture ntex = textures.CreateTexture((Image)img);
-			ntex.SetFilter(TextureFilter.Bilinear);
-			ntex.SetWrap(TextureWrap.Clamp);
-			ntex.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
-			return ntex;
-		}
-
 		public static byte[] GetSoundBytes(Level level, AudioClip audioclip, out string? fileExtension) {
 			fileExtension = null;
 

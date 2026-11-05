@@ -19,7 +19,7 @@ namespace CloneDash.Game
 		}
 		public Func<bool> CanSeek = () => true;
 		public MusicComponent Music = null!;
-		public PauseComponent Pause = null!;
+		public PauseComponent? Pause;
 		public Action<double>? SeekTo;
 		public List<TempoChange> TempoChanges { get; private set; } = [];
 		public List<TimeSignatureChange> TimeSignatureChanges { get; private set; } = [];
@@ -142,7 +142,7 @@ namespace CloneDash.Game
 				SeekTo?.Invoke(dragSeconds.Value);
 
 			if (!wasPaused)
-				Pause.ForceUnpause();
+				Pause?.ForceUnpause();
 
 			dragSeconds = null;
 		}
@@ -152,7 +152,7 @@ namespace CloneDash.Game
 
 			wasPaused = Level.Paused;
 			if (!wasPaused)
-				Pause.ForcePause();
+				Pause?.ForcePause();
 
 			dragSeconds = uiSeconds;
 		}

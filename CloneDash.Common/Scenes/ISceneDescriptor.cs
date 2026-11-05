@@ -17,9 +17,7 @@ public interface ISceneInstance
 	ISceneDescriptor GetScene();
 }
 
-public interface ISceneDescriptor : ICloneDashModDescriptor
+public interface ISceneDescriptor : IContentSource
 {
 	SceneMetadata FetchMetadata();
-	T? CreateInGame<T>(RhythmGameLevel game) where T : ISceneInstance;
-	bool SupportsGamemode(IGamemodeDescriptor gamemodeDescriptor);
 }

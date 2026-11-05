@@ -1,15 +1,13 @@
 ﻿using AssetStudio;
-using CloneDash.Scenes;
 using Nucleus;
 using Nucleus.Common.Graphics;
-using Nucleus.Models.Runtime;
 using Raylib_cs;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using Transform = AssetStudio.Transform;
 
-namespace CloneDash.Compatibility.MuseDash;
+namespace CloneDash.Compatibility.Unity;
 
 
 static class UnityCRC32
@@ -288,7 +286,7 @@ public abstract class SceneRenderer : SceneComponent
 {
 	public int SortingLayerID;
 	public int SortingOrder;
-	public abstract void Render(BaseMuseDash1UnitySimScene scene);
+	public abstract void Render(UnitySimScene scene);
 }
 
 public class SceneSpriteRenderer : SceneRenderer
@@ -320,7 +318,7 @@ public class SceneSpriteRenderer : SceneRenderer
 		var tex2d = sprite.m_RD.GetTexture();
 		if (tex2d == null) return;
 
-		texture = ((BaseMuseDash1UnitySimScene)Object.Scene).LoadTexture(tex2d);
+		texture = ((UnitySimScene)Object.Scene).LoadTexture(tex2d);
 		atlasW = (int)texture.GetWidth(); atlasH = (int)texture.GetHeight();
 		texRectX = sprite.m_RD.textureRect.x; texRectY = sprite.m_RD.textureRect.y;
 		texRectW = sprite.m_RD.textureRect.width; texRectH = sprite.m_RD.textureRect.height;
@@ -419,7 +417,7 @@ public class SceneSpriteRenderer : SceneRenderer
 		_ => BitConverter.ToSingle(d, o)
 	};
 
-	public void SetSprite(Sprite sprite, BaseMuseDash1UnitySimScene scene) {
+	public void SetSprite(Sprite sprite, UnitySimScene scene) {
 		var tex2d = sprite.m_RD.GetTexture();
 		if (tex2d == null) return;
 		texture = scene.LoadTexture(tex2d);
@@ -434,9 +432,9 @@ public class SceneSpriteRenderer : SceneRenderer
 		useMesh = TryLoadMesh(sprite);
 	}
 
-	public override void Render(BaseMuseDash1UnitySimScene scene) {
+	public override void Render(UnitySimScene scene) {
 		if (texture == null) return;
-		if (!BaseMuseDash1UnitySimScene.IsActiveInHierarchy(Object)) return;
+		if (!UnitySimScene.IsActiveInHierarchy(Object)) return;
 		// TODO: mesh rendering. Very slow, probably incorrect right now...
 		// the quads represent the main geometry and the main problems we're experiencing with geometry anyway
 		// if (useMesh && mIdx != null)
@@ -489,7 +487,7 @@ public class SceneSpriteRenderer : SceneRenderer
 
 	void RenderQuad() {
 		if (texture == null || texRectW <= 0 || texRectH <= 0) return;
-		if (!BaseMuseDash1UnitySimScene.IsActiveInHierarchy(Object)) return;
+		if (!UnitySimScene.IsActiveInHierarchy(Object)) return;
 
 		Transform.GetWorldPosition(out float wx, out float wy, out _);
 		Transform.GetWorldScale(out float sx, out float sy);
@@ -645,7 +643,7 @@ public class SceneAnimator : SceneComponent
 		var controller = UnityAnimator.GetController();
 		if (controller == null) return;
 
-		var scene = (BaseMuseDash1UnitySimScene)Object.Scene;
+		var scene = (UnitySimScene)Object.Scene;
 		List<AnimationClip> animClips = [];
 		AnimatorController? ac = null;
 
@@ -902,7 +900,7 @@ public class SceneObject
 	public string Name = "";
 	public bool Active = true;
 	public SceneTransform Transform { get; } = new();
-	public BaseMuseDash1UnitySimScene Scene { get; internal set; } = null!;
+	public UnitySimScene Scene { get; internal set; } = null!;
 	readonly List<SceneComponent> components = [];
 	public IReadOnlyList<SceneComponent> Components => components;
 	public System.Numerics.Vector4 Color = new(1, 1, 1, 1);
@@ -1017,7 +1015,7 @@ public class SceneObject
 		return clone;
 	}
 
-	private static void PropagateScene(SceneObject obj, BaseMuseDash1UnitySimScene scene) {
+	private static void PropagateScene(SceneObject obj, UnitySimScene scene) {
 		obj.Scene = scene;
 		scene.RegisterObject(obj);
 		obj.Awake();
@@ -1033,19 +1031,18 @@ public class SceneObject
 	}
 
 	public static void Destroy(SceneObject obj) {
-		if (obj.Scene is BaseMuseDash1UnitySimScene scene)
+		if (obj.Scene is UnitySimScene scene)
 			scene.DestroyObject(obj);
 	}
 }
 
-public abstract class BaseMuseDash1UnitySimScene
+public abstract class UnitySimScene
 {
 	protected readonly List<SceneObject> allObjects = [];
 	protected readonly List<SceneRenderer> sortedRenderers = [];
 	protected readonly List<SceneAnimator> animators = [];
 	protected SceneObject? root;
 	protected readonly Dictionary<long, ITexture> textureCache = [];
-	protected readonly Dictionary<long, ModelData> loadedModels = [];
 	protected readonly Dictionary<long, SceneObject> pathIdToObject = [];
 
 
@@ -1071,16 +1068,9 @@ public abstract class BaseMuseDash1UnitySimScene
 		obj.Active = false;
 	}
 
-	internal ModelData LoadModel(MonoBehaviour? skeletonAnimation) {
-		if (loadedModels.TryGetValue(skeletonAnimation!.m_PathID, out var mdl)) return mdl;
-
-		loadedModels[skeletonAnimation.m_PathID] = mdl = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, skeletonAnimation!);
-		return mdl;
-	}
-
-	internal ITexture LoadTexture(AssetStudio.Texture2D? texture2D) {
+	protected internal ITexture LoadTexture(AssetStudio.Texture2D? texture2D) {
 		if (textureCache.TryGetValue(texture2D!.m_PathID, out var tex)) return tex;
-		textureCache[texture2D.m_PathID] = tex = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, texture2D!);
+		textureCache[texture2D.m_PathID] = tex = UnityAssetUtils.ConvertTexture(EngineCore.Level, texture2D!);
 		return tex;
 	}
 

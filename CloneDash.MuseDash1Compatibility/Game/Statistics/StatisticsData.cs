@@ -1,9 +1,10 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+﻿using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 
 namespace CloneDash.Game.Statistics;
 
-public class StatisticsData
+public class StatisticsData : IRhythmGameComponent
 {
 	public StatisticsImpressiveness Title;
 	public StatisticsGrade Grade;

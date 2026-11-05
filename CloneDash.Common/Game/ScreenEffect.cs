@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Nucleus.Engine;
+﻿using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
 
@@ -7,9 +6,9 @@ namespace CloneDash.Common.Game;
 
 public abstract class ScreenEffect
 {
+	IConductor conductor = null!;
 	double CurrentValue;
 	Func<double, double>? Easing;
-	RhythmGameLevel game = null!;
 	double LastValue;
 	double Length;
 	double Time;
@@ -26,7 +25,7 @@ public abstract class ScreenEffect
 		}
 	}
 
-	protected IConductor Conductor => game.GetRequiredService<IConductor>();
+	protected IConductor Conductor => conductor;
 
 	protected ScreenEffectsComponent Effects { get; private set; } = null!;
 
@@ -57,9 +56,9 @@ public abstract class ScreenEffect
 		Easing = easing;
 	}
 
-	internal void Attach(Level level, RhythmGameLevel game, ScreenEffectsComponent effects) {
+	internal void Attach(Level level, IConductor conductor, ScreenEffectsComponent effects) {
 		Level = level;
-		this.game = game;
+		this.conductor = conductor;
 		Effects = effects;
 	}
 

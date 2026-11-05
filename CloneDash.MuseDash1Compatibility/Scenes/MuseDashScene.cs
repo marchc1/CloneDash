@@ -337,15 +337,9 @@ public class MuseDash1SceneDescriptor : ModDescriptor, IMuseDash1SceneDescriptor
 	public override string GetID() => SceneInfo.MapName;
 	public override ICloneDashModProvider GetProvider() => provider;
 
-	public T? CreateInGame<T>(RhythmGameLevel game) where T : ISceneInstance {
-		var uuid = game.GetGamemode().GetUUID();
+	public IGamemodeDescriptor GetGamemode() => ModStores.Get<GamemodeMod>().GetDescriptorByUID(MuseDash1Gamemode.UUID)!;
 
-		switch (uuid) {
-			case MuseDash1Gamemode.UUID: return (T)(object)(new MuseDash1SceneRuntime(this, (MuseDash1Game)game));
-		}
-
-		return default;
-	}
+	public Type GetRuntimeType() => typeof(MuseDash1SceneRuntime);
 
 	public SceneMetadata FetchMetadata() {
 		return new() {
@@ -353,34 +347,29 @@ public class MuseDash1SceneDescriptor : ModDescriptor, IMuseDash1SceneDescriptor
 			Artists = "PeroPeroGames",
 		};
 	}
-
-	public bool SupportsGamemode(IGamemodeDescriptor gamemodeDescriptor) {
-		var uuid = gamemodeDescriptor.GetUUID();
-		switch (uuid) {
-			case MuseDash1Gamemode.UUID:
-			case MuseDash1TouhouGamemode.UUID:
-				return true;
-		}
-		return false;
-	}
 }
 
-public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1SceneInstance
+public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 {
 	readonly PathwayInformation[] pathwayInfo;
 	readonly bool[] pathwayAirAssets;
 	readonly float[] pathwayHueShift;
 	PathwayInformation centerInfo;
+	readonly Conductor conductor;
+	readonly PathwaysComponent pathways;
+	protected readonly Dictionary<long, ModelData> loadedModels = [];
 
 	static readonly string[] providedAssetSets = [PathwayLayout.ASSETS_AIR, PathwayLayout.ASSETS_ROAD];
 	public readonly MuseDash1SceneDescriptor Descriptor;
-	public readonly MuseDash1Game Game;
+	public readonly RhythmGameLevel Game;
 	public MuseDash1SceneInfo SceneInfo => Descriptor.SceneInfo;
 
 
-	public MuseDash1SceneRuntime(MuseDash1SceneDescriptor descriptor, MuseDash1Game game) {
+	public MuseDash1SceneRuntime(MuseDash1SceneDescriptor descriptor, RhythmGameLevel game, Conductor conductor, PathwaysComponent pathways) {
 		Descriptor = descriptor;
 		Game = game;
+		this.conductor = conductor;
+		this.pathways = pathways;
 
 		var sceneGameObject = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(SceneInfo.MapName)!;
 		var sceneSubControl = new MonoBehaviourReader(
@@ -408,7 +397,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 			roadAnchor = new(pathwayChildren[0].pos.X, pathwayChildren[0].pos.Y, pathwayChildren[0].obj);
 		}
 
-		var layout = game.Layout;
+		var layout = pathways.Layout;
 		pathwayInfo = new PathwayInformation[layout.Count];
 		pathwayAirAssets = new bool[layout.Count];
 		pathwayHueShift = new float[layout.Count];
@@ -440,6 +429,13 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		};
 	}
 
+	internal ModelData LoadModel(MonoBehaviour? skeletonAnimation) {
+		if (loadedModels.TryGetValue(skeletonAnimation!.m_PathID, out var mdl)) return mdl;
+
+		loadedModels[skeletonAnimation.m_PathID] = mdl = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, skeletonAnimation!);
+		return mdl;
+	}
+
 	static void ResolvePathwayAssets(PathwayLayout layout, PathwayId pathway, out bool air, out float hueShift) {
 		foreach (var pref in layout[pathway].Assets) {
 			if (Array.IndexOf(providedAssetSets, pref.AssetSet) < 0) continue;
@@ -451,8 +447,8 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		hueShift = 0;
 	}
 
-	bool AirAssets(DashEnemy enemy) => pathwayAirAssets[Game.PrimaryPathway(enemy.Pathway).Index];
-	public bool IsAirTarget(PathwaySet pathways) => IsAirPathway(Game.PrimaryPathway(pathways));
+	bool AirAssets(DashEnemy enemy) => pathwayAirAssets[pathways.PrimaryPathway(enemy.Pathway).Index];
+	public bool IsAirTarget(PathwaySet pathways) => IsAirPathway(this.pathways.PrimaryPathway(pathways));
 	delegate T? ProducerFn<T>();
 	class NullLazyLoad<T>(ProducerFn<T> producer) where T : class
 	{
@@ -1138,7 +1134,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 	public Vector2F GetCenterPosition() => centerInfo.Position;
 	public bool UsesAirAssets(PathwayId pathway) => pathwayAirAssets[pathway.Index];
 	public float GetPathwayHueShift(PathwayId pathway) => pathwayHueShift[pathway.Index];
-	public bool IsAirPathway(PathwayId pathway) => Game.Layout.IsAirSide(pathway);
+	public bool IsAirPathway(PathwayId pathway) => pathways.Layout.IsAirSide(pathway);
 	public IAudioClip? GetPressIdleSound() => PressIdleSound;
 	public void GetSustainResources(PathwayId pathway, out ITexture? start, out ITexture? end, out ITexture? body, out ITexture? up, out ITexture? down, out float rotationDegsPerSecond) {
 		rotationDegsPerSecond = 120;
@@ -1186,7 +1182,6 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 	public ISceneDescriptor GetScene() => Descriptor;
 
 	public void RenderOverlay() {
-		Conductor conductor = Game.Conductor;
 		var time = conductor.Time;
 
 

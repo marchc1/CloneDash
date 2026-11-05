@@ -4,22 +4,22 @@ using System.Diagnostics;
 
 namespace CloneDash.Game.Events;
 
-public class BossSingleHit(MuseDash1Game game) : DashEvent(game)
+public class BossSingleHit(DashEventComponents components) : DashEvent(components)
 {
 	public override void Activate() {
-		Game.Boss.SingleHit();
+		Components.Boss.SingleHit();
 	}
 
 	public override void OnBuild() {
 		base.OnBuild();
 
-		var boss = Game.Boss;
-		var scene = Game.GetSceneAtTime(Time);
+		var boss = Components.Boss;
+		var scene = Components.Chart.GetSceneAtTime(Time);
 		var anims = boss.Visuals[scene.GetSceneArrayIndex()].Animations;
 		var speed = scene.GetBossAnimationTime(BossAction == "boss_close_atk_2" ? BossAnimationType.CloseAttackFast : BossAnimationType.CloseAttackSlow, anims);
 		Debug.Assert(speed != 0);
 
-		Game.LoadEntity(new() {
+		Components.Chart.LoadEntity(new() {
 			Type = MuseDash1EntityType.Single,
 			Pathway = PathwaySet.Any,
 			Variant = BossAction == "boss_close_atk_2" ? EntityVariant.BossHitFast : EntityVariant.BossHitSlow,

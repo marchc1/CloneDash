@@ -9,7 +9,7 @@ namespace CloneDash.Game.Entities
 {
 	public class Score : DashBonusEntity
 	{
-		public Score() : base(MuseDash1EntityType.Score) {
+		public Score(DashEnemyComponents components) : base(MuseDash1EntityType.Score, components) {
 			Interactivity = EntityInteractivity.SamePath;
 			DeathAddsToCombo = false;
 			DoesDamagePlayer = true;
@@ -21,10 +21,8 @@ namespace CloneDash.Game.Entities
 		}
 
 		protected override void OnReward() {
-			var lvl = GetGameLevel();
-
 			base.OnReward();
-			lvl.GetSceneUI()?.CreateScoreText(ScoreGiven, Pathway);
+			Components.Hud.UI?.CreateScoreText(ScoreGiven, Pathway);
 		}
 		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
 			base.OnBuildVisuals(visuals);

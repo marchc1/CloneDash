@@ -14,7 +14,7 @@ namespace CloneDash.Characters;
 /// <summary>
 /// An interface for character operations and information.
 /// </summary>
-public interface ICharacterDescriptor : ICloneDashModDescriptor
+public interface ICharacterDescriptor : IContentSource
 {
 	/// <summary>
 	/// Gets the human-friendly character name
@@ -38,24 +38,8 @@ public interface ICharacterDescriptor : ICloneDashModDescriptor
 	/// </summary>
 	ReadOnlySpan<char> GetPerk();
 
-	/// <summary>
-	/// Checks if the character supports the provided gamemode.
-	/// </summary>
-	bool SupportsGamemode(IGamemodeDescriptor gamemodeDescriptor);
-
-	/// <summary>
-	/// Some characters have perks to them that adjust certain gamemode behaviors. This will return those parameters.
-	/// If the gamemode is not supported, this returns null.
-	/// </summary>
-	object? GetGamemodeParameters(IGamemodeDescriptor gamemodeDescriptor);
-
 	ICharacterMainMenuInstance CreateMainMenu();
 	ICharacterVictoryInstance CreateVictory();
 	ICharacterFailureInstance CreateFailure();
-	/// <summary>
-	/// If the gamemode is not supported, this will return null!
-	/// </summary>
-	T? CreateInGame<T>(RhythmGameLevel game) where T : ICharacterInGameInstance;
-
 	void ApplyQuirks(ref MuseDash1GameplayQuirks quirks);
 }

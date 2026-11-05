@@ -1,5 +1,6 @@
 ﻿using CloneDash.Common.Game;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 using Nucleus;
 using Nucleus.Common.Graphics;
@@ -95,7 +96,7 @@ public class FilmGrainScreenEffect() : ShaderScreenEffect("filmgrain")
 	private ITexture? LoadOldFilmTexture(string name) {
 		var tex2d = MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(name);
 		if (tex2d == null) return null;
-		var tex = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, tex2d);
+		var tex = UnityAssetUtils.ConvertTexture(EngineCore.Level, tex2d);
 		tex.SetWrap(TextureWrap.Repeat); // so the scratches/dust tile as they scroll
 		return tex;
 	}
@@ -148,7 +149,7 @@ public class ScreenScrollScreenEffect : ScreenEffect
 		if (ScreenScrollRate != 0 && !Level.Paused) {
 			double deltaTime = Conductor.GetTime() - ScreenScrollLastTime;
 			ScreenScrollLastTime = Conductor.GetTime();
-			ScreenScrollProgress += ScreenScrollRate * deltaTime * frameState.WindowHeight * 8 * MuseDash1Game.musicspeed.GetDouble();
+			ScreenScrollProgress += ScreenScrollRate * deltaTime * frameState.WindowHeight * 8 * RhythmGameLevel.musicspeed.GetDouble();
 
 			double windowH = frameState.WindowHeight;
 

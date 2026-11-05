@@ -1,8 +1,9 @@
-﻿using System.Runtime.CompilerServices;
+﻿using Nucleus.Types;
+using System.Runtime.CompilerServices;
 
 namespace CloneDash.Common.Game;
 
-public class HitsoundComponent(Func<bool> isSeeking)
+public class HitsoundComponent(Func<bool> isSeeking) : IRhythmGameThinker
 {
 	readonly Dictionary<string, HitsoundCue> byName = [];
 	readonly List<HitsoundCue> cues = [];
@@ -12,6 +13,8 @@ public class HitsoundComponent(Func<bool> isSeeking)
 	// This helps with doubles/sustains played in the same frame...
 	// probably a better way to handle it, but this works
 	bool[] playedThisFrame = [];
+
+	public RhythmGameThinkPhase Phase => RhythmGameThinkPhase.Input;
 
 	public void AddOutput(IHitsoundOutput output) {
 		outputs.Add(output);
@@ -65,6 +68,8 @@ public class HitsoundComponent(Func<bool> isSeeking)
 		for (int i = 0; i < playedThisFrame.Length; i++)
 			playedThisFrame[i] = false;
 	}
+
+	public void Think(FrameState frameState) => ResetFrame();
 
 	static int ToInt<TEnum>(TEnum value) where TEnum : struct, Enum => Unsafe.SizeOf<TEnum>() switch {
 		1 => Unsafe.As<TEnum, byte>(ref value),

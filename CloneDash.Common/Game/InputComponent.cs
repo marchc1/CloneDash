@@ -6,12 +6,15 @@ using Nucleus.Types;
 
 namespace CloneDash.Common.Game;
 
-public class InputComponent(Level level)
+public class InputComponent(Level level) : IRhythmGameThinker
 {
+	public Func<bool> CanPoll = () => true;
 	public readonly List<IInputReceiver> Receivers = [];
 
 	// Player input system
 	InputState state;
+
+	public RhythmGameThinkPhase Phase => RhythmGameThinkPhase.Input;
 
 	public ref readonly InputState State => ref state;
 
@@ -43,5 +46,11 @@ public class InputComponent(Level level)
 
 	public void Reset() {
 		state.Reset();
+	}
+
+	public void Think(FrameState frameState) {
+		Reset();
+		if (CanPoll())
+			Poll(frameState);
 	}
 }

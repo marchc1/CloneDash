@@ -1,6 +1,8 @@
-﻿namespace CloneDash.Common.Game;
+﻿using Nucleus.Types;
 
-public class FeverComponent(IConductor conductor, GameEventManager events) : IRhythmGameComponent
+namespace CloneDash.Common.Game;
+
+public class FeverComponent(IConductor conductor, GameEventManager events) : IRhythmGameComponent, IRhythmGameThinker
 {
 	public double DismissalTime;
 	public double Duration = 6;
@@ -88,5 +90,10 @@ public class FeverComponent(IConductor conductor, GameEventManager events) : IRh
 		WhenDidFeverStart = -1000000d;
 		Value = 0;
 		LastExitTime = -1000000d;
+	}
+
+	public void Think(FrameState frameState) {
+		if (ShouldExit && InFever)
+			Exit();
 	}
 }

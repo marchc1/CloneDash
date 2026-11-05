@@ -6,7 +6,7 @@ namespace CloneDash.Game.Entities
 {
 	public class Gear : DashEnemy
 	{
-		public Gear() : base(MuseDash1EntityType.Gear) {
+		public Gear(DashEnemyComponents components) : base(MuseDash1EntityType.Gear, components) {
 			Interactivity = EntityInteractivity.Avoid;
 			DoesDamagePlayer = true;
 		}
@@ -34,13 +34,13 @@ namespace CloneDash.Game.Entities
 			if (visuals.Model == null) return;
 
 			if (Dead) {
-				GetGameLevel().SetEnemyKilledPosition(this);
+				Components.Scenes.SetEnemyKilledPosition(this);
 				Position.Y += 1.3f; // TODO: Why..?
 				visuals.PerfectHitAnimation?.Apply(visuals.Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
 
-			GetGameLevel().SetEnemyPosition(this);
+			Components.Scenes.SetEnemyPosition(this);
 			base.DetermineAnimationPlayback(visuals);
 		}
 

@@ -24,5 +24,5 @@ public static class CDUtils
 		return (int)MathF.Round(baseScore);
 	}
 
-	public static int DetermineScoreMultiplied(this MuseDash1Game game, float baseScore, PollResult pollResult) => DetermineScoreMultiplied(baseScore, game.Fever.InFever, game.Combo.Value, pollResult.DistanceToHit);
+	public static int DetermineScoreMultiplied(this MuseDash1RulesComponent rules, float baseScore, PollResult pollResult) => DetermineScoreMultiplied(baseScore, rules.Fever.InFever, rules.Combo.Value, pollResult.DistanceToHit);
 }

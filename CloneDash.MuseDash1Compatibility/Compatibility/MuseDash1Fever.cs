@@ -1,6 +1,7 @@
 using AssetStudio;
 using CloneDash.Common.Compatibility;
 using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
@@ -15,10 +16,7 @@ namespace CloneDash.MD1_Compat.Compatibility;
 
 public interface IMuseDash1FeverProvider : ICloneDashModProvider<IMuseDash1FeverDescriptor>;
 
-public interface IMuseDash1FeverDescriptor : ICloneDashModDescriptor
-{
-	IMuseDash1FeverRuntime? Instantiate(RhythmGameLevel game);
-}
+public interface IMuseDash1FeverDescriptor : IContentSource;
 
 public interface IMuseDash1FeverRuntime
 {
@@ -45,8 +43,6 @@ public sealed class FeverMod : ActiveModStore<IMuseDash1FeverProvider, IMuseDash
 	public FeverMod() : base("Fevers", "fever") {
 		BindConVar(fever);
 	}
-
-	internal static IMuseDash1FeverRuntime? InstantiateCurrentFever(RhythmGameLevel game) => Instance.GetActive()?.Instantiate(game);
 }
 
 public class MuseDash1FeverProvider : ModProvider<IMuseDash1FeverDescriptor>, IMuseDash1FeverProvider
@@ -76,14 +72,14 @@ public class MuseDash1FeverProvider : ModProvider<IMuseDash1FeverDescriptor>, IM
 public class MuseDash1FeverDescriptor(string name, ICloneDashModProvider provider) : SimpleModDescriptor(name, name, provider), IMuseDash1FeverDescriptor
 {
 	public readonly string Name = name;
-	public IMuseDash1FeverRuntime? Instantiate(RhythmGameLevel game) {
-		return new MuseDash1FeverRuntime(this, (MuseDash1Game)game);
-	}
+	public IGamemodeDescriptor GetGamemode() => ModStores.Get<GamemodeMod>().GetDescriptorByUID(MuseDash1Gamemode.UUID)!;
+
+	public Type GetRuntimeType() => typeof(MuseDash1FeverRuntime);
 }
 
-public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, MuseDash1Game game) : BaseMuseDash1UnitySimScene, IMuseDash1FeverRuntime
+public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, RhythmGameLevel game) : UnitySimScene, IMuseDash1FeverRuntime
 {
-	readonly MuseDash1Game game = game;
+	readonly RhythmGameLevel game = game;
 	SceneTransform rootTransform = new();
 	SceneObject? background;
 	SceneAnimator? backgroundAnimator;

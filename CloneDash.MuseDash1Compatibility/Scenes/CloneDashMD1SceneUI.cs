@@ -5,6 +5,7 @@ using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 using CloneDash.Game.Statistics;
 using CommunityToolkit.HighPerformance;
@@ -555,7 +556,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		CleanupList(ForegroundItems, curtime);
 	}
 
-	protected double Time => scene.GetGame().GetConductor().GetTime();
+	protected double Time => scene.GetGame().Component<IConductor>().GetTime();
 	bool AllPerfect, FullCombo;
 	int Combo;
 	double CurrentFever, MaxFever;
@@ -575,7 +576,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	public static float MinorTextScale => 0.65f;
 	public static float TextScale => 0.85f;
 
-	protected ITexture? LoadTextureByName(ReadOnlySpan<char> name) => MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(name)!);
+	protected ITexture? LoadTextureByName(ReadOnlySpan<char> name) => UnityAssetUtils.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(name)!);
 	public void SetSeeking(bool seeking) => Seeking = seeking;
 	public virtual void Initialize() {
 		SetupScoreNumber();
@@ -584,7 +585,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		StyledTextShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "styled_text.fs");
 		UIAlphatestShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "ui_alphatest.fs");
 
-		score_English = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("score_English")!);
+		score_English = UnityAssetUtils.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("score_English")!);
 		ScoreLabel = new(0, 0, new(0, 0), 0, new(1, 1), score_English, new(165, 254, 254), null);
 
 		LoadScoreAssets();

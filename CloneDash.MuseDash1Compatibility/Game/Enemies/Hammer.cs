@@ -5,7 +5,7 @@ namespace CloneDash.Game.Entities
 {
 	public class Hammer : DashEnemy
 	{
-		public Hammer() : base(MuseDash1EntityType.Hammer) {
+		public Hammer(DashEnemyComponents components) : base(MuseDash1EntityType.Hammer, components) {
 			Interactivity = EntityInteractivity.Hit;
 			DoesDamagePlayer = true;
 		}
@@ -18,7 +18,7 @@ namespace CloneDash.Game.Entities
 		protected override void OnMiss() {
 			PunishPlayer();
 			GetStats().Miss(this);
-			if (Level.As<MuseDash1Game>().IsCharacterOn(Pathway)) {
+			if (Components.Character.IsCharacterOn(Pathway)) {
 				DamagePlayer();
 			}
 		}
@@ -31,7 +31,7 @@ namespace CloneDash.Game.Entities
 			base.OnReset();
 		}
 		public override void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
-			GetGameLevel().SetEnemyPosition(this);
+			Components.Scenes.SetEnemyPosition(this);
 			if (Dead) {
 				var anim = WasHitPerfect ? visuals.PerfectHitAnimation : visuals.GreatHitAnimation;
 				anim?.Apply(visuals.Model, (GetConductor().Time - LastHitTime));

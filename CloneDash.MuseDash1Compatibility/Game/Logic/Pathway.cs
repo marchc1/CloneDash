@@ -1,4 +1,6 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Scenes;
 using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Common.Types;
@@ -14,10 +16,15 @@ namespace CloneDash.Game;
 
 public class Pathway : LogicalEntity
 {
-	InputAction Action => Level.As<MuseDash1Game>().Layout[Id].Action;
-	public bool IsClicked() => Level.As<MuseDash1Game>().Input.State.ClickCount(Action) > 0;
-	public bool IsPressed() => Level.As<MuseDash1Game>().Input.State.IsHeld(Action);
-	public int PressedKeysCount => Level.As<MuseDash1Game>().Input.State.HeldKeys(Action);
+	readonly Conductor conductor;
+	readonly InputComponent input;
+	readonly PathwaysComponent pathways;
+	readonly MuseDash1ScenesComponent scenes;
+
+	InputAction Action => pathways.Layout[Id].Action;
+	public bool IsClicked() => input.State.ClickCount(Action) > 0;
+	public bool IsPressed() => input.State.IsHeld(Action);
+	public int PressedKeysCount => input.State.HeldKeys(Action);
 
 	public PathwayId Id { get; }
 
@@ -26,23 +33,25 @@ public class Pathway : LogicalEntity
 	/// </summary>
 	public SecondOrderSystem InputAnimator { get; private set; } = new(0.4f, 0.5f, 1f, 1);
 
-	public Pathway(PathwayId id) : base() {
+	public Pathway(PathwayId id, Conductor conductor, InputComponent input, PathwaysComponent pathways, MuseDash1ScenesComponent scenes) : base() {
 		Id = id;
+		this.conductor = conductor;
+		this.input = input;
+		this.pathways = pathways;
+		this.scenes = scenes;
 	}
 
-	public Color Color => Level.As<MuseDash1Game>().Layout[Id].Color;
+	public Color Color => pathways.Layout[Id].Color;
 
 	public SecondOrderSystem Animator { get; private set; } = new(8.4f, 0.5f, 1f, 1);
 	public override void Think(FrameState frameState) {
-		Position = Level.As<MuseDash1Game>().GetPathwayPosition(Id);
+		Position = scenes.GetPathwayPosition(Id);
 	}
 	public override void PostRender(FrameState frameState) {
 
 	}
 
 	public void Render() {
-		var lvl = Level.As<MuseDash1Game>();
-		var conductor = lvl.Conductor;
 		var beatInfluence = 1 - conductor.NoteDivisorRealtime(4);
 		var realInfluence = Animator.Update((IsClicked() || IsPressed()) ? 2 : beatInfluence);
 		var size = Raymath.Remap(realInfluence, 0, 1, 0.85f, 1f);
@@ -54,7 +63,7 @@ public class Pathway : LogicalEntity
 		float ring_offset = 360 / divisors / 2;
 
 		var alpha = (int)(Raymath.Remap(realInfluence, 0, 1, 79, 130) * alphaM);
-		if (lvl.HasActiveScene(out var scene))
+		if (scenes.HasActiveScene(out var scene))
 			scene.RenderPathway(Id, alpha, size, curtimeOffset);
 	}
 }

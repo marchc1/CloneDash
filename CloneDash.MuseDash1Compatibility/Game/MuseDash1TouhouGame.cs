@@ -4,6 +4,9 @@ using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
+using CloneDash.Game.Statistics;
+using CloneDash.Scenes;
+using Microsoft.Extensions.DependencyInjection;
 using Nucleus;
 
 namespace CloneDash.Game;
@@ -14,11 +17,12 @@ public partial class MuseDash1TouhouGamemode(ICloneDashModProvider provider) : M
 	public override string GetName() => "Muse Dash 1 (Touhou)";
 	public override string GetID() => "touhou";
 
+	protected override void AddChart(ServiceCollection parts, MD1_GamemodeData data) => parts.AddPartWith<MuseDash1ChartComponent, MuseDash1TouhouChartComponent>(data);
+
 	public const string UUID = "gamemode/musedash1/touhou";
 }
 
-[MarkForStaticConstruction]
-public partial class MuseDash1TouhouGame(DashGameParams gameParameters) : MuseDash1Game(gameParameters)
+public class MuseDash1TouhouChartComponent(Conductor conductor, MD1_GamemodeData data, GameEventManager events, HitsoundComponent hitsounds, RhythmGameLevel level, ResultComponent results, MuseDash1ScenesComponent scenes, ScrollComponent scroll, StatisticsData stats) : MuseDash1ChartComponent(conductor, data, events, hitsounds, level, results, scenes, scroll, stats)
 {
 	public override DashEnemy? LoadEntity(MD1_SongChartEntity ChartEntity) {
 		DashEnemy? enemy = base.LoadEntity(ChartEntity);

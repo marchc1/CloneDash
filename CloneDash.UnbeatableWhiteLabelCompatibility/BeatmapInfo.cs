@@ -122,6 +122,7 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 	public ISong GetSong() => song;
 
 	public IAudioClip GetAudioTrack() => AudioClip;
+	public ChartTiming GetTiming() => ((MD1_GamemodeData)GetGamemodeData()).GetTiming();
 
 	public IAudioClip AudioClip = null!;
 

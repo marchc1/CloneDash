@@ -1,11 +1,12 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Game.Entities;
 
 using Nucleus;
 
 namespace CloneDash.Game.Logic;
 
-public class StackBasedSustainManager : ISustainManager
+public class StackBasedSustainManager(GameEventManager events, InputComponent input, PathwaysComponent pathways, MuseDash1RulesComponent rules) : ISustainManager
 {
 	private readonly Stack<SustainBeam>[] stacks = CreatePathwayStacks();
 
@@ -16,12 +17,11 @@ public class StackBasedSustainManager : ISustainManager
 		return ret;
 	}
 
-	private Stack<SustainBeam> StackOf(SustainBeam beam) => stacks[beam.GetGameLevel().PrimaryPathway(beam.Pathway).Index];
+	private Stack<SustainBeam> StackOf(SustainBeam beam) => stacks[pathways.PrimaryPathway(beam.Pathway).Index];
 
 	private void callbackToLevel(SustainBeam beam, int prevCount) {
-		var lvl = beam.GetGameLevel();
 		var c = StackOf(beam).Count;
-		lvl.OnSustainCallback(beam, lvl.PrimaryPathway(beam.Pathway), prevCount > 0, c > 0, c);
+		events.Fire(new SustainStateChangedGameEvent(beam, pathways.PrimaryPathway(beam.Pathway), prevCount > 0, c > 0, c));
 	}
 
 	public void StartSustainBeam(SustainBeam sustain) {
@@ -59,17 +59,16 @@ public class StackBasedSustainManager : ISustainManager
 
 	public void ThinkSustainBeam(SustainBeam sustain) {
 		var stack = StackOf(sustain);
-		var lvl = sustain.GetGameLevel();
-		var pathwayCheck = lvl.GetPathway(sustain);
+		var pathwayAction = pathways.Layout[pathways.PrimaryPathway(sustain.Pathway)].Action;
 
 		var endTimeDist = sustain.GetJudgementTimeUntilEnd();
-		var sustainComplete = pathwayCheck.IsPressed() && endTimeDist <= 0;
-		var sustainEarlyButStillSuccess = !pathwayCheck.IsPressed() && NMath.InRange(endTimeDist, -0.05f, 0.05f);
+		var sustainComplete = input.State.IsHeld(pathwayAction) && endTimeDist <= 0;
+		var sustainEarlyButStillSuccess = !input.State.IsHeld(pathwayAction) && NMath.InRange(endTimeDist, -0.05f, 0.05f);
 		if (sustainComplete || sustainEarlyButStillSuccess) {
 			sustain.Complete();
 		}
 		// check if pathway being held
-		else if (!pathwayCheck.IsPressed() && lvl.NeedsToHoldSustains()) {
+		else if (!input.State.IsHeld(pathwayAction) && rules.NeedsToHoldSustains()) {
 			sustain.Fail();
 		}
 		else {
