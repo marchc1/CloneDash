@@ -29,7 +29,7 @@
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="4.1.745802" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="VCollab.DiscordRichPresence" Version="1.7.0" />
-		<PackageReference Include="Velopack" Version="0.0.1298" />
+		<PackageReference Include="Velopack" Version="1.2.161" />
 	</ItemGroup>
 
 	<ItemGroup>
