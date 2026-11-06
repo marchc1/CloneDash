@@ -403,8 +403,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 
 		static readonly Dictionary<string, Decimal> delayCache = [];
 
-		internal static void ProcessDelay(Bms bms) {
-			var scene = bms.Info["GENRE"]?.GetValue<string>() ?? string.Empty;
+		internal static void ProcessDelay(string scene) {
 			var sceneIndex = int.TryParse(scene.Split('_')[1], out int i1) ? i1 : 0;
 
 			for (var i = 0; i < MusicDataManager.Data.Count; i++) {
@@ -456,7 +455,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			Logs.Info("Processed delay!");
 		}
 
-		internal static void ProcessBossData(Bms bms) {
+		internal static void ProcessBossData() {
 			var bossData = MusicDataManager.Data.Where(mData => mData.IsBossNote()).ToList();
 			if (bossData.Count == 0)
 				return;
@@ -572,17 +571,24 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			}
 		}
 		internal static StageInfo TransmuteData(Bms bms) {
-			MusicDataManager.Clear();
-			_delay = 0;
-
 			var noteData = bms.GetNoteData();
 			Logs.Info("Got note data");
+
+			return TransmuteData(noteData, bms.Info["GENRE"]?.GetValue<string>() ?? string.Empty);
+		}
+
+		/// <summary>
+		/// Builds a StageInfo from already-resolved notes (the output of <see cref="Bms.GetNoteData"/>, or anything shaped like it).
+		/// </summary>
+		public static StageInfo TransmuteData(JsonArray noteData, string scene) {
+			MusicDataManager.Clear();
+			_delay = 0;
 
 			LoadMusicData(noteData);
 			Interlude.Spin(submessage: "Reading Custom Albums chart... sorting music data"); MusicDataManager.Sort();
 
-			ProcessBossData(bms);
-			ProcessDelay(bms);
+			ProcessBossData();
+			ProcessDelay(scene);
 			Interlude.Spin(submessage: "Reading Custom Albums chart... sorting music data"); MusicDataManager.Sort();
 
 			ProcessGeminis();

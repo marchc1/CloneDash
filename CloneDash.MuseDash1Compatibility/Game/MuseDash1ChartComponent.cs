@@ -182,6 +182,8 @@ public class MuseDash1ChartComponent : IRhythmGameComponent, IRhythmGameThinker
 		ent.PreGreatRange = (float)(ChartEntity.RightPerfectRange + ChartEntity.RightGreatRange);
 		ent.PrePerfectRange = (float)ChartEntity.RightPerfectRange;
 		ent.SetTimeRemap(Scroll.GetRemap(ent));
+		if (ent is SustainBeam beam)
+			beam.Curve = ChartEntity.Curve;
 
 		ent.FeverGiven = ChartEntity.Fever;
 		ent.DamageTaken = ChartEntity.Damage;

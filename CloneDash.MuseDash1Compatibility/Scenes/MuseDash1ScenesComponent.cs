@@ -67,6 +67,8 @@ public class MuseDash1ScenesComponent : IRhythmGameComponent
 
 	public Vector2F GetEntityPosition(PathwaySet pathways) => this.pathways.Layout.Clamp(pathways).Count == 1 ? GetPathwayPosition(pathways.First) : GetCenterPosition();
 
+	public Vector2F GetNormalizedPosition(float normalizedY) => HasActiveScene(out var scene) ? scene.GetNormalizedPosition(normalizedY) : default;
+
 	public int GetNumScenes() => scenes.Count;
 
 	// Its own function in case we have player-specific overrides (not sure if this exists yet)

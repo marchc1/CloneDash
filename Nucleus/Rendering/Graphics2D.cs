@@ -649,6 +649,37 @@ namespace Nucleus.Core
 
 			Rlgl.PopMatrix();
 		}
+
+		public static void DrawTexturedStrip(ReadOnlySpan<Vector2F> top, ReadOnlySpan<Vector2F> bottom, ReadOnlySpan<float> u) {
+			int count = Math.Min(Math.Min(top.Length, bottom.Length), u.Length);
+			if (count < 2)
+				return;
+
+			float sV = 0, eV = 1;
+			if (__textureFlippedY)
+				(eV, sV) = (sV, eV);
+
+			Rlgl.DisableBackfaceCulling();
+			Rlgl.SetTexture(__texture.Id);
+			Rlgl.Begin(DrawMode.TRIANGLES);
+			Rlgl.Color4ub(__drawColor.R, __drawColor.G, __drawColor.B, __drawColor.A);
+			for (int i = 0; i < count - 1; i++) {
+				Vector2F t0 = top[i] + __offset, t1 = top[i + 1] + __offset;
+				Vector2F b0 = bottom[i] + __offset, b1 = bottom[i + 1] + __offset;
+
+				Rlgl.TexCoord2f(u[i], sV); Rlgl.Vertex2f(t0.X, t0.Y);
+				Rlgl.TexCoord2f(u[i], eV); Rlgl.Vertex2f(b0.X, b0.Y);
+				Rlgl.TexCoord2f(u[i + 1], eV); Rlgl.Vertex2f(b1.X, b1.Y);
+
+				Rlgl.TexCoord2f(u[i + 1], eV); Rlgl.Vertex2f(b1.X, b1.Y);
+				Rlgl.TexCoord2f(u[i + 1], sV); Rlgl.Vertex2f(t1.X, t1.Y);
+				Rlgl.TexCoord2f(u[i], sV); Rlgl.Vertex2f(t0.X, t0.Y);
+			}
+			Rlgl.End();
+			Rlgl.SetTexture(0);
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.EnableBackfaceCulling();
+		}
 		public static void DrawLoader(float x, float y, float inner = 14, float outer = 21, int segments = 16, bool useRealtime = false, double? time = null) {
 			for (float i = 0; i < segments; i++) {
 				var r = i / segments;

@@ -1,12 +1,14 @@
 ﻿using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Game.Logic;
 using CloneDash.Settings;
 
 using Nucleus;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
@@ -84,6 +86,37 @@ namespace CloneDash.Game.Entities
 
 		public float StartPosition { get; private set; }
 		public float RotationDegsPerSecond = 200;
+		public MD1_CurvePath? Curve { get; set; }
+
+		private const int MAX_CURVE_SAMPLES = 256;
+
+		private double[]? curveTimes;
+		private float[]? curveValues;
+
+		private double curveStartTime() => HeldState ? Math.Clamp(GetConductor().Time - InputSettings.VisualOffset, HitTime, HitTime + Length) : HitTime;
+		private float worldY(double time) => Curve == null ? Components.Playfield.GetPathway(this).Position.Y : Components.Scenes.GetNormalizedPosition(Curve.Evaluate(time)).Y;
+		private float pathY(double time) => -worldY(time);
+
+		public float GetHeldY() => worldY(curveStartTime());
+
+		private void buildCurveSamples() {
+			curveTimes = null;
+			curveValues = null;
+
+			if (Curve == null)
+				return;
+
+			Span<double> times = stackalloc double[MAX_CURVE_SAMPLES];
+			Span<float> values = stackalloc float[MAX_CURVE_SAMPLES];
+			int count = Curve.Sample(HitTime, HitTime + Length, Math.Max(Length / (MAX_CURVE_SAMPLES / 2), 1d / 240), times, values);
+
+			if (count < 2)
+				return;
+
+			curveTimes = times[..count].ToArray();
+			curveValues = values[..count].ToArray();
+		}
+
 		private void drawStartQuad(ref FrameState fs, float x) {
 			x -= (float)InputSettings.VisualOffset;
 
@@ -91,7 +124,7 @@ namespace CloneDash.Game.Entities
 			if (tex == null) return;
 
 			var xpos = (HeldState ? Components.Playfield.GetPathway(this).Position.X : (float)XPosFromTimeOffset(x));
-			var ypos = -Components.Playfield.GetPathway(this).Position.Y;
+			var ypos = pathY(curveStartTime());
 			var rot = (float)((GetConductor().Time * RotationDegsPerSecond) % 360) * -1;
 
 			var w = tex.GetWidth() * MuseDash1Gamemode.GlobalScale;
@@ -108,7 +141,7 @@ namespace CloneDash.Game.Entities
 			if (tex == null) return;
 
 			var xpos = (float)XPosFromTimeOffset(x);
-			var ypos = -Components.Playfield.GetPathway(this).Position.Y;
+			var ypos = pathY(HitTime + Length);
 			var rot = (float)((GetConductor().Time * RotationDegsPerSecond) % 360) * -1;
 
 			var w = tex.GetWidth() * MuseDash1Gamemode.GlobalScale;
@@ -122,9 +155,59 @@ namespace CloneDash.Game.Entities
 
 		private SecondOrderSystem sosFail = new(2, 1, 1, 0);
 		private byte beamAlpha;
+		private void drawScrollStrip(double[] times, float[] values, ITexture tex, float xOffset, float yOffset) {
+			double from = curveStartTime();
+
+			int first = 1;
+			while (first < times.Length && times[first] <= from)
+				first++;
+
+			if (first >= times.Length)
+				return;
+
+			int count = times.Length - first + 1;
+			double t0 = times[first - 1], t1 = times[first];
+			float f = t1 > t0 ? (float)((from - t0) / (t1 - t0)) : 1;
+
+			Span<double> stripTimes = stackalloc double[count];
+			Span<float> stripValues = stackalloc float[count];
+
+			stripTimes[0] = from;
+			stripValues[0] = values[first - 1] + (values[first] - values[first - 1]) * f;
+			times.AsSpan(first).CopyTo(stripTimes[1..]);
+			values.AsSpan(first).CopyTo(stripValues[1..]);
+
+			float voffset = -(float)InputSettings.VisualOffset;
+			Span<Vector2F> points = stackalloc Vector2F[count];
+			for (int i = 0; i < count; i++)
+				points[i] = new((float)XPosFromTimeOffset((float)(stripTimes[i] - HitTime) + voffset) + (i == 0 ? xOffset : 0), -Components.Scenes.GetNormalizedPosition(stripValues[i]).Y + yOffset);
+
+			Span<Vector2F> top = stackalloc Vector2F[count];
+			Span<Vector2F> bottom = stackalloc Vector2F[count];
+			Span<float> u = stackalloc float[count];
+
+			var height = tex.GetHeight() * MuseDash1Gamemode.GlobalScale;
+			var texLength = tex.GetWidth() * MuseDash1Gamemode.GlobalScale * 2;
+			var scrollSpeed = ScrollSpeed;
+			for (int i = 0; i < count; i++) {
+				u[i] = (float)((stripTimes[i] - HitTime) * scrollSpeed) / texLength;
+				top[i] = new(points[i].X, points[i].Y - height);
+				bottom[i] = new(points[i].X, points[i].Y + height);
+			}
+
+			Graphics2D.SetTexture(tex);
+			Graphics2D.SetDrawColor(255, 255, 255, beamAlpha);
+			Graphics2D.DrawTexturedStrip(top, bottom, u);
+		}
+
 		public void drawScrollQuad(ITexture? tex, ref FrameState fs, float xOffset, float yOffset) {
 			if (tex == null)
 				return;
+
+			if (curveTimes != null && curveValues != null) {
+				drawScrollStrip(curveTimes, curveValues, tex, xOffset, yOffset);
+				return;
+			}
 
 			float voffset = -(float)InputSettings.VisualOffset;
 			var xStart = (float)XPosFromTimeOffset(voffset);
@@ -198,6 +281,7 @@ namespace CloneDash.Game.Entities
 			base.OnBuildVisuals(visuals);
 			visuals.Scene.GetSustainResources(pathways.PrimaryPathway(Pathway), out start, out end, out body, out up, out down, out RotationDegsPerSecond);
 			XPosSetup(visuals);
+			buildCurveSamples();
 		}
 
 		internal void Complete(double distanceToEnd) {

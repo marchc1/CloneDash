@@ -51,6 +51,7 @@ public sealed class PathwayLayout
 	public const int MAX_PATHWAYS = 16;
 
 	public const string ASSETS_AIR = "air";
+	public const string ASSETS_MIDDLE = "middle";
 	public const string ASSETS_ROAD = "road";
 
 	public static readonly Color MUSEDASH_TOP_COLOR = new(178, 255, 252, 120);

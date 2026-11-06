@@ -11,6 +11,7 @@ using CloneDash.Common.UI.Searching;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.UnbeatableWhiteLabel;
 using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
+using CloneDash.MuseDashCustomPlayCompatibility;
 using CloneDash.Game;
 using CloneDash.Settings;
 using CloneDash.Systems;
@@ -121,6 +122,7 @@ public class GameDLL : IGameDLL
 		// This will work better:
 		Assembly.Load("CloneDash.CustomAlbumsCompatibility");
 		Assembly.Load("CloneDash.MuseDash1Compatibility");
+		Assembly.Load("CloneDash.MuseDashCustomPlayCompatibility");
 		Assembly.Load("CloneDash.UnbeatableWhiteLabelCompatibility");
 		Assembly.Load("CloneDash.Adapters");
 	}
@@ -327,6 +329,20 @@ public class GameDLL : IGameDLL
 			if (song != null && difficulty >= 0 && difficulty < song.Beatmaps.Length)
 				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", song.Beatmaps[difficulty], new RhythmGameLoadParameters()
 					.Set(RhythmGameLoadParameters.AUTOPLAY, cmd.FindParm("-autoplay") != 0)
+				);
+			else
+				LevelTransitions.LoadMainMenu();
+		}
+
+		else if (cmd.HasParm("-mdcp_level")) {
+			string mdcp_level = cmd.ParmValue("-mdcp_level", "");
+			Logs.Info($"mdcp_level specified: {mdcp_level}");
+
+			var chart = CustomPlayChartProvider.LoadSong(mdcp_level)?.GetChart();
+			if (chart != null)
+				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new RhythmGameLoadParameters()
+					.Set(RhythmGameLoadParameters.AUTOPLAY, cmd.FindParm("-autoplay") != 0)
+					.Set(RhythmGameLoadParameters.START_MEASURE, cmd.ParmValue("-startmeasure", 0))
 				);
 			else
 				LevelTransitions.LoadMainMenu();

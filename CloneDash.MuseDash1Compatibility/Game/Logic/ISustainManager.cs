@@ -15,6 +15,7 @@ public interface ISustainManager : IRhythmGameComponent
 	public bool IsSustaining(PathwaySet pathways) => !pathways.IsEmpty && (GetSustainState() & pathways) == pathways;
 
 	public int GetSustainsActiveCount(PathwayId pathway);
+	public SustainBeam? GetActiveSustain(PathwayId pathway);
 
 	public void ThinkSustainBeam(SustainBeam sustain);
 

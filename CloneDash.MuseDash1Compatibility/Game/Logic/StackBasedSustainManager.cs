@@ -56,6 +56,7 @@ public class StackBasedSustainManager(GameEventManager events, InputComponent in
 	}
 
 	public int GetSustainsActiveCount(PathwayId pathway) => stacks[pathway.Index].Count;
+	public SustainBeam? GetActiveSustain(PathwayId pathway) => stacks[pathway.Index].TryPeek(out var beam) ? beam : null;
 
 	public void ThinkSustainBeam(SustainBeam sustain) {
 		var stack = StackOf(sustain);
