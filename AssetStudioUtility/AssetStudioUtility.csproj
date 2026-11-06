@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Kyaru.Texture2DDecoder" Version="0.17.0" />
+        <PackageReference Include="Kyaru.Texture2DDecoder" Version="0.17.1" />
         <PackageReference Include="Mono.Cecil" Version="0.11.6" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     </ItemGroup>
@@ -17,7 +17,7 @@
     <ItemGroup Condition=" !$(TargetFramework.Contains('windows')) ">
         <PackageReference Include="Kyaru.Texture2DDecoder.Linux" Version="0.2.0" />
         <PackageReference Include="Kyaru.Texture2DDecoder.macOS" Version="0.2.0" />
-        <PackageReference Include="Kyaru.Texture2DDecoder.Windows" Version="0.1.0" />
+        <PackageReference Include="Kyaru.Texture2DDecoder.Windows" Version="0.2.0" />
     </ItemGroup>
     
     <ItemGroup>
