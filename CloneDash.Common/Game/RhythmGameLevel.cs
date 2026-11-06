@@ -126,6 +126,14 @@ public class RhythmGameLevel : Level, IServiceProvider
 		parts.AddSingleton<IConductor>(sp => sp.GetRequiredService<Conductor>());
 		gamemode.Compose(this, parts, chart);
 		Services = parts.BuildServiceProvider();
+
+		foreach (var check in Services.GetServices<ContentSlotCheck>()) {
+			if (check.Run(this) is not string error)
+				continue;
+
+			Services.Dispose();
+			throw new ContentSlotException(error);
+		}
 	}
 
 	public override bool IsInGame => true;

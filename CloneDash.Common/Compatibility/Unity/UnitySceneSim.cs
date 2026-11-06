@@ -718,6 +718,15 @@ public class SceneAnimator : SceneComponent
 	int defaultStateIndex = -1;
 	float time;
 	public int ResolvedClipCount => runtimeClips.Count;
+	public string? CurrentState => currentStateIndex >= 0 && currentStateIndex < states.Count ? states[currentStateIndex].Name : null;
+	public float Time => time;
+
+	public float GetStateLength(string stateName) {
+		if (!stateNameToIndex.TryGetValue(stateName, out var index))
+			return 0;
+		int clip = states[index].ClipIndex;
+		return clip >= 0 && clip < runtimeClips.Count ? runtimeClips[clip].Duration : 0;
+	}
 
 	public void ResetTime() { time = 0; }
 

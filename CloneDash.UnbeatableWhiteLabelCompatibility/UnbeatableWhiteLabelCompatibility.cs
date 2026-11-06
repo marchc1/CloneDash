@@ -187,6 +187,8 @@ public static partial class UnbeatableWhiteLabelCompatibility
 		return entry.Object is T t ? t : null;
 	}
 
+	public static IAudioClip? GetMasterClip(string name) => MasterClips.TryGetValue(name, out var clip) ? clip : null;
+
 	public static T? GetObjectByPathID<T>(long pathID) where T : AssetStudio.Object {
 		if (!PathIDLUT.TryGetValue(pathID, out lookupEntry? entry))
 			return null;

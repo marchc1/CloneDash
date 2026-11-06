@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Nucleus;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CloneDash.Common.Game;
@@ -12,6 +13,24 @@ public sealed class ContentSlot<T>(RhythmGameLevel level) where T : class
 	public event Action<T?, T?>? Changed;
 
 	public T? Value { get; private set; }
+
+	public string? Check() {
+		IContentSource? rejected = null;
+		foreach (var source in sources) {
+			var content = source();
+			if (content == null)
+				continue;
+			if (Plan(content, out _))
+				return null;
+			rejected ??= content;
+		}
+
+		if (fallback != null || !required)
+			return null;
+		if (rejected == null)
+			return $"Nothing could fill the {typeof(T).Name} slot.";
+		return $"{rejected.GetName()} is from {rejected.GetGamemode().GetName()}, and there's no adapter that lets it be used here.";
+	}
 
 	public ContentSlot<T> Default(Func<T> factory) {
 		fallback = factory;
@@ -39,7 +58,7 @@ public sealed class ContentSlot<T>(RhythmGameLevel level) where T : class
 		if (fallback != null)
 			Set(fallback());
 		else if (required)
-			throw new InvalidOperationException($"Nothing could fill the {typeof(T).Name} slot.");
+			throw new ContentSlotException($"Nothing could fill the {typeof(T).Name} slot.");
 	}
 
 	public void Set(T? value) {
@@ -50,33 +69,59 @@ public sealed class ContentSlot<T>(RhythmGameLevel level) where T : class
 
 	public bool TryCreate(IContentSource? source, [NotNullWhen(true)] out T? value) {
 		value = null;
-		if (source == null)
+		if (source == null || !Plan(source, out var adapter))
 			return false;
 
-		var runtimeType = source.GetRuntimeType();
-		if (!typeof(T).IsAssignableFrom(runtimeType) || !CanConstruct(source, runtimeType))
-			return false;
+		var runtime = ActivatorUtilities.CreateInstance(level, source.GetRuntimeType(), source);
+		if (adapter == null) {
+			value = (T)runtime;
+			return true;
+		}
 
-		value = (T)ActivatorUtilities.CreateInstance(level, runtimeType, source);
+		Logs.Info($"Using {adapter.Name} to fit {source.GetName()} into the {typeof(T).Name} slot.");
+		value = (T)ActivatorUtilities.CreateInstance(level, adapter, source, runtime);
 		return true;
 	}
 
-	bool CanConstruct(IContentSource source, Type runtimeType) {
+	bool CanConstruct(Type type, IContentSource source, Type? runtimeType = null) {
 		var services = level.GetRequiredService<IServiceProviderIsService>();
-		foreach (var ctor in runtimeType.GetConstructors())
-			if (ctor.GetParameters().All(p => p.ParameterType.IsInstanceOfType(source) || p.HasDefaultValue || services.IsService(p.ParameterType)))
+		foreach (var ctor in type.GetConstructors())
+			if (ctor.GetParameters().All(p => p.ParameterType.IsInstanceOfType(source)
+				|| (runtimeType != null && p.ParameterType.IsAssignableFrom(runtimeType))
+				|| p.HasDefaultValue
+				|| services.IsService(p.ParameterType)))
 				return true;
 		return false;
 	}
+
+	bool Plan(IContentSource source, out Type? adapter) {
+		adapter = null;
+		var runtimeType = source.GetRuntimeType();
+		if (!CanConstruct(runtimeType, source))
+			return false;
+		if (typeof(T).IsAssignableFrom(runtimeType))
+			return true;
+
+		adapter = ContentAdapters.Find(runtimeType, typeof(T));
+		return adapter != null && CanConstruct(adapter, source, runtimeType);
+	}
 }
+
+public sealed record ContentSlotCheck(Func<RhythmGameLevel, string?> Run);
 
 public static class ContentSlotExts
 {
-	public static IServiceCollection AddSlot<T>(this IServiceCollection parts, Action<ContentSlot<T>> configure) where T : class
-		=> parts.AddPart(sp => {
+	public static IServiceCollection AddSlot<T>(this IServiceCollection parts, Action<ContentSlot<T>> configure) where T : class {
+		parts.AddSingleton(new ContentSlotCheck(level => {
+			var slot = new ContentSlot<T>(level);
+			configure(slot);
+			return slot.Check();
+		}));
+		return parts.AddPart(sp => {
 			var slot = new ContentSlot<T>(sp.GetRequiredService<RhythmGameLevel>());
 			configure(slot);
 			slot.Resolve();
 			return slot;
 		});
+	}
 }

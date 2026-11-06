@@ -261,6 +261,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
 		PushActiveElement(new MainMenuPanel(RootPanel));
+
+		if (LevelTransitions.TakePendingError() is string error)
+			RootPanel.DialogOK("Couldn't load the chart", error);
 	}
 
 	public override void PreThink(ref FrameState frameState) {
