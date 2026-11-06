@@ -3,6 +3,7 @@ using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
+using CloneDash.Game.Logic;
 using Nucleus;
 using Nucleus.Entities;
 using Nucleus.ManagedMemory;
@@ -88,22 +89,29 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 	internal MuseDash1CharacterDescriptor descriptor;
 	private RhythmGameLevel game;
 	private readonly Conductor conductor;
+	private readonly bool hasSupport;
+	private readonly ISustainManager sustains;
+	private bool swapped;
 
 	private readonly MuseDash1CharacterIndividual Player;
 	private readonly MuseDash1CharacterIndividual HologramPlayer;
 
-	public MuseDash1CharacterInstance(MuseDash1CharacterDescriptor descriptor, RhythmGameLevel game, Conductor conductor) {
+	public MuseDash1CharacterInstance(MuseDash1CharacterDescriptor descriptor, RhythmGameLevel game, Conductor conductor, GameEventManager events, ISustainManager sustains) {
 		this.descriptor = descriptor;
 		this.game = game;
 		this.conductor = conductor;
+		this.sustains = sustains;
+		hasSupport = descriptor.ConfigData.BattleShow.Contains(',');
+		if (hasSupport)
+			events.Listen<CharacterAttackGameEvent>(SwapRoles);
 
 		Player = new(this, game, false);
 		HologramPlayer = new(this, game, true);
 	}
 
 	public ICharacterDescriptor GetCharacter() => descriptor;
-	public IMuseDash1CharacterIndividual GetPrimary() => Player;
-	public IMuseDash1CharacterIndividual GetSecondary() => HologramPlayer;
+	public IMuseDash1CharacterIndividual GetPrimary() => swapped ? HologramPlayer : Player;
+	public IMuseDash1CharacterIndividual GetSecondary() => swapped ? Player : HologramPlayer;
 
 	IShader hologramShader = null!;
 
@@ -116,7 +124,8 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 		HologramPlayer.Player = level.Add(ModelEntity.Create(descriptor.GetPlayGhostModel(level)));
 		Player.Player = level.Add(ModelEntity.Create(descriptor.GetPlayModel(level)));
 		// set hologram shader (todo: we really need models to have materials here instead...)
-		HologramPlayer.Player.Shader = hologramShader;
+		if (!hasSupport)
+			HologramPlayer.Player.Shader = hologramShader;
 
 		// setup animations
 		Player.Player.SetToSetupPose();
@@ -126,6 +135,9 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 	}
 
 	public void Think() {
+		if (hasSupport)
+			return;
+
 		if (HologramPlayer.Player.PlayingAnimation || HologramPlayer.Player.AnimationQueued) {
 			HologramPlayer.Player.Visible = true;
 			HologramPlayer.Player.SetShaderUniform("time", NMath.Ease.InQuint((float)(conductor.Time - lastHologramAnimationTime) * 3));
@@ -142,16 +154,43 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 	double lastHologramAnimationTime = -20000000;
 
 	internal void NotifyAnimation(MuseDash1CharacterIndividual museDash1CharacterIndividual, bool isSecondary, CharacterAnimationType type) {
-		if (isSecondary)
+		if (hasSupport) {
+			if (museDash1CharacterIndividual != GetPrimary())
+				return;
+
+			var support = GetSecondary();
+			switch (type) {
+				case CharacterAnimationType.In:
+				case CharacterAnimationType.Die:
+					support.PlayAnimation(type);
+					break;
+				case CharacterAnimationType.Hurt:
+				case CharacterAnimationType.JumpHurt:
+					support.PlayAnimation(support.IsInAir() ? CharacterAnimationType.JumpHurt : CharacterAnimationType.Hurt);
+					break;
+			}
+		}
+		else if (isSecondary)
 			lastHologramAnimationTime = conductor.Time;
 	}
 
 	public void Reset(){
 		lastHologramAnimationTime = -200000;
+		swapped = false;
 		Player.Reset();
 		HologramPlayer.Reset();
 
+		if (hasSupport)
+			return;
+
 		HologramPlayer.Player.Visible = false;
 		HologramPlayer.Player.Animations.ClearAllAnimation();
+	}
+
+	void SwapRoles(ref CharacterAttackGameEvent ev) {
+		if (!ev.Result.Hit || sustains.IsSustaining() || ev.Result.HitEntity.SameTimeNotes.Count != 0)
+			return;
+
+		swapped = Random.Shared.Next(2) == 0;
 	}
 }

@@ -17,6 +17,7 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 	public IMuseDash1CharacterInstance Character { get; }
 
 	readonly Conductor Conductor;
+	readonly GameEventManager Events;
 	readonly RhythmGameLevel level;
 	readonly MashComponent Mash;
 	readonly PathwaysComponent Pathways;
@@ -29,14 +30,10 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 	double LastJumpTime = -2000000000000d;
 	SecondOrderSystem? YOffsetSOS;
 
-	public delegate void AttackEvent(MuseDash1CharacterComponent character, PathwayId pathway);
-
-	public event AttackEvent? OnAirAttack;
-	public event AttackEvent? OnGroundAttack;
-
 	public MuseDash1CharacterComponent(ContentSlot<IMuseDash1CharacterInstance> slot, Conductor conductor, GameEventManager events, RhythmGameLevel level, MashComponent mash, PathwaysComponent pathways, MuseDash1GameplayQuirksComponent quirks, MuseDash1ScenesComponent scenes, ISustainManager sustains) {
 		Character = slot.Value!;
 		Conductor = conductor;
+		Events = events;
 		this.level = level;
 		Mash = mash;
 		Pathways = pathways;
@@ -85,13 +82,15 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 
 	public bool AttackAir(PathwayId pathway, in PollResult result) {
 		if (Mash.InMashState) {
+			Events.Fire(new CharacterAttackGameEvent(pathway, true, result));
 			PlayCharacterAnimation(CharacterAnimationType.JumpHit);
 
-			OnAirAttack?.Invoke(this, pathway);
 			return true;
 		}
 
 		if (result.Hit) {
+			Events.Fire(new CharacterAttackGameEvent(pathway, true, result));
+
 			var isDHE = result.Hit && result.HitEntity is DoubleHitEnemy;
 
 			if (isDHE)
@@ -102,8 +101,6 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 				else
 					PlayCharacterAnimation(result.IsPerfect ? CharacterAnimationType.JumpHit : CharacterAnimationType.JumpHitGreat);
 
-			OnAirAttack?.Invoke(this, pathway);
-
 			LastJumpPathway = pathway;
 			if (Sustains.IsSustaining())
 				LastHologramJumpTIme = Conductor.Time;
@@ -113,9 +110,9 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 			return true;
 		}
 		else if (CanJump) {
+			Events.Fire(new CharacterAttackGameEvent(pathway, true, result));
 			if (!Sustains.IsSustaining())
 				PlayCharacterAnimation(CharacterAnimationType.Jump);
-			OnAirAttack?.Invoke(this, pathway);
 
 			LastJumpPathway = pathway;
 			if (Sustains.IsSustaining())
@@ -131,11 +128,12 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 
 	public void AttackGround(PathwayId pathway, PollResult result) {
 		if (Mash.InMashState) {
+			Events.Fire(new CharacterAttackGameEvent(pathway, false, result));
 			PlayCharacterAnimation(CharacterAnimationType.AttackPerfect);
-			OnGroundAttack?.Invoke(this, pathway);
 			return;
 		}
 
+		Events.Fire(new CharacterAttackGameEvent(pathway, false, result));
 		if (result.Hit) {
 			if (result.HitEntity is DoubleHitEnemy)
 				PlayCharacterAnimation(CharacterAnimationType.BigHit);
@@ -154,7 +152,6 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 
 		LastJumpTime = -2000000000000d;
 		LastHologramJumpTIme = -2000000000000d;
-		OnGroundAttack?.Invoke(this, pathway);
 	}
 
 	public float GetPlayerY(bool secondary) {

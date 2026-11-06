@@ -147,6 +147,7 @@ public class MuseDash1ChartComponent : IRhythmGameComponent, IRhythmGameThinker
 			foreach (var scene in scenes.GetAllScenes())
 				Boss.BuildForScene(scene);
 			BuildQueues();
+			LinkSameTimeNotes();
 
 			Events.Sort((x, y) => x.Time.CompareTo(y.Time));
 		}
@@ -283,6 +284,29 @@ public class MuseDash1ChartComponent : IRhythmGameComponent, IRhythmGameThinker
 		// If new entities exist, build those then (events might create entities)
 		if (ReadyToBuildEntities.Count != 0)
 			BuildQueues();
+	}
+
+	bool IsAirSide(DashEnemy note) => data.Layout.IsAirSide(data.Layout.Clamp(note.Pathway).First);
+
+	bool IsSameTimeCandidate(DashEnemy note) => data.Layout.Clamp(note.Pathway).Count == 1
+		&& (note.Type & (MuseDash1EntityType.Single | MuseDash1EntityType.Double | MuseDash1EntityType.Ghost | MuseDash1EntityType.SustainBeam | MuseDash1EntityType.Hammer | MuseDash1EntityType.Raider)) != 0;
+
+	void LinkSameTimeNotes() {
+		Dictionary<double, List<DashEnemy>> notesByTime = [];
+		foreach (var note in EnemyManager.GetAll()) {
+			if (!IsSameTimeCandidate(note))
+				continue;
+
+			if (!notesByTime.TryGetValue(note.HitTime, out var notes))
+				notesByTime[note.HitTime] = notes = [];
+			notes.Add(note);
+		}
+
+		foreach (var notes in notesByTime.Values)
+			foreach (var note in notes)
+				foreach (var other in notes)
+					if (IsAirSide(note) != IsAirSide(other))
+						note.SameTimeNotes.Add(other);
 	}
 
 	void RelaySceneChange(ref SceneChangedGameEvent ev) {

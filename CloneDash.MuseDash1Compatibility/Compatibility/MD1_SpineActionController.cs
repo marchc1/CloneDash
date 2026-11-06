@@ -132,10 +132,8 @@ public class MD1_SpineActionController(MD1_SpineActionControllerData data, Anima
 			var randEv = action.ActionEventIdx[randIdx];
 
 			var entry = isOverride ? Animation.SetAnimation(0, randAnim, action.IsEndLoop) : Animation.AddAnimation(0, randAnim, action.IsEndLoop);
-			if (entry != null && MD_DoNothing.TryGetValue(randEv, out MD_DoNothing? nothing)) {
+			if (entry != null && MD_DoNothing.TryGetValue(randEv, out MD_DoNothing? nothing))
 				entry.OnPlaybackEnd += (e) => nothing?.Do(new(e, this));
-				return;
-			}
 
 			if (entry != null && del != null)
 				entry.OnPlaybackEnd += _ => del(action);

@@ -122,6 +122,8 @@ public class DashEnemy : RhythmNote
 	/// </summary>
 	public EntityEnterDirection EnterDirection { get; set; }
 
+	public List<DashEnemy> SameTimeNotes { get; } = [];
+
 	public override double GetShowTime() => GetActiveVisuals().GetShowTime() ?? ShowTime;
 
 	public virtual void OnSignalReceived(DashEnemy? from, EntitySignalType signalType, object? data = null) {
