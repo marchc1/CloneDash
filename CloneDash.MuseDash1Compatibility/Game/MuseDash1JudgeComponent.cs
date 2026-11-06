@@ -122,8 +122,9 @@ public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, Muse
 				case EntityInteractivity.SamePath:
 					if (NMath.InRange(timeToHit, -entity.PreGreatRange, 0)) {
 						PathwaySet characterPathways = Character.CharacterPathways;
-						if ((characterPathways.Count >= 2 || Character.IsCharacterOn(entity.Pathway)) && entity.Hits == 0) {
-							entity.Hit(characterPathways.Count >= 2 ? Pathways.PrimaryPathway(entity.Pathway) : characterPathways.First, 0);
+						var entityPathway = Pathways.PrimaryPathway(entity.Pathway);
+						if ((characterPathways.Count >= 2 || Character.IsCharacterOn(entity.Pathway) || Character.IsCharacterNear(entityPathway)) && entity.Hits == 0) {
+							entity.Hit(entityPathway, 0);
 							Hitsounds.Play(entity.Type switch {
 								MuseDash1EntityType.Heart => SceneSound.GotHeart,
 								MuseDash1EntityType.Score => SceneSound.GotScore,

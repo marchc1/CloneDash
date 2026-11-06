@@ -24,6 +24,9 @@ public interface IMuseDash1SceneInstance : ISceneInstance
 	void RenderPathway(PathwayId pathway, float alpha, float size, float rotation);
 	void RenderOverlay();
 
+	bool BeginPathwayHueShift(PathwayId pathway);
+	void EndPathwayHueShift();
+
 	void Activate(IMuseDash1SceneInstance? transitioningTo);
 	void Deactivate(IMuseDash1SceneInstance? transitioningFrom);
 
@@ -58,6 +61,7 @@ public interface IMuseDash1SceneInstance : ISceneInstance
 	Vector2F GetNormalizedPosition(float normalizedY);
 	bool UsesAirAssets(PathwayId pathway);
 	float GetPathwayHueShift(PathwayId pathway);
+	Vector2F GetPathwayRenderOffset(PathwayId pathway);
 	bool IsAirPathway(PathwayId pathway);
 	bool IsAirTarget(PathwaySet pathways);
 }

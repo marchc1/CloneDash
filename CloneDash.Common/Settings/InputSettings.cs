@@ -47,8 +47,10 @@ public static class InputSettings
 {
 	const string DATASTORE_KEY = "CloneDash.InputSettings";
 	const string MIGRATED_KEY = "CloneDash.InputSettings.MigratedToBinds";
+	const string STOCK_BINDS_KEY = "CloneDash.InputSettings.StockBindsAdded";
 
 	static readonly List<(string Set, InputAction Air, InputAction Ground, InputAction? Middle)> legacyShares = [];
+	static readonly List<(string Set, InputAction Action, ButtonCode[] Buttons)> stockBinds = [];
 
 	public static ConVar offset_visual = new(nameof(offset_visual), 0, FCvar.Saved, -500, 500);
 	public static ConVar offset_judgement = new(nameof(offset_judgement), 0, FCvar.Saved, -500, 500);
@@ -56,7 +58,33 @@ public static class InputSettings
 	public static double VisualOffset => offset_visual.GetDouble() / 1000d;
 	public static double JudgementOffset => offset_judgement.GetDouble() / 1000d;
 
+	public static void AddStockBinds(string set, InputAction action, params ButtonCode[] buttons) {
+		action.BindDefault(set, buttons);
+		stockBinds.Add((set, action, buttons));
+	}
+
 	public static void Initialize() {
+		MigrateLegacyStore();
+		AddMissingStockBinds();
+	}
+
+	public static void ShareLegacyBinds(string set, InputAction air, InputAction ground, InputAction? middle = null) => legacyShares.Add((set, air, ground, middle));
+
+	static void AddMissingStockBinds() {
+		foreach (var (set, action, buttons) in stockBinds) {
+			var key = $"{STOCK_BINDS_KEY}.{action.Name}";
+			if (Host.GetDataStore<bool>(key))
+				continue;
+
+			var binds = Key.GetSet(set);
+			foreach (var button in buttons)
+				if (binds.GetCommand(button) == null)
+					Key.Bind(set, button, action.Command);
+			Host.SetDataStore(key, true);
+		}
+	}
+
+	static void MigrateLegacyStore() {
 		if (Host.GetDataStore<bool>(MIGRATED_KEY))
 			return;
 
@@ -83,8 +111,6 @@ public static class InputSettings
 			MigrateToBinds(bindings);
 		Host.SetDataStore(MIGRATED_KEY, true);
 	}
-
-	public static void ShareLegacyBinds(string set, InputAction air, InputAction ground, InputAction? middle = null) => legacyShares.Add((set, air, ground, middle));
 
 	static void MigrateToBinds(List<(ButtonCode Button, int Action)> bindings) {
 		Key.UnbindAll(Key.COMMON);

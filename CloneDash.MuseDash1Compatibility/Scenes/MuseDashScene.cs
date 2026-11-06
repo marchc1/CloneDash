@@ -354,6 +354,8 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 	readonly PathwayInformation[] pathwayInfo;
 	readonly bool[] pathwayAirAssets;
 	readonly float[] pathwayHueShift;
+	readonly SceneRenderer[][] pathwayMarkerRenderers;
+	readonly Vector2F[] pathwayRenderOffset;
 	PathwayInformation centerInfo;
 	PathwayInformation airAnchor, roadAnchor;
 	readonly Conductor conductor;
@@ -401,16 +403,20 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 		pathwayInfo = new PathwayInformation[layout.Count];
 		pathwayAirAssets = new bool[layout.Count];
 		pathwayHueShift = new float[layout.Count];
+		pathwayMarkerRenderers = new SceneRenderer[layout.Count][];
+		pathwayRenderOffset = new Vector2F[layout.Count];
 		for (int i = 0; i < layout.Count; i++) {
 			var def = layout.Definitions[i];
+			ResolvePathwayAssets(layout, layout.PathwayAt(i), out pathwayAirAssets[i], out pathwayHueShift[i]);
+			var assetAnchor = pathwayAirAssets[i] ? airAnchor : roadAnchor;
 			var normalized = GetNormalizedPosition(def.NormalizedY);
 			pathwayInfo[i] = def.NormalizedY switch {
 				1 => airAnchor,
 				0 => roadAnchor,
-				_ => new(normalized.X, normalized.Y, null)
+				_ => new(normalized.X, normalized.Y, assetAnchor.UserData)
 			};
 			pathwayInfo[i].Color = def.Color;
-			ResolvePathwayAssets(layout, layout.PathwayAt(i), out pathwayAirAssets[i], out pathwayHueShift[i]);
+			pathwayRenderOffset[i] = new(pathwayInfo[i].Position.X - assetAnchor.Position.X, assetAnchor.Position.Y - pathwayInfo[i].Position.Y);
 		}
 
 		var rootTransform = sceneGameObject.GetFirstComponent<Transform>()!;
@@ -423,6 +429,12 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 				animators.Add(anim);
 
 		BuildRenderOrder();
+
+		for (int i = 0; i < layout.Count; i++)
+			pathwayMarkerRenderers[i] = pathwayInfo[i].UserData is SceneObject marker ? sortedRenderers.Where(x => IsMarkerRenderer(x, marker)).ToArray() : [];
+		foreach (var markerRenderers in pathwayMarkerRenderers)
+			foreach (var renderer in markerRenderers)
+				sortedRenderers.Remove(renderer);
 
 		centerInfo = new() {
 			Position = (pathwayInfo[0].Position + pathwayInfo[^1].Position) / 2,
@@ -446,6 +458,13 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 		}
 		air = layout.IsAirSide(pathway);
 		hueShift = 0;
+	}
+
+	static bool IsMarkerRenderer(SceneRenderer renderer, SceneObject marker) {
+		for (var transform = renderer.Transform; transform != null; transform = transform.Parent)
+			if (transform.Object == marker)
+				return true;
+		return false;
 	}
 
 	bool AirAssets(DashEnemy enemy) => pathwayAirAssets[pathways.PrimaryPathway(enemy.Pathway).Index];
@@ -535,6 +554,8 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 	ITexture? AirStartSustainTexture, AirEndSustainTexture, AirBodySustainTexture, AirUpSustainTexture, AirDownSustainTexture;
 	ITexture? RoadStartSustainTexture, RoadEndSustainTexture, RoadBodySustainTexture, RoadUpSustainTexture, RoadDownSustainTexture;
 
+	IShader? HueShiftShader;
+
 	AudioPlaybackHandle pressIdle;
 	int arrayIndex;
 
@@ -610,6 +631,9 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 		RoadBodySustainTexture.SetWrap(TextureWrap.Repeat);
 		RoadUpSustainTexture.SetWrap(TextureWrap.Repeat);
 		RoadDownSustainTexture.SetWrap(TextureWrap.Repeat);
+
+		if (Array.Exists(pathwayHueShift, x => x != 0))
+			HueShiftShader = game.Shaders.LoadFragmentShaderFromFile("shaders", "hue_shift.fs");
 
 		string bossID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSS}";
 		string gearAirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GEARS}_air";
@@ -825,7 +849,28 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 		transform.LocalRotationW = 1;
 		transform.LocalScaleX = size; transform.LocalScaleY = size;
 		obj.Color.W = alpha / 255f;
+
+		var offset = pathwayRenderOffset[pathway.Index];
+		var hueShifted = BeginPathwayHueShift(pathway);
+		Rlgl.PushMatrix();
+		Rlgl.Translatef(offset.X, offset.Y, 0);
+		foreach (var renderer in pathwayMarkerRenderers[pathway.Index]) renderer.Render(this);
+		Rlgl.PopMatrix();
+		if (hueShifted)
+			EndPathwayHueShift();
 	}
+
+	public bool BeginPathwayHueShift(PathwayId pathway) {
+		var hueShift = pathwayHueShift[pathway.Index];
+		if (hueShift == 0 || HueShiftShader == null)
+			return false;
+
+		HueShiftShader.Activate();
+		HueShiftShader.SetUniform("hueShift", hueShift);
+		return true;
+	}
+
+	public void EndPathwayHueShift() => HueShiftShader?.Deactivate();
 
 	public void Think(double scrollSpeed) {
 		RunThinkFuncs(globals.CurTimeDelta * scrollSpeed);
@@ -1136,6 +1181,7 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 	public Vector2F GetNormalizedPosition(float normalizedY) => new(PathwayLayout.LerpY(normalizedY, roadAnchor.Position.X, airAnchor.Position.X), PathwayLayout.LerpY(normalizedY, roadAnchor.Position.Y, airAnchor.Position.Y));
 	public bool UsesAirAssets(PathwayId pathway) => pathwayAirAssets[pathway.Index];
 	public float GetPathwayHueShift(PathwayId pathway) => pathwayHueShift[pathway.Index];
+	public Vector2F GetPathwayRenderOffset(PathwayId pathway) => pathwayRenderOffset[pathway.Index];
 	public bool IsAirPathway(PathwayId pathway) => pathways.Layout.IsAirSide(pathway);
 	public IAudioClip? GetPressIdleSound() => PressIdleSound;
 	public void GetSustainResources(PathwayId pathway, out ITexture? start, out ITexture? end, out ITexture? body, out ITexture? up, out ITexture? down, out float rotationDegsPerSecond) {

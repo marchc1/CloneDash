@@ -253,6 +253,7 @@ namespace CloneDash.Game.Entities
 
 			bool isSingleHit = Length == 0;
 			beamAlpha = Convert.ToByte(NMath.Remap(sosFail.Update(DidPunishPlayer ? 1 : 0), 0, 1, 255, 127, true));
+			var hueShifted = Components.Scenes.BeginPathwayHueShift(pathways.PrimaryPathway(Pathway));
 
 			if(!isSingleHit)
 			drawScrollQuad(body, ref frameState, 0, 0);
@@ -269,6 +270,9 @@ namespace CloneDash.Game.Entities
 			drawStartQuad(ref frameState, 0);
 			if (!isSingleHit)
 				drawEndQuad(ref frameState, (float)Length);
+
+			if (hueShifted)
+				Components.Scenes.EndPathwayHueShift();
 		}
 
 		private ITexture? start;

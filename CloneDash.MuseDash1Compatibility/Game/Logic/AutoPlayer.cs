@@ -121,7 +121,8 @@ namespace CloneDash.Game.Logic
 
 			// Find the closest interactive entity that hasnt been passed
 			var entIndex = GetClosestInteractiveIdx(ents);
-			bool avoidedTop = false, avoidedBottom = false;
+			var layout = pathways.Layout;
+			var avoided = PathwaySet.None;
 			if (entIndex != -1) {
 				while (entIndex < ents.Length) {
 					var ent = ents[entIndex];
@@ -136,16 +137,20 @@ namespace CloneDash.Game.Logic
 							case EntityInteractivity.Hit:
 							case EntityInteractivity.Sustain:
 								if (NMath.InRange((float)timeToHit, -ent.PrePerfectRange, 0.001f) && AvoidHittingAgain(ent)) {
-									if (ent.Pathway == pathways.JumpPathway.AsSet && !avoidedTop)
-										input.Click(MuseDashActions.Air);
-									else if (!avoidedBottom) {
+									var target = pathways.PrimaryPathway(ent.Pathway);
+									if (avoided.Contains(target))
+										target = pathways.GroundPathway;
+
+									if (target != pathways.GroundPathway)
+										input.Click(layout[target].Action);
+									else if (!avoided.Contains(target)) {
 										if (ent.Interactivity == EntityInteractivity.SamePath) {
 											// If currently in the air, always try to click a same path ... or if sustaining
 											if (character.InAir || sustains.IsSustaining())
-												input.Click(MuseDashActions.Ground);
+												input.Click(layout[target].Action);
 										}
 										else
-											input.Click(MuseDashActions.Ground);
+											input.Click(layout[target].Action);
 									}
 
 									// Special logic for sustain beams, hold them in memory so they can continue to be held
@@ -162,13 +167,15 @@ namespace CloneDash.Game.Logic
 								if (NMath.InRange((float)timeToHit, -ent.PrePerfectRange, -0.001f)) {
 									if (character.IsCharacterOn(ent.Pathway)) {
 										// The entity needs to be avoided, so pick the opposite side the entity is on
-										if (ent.Pathway == pathways.GroundPathway.AsSet && input.ClickCount(MuseDashActions.Air) <= 0) {
-											input.Click(MuseDashActions.Air);
-											avoidedTop = true;
+										var jumpAction = layout[pathways.JumpPathway].Action;
+										var groundAction = layout[pathways.GroundPathway].Action;
+										if (ent.Pathway == pathways.GroundPathway.AsSet && input.ClickCount(jumpAction) <= 0) {
+											input.Click(jumpAction);
+											avoided = avoided.With(pathways.JumpPathway);
 										}
-										else if (input.ClickCount(MuseDashActions.Ground) <= 0) {
-											input.Click(MuseDashActions.Ground);
-											avoidedBottom = true;
+										else if (input.ClickCount(groundAction) <= 0) {
+											input.Click(groundAction);
+											avoided = avoided.With(pathways.GroundPathway);
 										}
 									}
 									// Record the entity as passed

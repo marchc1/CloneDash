@@ -25,6 +25,7 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 	readonly ISustainManager Sustains;
 
 	double LastHologramJumpTIme = -2000000000000d;
+	PathwayId LastJumpPathway;
 	double LastJumpTime = -2000000000000d;
 	SecondOrderSystem? YOffsetSOS;
 
@@ -54,12 +55,12 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 	public bool CanJump => !InAir;
 
 	/// <summary>
-	/// Gets the current pathway the player is on. Returns Top if jumping, else bottom.
+	/// Gets the current pathway the player is on. Returns the pathway jumped to if jumping, else bottom.
 	/// </summary>
 	public PathwaySet CharacterPathways {
 		get {
 			var state = Sustains.GetSustainState();
-			if (state.IsEmpty) return (InAir ? Pathways.JumpPathway : Pathways.GroundPathway).AsSet;
+			if (state.IsEmpty) return (InAir ? LastJumpPathway : Pathways.GroundPathway).AsSet;
 			return state;
 		}
 	}
@@ -103,6 +104,7 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 
 			OnAirAttack?.Invoke(this, pathway);
 
+			LastJumpPathway = pathway;
 			if (Sustains.IsSustaining())
 				LastHologramJumpTIme = Conductor.Time;
 			else
@@ -115,6 +117,7 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 				PlayCharacterAnimation(CharacterAnimationType.Jump);
 			OnAirAttack?.Invoke(this, pathway);
 
+			LastJumpPathway = pathway;
 			if (Sustains.IsSustaining())
 				LastHologramJumpTIme = Conductor.Time;
 			else
@@ -162,9 +165,17 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 		if (!character.IsInAir())
 			return bot.Y + -1f;
 
-		var top = Scenes.GetPathwayPosition(Pathways.JumpPathway);
+		var top = Scenes.GetPathwayPosition(LastJumpPathway);
 		float ratio = (float)NMath.Remap(character.GetTimeToAnimationEnd(), character.GetAnimationDuration(), 0, 0, 1, clampOutput: true);
 		return (float)NMath.Remap(NMath.Ease.InCirc(NMath.Ease.InExpo(ratio)), 0, 1, top.Y, bot.Y) + -1f; // TODO: re-evaluate
+	}
+
+	public bool IsCharacterNear(PathwayId pathway) {
+		if (ResolveCharacterY(Sustains.GetSustainState()) is not float y)
+			return false;
+
+		var tolerance = MathF.Abs(Scenes.GetPathwayPosition(Pathways.JumpPathway).Y - Scenes.GetPathwayPosition(Pathways.GroundPathway).Y) * 0.25f;
+		return MathF.Abs(y - Scenes.GetPathwayPosition(pathway).Y) <= tolerance;
 	}
 
 	public bool IsCharacterOn(PathwaySet pathways) => CharacterPathways == Pathways.Layout.Clamp(pathways);
@@ -249,6 +260,7 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 			scene.OnPressStateChange(false, true);
 
 		Character.Reset();
+		LastJumpPathway = Pathways.JumpPathway;
 		LastJumpTime = -2000000000000d;
 		LastHologramJumpTIme = -2000000000000d;
 	}

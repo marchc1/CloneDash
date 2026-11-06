@@ -268,10 +268,10 @@ public class DashEnemy : RhythmNote
 
 		visuals.MountedHeartAnimation.Apply(visuals.MountedHeart, AnimationTime);
 		// Why do we have to do this weird 900 - worldY - 450 thing? Doesn't make sense but whatever
-		visuals.MountedHeart.Position = new(
+		visuals.MountedHeart.Position = new Vector2F(
 			visuals.MountBone.WorldTransform.X * MuseDash1Gamemode.GlobalScale,
 			(4.5f - (visuals.MountBone.WorldTransform.Y * MuseDash1Gamemode.GlobalScale)) - 2.25f
-		);
+		) + Components.Scenes.GetPathwayRenderOffset(Components.Pathways.PrimaryPathway(Pathway));
 		visuals.MountedHeart.Scale = new(MuseDash1Gamemode.GlobalScale);
 		visuals.MountedHeart.Render();
 	}
@@ -299,7 +299,10 @@ public class DashEnemy : RhythmNote
 
 		visuals.Model.Position = Position;
 		visuals.Model.Scale = Scale;
-		visuals.Model.Render();
+		var hueShifted = Components.Scenes.BeginPathwayHueShift(Components.Pathways.PrimaryPathway(Pathway));
+		visuals.Model.Render(!hueShifted);
+		if (hueShifted)
+			Components.Scenes.EndPathwayHueShift();
 
 		RenderHeartMount(visuals);
 	}

@@ -55,6 +55,13 @@ public class MuseDash1ScenesComponent : IRhythmGameComponent
 		instance.SetSceneArrayIndex(scenes.Count - 1);
 	}
 
+	public bool BeginPathwayHueShift(PathwayId pathway) => HasActiveScene(out var scene) && scene.BeginPathwayHueShift(pathway);
+
+	public void EndPathwayHueShift() {
+		if (HasActiveScene(out var scene))
+			scene.EndPathwayHueShift();
+	}
+
 	public IMuseDash1SceneInstance? GetActiveScene() => ActiveScene;
 
 	public int GetActiveSceneIdx() => ActiveScene?.GetSceneArrayIndex() ?? -1;
@@ -73,6 +80,8 @@ public class MuseDash1ScenesComponent : IRhythmGameComponent
 
 	// Its own function in case we have player-specific overrides (not sure if this exists yet)
 	public Vector2F GetPathwayPosition(PathwayId pathway) => HasActiveScene(out var scene) ? scene.GetPathwayPosition(pathway) : default;
+
+	public Vector2F GetPathwayRenderOffset(PathwayId pathway) => HasActiveScene(out var scene) ? scene.GetPathwayRenderOffset(pathway) : default;
 
 	public bool HasActiveScene([NotNullWhen(true)] out IMuseDash1SceneInstance? scene) => (scene = ActiveScene) != null;
 
@@ -116,6 +125,6 @@ public class MuseDash1ScenesComponent : IRhythmGameComponent
 	}
 
 	internal void SetEnemyPosition(DashEnemy ent) {
-		ent.Position = new(0, 2.25f);
+		ent.Position = new Vector2F(0, 2.25f) + GetPathwayRenderOffset(pathways.PrimaryPathway(ent.Pathway));
 	}
 }

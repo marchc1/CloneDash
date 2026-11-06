@@ -311,8 +311,15 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 		panel.Label("Left-click an existing key to rebind the key.\nRight-click an existing key to unbind the key.\nUse the Add button to add a new key.");
 
-		var topButtons = panel.InputActionKeybindingButtonsPanel(MuseDashActions.SET, MuseDashActions.Air, PathwayLayout.MUSEDASH_TOP_COLOR, "Top Keys");
-		var bottomButtons = panel.InputActionKeybindingButtonsPanel(MuseDashActions.SET, MuseDashActions.Ground, PathwayLayout.MUSEDASH_BOTTOM_COLOR, "Bottom Keys");
+		List<PathwayDefinition> pathwayDefinitions = [];
+		foreach (var layout in PathwayLayout.Registered)
+			foreach (var definition in layout.Definitions)
+				if (pathwayDefinitions.FindIndex(x => x.Action == definition.Action) < 0)
+					pathwayDefinitions.Add(definition);
+
+		pathwayDefinitions.Sort((a, b) => b.NormalizedY.CompareTo(a.NormalizedY));
+		foreach (var definition in pathwayDefinitions)
+			panel.InputActionKeybindingButtonsPanel(MuseDashActions.SET, definition.Action, definition.Color, $"{definition.Name} Keys");
 	}
 
 

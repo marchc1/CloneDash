@@ -66,6 +66,15 @@ public sealed class PathwayLayout
 		new PathwayDefinition("Bottom", MuseDashActions.Ground, 0, [new(ASSETS_ROAD)], MUSEDASH_BOTTOM_COLOR)
 	);
 
+	static readonly List<PathwayLayout> registered = [MuseDash];
+
+	public static IReadOnlyList<PathwayLayout> Registered => registered;
+
+	public static void Register(PathwayLayout layout) {
+		if (!registered.Contains(layout))
+			registered.Add(layout);
+	}
+
 	readonly PathwayDefinition[] definitions;
 
 	public int Count => definitions.Length;
