@@ -151,6 +151,11 @@ public class StatisticsData : IRhythmGameComponent
 		return accuracy;
 	}
 
+	public void Great(DashEnemy enemy) {
+		GetStatisticsForEnemy(enemy).Great();
+		DowngradeTitle(ref Title, StatisticsImpressiveness.FullCombo);
+	}
+
 	public void Miss(DashEnemy enemy) {
 		DowngradeTitle(ref Title, StatisticsImpressiveness.Cleared);
 		GetStatisticsForEnemy(enemy).Miss();

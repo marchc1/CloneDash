@@ -83,7 +83,7 @@ namespace CloneDash.Game.Logic
 		/// <summary>
 		/// How many times the auto-player will hit a masher per second.
 		/// </summary>
-		private const double TIME_BETWEEN_MASH_HITS = (1d / Masher.MASHER_AUTOPLAYER_MAX_HITS_PER_SECOND);
+		private const double TIME_BETWEEN_MASH_HITS = (1d / Masher.MUL_HIT_AUTO_THRESHOLD);
 		/// <summary>
 		/// Ran-per-tick function to check if the delta-time since the last masher hit is greater than MAX_MASHHITS_PER_SECOND
 		/// </summary>

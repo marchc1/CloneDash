@@ -18,6 +18,11 @@ public class EnemyStatistics
 		Reset();
 	}
 
+	public void Great() {
+		Accuracy = EnemyStatisticsAccuracy.NotApplicable;
+		State = EnemyStatisticsState.Great;
+	}
+
 	public void Miss() {
 		Accuracy = EnemyStatisticsAccuracy.NotApplicable;
 		State = EnemyStatisticsState.Missed;

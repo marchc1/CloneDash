@@ -10,13 +10,18 @@ namespace CloneDash.Game.Entities
 {
 	public class Masher : DashEnemy
 	{
-		public const int MASHER_HITS_PER_SECOND_OF_LENGTH = 25;
-		public const int MASHER_PLAYER_MAX_HITS_PER_SECOND = 26;
-		public const int MASHER_AUTOPLAYER_MAX_HITS_PER_SECOND = 10;
+		public const double MASH_IDLE_TIME = 0.5;
+		public const double MUL_HIT_AUTO_THRESHOLD = 25;
+		public const double MUL_HIT_HIGH_THRESHOLD = 25;
+		public const double MUL_HIT_LOW_THRESHOLD = 5;
+		public const double MUL_HIT_MID_THRESHOLD = 7.5;
 
 		public bool StartedHitting { get; private set; } = false;
-		public int MaxHits => Math.Clamp((int)Math.Floor(this.Length * MASHER_HITS_PER_SECOND_OF_LENGTH), 1, int.MaxValue);
+		public int LowHits => (int)Math.Floor(Length * MUL_HIT_LOW_THRESHOLD);
+		public int MaxHits => Math.Clamp((int)Math.Floor(Length * MUL_HIT_HIGH_THRESHOLD), 1, int.MaxValue);
+		public int MidHits => (int)Math.Floor(Length * MUL_HIT_MID_THRESHOLD);
 		private double lastHitTime = 0;
+		private bool perfect = true;
 
 		readonly FeverComponent fever;
 		readonly HitsoundComponent hitsounds;
@@ -30,23 +35,71 @@ namespace CloneDash.Game.Entities
 		}
 
 		private void CheckIfComplete() {
-			if ((Hits >= MaxHits || GetConductor().Time > (GetJudgementHitTime() + Length)) && !Dead) {
-				Complete();
+			if (Dead)
+				return;
+
+			double time = GetConductor().Time;
+			bool ended = time > GetJudgementHitTime() + Length;
+			if (!StartedHitting) {
+				if (ended)
+					End();
+				return;
 			}
+
+			if (Hits >= MaxHits) {
+				Complete(true);
+				return;
+			}
+
+			bool mashing = time - lastHitTime <= MASH_IDLE_TIME;
+			if (Hits < LowHits) {
+				if (ended && Hits == LowHits - 1) {
+					Hits++;
+					Complete(false);
+				}
+				else if (ended || !mashing)
+					Fail();
+			}
+			else if (ended) {
+				bool total = Hits >= MidHits - 1;
+				Hits++;
+				Complete(total);
+			}
+			else if (!mashing)
+				Complete(false);
 		}
 
 		protected override void OnReward() {
 			base.OnReward();
-			GetStats().Hit(this, 0);
+			if (perfect)
+				GetStats().Hit(this, 0);
+			else
+				GetStats().Great(this);
 		}
 
-		private void Complete() {
-			Components.Hud.UI?.CreatePerfectHitText(0, PathwaySet.Any, fever.InFever, 0);
+		private void Complete(bool perfect) {
+			this.perfect = perfect;
+			WasHitPerfect = perfect;
+			if (perfect)
+				Components.Hud.UI?.CreatePerfectHitText(0, PathwaySet.Any, fever.InFever, 0);
+			else
+				Components.Hud.UI?.CreateGreatHitText(0, PathwaySet.Any, fever.InFever, 0);
 			Kill();
+			End();
+		}
+
+		private void End() {
 			ForceDraw = false;
 			Components.Mash.ExitMashState();
 			if (Variant.IsBoss())
 				SendSignal(Components.Chart.Boss, EntitySignalType.MashOver);
+			SoftKill();
+		}
+
+		private void Fail() {
+			End();
+			DamagePlayer();
+			GetStats().Miss(this);
 		}
 
 		public override void Think(FrameState frameState) {
@@ -60,7 +113,7 @@ namespace CloneDash.Game.Entities
 
 			if (MaxHits == 1) {
 				Hits = 1;
-				Complete();
+				Complete(true);
 				return;
 			}
 
@@ -99,6 +152,7 @@ namespace CloneDash.Game.Entities
 			base.OnReset();
 			StartedHitting = false;
 			lastHitTime = 0;
+			perfect = true;
 			currentAnim = null;
 		}
 
