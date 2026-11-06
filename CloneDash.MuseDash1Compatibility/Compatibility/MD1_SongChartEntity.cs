@@ -31,6 +31,11 @@ public class MD1_SongChartEntity
 	public double Length;
 	public double Dt;
 
+	public double LeftGreatRange = 0.08;
+	public double LeftPerfectRange = 0.05;
+	public double RightGreatRange = 0.08;
+	public double RightPerfectRange = 0.05;
+
 	/// <summary>
 	/// How much fever this entity can give to the palyer.
 	/// </summary>

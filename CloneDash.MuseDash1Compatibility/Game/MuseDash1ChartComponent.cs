@@ -177,6 +177,10 @@ public class MuseDash1ChartComponent : IRhythmGameComponent, IRhythmGameThinker
 		ent.ScrollSpeed = 13.87 / (ChartEntity.Dt <= 0 ? 1 : ChartEntity.Dt);
 		ent.Flipped = ChartEntity.Flipped;
 		ent.Blood = ChartEntity.Blood;
+		ent.PostGreatRange = (float)(ChartEntity.LeftPerfectRange + ChartEntity.LeftGreatRange);
+		ent.PostPerfectRange = (float)ChartEntity.LeftPerfectRange;
+		ent.PreGreatRange = (float)(ChartEntity.RightPerfectRange + ChartEntity.RightGreatRange);
+		ent.PrePerfectRange = (float)ChartEntity.RightPerfectRange;
 		ent.SetTimeRemap(Scroll.GetRemap(ent));
 
 		ent.FeverGiven = ChartEntity.Fever;

@@ -410,6 +410,10 @@ namespace CloneDash.Compatibility.MuseDash
 							ShowTime = tick_show,
 							Dt = (double)s.dt,
 							Layer = s.configData.layer,
+							LeftGreatRange = (double)s.noteData.left_great_range,
+							LeftPerfectRange = (double)s.noteData.left_perfect_range,
+							RightGreatRange = (double)s.noteData.right_great_range,
+							RightPerfectRange = (double)s.noteData.right_perfect_range,
 
 							Fever = s.noteData.fever,
 							Damage = s.noteData.damage,
@@ -636,6 +640,10 @@ namespace CloneDash.Compatibility.MuseDash
 								Dt = (double)s.dt,
 								Layer = s.configData.layer,
 								Flipped = flipped,
+								LeftGreatRange = (double)s.noteData.left_great_range,
+								LeftPerfectRange = (double)s.noteData.left_perfect_range,
+								RightGreatRange = (double)s.noteData.right_great_range,
+								RightPerfectRange = (double)s.noteData.right_perfect_range,
 
 								Fever = s.noteData.fever,
 								Damage = s.noteData.damage,
