@@ -1,4 +1,5 @@
 ﻿using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 
@@ -30,6 +31,8 @@ public class StatisticsData : IRhythmGameComponent
 
 		OrderedEnemies.Add(enemy);
 		EnemyInfo[enemy] = new(enemy);
+		if (enemy.Type == MuseDash1EntityType.SustainBeam)
+			EnemyInfo[enemy].End = new(enemy);
 	}
 
 	public void UploadScore(int score) => Score = score;
@@ -77,35 +80,9 @@ public class StatisticsData : IRhythmGameComponent
 
 		foreach (var ent in OrderedEnemies) {
 			var info = EnemyInfo[ent];
-
-			switch (info.Accuracy) {
-				case EnemyStatisticsAccuracy.Early: Earlys++; break;
-				case EnemyStatisticsAccuracy.Late: Lates++; break;
-				case EnemyStatisticsAccuracy.Precise: Exacts++; break;
-			}
-
-			switch (info.State) {
-				case EnemyStatisticsState.Missed:
-					Misses++;
-					ResetCombo();
-					DowngradeTitle(ref Title, StatisticsImpressiveness.Cleared);
-					break;
-				case EnemyStatisticsState.Passed:
-					Passes++;
-					break;
-				case EnemyStatisticsState.Great:
-					Greats++;
-					UpCombo();
-					DowngradeTitle(ref Title, StatisticsImpressiveness.FullCombo);
-					break;
-				case EnemyStatisticsState.Perfect:
-					Perfects++;
-					UpCombo();
-					break;
-
-				case EnemyStatisticsState.InPlay:
-					break;
-			}
+			Count(info);
+			if (info.End != null)
+				Count(info.End);
 		}
 
 
@@ -123,6 +100,37 @@ public class StatisticsData : IRhythmGameComponent
 			else Grade = StatisticsGrade.D;
 
 			Accuracy = gradePercentage;
+		}
+	}
+
+	void Count(EnemyStatistics info) {
+		switch (info.Accuracy) {
+			case EnemyStatisticsAccuracy.Early: Earlys++; break;
+			case EnemyStatisticsAccuracy.Late: Lates++; break;
+			case EnemyStatisticsAccuracy.Precise: Exacts++; break;
+		}
+
+		switch (info.State) {
+			case EnemyStatisticsState.Missed:
+				Misses++;
+				ResetCombo();
+				DowngradeTitle(ref Title, StatisticsImpressiveness.Cleared);
+				break;
+			case EnemyStatisticsState.Passed:
+				Passes++;
+				break;
+			case EnemyStatisticsState.Great:
+				Greats++;
+				UpCombo();
+				DowngradeTitle(ref Title, StatisticsImpressiveness.FullCombo);
+				break;
+			case EnemyStatisticsState.Perfect:
+				Perfects++;
+				UpCombo();
+				break;
+
+			case EnemyStatisticsState.InPlay:
+				break;
 		}
 	}
 
@@ -149,6 +157,19 @@ public class StatisticsData : IRhythmGameComponent
 		}
 
 		return accuracy;
+	}
+
+	public EnemyStatisticsAccuracy HitEnd(DashEnemy enemy, double hitTime) {
+		var end = GetStatisticsForEnemy(enemy).End ?? throw new Exception("Enemy has no end judgement.");
+		var accuracy = end.Hit(hitTime);
+		if (end.State != EnemyStatisticsState.Perfect)
+			DowngradeTitle(ref Title, StatisticsImpressiveness.FullCombo);
+		return accuracy;
+	}
+
+	public void MissEnd(DashEnemy enemy) {
+		DowngradeTitle(ref Title, StatisticsImpressiveness.Cleared);
+		(GetStatisticsForEnemy(enemy).End ?? throw new Exception("Enemy has no end judgement.")).Miss();
 	}
 
 	public void Great(DashEnemy enemy) {

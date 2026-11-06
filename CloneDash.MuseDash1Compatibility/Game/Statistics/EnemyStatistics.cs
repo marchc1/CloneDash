@@ -9,10 +9,12 @@ public class EnemyStatistics
 	public DashEnemy Enemy;
 	public EnemyStatisticsState State;
 	public EnemyStatisticsAccuracy Accuracy;
+	public EnemyStatistics? End;
 
 	public void Reset() {
 		State = EnemyStatisticsState.InPlay;
 		Accuracy = EnemyStatisticsAccuracy.NotApplicable;
+		End?.Reset();
 	}
 
 	public EnemyStatistics(DashEnemy enemy) {

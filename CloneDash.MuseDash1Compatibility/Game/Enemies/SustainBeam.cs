@@ -58,12 +58,14 @@ namespace CloneDash.Game.Entities
 			sustains.StartSustainBeam(this);
 			Components.Combo.Add();
 			Components.Rules.AddFever(FeverGiven, this);
+			GetStats().Hit(this, distanceToHit);
 		}
 
 		protected override void OnMiss() {
 			if (HeldState == false) {
 				sustains.FailSustainBeam(this);
 				PunishPlayer();
+				GetStats().Miss(this);
 			}
 		}
 
@@ -71,9 +73,7 @@ namespace CloneDash.Game.Entities
 			return NMath.InRange(GetVisualTimeUntilHit(), -2 - Length, 2);
 		}
 
-		protected override void OnReward() {
-			GetStats().Hit(this, 0);
-		}
+		protected override void OnReward() { }
 
 		public override void Think(FrameState frameState) {
 			if (HeldState) {
@@ -200,10 +200,11 @@ namespace CloneDash.Game.Entities
 			XPosSetup(visuals);
 		}
 
-		internal void Complete() {
+		internal void Complete(double distanceToEnd) {
 			HeldState = false;
 			StopAcceptingInput = true;
 			ShouldDraw = false;
+			GetStats().HitEnd(this, distanceToEnd);
 			RewardPlayer();
 
 			Components.Combo.Add();
@@ -219,7 +220,7 @@ namespace CloneDash.Game.Entities
 
 			sustains.FailSustainBeam(this);
 
-			GetStats().Miss(this);
+			GetStats().MissEnd(this);
 		}
 		internal void Hold() {
 			var now = GetConductor().Time;

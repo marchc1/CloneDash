@@ -39,7 +39,7 @@ namespace CloneDash.Game.Entities
 				return;
 
 			double time = GetConductor().Time;
-			bool ended = time > GetJudgementHitTime() + Length;
+			bool ended = time > GetJudgementHitTime() + Math.Max(Length, PreGreatRange);
 			if (!StartedHitting) {
 				if (ended)
 					End();
@@ -90,7 +90,8 @@ namespace CloneDash.Game.Entities
 
 		private void End() {
 			ForceDraw = false;
-			Components.Mash.ExitMashState();
+			if (Components.Mash.MashingEntity == this)
+				Components.Mash.ExitMashState();
 			if (Variant.IsBoss())
 				SendSignal(Components.Chart.Boss, EntitySignalType.MashOver);
 			SoftKill();

@@ -63,9 +63,9 @@ public class StackBasedSustainManager(GameEventManager events, InputComponent in
 
 		var endTimeDist = sustain.GetJudgementTimeUntilEnd();
 		var sustainComplete = input.State.IsHeld(pathwayAction) && endTimeDist <= 0;
-		var sustainEarlyButStillSuccess = !input.State.IsHeld(pathwayAction) && NMath.InRange(endTimeDist, -0.05f, 0.05f);
+		var sustainEarlyButStillSuccess = !input.State.IsHeld(pathwayAction) && endTimeDist <= sustain.PostGreatRange;
 		if (sustainComplete || sustainEarlyButStillSuccess) {
-			sustain.Complete();
+			sustain.Complete(Math.Max(endTimeDist, 0));
 		}
 		// check if pathway being held
 		else if (!input.State.IsHeld(pathwayAction) && rules.NeedsToHoldSustains()) {

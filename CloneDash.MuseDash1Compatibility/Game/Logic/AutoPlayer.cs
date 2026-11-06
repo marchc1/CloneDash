@@ -41,7 +41,7 @@ namespace CloneDash.Game.Logic
 			if (ent.Type == MuseDash1EntityType.SustainBeam) {
 				bool popped = StackOf(ent).TryPop(out var beam);
 				Debug.Assert(popped && beam == (SustainBeam)ent);
-				beam?.Complete();
+				beam?.Complete(0);
 			}
 		}
 
