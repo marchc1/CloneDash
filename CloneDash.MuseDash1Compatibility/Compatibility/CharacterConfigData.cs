@@ -130,4 +130,8 @@ public class CharacterExpression
 	[JsonProperty("audioNames")] public List<string> AudioNames { get; set; }
 	[JsonProperty("talkInfosList")] public object TalkInfosList { get; set; }
 	[JsonProperty("weight")] public double Weight { get; set; }
+	/// <summary> 0 = any form, otherwise only plays in that form. </summary>
+	[JsonProperty("form")] public int Form { get; set; }
+
+	public bool IsAvailableForForm(int activeForm) => Form == 0 || activeForm == 0 || Form == activeForm;
 }

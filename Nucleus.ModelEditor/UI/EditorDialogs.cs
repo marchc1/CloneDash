@@ -49,7 +49,7 @@ namespace Nucleus.ModelEditor.UI
 			lbl.			Dock = Dock.Top;
 			lbl.			DockMargin = Types.RectangleF.TLRB(4);
 		}
-		public static void SetupOKCancelButtons(Window dialog, bool preferOK, Action? confirmed, Action? denied) {
+		public static Action SetupOKCancelButtons(Window dialog, bool preferOK, Action? confirmed, Action? denied) {
 			var buttons = new CenteredObjectsPanel(dialog);
 			buttons.			Dock = Dock.Bottom;
 			buttons.			Size = new(0, 42);
@@ -68,11 +68,14 @@ namespace Nucleus.ModelEditor.UI
 			var ok = new Button(buttons);
 			ok.			Text = "OK";
 			ok.TriggeredWhenEnterPressed = preferOK;
-			ok.OnButtonClick += (_, _) => {
+			Action confirm = () => {
+				if (!IValidatable.IsValid(dialog)) return;
 				dialog.Remove();
 				confirmed?.Invoke();
 			};
+			ok.OnButtonClick += (_, _) => confirm();
 			ok.			Size = new(64);
+			return confirm;
 		}
 		public static void ConfirmAction(string title, string description, bool preferOK = true, Action? onConfirmed = null, Action? onDenied = null) {
 			Window dialog = CreateDialogWindow(title);
@@ -93,7 +96,8 @@ namespace Nucleus.ModelEditor.UI
 			textbox.			DockMargin = Types.RectangleF.TLRB(0, 32, 32, 0);
 			textbox.KeyboardFocus();
 
-			SetupOKCancelButtons(dialog, preferOK, () => onConfirmed?.Invoke(textbox.Text), onDenied);
+			var confirm = SetupOKCancelButtons(dialog, preferOK, () => onConfirmed?.Invoke(textbox.Text), onDenied);
+			textbox.OnUserPressedEnter += (_, _, _) => confirm();
 		}
 	}
 }

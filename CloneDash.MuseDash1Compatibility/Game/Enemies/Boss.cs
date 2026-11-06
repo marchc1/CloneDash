@@ -1,4 +1,5 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash.V1;
+﻿using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Scenes;
 using Nucleus;
 using Nucleus.Engine;
@@ -9,7 +10,7 @@ namespace CloneDash.Game.Entities;
 
 public class Boss : DashEnemy
 {
-	public Boss() : base(MuseDash1EntityType.Boss) {
+	public Boss(DashEnemyComponents components) : base(MuseDash1EntityType.Boss, components) {
 		Interactivity = EntityInteractivity.Noninteractive;
 		Visible = false;
 	}
@@ -178,7 +179,7 @@ public class Boss : DashEnemy
 
 		if (visuals.Model == null) return;
 
-		if (!Level.Paused) visuals.Animations?.AddDeltaTime(Level.RendertimeDelta * MuseDash1Game.musicspeed.GetDouble());
+		if (!Level.Paused) visuals.Animations?.AddDeltaTime(Level.RendertimeDelta * RhythmGameLevel.musicspeed.GetDouble());
 
 		visuals.Animations?.Apply(visuals.Model);
 		visuals.Model.Position = Position;

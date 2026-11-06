@@ -19,6 +19,32 @@ namespace Nucleus.ModelEditor
 		public string Name { get; set; }
 		public EditorSlot Slot { get; set; }
 
+		public EditorSkin? Skin { get; set; }
+		/// <summary>
+		/// Skin placeholder name, null means the attachment's own name
+		/// </summary>
+		public string? Placeholder { get; set; }
+		/// <summary>
+		/// The name the slot and animations look this attachment up by
+		/// </summary>
+		[JsonIgnore] public string SkinKey => Placeholder ?? Name;
+
+		public virtual bool CanDelete() => true;
+		public EditorResult Remove() => ModelEditor.Active.File.RemoveAttachment(this);
+
+		/// <summary>
+		/// Select checkbox, off means only the tree can select it
+		/// </summary>
+		public bool ViewportCanSelect { get; set; } = true;
+		/// <summary>
+		/// Export checkbox, off leaves it and its keys out of the export
+		/// </summary>
+		public bool Export { get; set; } = true;
+		/// <summary>
+		/// Name checkbox, draws the name even with names turned off
+		/// </summary>
+		public bool ViewportShowName { get; set; }
+
 		[JsonIgnore] public virtual ViewportSelectMode SelectMode => ViewportSelectMode.NotApplicable;
 
 		public string GetName() => Name;
@@ -39,9 +65,43 @@ namespace Nucleus.ModelEditor
 			set { }
 		}
 
-		public virtual void BuildTopOperators(Panel props, PreUIDeterminations determinations) { }
-		public virtual void BuildProperties(Panel props, PreUIDeterminations determinations) { }
-		public virtual void BuildOperators(Panel buttons, PreUIDeterminations determinations) { }
+		public virtual void BuildTopOperators(Panel props, PreUIDeterminations determinations) {
+			PropertiesPanel.DeleteOperator(this, props, determinations);
+			PropertiesPanel.RenameOperator(this, props, determinations);
+			PropertiesPanel.DuplicateOperator(this, props, determinations);
+		}
+		public virtual void BuildProperties(Panel props, PreUIDeterminations determinations) {
+			var row = PropertiesPanel.NewRow(props, "Skin", "models/skin.png");
+			List<EditorSkin?> skins = [null, .. GetModel().Skins];
+			PropertiesPanel.AddComboBox(row, Skin, skins,
+				(s) => s?.Name ?? "(default)",
+				(s) => ModelEditor.Active.File.SetAttachmentSkin(this, s));
+
+			var file = ModelEditor.Active.File;
+			var flags = PropertiesPanel.NewRow(props, "Viewport", "models/info.png");
+			var select = PropertiesPanel.AddLabeledCheckbox(flags, "Select", ViewportCanSelect);
+			var export = PropertiesPanel.AddLabeledCheckbox(flags, "Export", Export);
+			var name = PropertiesPanel.AddLabeledCheckbox(flags, "Name", ViewportShowName);
+			select.OnCheckedChanged += (s)
+				=> file.SetProperty(this, "select", s.Checked, () => ViewportCanSelect, v => ViewportCanSelect = v);
+			export.OnCheckedChanged += (s)
+				=> file.SetProperty(this, "export", s.Checked, () => Export, v => Export = v);
+			name.OnCheckedChanged += (s)
+				=> file.SetProperty(this, "show name", s.Checked, () => ViewportShowName, v => ViewportShowName = v);
+		}
+		protected void AddColorRow(Panel props, Func<Nucleus.Common.Types.Color> get, Action<Nucleus.Common.Types.Color> set) {
+			var row = PropertiesPanel.NewRow(props, "Color", "models/colorwheel.png");
+			var selector = PropertiesPanel.AddColorSelector(row, get());
+			selector.OnColorChanged += (_, ref newColor)
+				=> ModelEditor.Active.File.SetProperty(this, "color", newColor, get, set);
+			if (ModelEditor.Active.AnimationMode)
+				selector.SetMouseInputEnabled(false);
+		}
+
+		public virtual void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
+			PropertiesPanel.OperatorButton<UI.Operators.SetParentOperator>(buttons, "Set Parent",
+				"models/setparent.png");
+		}
 		public virtual string? DetermineHeaderText(PreUIDeterminations determinations) => $"{((IEditorType)this).CapitalizedSingleName} '{Name}'";
 
 		public virtual bool CanTranslate() => false;
@@ -90,7 +150,6 @@ namespace Nucleus.ModelEditor
 		}
 
 		public virtual bool CanRename() => true;
-		public virtual bool CanDelete() => false;
 		public EditorResult Rename(string newName) => ModelEditor.Active.File.RenameAttachment(this, newName);
 		public virtual void Render() { }
 		public virtual void RenderOverlay() { }

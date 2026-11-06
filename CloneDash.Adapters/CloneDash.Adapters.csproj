@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>CloneDash.Adapters</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\CloneDash.Common\CloneDash.Common.csproj" />
+		<ProjectReference Include="..\CloneDash.MuseDash1Compatibility\CloneDash.MuseDash1Compatibility.csproj" />
+		<ProjectReference Include="..\CloneDash.UnbeatableWhiteLabelCompatibility\CloneDash.UnbeatableWhiteLabelCompatibility.csproj" />
+	</ItemGroup>
+
+	<Import Project="..\ApplyNucleusAssemblyAttribute.targets" />
+
+	<ItemGroup>
+		<Compile Include="..\GlobalUsings.cs" Link="Usings\Globals\GlobalUsings.cs" />
+	</ItemGroup>
+</Project>

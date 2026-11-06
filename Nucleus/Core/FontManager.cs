@@ -69,6 +69,7 @@ namespace Nucleus.Core
 		private bool Killed;
 		private Font Font;
 		private bool MarkedForDeath;
+		private bool NeverKillThisFont;
 		private DateTime LastUsed;
 
 		public void OwnFont(in Font font) => Font = font;
@@ -90,6 +91,9 @@ namespace Nucleus.Core
 
 			Killed = true;
 		}
+
+		public void MarkFontAsInvincible() => NeverKillThisFont = true;
+		public bool IsFontInvincible() => NeverKillThisFont;
 	}
 
 	public class FontManager
@@ -125,6 +129,9 @@ namespace Nucleus.Core
 		}
 
 		public void MarkFontForDeath(FontState font) {
+			if (font.IsFontInvincible())
+				return;
+
 			if (font.IsMarkedForDeath())
 				return;
 
@@ -138,7 +145,8 @@ namespace Nucleus.Core
 		public void RegisterCodepoints(ReadOnlySpan<char> chars) {
 			for (int i = 0; i < chars.Length;) {
 				Rune unicodeRune = chars.GetRuneAt(i);
-				if (RegisteredCodepointsHash.TryAdd(unicodeRune.Value, true))
+				// TryAdd locks even when the key is already there.
+				if (!RegisteredCodepointsHash.ContainsKey(unicodeRune.Value) && RegisteredCodepointsHash.TryAdd(unicodeRune.Value, true))
 					FullFontRefreshRequired = true;
 				i += unicodeRune.Utf16SequenceLength;
 			}
@@ -194,7 +202,7 @@ namespace Nucleus.Core
 				if (!text.IsEmpty) {
 					for (int i = 0; i < text.Length;) {
 						Rune unicodeRune = text.GetRuneAt(i);
-						bool added = RegisteredCodepointsHash.TryAdd(unicodeRune.Value, true);
+						bool added = !RegisteredCodepointsHash.ContainsKey(unicodeRune.Value) && RegisteredCodepointsHash.TryAdd(unicodeRune.Value, true);
 						if (added) {
 							FullFontRefreshRequired = true;
 						}

@@ -1,10 +1,14 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+using CloneDash.Game.Logic;
 using CloneDash.Settings;
 
 using Nucleus;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Types;
@@ -15,7 +19,14 @@ namespace CloneDash.Game.Entities
 {
 	public class SustainBeam : DashEnemy
 	{
-		public SustainBeam() : base(MuseDash1EntityType.SustainBeam) {
+		readonly HitsoundComponent hitsounds;
+		readonly PathwaysComponent pathways;
+		readonly ISustainManager sustains;
+
+		public SustainBeam(DashEnemyComponents components, HitsoundComponent hitsounds, PathwaysComponent pathways, ISustainManager sustains) : base(MuseDash1EntityType.SustainBeam, components) {
+			this.hitsounds = hitsounds;
+			this.pathways = pathways;
+			this.sustains = sustains;
 			Interactivity = EntityInteractivity.Sustain;
 			DoesDamagePlayer = true;
 		}
@@ -36,26 +47,27 @@ namespace CloneDash.Game.Entities
 			StopAcceptingInput = false;
 		}
 
-		protected override void OnHit(PathwaySide attackedPath, double distanceToHit) {
+		protected override void OnHit(PathwayId attackedPath, double distanceToHit) {
 			if (HeldState == true)
 				return;
 			if (StopAcceptingInput == true)
 				return;
 
-			var lvl = Level.As<MuseDash1Game>();
 			HeldState = true;
 			WasHit = true;
 			ForceDraw = true;
-			lastCheckTime = lvl.Conductor.Time;
-			lvl.Sustains.StartSustainBeam(this);
-			lvl.AddCombo();
-			lvl.AddFever(FeverGiven, this);
+			lastCheckTime = GetConductor().Time;
+			sustains.StartSustainBeam(this);
+			Components.Combo.Add();
+			Components.Rules.AddFever(FeverGiven, this);
+			GetStats().Hit(this, distanceToHit);
 		}
 
 		protected override void OnMiss() {
 			if (HeldState == false) {
-				Level.As<MuseDash1Game>().Sustains.FailSustainBeam(this);
+				sustains.FailSustainBeam(this);
 				PunishPlayer();
+				GetStats().Miss(this);
 			}
 		}
 
@@ -63,49 +75,77 @@ namespace CloneDash.Game.Entities
 			return NMath.InRange(GetVisualTimeUntilHit(), -2 - Length, 2);
 		}
 
-		protected override void OnReward() {
-			GetStats().Hit(this, 0);
-		}
+		protected override void OnReward() { }
 
 		public override void Think(FrameState frameState) {
 			if (HeldState) {
 				// check if sustain complete
-				var lvl = GetGameLevel();
-				lvl.Sustains.ThinkSustainBeam(this);
+				sustains.ThinkSustainBeam(this);
 			}
 		}
 
 		public float StartPosition { get; private set; }
 		public float RotationDegsPerSecond = 200;
-		private void drawStartQuad(MuseDash1Game game, ref FrameState fs, float x) {
+		public MD1_CurvePath? Curve { get; set; }
+
+		private const int MAX_CURVE_SAMPLES = 256;
+
+		private double[]? curveTimes;
+		private float[]? curveValues;
+
+		private double curveStartTime() => HeldState ? Math.Clamp(GetConductor().Time - InputSettings.VisualOffset, HitTime, HitTime + Length) : HitTime;
+		private float worldY(double time) => Curve == null ? Components.Playfield.GetPathway(this).Position.Y : Components.Scenes.GetNormalizedPosition(Curve.Evaluate(time)).Y;
+		private float pathY(double time) => -worldY(time);
+
+		public float GetHeldY() => worldY(curveStartTime());
+
+		private void buildCurveSamples() {
+			curveTimes = null;
+			curveValues = null;
+
+			if (Curve == null)
+				return;
+
+			Span<double> times = stackalloc double[MAX_CURVE_SAMPLES];
+			Span<float> values = stackalloc float[MAX_CURVE_SAMPLES];
+			int count = Curve.Sample(HitTime, HitTime + Length, Math.Max(Length / (MAX_CURVE_SAMPLES / 2), 1d / 240), times, values);
+
+			if (count < 2)
+				return;
+
+			curveTimes = times[..count].ToArray();
+			curveValues = values[..count].ToArray();
+		}
+
+		private void drawStartQuad(ref FrameState fs, float x) {
 			x -= (float)InputSettings.VisualOffset;
 
 			var tex = start;
 			if (tex == null) return;
 
-			var xpos = (HeldState ? game.GetPathway(Pathway).Position.X : (float)XPosFromTimeOffset(x));
-			var ypos = -game.GetPathway(Pathway).Position.Y;
-			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
+			var xpos = (HeldState ? Components.Playfield.GetPathway(this).Position.X : (float)XPosFromTimeOffset(x));
+			var ypos = pathY(curveStartTime());
+			var rot = (float)((GetConductor().Time * RotationDegsPerSecond) % 360) * -1;
 
-			var w = tex.GetWidth() * MuseDash1Game.GlobalScale;
-			var h = tex.GetHeight() * MuseDash1Game.GlobalScale;
+			var w = tex.GetWidth() * MuseDash1Gamemode.GlobalScale;
+			var h = tex.GetHeight() * MuseDash1Gamemode.GlobalScale;
 
 			if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
 				Raylib.DrawTexturePro(tex.ToRaylibTexture(), new(0, 0, tex.GetWidth(), -tex.GetHeight()), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
 			else
 				Raylib.DrawTexturePro(tex.ToRaylibTexture(), new(0, 0, tex.GetWidth(), tex.GetHeight()), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
 		}
-		private void drawEndQuad(MuseDash1Game game, ref FrameState fs, float x) {
+		private void drawEndQuad(ref FrameState fs, float x) {
 			x -= (float)InputSettings.VisualOffset;
 			var tex = end;
 			if (tex == null) return;
 
 			var xpos = (float)XPosFromTimeOffset(x);
-			var ypos = -game.GetPathway(Pathway).Position.Y;
-			var rot = (float)((game.Conductor.Time * RotationDegsPerSecond) % 360) * -1;
+			var ypos = pathY(HitTime + Length);
+			var rot = (float)((GetConductor().Time * RotationDegsPerSecond) % 360) * -1;
 
-			var w = tex.GetWidth() * MuseDash1Game.GlobalScale;
-			var h = tex.GetHeight() * MuseDash1Game.GlobalScale;
+			var w = tex.GetWidth() * MuseDash1Gamemode.GlobalScale;
+			var h = tex.GetHeight() * MuseDash1Gamemode.GlobalScale;
 
 			if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV))
 				Raylib.DrawTexturePro(tex.ToRaylibTexture(), new(0, 0, tex.GetWidth(), -tex.GetHeight()), new(xpos, ypos, w * 2, h * 2), new(w, h), rot, Color.White with { A = beamAlpha });
@@ -115,24 +155,74 @@ namespace CloneDash.Game.Entities
 
 		private SecondOrderSystem sosFail = new(2, 1, 1, 0);
 		private byte beamAlpha;
-		public void drawScrollQuad(MuseDash1Game game, ITexture? tex, ref FrameState fs, float xOffset, float yOffset) {
+		private void drawScrollStrip(double[] times, float[] values, ITexture tex, float xOffset, float yOffset) {
+			double from = curveStartTime();
+
+			int first = 1;
+			while (first < times.Length && times[first] <= from)
+				first++;
+
+			if (first >= times.Length)
+				return;
+
+			int count = times.Length - first + 1;
+			double t0 = times[first - 1], t1 = times[first];
+			float f = t1 > t0 ? (float)((from - t0) / (t1 - t0)) : 1;
+
+			Span<double> stripTimes = stackalloc double[count];
+			Span<float> stripValues = stackalloc float[count];
+
+			stripTimes[0] = from;
+			stripValues[0] = values[first - 1] + (values[first] - values[first - 1]) * f;
+			times.AsSpan(first).CopyTo(stripTimes[1..]);
+			values.AsSpan(first).CopyTo(stripValues[1..]);
+
+			float voffset = -(float)InputSettings.VisualOffset;
+			Span<Vector2F> points = stackalloc Vector2F[count];
+			for (int i = 0; i < count; i++)
+				points[i] = new((float)XPosFromTimeOffset((float)(stripTimes[i] - HitTime) + voffset) + (i == 0 ? xOffset : 0), -Components.Scenes.GetNormalizedPosition(stripValues[i]).Y + yOffset);
+
+			Span<Vector2F> top = stackalloc Vector2F[count];
+			Span<Vector2F> bottom = stackalloc Vector2F[count];
+			Span<float> u = stackalloc float[count];
+
+			var height = tex.GetHeight() * MuseDash1Gamemode.GlobalScale;
+			var texLength = tex.GetWidth() * MuseDash1Gamemode.GlobalScale * 2;
+			var scrollSpeed = ScrollSpeed;
+			for (int i = 0; i < count; i++) {
+				u[i] = (float)((stripTimes[i] - HitTime) * scrollSpeed) / texLength;
+				top[i] = new(points[i].X, points[i].Y - height);
+				bottom[i] = new(points[i].X, points[i].Y + height);
+			}
+
+			Graphics2D.SetTexture(tex);
+			Graphics2D.SetDrawColor(255, 255, 255, beamAlpha);
+			Graphics2D.DrawTexturedStrip(top, bottom, u);
+		}
+
+		public void drawScrollQuad(ITexture? tex, ref FrameState fs, float xOffset, float yOffset) {
 			if (tex == null)
 				return;
 
+			if (curveTimes != null && curveValues != null) {
+				drawScrollStrip(curveTimes, curveValues, tex, xOffset, yOffset);
+				return;
+			}
+
 			float voffset = -(float)InputSettings.VisualOffset;
 			var xStart = (float)XPosFromTimeOffset(voffset);
-			var xMid = HeldState ? game.GetPathway(Pathway).Position.X : xStart;
+			var xMid = HeldState ? Components.Playfield.GetPathway(this).Position.X : xStart;
 			var xEnd = (float)XPosFromTimeOffset((float)Length + voffset);
-			var ypos = -game.GetPathway(Pathway).Position.Y + yOffset;
-			var height = tex.GetHeight() * MuseDash1Game.GlobalScale;
+			var ypos = -Components.Playfield.GetPathway(this).Position.Y + yOffset;
+			var height = tex.GetHeight() * MuseDash1Gamemode.GlobalScale;
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.DisableBackfaceCulling();
 
 			Rlgl.Color4ub(255, 255, 255, beamAlpha);
 
-			var maxLength = (xEnd - xStart) / (tex.GetWidth() * MuseDash1Game.GlobalScale * 2);
-			var length = maxLength - ((xEnd - xMid) / (tex.GetWidth() * MuseDash1Game.GlobalScale * 2));
+			var maxLength = (xEnd - xStart) / (tex.GetWidth() * MuseDash1Gamemode.GlobalScale * 2);
+			var length = maxLength - ((xEnd - xMid) / (tex.GetWidth() * MuseDash1Gamemode.GlobalScale * 2));
 
 			xMid = xMid + xOffset;
 			Rlgl.SetTexture(tex.GetTextureHandle());
@@ -162,24 +252,23 @@ namespace CloneDash.Game.Entities
 			if (!ShouldDraw) return;
 
 			bool isSingleHit = Length == 0;
-			var game = Level.As<MuseDash1Game>();
 			beamAlpha = Convert.ToByte(NMath.Remap(sosFail.Update(DidPunishPlayer ? 1 : 0), 0, 1, 255, 127, true));
 
 			if(!isSingleHit)
-			drawScrollQuad(game, body, ref frameState, 0, 0);
+			drawScrollQuad(body, ref frameState, 0, 0);
 
 			if (!isSingleHit) {
-			var time = game.Conductor.Time * 5;
-			var sv = (float)(Math.Sin(time) * 10) * MuseDash1Game.GlobalScale;
-			var cv = (float)(Math.Cos(time) * 10) * MuseDash1Game.GlobalScale;
+			var time = GetConductor().Time * 5;
+			var sv = (float)(Math.Sin(time) * 10) * MuseDash1Gamemode.GlobalScale;
+			var cv = (float)(Math.Cos(time) * 10) * MuseDash1Gamemode.GlobalScale;
 
-				drawScrollQuad(game, up, ref frameState, cv / 2, sv);
-				drawScrollQuad(game, down, ref frameState, sv / 2, cv);
+				drawScrollQuad(up, ref frameState, cv / 2, sv);
+				drawScrollQuad(down, ref frameState, sv / 2, cv);
 			}
 
-			drawStartQuad(game, ref frameState, 0);
+			drawStartQuad(ref frameState, 0);
 			if (!isSingleHit)
-				drawEndQuad(game, ref frameState, (float)Length);
+				drawEndQuad(ref frameState, (float)Length);
 		}
 
 		private ITexture? start;
@@ -190,43 +279,39 @@ namespace CloneDash.Game.Entities
 
 		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
 			base.OnBuildVisuals(visuals);
-			visuals.Scene.GetSustainResources(Pathway, out start, out end, out body, out up, out down, out RotationDegsPerSecond);
+			visuals.Scene.GetSustainResources(pathways.PrimaryPathway(Pathway), out start, out end, out body, out up, out down, out RotationDegsPerSecond);
 			XPosSetup(visuals);
+			buildCurveSamples();
 		}
 
-		internal void Complete() {
-			var lvl = GetGameLevel();
-
+		internal void Complete(double distanceToEnd) {
 			HeldState = false;
 			StopAcceptingInput = true;
 			ShouldDraw = false;
+			GetStats().HitEnd(this, distanceToEnd);
 			RewardPlayer();
 
-			lvl.AddCombo();
-			lvl.AddFever(FeverGiven, this);
-			lvl.Sustains.CompleteSustainBeam(this);
-			lvl.PlaySceneSound(SceneSound.StartedHold, 1);
+			Components.Combo.Add();
+			Components.Rules.AddFever(FeverGiven, this);
+			sustains.CompleteSustainBeam(this);
+			hitsounds.Play(SceneSound.StartedHold, 1);
 		}
 		internal void Fail() {
-			var lvl = GetGameLevel();
-
 			HeldState = false;
 			StopAcceptingInput = true;
 			ShouldDraw = false;
 			PunishPlayer();
 
-			lvl.Sustains.FailSustainBeam(this);
+			sustains.FailSustainBeam(this);
 
-			GetStats().Miss(this);
+			GetStats().MissEnd(this);
 		}
 		internal void Hold() {
-			var lvl = GetGameLevel();
-
 			var now = GetConductor().Time;
 			var delta = now - lastCheckTime;
 			if (delta >= 0.1) { // Give 10 score for every 100ms held (should this be done differently?)
 				lastCheckTime = now;
-				lvl.AddScore(10);
+				Components.Rules.AddScore(10, this);
 			}
 		}
 	}

@@ -44,24 +44,33 @@ namespace Nucleus.UI
 
 		protected override void PerformLayout(float width, float height) {
 			if (AutomateLayout) {
+				Element content = GetAddParent();
 				Vector2F size = new();
-				foreach (var child in Children) {
-					if (child.Dock != Dock.None)
+				foreach (var child in content.Children) {
+					if (child.Dock != Dock.None || !child.IsVisible())
 						continue;
 
+					var rb = child.GetRenderBounds();
 					size = new(
-						MathF.Max(size.X, child.GetRenderBounds().W),
-						MathF.Max(size.Y, child.GetRenderBounds().H)
+						MathF.Max(size.X, rb.X + rb.W),
+						MathF.Max(size.Y, rb.Y + rb.H)
 					);
 				}
+				RectangleF contentPadding = content.DockPadding;
+				size += new Vector2F(contentPadding.Right, contentPadding.Bottom);
+
+				RectangleF pad = DockPadding, cm = content.DockMargin;
+				Vector2F chrome = new(
+					pad.Left + pad.Right + cm.Left + cm.Right,
+					pad.Top + pad.Bottom + Titlebar.Size.H + cm.Top + cm.Bottom);
 
 				Size = new(
-					MathF.Max(size.X, MinimumInternalSize.W),
-					MathF.Max(size.Y, MinimumInternalSize.H)
+					MathF.Max(size.X + chrome.X, MinimumInternalSize.W),
+					MathF.Max(size.Y + chrome.Y, MinimumInternalSize.H)
 				);
 
-				if (GetParent() != null)
-					Position = (GetParent().Size / 2) - (Size / 2);
+				if (GetParent() is Element parent)
+					Position = (parent.GetRenderBounds().Size / 2) - (Size / 2);
 			}
 		}
 	}
@@ -116,7 +125,10 @@ namespace Nucleus.UI
                 onOK?.Invoke();
                 popup.Close();
             };
-            if (okHighlighted) ok.TriggeredWhenEnterPressed = true;
+            if (okHighlighted) {
+                ok.TriggeredWhenEnterPressed = true;
+                ok.KeyboardFocus(); 
+            }
         }
 
         public static void DialogOKCancel(this UserInterface UI, string title, string text, Action onOK, Action? onCancel = null, bool okHighlighted = true) {
@@ -136,10 +148,9 @@ namespace Nucleus.UI
                 popup.Close();
             };
 
-            if (okHighlighted)
-                ok.TriggeredWhenEnterPressed = true;
-            else
-                close.TriggeredWhenEnterPressed = true;
+            Button highlighted = okHighlighted ? ok : close;
+            highlighted.TriggeredWhenEnterPressed = true;
+            highlighted.KeyboardFocus(); 
         }
     }
 }

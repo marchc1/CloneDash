@@ -80,7 +80,9 @@ namespace AssetStudio
 
         public List<StreamFile> fileList;
 
-        public BundleFile(FileReader reader, CustomBundleOptions bundleOptions, bool isMultiBundle = false)
+        public IEnumerable<string> DirectoryPaths => m_DirectoryInfo?.Select(node => node.path) ?? [];
+
+        public BundleFile(FileReader reader, CustomBundleOptions bundleOptions, bool isMultiBundle = false, bool directoryOnly = false)
         {
             _bundleOptions = bundleOptions;
             m_Header = new Header();
@@ -129,6 +131,12 @@ namespace AssetStudio
                     UnityCnCheck(reader, unityVer);
                     
                     ReadBlocksInfoAndDirectory(reader, unityVer);
+
+                    if (directoryOnly)
+                    {
+                        reader.Close();
+                        break;
+                    }
 
                     if (IsUncompressedBundle && !IsDataAfterBundle && !isMultiBundle)
                     {

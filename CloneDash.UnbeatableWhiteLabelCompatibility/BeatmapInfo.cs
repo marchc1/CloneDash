@@ -1,5 +1,6 @@
 ﻿using AssetStudio;
 using CloneDash.Common;
+using CloneDash.Common.Compatibility;
 using CloneDash.Common.Data;
 using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash;
@@ -28,15 +29,30 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 			Difficulty = "1",
 			DifficultyName = Difficulty,
 			Color = new Nucleus.Common.Types.Color(115, 55, 55),
-			GamemodeName = "Muse Dash 1",
+			GamemodeName = "UNBEATABLE [white label]",
 		};
 	}
 
 	public IGamemodeDescriptor GetGamemode() {
-		return GamemodeMod.GetGamemode("gamemode/musedash1/standard")!;
+		return ModStores.Get<GamemodeMod>().GetDescriptorByUID(UnbeatableWhiteLabelGamemode.UUID)!;
 	}
 
-	void AddOneEntity(MuseDash1EntityType entityType, NoteInfo noteInfo, PathwaySide? pathwayOverride = null){
+	public Beatmap GetBeatmap() {
+		if (Beatmap == null) {
+			Beatmap beatmap = new();
+
+			if (TextAsset.TryGet(out var textAsset)) {
+				BeatmapParserEngine parser = new();
+				parser.ReadBeatmap(Encoding.UTF8.GetString(textAsset.m_Script), ref beatmap);
+			}
+
+			Beatmap = beatmap;
+		}
+
+		return Beatmap;
+	}
+
+	void AddOneEntity(MuseDash1EntityType entityType, NoteInfo noteInfo, PathwaySet? pathwayOverride = null){
 		GamemodeData!.Entities.Add(new() {
 			Type = entityType,
 			Damage = 30,
@@ -51,7 +67,7 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 				_ => 1
 			},
 			Length = entityType == MuseDash1EntityType.SustainBeam && noteInfo.hasEndTime ? (noteInfo.GetEndTime() / 1000d) - (noteInfo.time / 1000d) : 0,
-			Pathway = pathwayOverride ?? noteInfo.height switch { Height.Low => PathwaySide.Bottom, Height.Mid => PathwaySide.Bottom, Height.Top => PathwaySide.Top, _ => PathwaySide.Bottom },
+			Pathway = pathwayOverride ?? noteInfo.height switch { Height.Low => PathwayLayout.MuseDashBottom.AsSet, Height.Mid => PathwayLayout.MuseDashBottom.AsSet, Height.Top => PathwayLayout.MuseDashTop.AsSet, _ => PathwayLayout.MuseDashBottom.AsSet },
 			Speed = noteInfo.speed switch {
 				NoteInfo.NoteSpeed.Standard => 2,
 				NoteInfo.NoteSpeed.Fast => 3,
@@ -62,16 +78,16 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 		});
 	}
 
-	public object GetGamemodeData() {
+	public object GetGamemodeData() => GetBeatmap();
+
+	public MD1_GamemodeData GetMuseDash1Data() {
 		if (GamemodeData == null) {
 			GamemodeData = new MD1_GamemodeData();
 
-			if (!TextAsset.TryGet(out var textAsset))
+			if (!TextAsset.TryGet(out _))
 				return null!;
 
-			BeatmapParserEngine parser = new();
-			Beatmap = new();
-			parser.ReadBeatmap(Encoding.UTF8.GetString(textAsset.m_Script), ref Beatmap);
+			GetBeatmap();
 
 			GamemodeData.InitialScene = "scene/musedash1/scene_01";
 			foreach (var tp in Beatmap.timingPoints) {
@@ -103,8 +119,8 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 					};
 
 					if (entityType == MuseDash1EntityType.Double) {
-						AddOneEntity(entityType, noteInfo, PathwaySide.Top);
-						AddOneEntity(entityType, noteInfo, PathwaySide.Bottom);
+						AddOneEntity(entityType, noteInfo, PathwayLayout.MuseDashTop.AsSet);
+						AddOneEntity(entityType, noteInfo, PathwayLayout.MuseDashBottom.AsSet);
 					}
 					else
 						AddOneEntity(entityType, noteInfo, null);
@@ -121,6 +137,28 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 	public ISong GetSong() => song;
 
 	public IAudioClip GetAudioTrack() => AudioClip;
+	public ChartTiming GetTiming() {
+		List<TempoChange> tempoChanges = [];
+		double beat = 0, lastTime = 0, lastBPM = 0;
+
+		foreach (var timingPoint in GetBeatmap().timingPoints) {
+			if (!timingPoint.uninherited || timingPoint.beatLength <= 0)
+				continue;
+
+			double time = timingPoint.time / 1000d;
+			double bpm = 60000 / timingPoint.beatLength;
+			if (lastBPM > 0)
+				beat += (time - lastTime) * lastBPM / 240;
+			else if (time > 0)
+				tempoChanges.Add(new TempoChange(0, (int)Math.Round(-time * bpm / 240), bpm));
+
+			lastTime = time;
+			lastBPM = bpm;
+			tempoChanges.Add(new TempoChange(time, (int)Math.Round(beat), lastBPM));
+		}
+
+		return new(tempoChanges, []);
+	}
 
 	public IAudioClip AudioClip = null!;
 

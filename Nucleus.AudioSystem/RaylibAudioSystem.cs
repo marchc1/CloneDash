@@ -140,7 +140,9 @@ public abstract unsafe class BaseAudioClip : IAudioClip
 	public ReadOnlySpan<char> GetName() => clipIdentifier;
 	public AudioClipSource GetSource() => clipSource;
 
-	public bool IsValid() => !destroyed && data != null && length != 0;
+	protected bool IsDestroyed => destroyed;
+
+	public virtual bool IsValid() => !destroyed && data != null && length != 0;
 
 	public void Destroy() {
 		if (destroyed) return;
@@ -166,12 +168,16 @@ public unsafe class StreamAudioClip : BaseAudioClip
 public unsafe class DynamicAudioClip : BaseAudioClip
 {
 	public AudioCallbackFn Callback { get; }
+	public int SampleRate { get; }
+	public int Channels { get; }
 
-	public DynamicAudioClip(ReadOnlySpan<char> identifier, AudioCallbackFn fn) : base(new string(identifier), AudioClipSource.Dynamic) {
+	public DynamicAudioClip(ReadOnlySpan<char> identifier, AudioCallbackFn fn, int sampleRate, int channels) : base(new string(identifier), AudioClipSource.Dynamic) {
 		Callback = fn;
+		SampleRate = sampleRate;
+		Channels = channels;
 	}
 
-	public new bool IsValid() => Callback != null;
+	public override bool IsValid() => !IsDestroyed && Callback != null;
 }
 
 public struct PlaybackProcessor(AudioCallbackFn fn, object? userdata)
@@ -182,6 +188,8 @@ public struct PlaybackProcessor(AudioCallbackFn fn, object? userdata)
 
 internal unsafe class PlaybackChannel
 {
+	const int DEVICE_CHANNELS = 2;
+
 	public ulong Generation;
 	public BaseAudioClip? Clip;
 	public AudioPlaybackSettings Settings;
@@ -192,6 +200,12 @@ internal unsafe class PlaybackChannel
 	public bool IsStream;
 	public Music MusicStream;
 	public Sound SoundAlias;
+
+	public bool IsDynamic;
+	public AudioStream DynamicStream;
+	public DynamicAudioCursor? Cursor;
+	private AudioCallback? dynamicCallback;
+	private bool dynamicCallbackFailed;
 
 	public readonly List<PlaybackProcessor> Processors = [];
 
@@ -204,6 +218,11 @@ internal unsafe class PlaybackChannel
 		IsStream = false;
 		MusicStream = default;
 		SoundAlias = default;
+		IsDynamic = false;
+		DynamicStream = default;
+		Cursor = null;
+		dynamicCallback = null;
+		dynamicCallbackFailed = false;
 		Processors.Clear();
 	}
 
@@ -213,7 +232,7 @@ internal unsafe class PlaybackChannel
 	private unsafe void InitializeAudioProcessor() {
 		FUCKFUCKFUCKFUCK = new((buffer, frames) => {
 			foreach (var proc in Processors)
-				proc.Fn(new(buffer, (int)frames), proc.UserData);
+				proc.Fn(new(buffer, (int)frames * DEVICE_CHANNELS), proc.UserData);
 		});
 	}
 
@@ -225,6 +244,35 @@ internal unsafe class PlaybackChannel
 	public void SetupMusicProcessors() {
 		InitializeAudioProcessor();
 		Raylib.AttachAudioStreamProcessor(MusicStream.Stream, (delegate* unmanaged[Cdecl]<void*, uint, void>)Marshal.GetFunctionPointerForDelegate(FUCKFUCKFUCKFUCK));
+	}
+
+	public void SetupDynamicStream(DynamicAudioClip clip) {
+		IsDynamic = true;
+		var cursor = Cursor = new DynamicAudioCursor(clip.SampleRate, clip.Channels);
+		var fn = clip.Callback;
+		int channels = clip.Channels;
+		string name = new(clip.GetName());
+
+		DynamicStream = Raylib.LoadAudioStream((uint)clip.SampleRate, 32, (uint)channels);
+		dynamicCallback = new((buffer, frames) => {
+			var samples = new Span<float>(buffer, (int)frames * channels);
+			samples.Clear();
+			try {
+				fn(samples, cursor);
+			}
+			catch (Exception ex) {
+				samples.Clear();
+				if (!dynamicCallbackFailed) {
+					dynamicCallbackFailed = true;
+					Logs.Error($"Dynamic audio clip '{name}' threw: {ex.Message}");
+				}
+			}
+			cursor.Advance(frames);
+		});
+		Raylib.SetAudioStreamCallback(DynamicStream, (delegate* unmanaged[Cdecl]<void*, uint, void>)Marshal.GetFunctionPointerForDelegate(dynamicCallback));
+
+		InitializeAudioProcessor();
+		Raylib.AttachAudioStreamProcessor(DynamicStream, (delegate* unmanaged[Cdecl]<void*, uint, void>)Marshal.GetFunctionPointerForDelegate(FUCKFUCKFUCKFUCK));
 	}
 }
 
@@ -264,7 +312,13 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		var ch = channels[index];
 		if (ch == null || !ch.Active) return;
 
-		if (ch.IsStream) {
+		if (ch.IsDynamic) {
+			if (Raylib.IsAudioStreamValid(ch.DynamicStream)) {
+				Raylib.StopAudioStream(ch.DynamicStream);
+				Raylib.UnloadAudioStream(ch.DynamicStream);
+			}
+		}
+		else if (ch.IsStream) {
 			if (Raylib.IsMusicValid(ch.MusicStream)) {
 				Raylib.StopMusicStream(ch.MusicStream);
 				Raylib.UnloadMusicStream(ch.MusicStream);
@@ -288,7 +342,12 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 
 		float finalVolume = ch.Settings.Volume * clipVol;
 
-		if (ch.IsStream) {
+		if (ch.IsDynamic) {
+			Raylib.SetAudioStreamVolume(ch.DynamicStream, finalVolume);
+			Raylib.SetAudioStreamPan(ch.DynamicStream, ch.Settings.Panning);
+			Raylib.SetAudioStreamPitch(ch.DynamicStream, ch.Settings.Pitch);
+		}
+		else if (ch.IsStream) {
 			Raylib.SetMusicVolume(ch.MusicStream, finalVolume);
 			Raylib.SetMusicPan(ch.MusicStream, ch.Settings.Panning);
 			Raylib.SetMusicPitch(ch.MusicStream, ch.Settings.Pitch);
@@ -319,7 +378,7 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		return false;
 	}
 
-	public IAudioClip? CreateDynamicAudioClip(AudioCallbackFn fn, ReadOnlySpan<char> identifier = default) {
+	public IAudioClip? CreateDynamicAudioClip(AudioCallbackFn fn, int sampleRate, int channels, ReadOnlySpan<char> identifier = default) {
 		string id = identifier.Length > 0 ? new string(identifier) : $"__dynamic_{Guid.NewGuid():N}";
 		UtlSymId_t hash = id.Hash();
 		if (identifier.Length > 0 && clipsByName.TryGetValue(hash, out var existing)) {
@@ -327,7 +386,7 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 			return existing;
 		}
 
-		var clip = new DynamicAudioClip(identifier, fn);
+		var clip = new DynamicAudioClip(identifier, fn, sampleRate, channels);
 		clipsByName[hash] = clip;
 		allClips.Add(clip);
 		return clip;
@@ -405,7 +464,10 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		var settings = init.IsUninitialized() ? AudioPlaybackSettings.Unaltered : init;
 		ch.Settings = settings;
 
-		if (settings.Stream) {
+		if (baseClip is DynamicAudioClip dynamicClip) {
+			ch.SetupDynamicStream(dynamicClip);
+		}
+		else if (settings.Stream) {
 			ch.IsStream = true;
 			ch.MusicStream = RaylibAudioHelpers.AllocMusicStream(baseClip.Data, baseClip.Length);
 			ch.MusicStream.Looping = settings.Looping;
@@ -528,6 +590,8 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 	public double GetPlaybackDuration(in AudioPlaybackHandle handle) {
 		var ch = GetChannel(in handle);
 		if (ch == null) return 0;
+		if (ch.IsDynamic)
+			return 0;
 		if (ch.IsStream)
 			return Raylib.GetMusicTimeLength(ch.MusicStream);
 		else
@@ -559,6 +623,10 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		playhead = 0;
 		var ch = GetChannel(in handle);
 		if (ch == null) return false;
+		if (ch.Cursor != null) {
+			playhead = ch.Cursor.Time;
+			return true;
+		}
 		if (!ch.IsStream) return false;
 		playhead = Raylib.GetMusicTimePlayed(ch.MusicStream);
 		return true;
@@ -591,6 +659,8 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 	public bool IsPlaybackActive(in AudioPlaybackHandle handle) {
 		var ch = GetChannel(in handle);
 		if (ch == null) return false;
+		if (ch.IsDynamic)
+			return Raylib.IsAudioStreamPlaying(ch.DynamicStream);
 		if (ch.IsStream)
 			return Raylib.IsMusicStreamPlaying(ch.MusicStream);
 		return Raylib.IsSoundPlaying(ch.SoundAlias);
@@ -616,7 +686,9 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		var ch = GetChannel(in handle);
 		if (ch == null) return false;
 		ch.Paused = true;
-		if (ch.IsStream)
+		if (ch.IsDynamic)
+			Raylib.PauseAudioStream(ch.DynamicStream);
+		else if (ch.IsStream)
 			Raylib.PauseMusicStream(ch.MusicStream);
 		else
 			Raylib.PauseSound(ch.SoundAlias);
@@ -628,7 +700,9 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		if (ch == null) return false;
 		ch.Paused = false;
 		ch.Complete = false;
-		if (ch.IsStream)
+		if (ch.IsDynamic)
+			Raylib.PlayAudioStream(ch.DynamicStream);
+		else if (ch.IsStream)
 			Raylib.PlayMusicStream(ch.MusicStream);
 		else
 			Raylib.PlaySound(ch.SoundAlias);
@@ -640,7 +714,11 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		if (ch == null) return;
 		ch.Paused = false;
 		ch.Complete = false;
-		if (ch.IsStream) {
+		if (ch.IsDynamic) {
+			ch.Cursor!.Frame = 0;
+			Raylib.PlayAudioStream(ch.DynamicStream);
+		}
+		else if (ch.IsStream) {
 			Raylib.SeekMusicStream(ch.MusicStream, 0);
 			Raylib.PlayMusicStream(ch.MusicStream);
 		}
@@ -654,7 +732,9 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		var ch = GetChannel(in handle);
 		if (ch == null) return false;
 		ch.Paused = false;
-		if (ch.IsStream)
+		if (ch.IsDynamic)
+			Raylib.ResumeAudioStream(ch.DynamicStream);
+		else if (ch.IsStream)
 			Raylib.ResumeMusicStream(ch.MusicStream);
 		else
 			Raylib.ResumeSound(ch.SoundAlias);
@@ -670,7 +750,9 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		var ch = GetChannel(in handle);
 		if (ch == null) return false;
 		ch.Settings.Panning = panning;
-		if (ch.IsStream)
+		if (ch.IsDynamic)
+			Raylib.SetAudioStreamPan(ch.DynamicStream, panning);
+		else if (ch.IsStream)
 			Raylib.SetMusicPan(ch.MusicStream, panning);
 		else
 			Raylib.SetSoundPan(ch.SoundAlias, panning);
@@ -682,7 +764,9 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		if (ch == null) return false;
 		ch.Settings.Pitch = pitch;
 		ch.Settings.TimeStretch = pitch;
-		if (ch.IsStream)
+		if (ch.IsDynamic)
+			Raylib.SetAudioStreamPitch(ch.DynamicStream, pitch);
+		else if (ch.IsStream)
 			Raylib.SetMusicPitch(ch.MusicStream, pitch);
 		else
 			Raylib.SetSoundPitch(ch.SoundAlias, pitch);
@@ -693,7 +777,9 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		var ch = GetChannel(in handle);
 		if (ch == null) return false;
 		ch.Settings.Pitch = pitchRatio;
-		if (ch.IsStream)
+		if (ch.IsDynamic)
+			Raylib.SetAudioStreamPitch(ch.DynamicStream, pitchRatio);
+		else if (ch.IsStream)
 			Raylib.SetMusicPitch(ch.MusicStream, pitchRatio);
 		else
 			Raylib.SetSoundPitch(ch.SoundAlias, pitchRatio);
@@ -703,6 +789,10 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 	public bool SetSoundPlayhead(in AudioPlaybackHandle handle, double playhead) {
 		var ch = GetChannel(in handle);
 		if (ch == null) return false;
+		if (ch.Cursor != null) {
+			ch.Cursor.Time = playhead;
+			return true;
+		}
 		if (!ch.IsStream) return false;
 		Raylib.SeekMusicStream(ch.MusicStream, (float)playhead);
 		return true;
@@ -748,7 +838,9 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 		if (ch.Settings.DoNotAutoDestroy) {
 			ch.Complete = true;
 			ch.Paused = false;
-			if (ch.IsStream)
+			if (ch.IsDynamic)
+				Raylib.StopAudioStream(ch.DynamicStream);
+			else if (ch.IsStream)
 				Raylib.StopMusicStream(ch.MusicStream);
 			else
 				Raylib.StopSound(ch.SoundAlias);
@@ -788,6 +880,9 @@ public unsafe class RaylibAudioSystem : IAudioSystem
 
 			if (dirtyClips != null && ch.Clip != null && dirtyClips.Contains(ch.Clip))
 				ApplySettings(ch);
+
+			if (ch.IsDynamic)
+				continue;
 
 			if (ch.IsStream) {
 				if (!ch.Settings.ManuallyUpdate)

@@ -7,7 +7,7 @@ namespace CloneDash.Game.Input;
 public struct PollParams {
 	public int AmountOfTimesHit;
 	public int HitsRemaining;
-	public PathwaySide Pathway;
+	public PathwayId Pathway;
 }
 
 public struct PollResult

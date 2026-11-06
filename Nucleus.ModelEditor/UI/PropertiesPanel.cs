@@ -27,6 +27,26 @@ namespace Nucleus.ModelEditor
 			ModelEditor.Active.SelectedChanged += ModelEditor_Active_SelectedChanged;
 			ModelEditor.Active.SetupAnimateModeChanged += (_, _) => ModelEditor_Active_SelectedChanged();
 			ModelEditor.Active.File.Cleared += File_Cleared;
+			ModelEditor.Active.Actions.Applied += ModelEditor_Active_SelectedChanged;
+			ModelEditor.Active.File.SlotColorSeparatedOrCombined += (_, _) => ModelEditor_Active_SelectedChanged();
+
+			var file = ModelEditor.Active.File;
+			file.ModelRenamed += (_, _, _, _) => RefreshHeader();
+			file.BoneRenamed += (_, _, _, _) => RefreshHeader();
+			file.SlotRenamed += (_, _, _, _) => RefreshHeader();
+			file.AttachmentRenamed += (_, _, _, _) => RefreshHeader();
+			file.SkinRenamed += (_, _, _, _) => RefreshHeader();
+			file.AnimationRenamed += (_, _, _, _) => RefreshHeader();
+			file.ConstraintRenamed += (_, _, _, _) => RefreshHeader();
+			file.EventRenamed += (_, _, _, _) => RefreshHeader();
+		}
+
+		Label? header;
+		private void RefreshHeader() {
+			if (!IValidatable.IsValid(header)) return;
+			var determinations = ModelEditor.Active.GetDeterminations();
+			if (determinations.Count > 0)
+				header.Text = DetermineHeaderText(determinations);
 		}
 
 		private void File_Cleared(EditorFile file) {
@@ -40,7 +60,8 @@ namespace Nucleus.ModelEditor
 				var count = determinations.Count;
 				var last = determinations.Last;
 				if (last != null) {
-					text = last.DetermineHeaderText(determinations) ?? (count > 1 ? $"{count} models selected" : $"{last.CapitalizedSingleName} '{last.GetName()}'");
+					text = last.DetermineHeaderText(determinations)
+						?? (count > 1 ? $"{count} {last.PluralName} selected" : $"{last.CapitalizedSingleName} '{last.GetName()}'");
 				}
 			}
 			else
@@ -98,9 +119,9 @@ namespace Nucleus.ModelEditor
 			InnerRowLabel test = new(p, tex);
 			test.Dock = Dock.Left;
 			test.Text = label;
-			test.Size = new(110);
+			test.Size = new(124);
 			test.SetTextAlignment(Anchor.CenterLeft);
-			test.SetTextPadding(new(64, 0));
+			test.SetTextPadding(new(32, 0));
 			test.SetPaintBackgroundEnabled(true);
 			test.TextSize = 19;
 			test.SetBgColor(new Color(60, 65, 70));
@@ -133,6 +154,18 @@ namespace Nucleus.ModelEditor
 
 			return panel;
 		}
+		public static KeyframeButton AddKeyButton(Panel row, IEditorType target, KeyframeProperty property) {
+			var key = new KeyframeButton(row.GetParent()!);
+			key.Property = property;
+			key.Target = target;
+			key.Dock = Dock.Right;
+			key.Size = new(30);
+			key.MoveToBack();
+			key.OnButtonClick += (_, _) => ModelEditor.Active.File.InsertKeyframe(target, property);
+			key.Thinking += (s) => s.SetVisible(ModelEditor.Active.AnimationMode);
+			return key;
+		}
+
 		public static Checkbox AddLabeledCheckbox(Panel prop, string text, bool @checked = false) {
 			var panel = AddInternalPropPanel(prop);
 
@@ -219,15 +252,22 @@ namespace Nucleus.ModelEditor
 			keyframe.ArrayIndex = arrayIndex;
 			keyframe.Size = new(24);
 			keyframe.Dock = Dock.Right;
-			keyframe.OnButtonClick += (_, _) => ModelEditor.Active.File.InsertKeyframe(target, property, 0);
+			keyframe.OnButtonClick += (_, _) => ModelEditor.Active.File.InsertKeyframe(target, property, arrayIndex);
 
 			var selector = new ColorSelector(panel);
 			selector.Dock = Dock.Fill;
 			selector.Size = new(64);
 			selector.SelectedColor = (currentColor ?? Color.White);
 			selector.BorderSize = 0;
-			ModelEditor.Active.File.Timeline.FrameElapsed += (_, _) => selector.SelectedColor = (slot.GetColor());
-			ModelEditor.Active.File.Timeline.FrameChanged += (_, _) => selector.SelectedColor = (slot.GetColor());
+			var timeline = ModelEditor.Active.File.Timeline;
+			TimelineManager.FrameChangedD2 elapsed = (_, _) => selector.SetColorNoUpdate(slot.GetColor());
+			TimelineManager.FrameChangedD changed = (_, _) => selector.SetColorNoUpdate(slot.GetColor());
+			timeline.FrameElapsed += elapsed;
+			timeline.FrameChanged += changed;
+			selector.Removed += _ => {
+				timeline.FrameElapsed -= elapsed;
+				timeline.FrameChanged -= changed;
+			};
 
 
 			return selector;
@@ -273,22 +313,7 @@ namespace Nucleus.ModelEditor
 			}
 		}
 		public static Button ButtonIcon(Panel buttons, string text, string? icon = null, Action<Element, ButtonCode>? onClicked = null) {
-			var newBtn = new Button(buttons);
-			newBtn.Text = text;
-			newBtn.SetAutoSize(true);
-			if (icon != null) {
-				var img = new Nucleus.UI.Elements.Image(newBtn);
-				img.SetPassthru(true);
-				img.Size = new(32);
-				img.ImageOrientation = ImageOrientation.Zoom;
-				img.Dock = Dock.Left;
-				img.DockMargin = RectangleF.TLRB(2);
-				img.Texture = textures.LoadTextureFromFile(icon);
-
-				newBtn.SetTextPadding(new(68, 0));
-				newBtn.SetTextAlignment(Anchor.CenterLeft);
-			}
-
+			var newBtn = new IconButton(buttons, text, icon);
 			newBtn.OnButtonClick += (e, mb) => onClicked?.Invoke(e, mb);
 			return newBtn;
 		}
@@ -341,20 +366,28 @@ namespace Nucleus.ModelEditor
 		public static void NewClippingDialog(EditorFile file, EditorSlot slot) {
 			EditorDialogs.TextInput(
 				"New Clipping",
-				"Enter the name for the new slot.",
+				"Enter the name for the new clipping attachment.",
 				"",
 				true,
 				(name) => {
 					var result = file.AddAttachment<EditorClippingAttachment>(slot, new(name));
-					if (result.Failed)
-						EditorDialogs.ConfirmAction("Slot creation error", result.Reason, true, () => NewClippingDialog(file, slot));
+					if (result.Failed) {
+						EditorDialogs.ConfirmAction("Clipping creation error", result.Reason, true,
+							() => NewClippingDialog(file, slot));
+						return;
+					}
+					// Ends at its own slot and opens straight into drawing new vertices
+					var clip = result.ResultOrThrow;
+					clip.EndSlot = slot;
+					ModelEditor.Active.SelectObject(clip);
+					file.InstantiateOperator<EditClippingOperator>().SetMode(EditClipping_Mode.New);
 				}, null
 			);
 		}
 		public static void NewSkinDialog(EditorFile file, EditorModel model) {
 			EditorDialogs.TextInput(
-				"New Slot",
-				"Enter the name for the new slot.",
+				"New Skin",
+				"Enter the name for the new skin.",
 				"",
 				true,
 				(name) => {
@@ -383,8 +416,8 @@ namespace Nucleus.ModelEditor
 		public static Button NewTopOperatorButton(Panel props, string icon) {
 			var btn = new Button(props);
 			btn.Dock = Dock.Right;
-			btn.DockMargin = RectangleF.TLRB(8, 0, 0, 8);
-			btn.Size = new(32);
+			btn.DockMargin = RectangleF.TLRB(8, 4, 0, 8);
+			btn.Size = new(36, 32);
 			btn.Text = "";
 			btn.BorderSize = 0;
 			var btnImg = new Nucleus.UI.Elements.Image(btn);
@@ -397,12 +430,18 @@ namespace Nucleus.ModelEditor
 
 		public static void DeleteOperator(IEditorType obj, Panel props, PreUIDeterminations determinations) {
 			var btn = NewTopOperatorButton(props, "models/delete.png");
+			btn.TooltipText = "Delete";
+			btn.OnButtonClick += (_, _) => ModelEditor.Active.AttemptDelete();
 		}
 		public static void RenameOperator(IEditorType obj, Panel props, PreUIDeterminations determinations) {
 			var rename = NewTopOperatorButton(props, "models/rename.png");
+			rename.TooltipText = "Rename";
+			rename.OnButtonClick += (_, _) => ModelEditor.Active.AttemptRename(obj);
 		}
 		public static void DuplicateOperator(IEditorType obj, Panel props, PreUIDeterminations determinations) {
 			var duplicate = NewTopOperatorButton(props, "models/duplicate.png");
+			duplicate.TooltipText = "Duplicate";
+			duplicate.OnButtonClick += (_, _) => ModelEditor.Active.File.Duplicate(obj);
 		}
 
 		private void DetermineTopOperators(Panel props, PreUIDeterminations determinations) {
@@ -440,17 +479,17 @@ namespace Nucleus.ModelEditor
 			top.Dock = Dock.Top;
 			top.DockMargin = RectangleF.TLRB(4);
 
+			// operators have to dock before the title
+			DetermineTopOperators(top, determinations);
+
 			var label = new Label(top);
+			header = label;
 			label.Text = DetermineHeaderText(determinations);
-			label.Dock = Dock.Left;
-			label.Size = new(38);
-			label.SetTextPadding(new(22));
+			label.Dock = Dock.Fill;
+			label.SetTextPadding(new(11));
 			label.SetTextAlignment(Types.Anchor.TopLeft);
 			label.TextSize = 22;
-			label.SetAutoSize(true);
 			this.DockPadding = RectangleF.Zero;
-
-			DetermineTopOperators(top, determinations);
 
 			if (determinations.AllShareAType) {
 				DetermineProperties(this, determinations);
@@ -459,7 +498,9 @@ namespace Nucleus.ModelEditor
 				buttons.Dock = Dock.Top;
 				buttons.Size = new(50);
 				buttons.DockMargin = RectangleF.TLRB(8, 0, 0, 0);
-				buttons.XSeparation = 8;
+				buttons.Wrap = true;
+				buttons.RowHeight = 32;
+				buttons.XSeparation = 4;
 				buttons.YSeparation = 16;
 				DetermineOperators(buttons, determinations);
 				// If no operators for this type, avoid wasting the space for them
@@ -468,8 +509,18 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		protected override void PerformLayout(float width, float height) {
-			base.PerformLayout(width, height);
+		protected override void OnThink() {
+			base.OnThink();
+
+			// Size to the content, up to most of the column
+			var parent = GetParent();
+			float content = HasChildren() ? GetSizeOfAllChildren().Y + 8 : 0;
+			float limit = parent == null ? content : parent.GetRenderBounds().H * 0.6f;
+			float desired = MathF.Round(MathF.Min(content, limit));
+			// Shrinking grows the tree, which can scroll its rows out from under a double-click.
+			if (desired < Size.Y && ModelEditor.Active.Outliner?.AwaitingDoubleClick == true) return;
+			if (MathF.Abs(desired - Size.Y) > 0.5f)
+				Size = new(Size.X, desired);
 		}
 	}
 }

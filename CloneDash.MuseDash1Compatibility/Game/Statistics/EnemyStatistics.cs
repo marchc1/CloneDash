@@ -4,18 +4,27 @@ namespace CloneDash.Game.Statistics;
 
 public class EnemyStatistics
 {
+	const double EARLY_LATE_THRESHOLD = 0.025;
+
 	public DashEnemy Enemy;
 	public EnemyStatisticsState State;
 	public EnemyStatisticsAccuracy Accuracy;
+	public EnemyStatistics? End;
 
 	public void Reset() {
 		State = EnemyStatisticsState.InPlay;
 		Accuracy = EnemyStatisticsAccuracy.NotApplicable;
+		End?.Reset();
 	}
 
 	public EnemyStatistics(DashEnemy enemy) {
 		Enemy = enemy;
 		Reset();
+	}
+
+	public void Great() {
+		Accuracy = EnemyStatisticsAccuracy.NotApplicable;
+		State = EnemyStatisticsState.Great;
 	}
 
 	public void Miss() {
@@ -29,12 +38,9 @@ public class EnemyStatistics
 	}
 
 	public EnemyStatisticsAccuracy Hit(double hitTime) {
-		var prePerfectRange = Enemy.PrePerfectRange;
-		var postPerfectRange = Enemy.PostPerfectRange;
-
-		Accuracy = hitTime > postPerfectRange / 2d
+		Accuracy = hitTime < -EARLY_LATE_THRESHOLD
 					? EnemyStatisticsAccuracy.Late
-					: hitTime < -prePerfectRange / 2d
+					: hitTime > EARLY_LATE_THRESHOLD
 						? EnemyStatisticsAccuracy.Early
 						: EnemyStatisticsAccuracy.Precise;
 

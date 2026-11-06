@@ -1,4 +1,5 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using Nucleus;
 using Nucleus.Engine;
@@ -9,56 +10,111 @@ namespace CloneDash.Game.Entities
 {
 	public class Masher : DashEnemy
 	{
-		public const int MASHER_HITS_PER_SECOND_OF_LENGTH = 25;
-		public const int MASHER_PLAYER_MAX_HITS_PER_SECOND = 26;
-		public const int MASHER_AUTOPLAYER_MAX_HITS_PER_SECOND = 10;
+		public const double MASH_IDLE_TIME = 0.5;
+		public const double MUL_HIT_AUTO_THRESHOLD = 25;
+		public const double MUL_HIT_HIGH_THRESHOLD = 25;
+		public const double MUL_HIT_LOW_THRESHOLD = 5;
+		public const double MUL_HIT_MID_THRESHOLD = 7.5;
 
 		public bool StartedHitting { get; private set; } = false;
-		public int MaxHits => Math.Clamp((int)Math.Floor(this.Length * MASHER_HITS_PER_SECOND_OF_LENGTH), 1, int.MaxValue);
+		public int LowHits => (int)Math.Floor(Length * MUL_HIT_LOW_THRESHOLD);
+		public int MaxHits => Math.Clamp((int)Math.Floor(Length * MUL_HIT_HIGH_THRESHOLD), 1, int.MaxValue);
+		public int MidHits => (int)Math.Floor(Length * MUL_HIT_MID_THRESHOLD);
 		private double lastHitTime = 0;
+		private bool perfect = true;
 
-		public Masher() : base(MuseDash1EntityType.Masher) {
+		readonly FeverComponent fever;
+		readonly HitsoundComponent hitsounds;
+
+		public Masher(DashEnemyComponents components, FeverComponent fever, HitsoundComponent hitsounds) : base(MuseDash1EntityType.Masher, components) {
+			this.fever = fever;
+			this.hitsounds = hitsounds;
 			Warns = true;
 			Interactivity = EntityInteractivity.Hit;
 			DoesDamagePlayer = true;
 		}
 
 		private void CheckIfComplete() {
-			var level = Level.As<MuseDash1Game>();
+			if (Dead)
+				return;
 
-			if ((Hits >= MaxHits || level.Conductor.Time > (GetJudgementHitTime() + Length)) && !Dead) {
-				Complete();
+			double time = GetConductor().Time;
+			bool ended = time > GetJudgementHitTime() + Math.Max(Length, PreGreatRange);
+			if (!StartedHitting) {
+				if (ended)
+					End();
+				return;
 			}
+
+			if (Hits >= MaxHits) {
+				Complete(true);
+				return;
+			}
+
+			bool mashing = time - lastHitTime <= MASH_IDLE_TIME;
+			if (Hits < LowHits) {
+				if (ended && Hits == LowHits - 1) {
+					Hits++;
+					Complete(false);
+				}
+				else if (ended || !mashing)
+					Fail();
+			}
+			else if (ended) {
+				bool total = Hits >= MidHits - 1;
+				Hits++;
+				Complete(total);
+			}
+			else if (!mashing)
+				Complete(false);
 		}
 
 		protected override void OnReward() {
 			base.OnReward();
-			GetStats().Hit(this, 0);
+			if (perfect)
+				GetStats().Hit(this, 0);
+			else
+				GetStats().Great(this);
 		}
 
-		private void Complete() {
-			var level = Level.As<MuseDash1Game>();
-			level.GetSceneUI()?.CreatePerfectHitText(0, PathwaySide.Both, level.InFever, 0);
+		private void Complete(bool perfect) {
+			this.perfect = perfect;
+			WasHitPerfect = perfect;
+			if (perfect)
+				Components.Hud.UI?.CreatePerfectHitText(0, PathwaySet.Any, fever.InFever, 0);
+			else
+				Components.Hud.UI?.CreateGreatHitText(0, PathwaySet.Any, fever.InFever, 0);
 			Kill();
+			End();
+		}
+
+		private void End() {
 			ForceDraw = false;
-			level.ExitMashState();
+			if (Components.Mash.MashingEntity == this)
+				Components.Mash.ExitMashState();
 			if (Variant.IsBoss())
-				SendSignal(GetGameLevel().Boss, EntitySignalType.MashOver);
+				SendSignal(Components.Chart.Boss, EntitySignalType.MashOver);
+			SoftKill();
+		}
+
+		private void Fail() {
+			End();
+			DamagePlayer();
+			GetStats().Miss(this);
 		}
 
 		public override void Think(FrameState frameState) {
 			CheckIfComplete();
 		}
-		protected override void OnHit(PathwaySide side, double distanceToHit) {
-			base.OnHit(side, distanceToHit);
-			var level = Level.As<MuseDash1Game>();
+		protected override void OnHit(PathwayId pathway, double distanceToHit) {
+			base.OnHit(pathway, distanceToHit);
 
-			if (!level.IsSeeking)
-				level.PlaySceneSound(SceneSound.HitMasher, Hits);
+			if (!Level.As<RhythmGameLevel>().IsSeeking)
+				hitsounds.Play(SceneSound.HitMasher, Hits);
 
 			if (MaxHits == 1) {
 				Hits = 1;
-				Complete();
+				Complete(true);
 				return;
 			}
 
@@ -66,13 +122,13 @@ namespace CloneDash.Game.Entities
 				return;
 
 			if (StartedHitting == false) {
-				level.EnterMashState(this);
+				Components.Mash.EnterMashState(this);
 				StartedHitting = true;
 
 				ForceDraw = true;
 			}
 
-			lastHitTime = level.Conductor.Time;
+			lastHitTime = GetConductor().Time;
 			var currentVisuals = GetActiveVisuals();
 			if (currentVisuals.Model != null) 
 				currentAnim = currentVisuals.Model.Data.FindAnimation(currentVisuals.Scene.GetMasherHitAnimation(Speed, EnterDirection));
@@ -97,6 +153,7 @@ namespace CloneDash.Game.Entities
 			base.OnReset();
 			StartedHitting = false;
 			lastHitTime = 0;
+			perfect = true;
 			currentAnim = null;
 		}
 
@@ -104,7 +161,7 @@ namespace CloneDash.Game.Entities
 		public override void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
 			if (visuals.Model == null) return;
 
-			GetGameLevel().SetEnemyKilledPosition(this);
+			Components.Scenes.SetEnemyKilledPosition(this);
 
 			if (Dead) {
 				var anim = WasHitPerfect ? visuals.PerfectHitAnimation : visuals.GreatHitAnimation;
@@ -113,18 +170,17 @@ namespace CloneDash.Game.Entities
 			}
 
 			if (StartedHitting) {
-				Position = GetGameLevel().GetPathwayPosition(PathwaySide.Both);
+				Position = Components.Scenes.GetCenterPosition();
 				currentAnim?.Apply(visuals.Model, (GetConductor().Time - lastHitTime));
 				return;
 			}
-			GetGameLevel().SetEnemyPosition(this);
+			Components.Scenes.SetEnemyPosition(this);
 
 
 			base.DetermineAnimationPlayback(visuals);
 		}
 		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
 			base.OnBuildVisuals(visuals);
-			var level = Level.As<MuseDash1Game>();
 			var scene = visuals.Scene;
 
 			if (!Variant.IsBoss()) {

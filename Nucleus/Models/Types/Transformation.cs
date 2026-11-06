@@ -42,6 +42,8 @@ namespace Nucleus.Models
 			WTL_Inverse = 1f / (A * D - B * C);
 		}
 
+		public Transformation WithMatrix(float a, float b, float c, float d, float x, float y) => new(a, b, c, d, x, y, Rotation, ShearX);
+
 		public static Transformation CalculateWorldTransformation(in Vector2F pos, float rot, in Vector2F scale, in Vector2F shear, TransformMode transformType = TransformMode.Normal, in Transformation? parent = null, bool triggerDebugger = false) {
 			if (triggerDebugger) Debug.Assert(false, "Debugger triggered!");
 
@@ -139,18 +141,25 @@ namespace Nucleus.Models
 
 					case TransformMode.NoScale:
 					case TransformMode.NoScaleOrReflection:
-						var rr = rot.ToRadians();
-						(float cs, float ss) = MathF.SinCos(rr);
+						(float ss, float cs) = MathF.SinCos(rot.ToRadians());
 
-						float zA = pA * cs + pB * ss, zC = pC * cs + pD * ss, acsqr = MathF.Sqrt((zA * zA) + (zC * zC)), iacsqr = 1f / acsqr;
-						zA *= acsqr > 0.00001 ? iacsqr : acsqr; zC *= acsqr > 0.00001 ? iacsqr : acsqr;
-						float ca2 = MathF.PI / 2f + MathF.Atan2(zC, zA);
-						(float zD, float zB) = MathF.SinCos(ca2);
-						zB *= acsqr;
-						zD *= acsqr;
+						float zA = pA * cs + pB * ss, zC = pC * cs + pD * ss;
+						float zs = MathF.Sqrt(zA * zA + zC * zC);
+						if (zs > 0.00001f)
+							zs = 1 / zs;
+						zA *= zs; zC *= zs;
+						zs = MathF.Sqrt(zA * zA + zC * zC);
+						if (transformType == TransformMode.NoScale && pA * pD - pB * pC < 0)
+							zs = -zs;
+
+						(float zD, float zB) = MathF.SinCos(MathF.PI / 2f + MathF.Atan2(zC, zA));
+						zB *= zs;
+						zD *= zs;
 
 						(float ns_lC, float ns_lA) = MathF.SinCos(shearX.ToRadians());
 						(float ns_lD, float ns_lB) = MathF.SinCos((90 + shearY).ToRadians());
+						ns_lA *= scaleX; ns_lC *= scaleX;
+						ns_lB *= scaleY; ns_lD *= scaleY;
 
 						a = zA * ns_lA + zB * ns_lC;
 						b = zA * ns_lB + zB * ns_lD;

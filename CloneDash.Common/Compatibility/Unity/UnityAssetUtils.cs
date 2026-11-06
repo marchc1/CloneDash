@@ -10,12 +10,15 @@ using Newtonsoft.Json;
 
 using Nucleus;
 using Nucleus.Audio;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Images;
+using Nucleus.Engine;
 using Nucleus.Extensions;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Text;
+using Texture2DDecoder;
 using System.Text.RegularExpressions;
 using ImageFormat = Nucleus.Common.Graphics.ImageFormat;
 
@@ -183,6 +186,11 @@ public static class UnityAssetUtils
 			case TextureFormat.DXT1: pixelFormat = ImageFormat.DXT1_RGBA; break;
 			case TextureFormat.DXT3: pixelFormat = ImageFormat.DXT3_RGBA; break;
 			case TextureFormat.DXT5: pixelFormat = ImageFormat.DXT5_RGBA; break;
+			case TextureFormat.DXT1Crunched:
+			case TextureFormat.DXT5Crunched:
+				var unpacked = (tex2D.version >= (2017, 3) ? TextureDecoder.UnpackUnityCrunch(imgData) : TextureDecoder.UnpackCrunch(imgData))
+					?? throw new InvalidOperationException($"Couldn't unpack the crunched texture '{tex2D.m_Name}'.");
+				return unpacked.ToImage(width, height, tex2D.m_TextureFormat == TextureFormat.DXT1Crunched ? ImageFormat.DXT1_RGBA : ImageFormat.DXT5_RGBA, 1);
 			case TextureFormat.BC4:
 			case TextureFormat.BC5:
 			case TextureFormat.BC6H:
@@ -208,6 +216,15 @@ public static class UnityAssetUtils
 		}
 		img = imgData.ToImage(width, height, pixelFormat, tex2D.m_MipCount);
 		return img;
+	}
+
+	public static ITexture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
+		using Raylib_cs.Raylib.ImageRef img = new Raylib_cs.Raylib.ImageRef(tex.ToRaylib());
+		ITexture ntex = textures.CreateTexture((Image)img);
+		ntex.SetFilter(TextureFilter.Bilinear);
+		ntex.SetWrap(TextureWrap.Clamp);
+		ntex.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
+		return ntex;
 	}
 	private static ClassIDType GetClassIDFromType(Type t) {
 		switch (t.Name) {

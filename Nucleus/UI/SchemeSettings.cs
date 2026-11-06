@@ -22,12 +22,12 @@ public class SchemeSettings : IScheme
 			? value.Color
 			: Colors.TryGetValue(new UtlSymbol(key), out var value2)
 				? value2
-				: new(0, 0, 0, 255);
+				: (defaultValue.R | defaultValue.G | defaultValue.B | defaultValue.A) != 0 ? defaultValue : new(0, 0, 0, 255);
 
 	public float GetFloat(ReadOnlySpan<char> key, float defaultValue = default)
 		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
 			? value.Float
-			: 0;
+			: defaultValue;
 
 	public SchemeSettingFontStyle GetFontStyle(ReadOnlySpan<char> key)
 		=> FontStyles.TryGetValue(new UtlSymbol(key), out var value)
@@ -39,12 +39,12 @@ public class SchemeSettings : IScheme
 	public int GetInt(ReadOnlySpan<char> key, int defaultValue = default)
 		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
 			? value.Integer
-			: 0;
+			: defaultValue;
 
 	public ReadOnlySpan<char> GetString(ReadOnlySpan<char> key, ReadOnlySpan<char> defaultValue = default)
 		=> BaseSettings.TryGetValue(new UtlSymbol(key), out var value)
 			? value.String
-			: null;
+			: defaultValue;
 
 	static Color ApplyWithModifier(Color color, ReadOnlySpan<char> modifier) {
 		var braceStart = modifier.IndexOf('{');

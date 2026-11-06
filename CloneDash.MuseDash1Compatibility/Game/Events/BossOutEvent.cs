@@ -1,8 +1,8 @@
 ﻿namespace CloneDash.Game.Events;
 
-public class BossOutEvent(MuseDash1Game game) : DashEvent(game)
+public class BossOutEvent(DashEventComponents components) : DashEvent(components)
 {
 	public override void Activate() {
-		Game.Boss.Out();
+		Components.Boss.Out();
 	}
 }

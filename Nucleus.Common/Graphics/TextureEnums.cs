@@ -38,6 +38,42 @@ public enum TextureFilter
 	Anisotropic16x,
 }
 
+public enum TextureFilterFunc
+{
+	/// <summary>
+	///  Returns the value of the texture element that is nearest (in Manhattan distance) to the specified texture coordinates. 
+	/// </summary>
+	Nearest,
+	/// <summary>
+	///  Returns the weighted average of the four texture elements that are closest to the specified texture coordinates. 
+	///  These can include items wrapped or repeated from other parts of a texture, depending on the values of <see cref="TextureWrap"/> S
+	///  and T, and on the exact mapping. 
+	/// </summary>
+	Linear,
+	/// <summary>
+	///  Chooses the mipmap that most closely matches the size of the pixel being textured and uses the <see cref="Nearest"/> criterion 
+	///  (the texture element closest to the specified texture coordinates) to produce a texture value. 
+	/// </summary>
+	NearestMipmapNearest,
+	/// <summary>
+	///  Chooses the mipmap that most closely matches the size of the pixel being textured and uses the <see cref="Linear"/> criterion 
+	///  (a weighted average of the four texture elements that are closest to the specified texture coordinates) to produce a texture value. 
+	/// </summary>
+	LinearMipmapNearest,
+	/// <summary>
+	///  Chooses the two mipmaps that most closely match the size of the pixel being textured and uses the <see cref="Nearest"/> criterion 
+	///  (the texture element closest to the specified texture coordinates ) to produce a texture value from each mipmap. 
+	///  The final texture value is a weighted average of those two values. 
+	/// </summary>
+	NearestMipmapLinear,
+	/// <summary>
+	///  Chooses the two mipmaps that most closely match the size of the pixel being textured and uses the <see cref="Linear"/> criterion 
+	///  (a weighted average of the texture elements that are closest to the specified texture coordinates) to produce a texture 
+	///  value from each mipmap. The final texture value is a weighted average of those two values. 
+	/// </summary>
+	LinearMipmapLinear,
+}
+
 /// <summary>
 /// Texture parameters: wrap mode
 /// </summary>

@@ -1,4 +1,5 @@
-﻿using Nucleus.Common.Audio;
+using CloneDash.Common.Compatibility;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
 
 namespace CloneDash.Common.Songs;
@@ -31,7 +32,7 @@ public interface IHasLowToHighDifficulties
 /// <summary>
 /// A song.
 /// </summary>
-public interface ISong : IUniquelyIdentifiableObject
+public interface ISong : ICloneDashModDescriptor
 {
 	SongMetadata FetchMetadata();
 

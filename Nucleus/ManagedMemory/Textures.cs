@@ -1,8 +1,13 @@
-﻿using Nucleus.Common.Graphics;
+﻿using Newtonsoft.Json.Linq;
+using Nucleus.Common.Graphics;
 using Nucleus.Common.Images;
+using Nucleus.Core;
 using Nucleus.Files;
+using Nucleus.Rendering;
 using Nucleus.Types;
+using Nucleus.UI;
 using Raylib_cs;
+using System.Text.RegularExpressions;
 
 namespace Nucleus.ManagedMemory
 {
@@ -87,6 +92,22 @@ namespace Nucleus.ManagedMemory
 		public void SetFilter(TextureFilter filter) {
 			this.filter = filter;
 			Raylib.SetTextureFilter(underlying, filter);
+		}
+
+		static int glFilter(TextureFilterFunc fn) => fn switch {
+			TextureFilterFunc.Nearest => GLEnum.NEAREST,
+			TextureFilterFunc.Linear => GLEnum.LINEAR,
+			TextureFilterFunc.NearestMipmapNearest => GLEnum.NEAREST_MIPMAP_NEAREST,
+			TextureFilterFunc.LinearMipmapNearest => GLEnum.LINEAR_MIPMAP_NEAREST,
+			TextureFilterFunc.NearestMipmapLinear => GLEnum.NEAREST_MIPMAP_LINEAR,
+			TextureFilterFunc.LinearMipmapLinear => GLEnum.LINEAR_MIPMAP_LINEAR,
+			_ => 0
+		};
+
+		public void SetFilter(TextureFilterFunc min, TextureFilterFunc max) {
+			OpenGL.BindTexture(GLEnum.TEXTURE_2D, underlying.Id);
+			OpenGL.TexParameteri(GLEnum.TEXTURE_2D, GLEnum.TEXTURE_MIN_FILTER, glFilter(min));
+			OpenGL.TexParameteri(GLEnum.TEXTURE_2D, GLEnum.TEXTURE_MAG_FILTER, glFilter(max));
 		}
 
 		public void SetWrap(TextureWrap wrap) {

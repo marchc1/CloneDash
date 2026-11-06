@@ -65,6 +65,22 @@ namespace Nucleus.ModelEditor
 
 		public bool CanHide() => false;
 	}
+	public class ModelImageFolder : IEditorType
+	{
+		public EditorModel Model { get; set; }
+		public EditorModel GetModel() => Model;
+		public string SingleName => "folder";
+		public string PluralName => "folders";
+		public bool Hovered { get; set; }
+		public bool Selected { get; set; }
+		public bool Hidden { get; set; }
+
+		public string Path { get; set; } = "";
+		public string GetName() => Path;
+		public bool CanRename() => false;
+		public bool CanHide() => false;
+	}
+
 	public class ModelImages : IEditorType
 	{
 		public EditorModel GetModel() => Model;
@@ -83,28 +99,73 @@ namespace Nucleus.ModelEditor
 		[JsonIgnore] public ModelImage[] Images { get; private set; } = [];
 		[JsonIgnore] public string[] ImageNames { get; private set; } = [];
 		[JsonIgnore] public Dictionary<string, ModelImage> ImageLookup { get; private set; } = [];
+		/// <summary>
+		/// Keeps subfolders alive for the tree, its nodes only hold weak references
+		/// </summary>
+		[JsonIgnore] public List<ModelImageFolder> Folders { get; } = [];
 
 		[JsonIgnore] public EditorTextureAtlas TextureAtlas { get; } = new();
 
-		public EditorResult Scan() {
+		FileSystemWatcher? watcher;
+		volatile bool changedOnDisk;
+		double lastChange;
+
+		/// <summary>
+		/// True once, a moment after the images folder stops changing on disk
+		/// </summary>
+		public bool TakeDiskChange(double now) {
+			if (changedOnDisk) {
+				changedOnDisk = false;
+				lastChange = now;
+			}
+			if (lastChange <= 0 || now - lastChange < 0.5) return false;
+			lastChange = 0;
+			return true;
+		}
+
+		public string? FullPath(string? projectFolder) => Filepath == null || projectFolder == null || Path.IsPathRooted(Filepath) ? Filepath
+				: Path.GetFullPath(Path.Combine(projectFolder, Filepath));
+
+		private void Watch(string? root) {
+			watcher?.Dispose();
+			watcher = null;
+			if (root == null || !Directory.Exists(root)) return;
+
+			watcher = new FileSystemWatcher(root) {
+				IncludeSubdirectories = true,
+				NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName
+					| NotifyFilters.LastWrite | NotifyFilters.Size
+			};
+			FileSystemEventHandler changed = (_, _) => changedOnDisk = true;
+			watcher.Created += changed;
+			watcher.Changed += changed;
+			watcher.Deleted += changed;
+			watcher.Renamed += (_, _) => changedOnDisk = true;
+			watcher.EnableRaisingEvents = true;
+		}
+
+		public EditorResult Scan(string? projectFolder = null) {
+			var root = FullPath(projectFolder);
+			if (watcher?.Path != root)
+				Watch(root);
 			Images = [];
 			ImageNames = [];
 			ImageLookup = [];
 
 			TextureAtlas.ClearTextures();
 
-			if (Filepath == null)
+			if (root == null)
 				return new("Filepath was null.");
 
-			if (!Directory.Exists(Filepath))
+			if (!Directory.Exists(root))
 				return new("Directory does not exist.");
 
 			List<ModelImage> images = [];
 			List<string> imageNames = [];
 			Dictionary<string, ModelImage> imageLookup = [];
-			var files = Directory.GetFiles(Filepath, "*", SearchOption.AllDirectories);
+			var files = Directory.GetFiles(root, "*", SearchOption.AllDirectories);
 			foreach (var file in files) {
-				var nameExt = file.Replace(Filepath, "").TrimStart('\\').Replace("\\", "/");
+				var nameExt = file.Replace(root, "").TrimStart('\\').Replace("\\", "/");
 				var name = Path.ChangeExtension(nameExt, null);
 				var ext = Path.GetExtension(file);
 				if (ext != null && nameExt != null && name != null) {

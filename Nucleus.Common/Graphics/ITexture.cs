@@ -104,6 +104,7 @@ public interface ITexture : IManagedMemoryUnit
 	TextureWrap GetWrap();
 
 	void SetFilter(TextureFilter filter);
+	void SetFilter(TextureFilterFunc min, TextureFilterFunc max);
 
 	void SetWrap(TextureWrap wrap);
 

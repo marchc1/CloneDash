@@ -14,7 +14,7 @@ public class MD1_SongChartEntity
 	/// <summary>
 	/// Entity pathway
 	/// </summary>
-	public PathwaySide Pathway;
+	public PathwaySet Pathway;
 	/// <summary>
 	/// Vertical direction (or right-side) for this entity.
 	/// </summary>
@@ -24,10 +24,18 @@ public class MD1_SongChartEntity
 	/// </summary>
 	public EntityVariant Variant;
 
+	public int Layer;
+	public MD1_CurvePath? Curve;
+
 	public double HitTime;
 	public double ShowTime;
 	public double Length;
 	public double Dt;
+
+	public double LeftGreatRange = 0.08;
+	public double LeftPerfectRange = 0.05;
+	public double RightGreatRange = 0.08;
+	public double RightPerfectRange = 0.05;
 
 	/// <summary>
 	/// How much fever this entity can give to the palyer.

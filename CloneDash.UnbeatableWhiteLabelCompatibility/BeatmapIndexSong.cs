@@ -1,11 +1,13 @@
-﻿using CloneDash.Common;
+using CloneDash.Common;
+using CloneDash.Charts;
+using CloneDash.Common.Compatibility;
 using CloneDash.Common.Songs;
 using Nucleus.Common.Audio;
 using System.Text.Json.Serialization;
 
 namespace CloneDash.Compatibility.UnbeatableWhiteLabel;
 
-public class BeatmapIndexSong : ISong
+public class BeatmapIndexSong : ModDescriptor, ISong
 {
 	[JsonPropertyName("name")] public string Name { get; set; } = null!;
 	[JsonPropertyName("stageScene")] public string StageScene { get; set; } = null!;
@@ -34,9 +36,9 @@ public class BeatmapIndexSong : ISong
 		return PreviewClip;
 	}
 
-	public ReadOnlySpan<char> GetUUID() {
-		return $"song/unbeatable_whitelabel/{Name.ToLower()}";
-	}
+	public override string GetName() => Name;
+	public override string GetID() => Name.ToLower();
+	public override ICloneDashModProvider GetProvider() => ChartMod.Instance.GetProviderByID("unbeatable_whitelabel")!;
 
 	public bool IsAsynchronouslyLoading() {
 		return false;

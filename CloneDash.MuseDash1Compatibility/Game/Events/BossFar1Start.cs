@@ -1,8 +1,8 @@
 ﻿namespace CloneDash.Game.Events;
 
-public class BossFar1Start(MuseDash1Game game) : DashEvent(game)
+public class BossFar1Start(DashEventComponents components) : DashEvent(components)
 {
 	public override void Activate() {
-		Game.Boss.Far1Start();
+		Components.Boss.Far1Start();
 	}
 }

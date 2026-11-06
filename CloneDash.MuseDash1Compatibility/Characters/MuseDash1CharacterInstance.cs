@@ -1,4 +1,5 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
@@ -10,10 +11,10 @@ using System.Numerics;
 
 namespace CloneDash.Characters;
 
-public class MuseDash1CharacterIndividual(MuseDash1CharacterInstance instance, MuseDash1Game game, bool isSecondary) : IMuseDash1CharacterIndividual
+public class MuseDash1CharacterIndividual(MuseDash1CharacterInstance instance, RhythmGameLevel game, bool isSecondary) : IMuseDash1CharacterIndividual
 {
 	public readonly MuseDash1CharacterInstance instance = instance;
-	public readonly MuseDash1Game game = game;
+	public readonly RhythmGameLevel game = game;
 	public readonly bool isSecondary = isSecondary;
 	public ModelEntity Player = null!;
 	public MD1_SpineActionController PlayerController = null!;
@@ -85,14 +86,16 @@ public class MuseDash1CharacterIndividual(MuseDash1CharacterInstance instance, M
 public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 {
 	internal MuseDash1CharacterDescriptor descriptor;
-	private MuseDash1Game game;
+	private RhythmGameLevel game;
+	private readonly Conductor conductor;
 
 	private readonly MuseDash1CharacterIndividual Player;
 	private readonly MuseDash1CharacterIndividual HologramPlayer;
 
-	public MuseDash1CharacterInstance(MuseDash1CharacterDescriptor descriptor, MuseDash1Game game) {
+	public MuseDash1CharacterInstance(MuseDash1CharacterDescriptor descriptor, RhythmGameLevel game, Conductor conductor) {
 		this.descriptor = descriptor;
 		this.game = game;
+		this.conductor = conductor;
 
 		Player = new(this, game, false);
 		HologramPlayer = new(this, game, true);
@@ -125,7 +128,7 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 	public void Think() {
 		if (HologramPlayer.Player.PlayingAnimation || HologramPlayer.Player.AnimationQueued) {
 			HologramPlayer.Player.Visible = true;
-			HologramPlayer.Player.SetShaderUniform("time", NMath.Ease.InQuint((float)(game.Conductor.Time - lastHologramAnimationTime) * 3));
+			HologramPlayer.Player.SetShaderUniform("time", NMath.Ease.InQuint((float)(conductor.Time - lastHologramAnimationTime) * 3));
 		}
 		else {
 			HologramPlayer.Player.Visible = false;
@@ -140,7 +143,7 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 
 	internal void NotifyAnimation(MuseDash1CharacterIndividual museDash1CharacterIndividual, bool isSecondary, CharacterAnimationType type) {
 		if (isSecondary)
-			lastHologramAnimationTime = game.Conductor.Time;
+			lastHologramAnimationTime = conductor.Time;
 	}
 
 	public void Reset(){

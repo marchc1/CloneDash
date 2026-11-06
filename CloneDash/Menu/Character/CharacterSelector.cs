@@ -1,5 +1,7 @@
-﻿using CloneDash.Characters;
+using CloneDash.Characters;
 using CloneDash.Common;
+using CloneDash.Common.Systems;
+using CloneDash.Common.Systems.Discord;
 using CloneDash.Common.UI;
 using CloneDash.Common.UI.Binding;
 using CloneDash.Game;
@@ -99,7 +101,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		_scroller.BorderSize = 0;
 		_scroller.CharacterSelected += BackPanel_CharacterSelected;
 
-		ICharacterDescriptor? currentCharacter = CharacterMod.GetCharacterData();
+		ICharacterDescriptor? currentCharacter = CharacterMod.Instance.GetActive();
 		BackPanel_CharacterSelected(currentCharacter);
 		_scroller.SetCharacter(currentCharacter);
 	}
@@ -120,8 +122,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 	private void SelectCharacter() {
 		if (_lastCharacterSelected == null) return;
-		ConVar cv = cvar.FindVar("character")!;
-		cv.SetValue(_lastCharacterSelected.GetUUID());
+		CharacterMod.character.SetValue(_lastCharacterSelected.GetUniqueID());
 		Character.PlayApplyExpression();
 	}
 
@@ -172,7 +173,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 	}
 
 	public bool OnTryClose() {
-		Character.SetCharacter(CharacterMod.GetCharacterData());
+		Character.SetCharacter(CharacterMod.Instance.GetActive());
 		return true;
 	}
 

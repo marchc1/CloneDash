@@ -1,5 +1,7 @@
-﻿using AssetStudio;
+using AssetStudio;
+using CloneDash.Common.Compatibility;
 using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
@@ -12,16 +14,9 @@ using Raylib_cs;
 
 namespace CloneDash.MD1_Compat.Compatibility;
 
-public interface IMuseDash1FeverProvider
-{
-	IMuseDash1FeverDescriptor? FindByName(ReadOnlySpan<char> name);
-	IEnumerable<string> GetAvailable();
-}
+public interface IMuseDash1FeverProvider : ICloneDashModProvider<IMuseDash1FeverDescriptor>;
 
-public interface IMuseDash1FeverDescriptor
-{
-	IMuseDash1FeverRuntime? Instantiate(IGame game);
-}
+public interface IMuseDash1FeverDescriptor : IContentSource;
 
 public interface IMuseDash1FeverRuntime
 {
@@ -34,94 +29,57 @@ public interface IMuseDash1FeverRuntime
 }
 
 [MarkForStaticConstruction]
-public static class FeverMod
+public sealed class FeverMod : ActiveModStore<IMuseDash1FeverProvider, IMuseDash1FeverDescriptor>
 {
-	static IMuseDash1FeverDescriptor? activeDescriptor;
-	static IMuseDash1FeverProvider[]? providers;
+	public static FeverMod Instance => ModStores.Get<FeverMod>();
 
-	public static ConVar fever = new(nameof(fever), "fever/musedash1/battle_fever", FCvar.Saved | FCvar.NotInGame, "Your fever.", null, null, (cv, o, n) => {
-		var lastDescriptor = activeDescriptor;
-		activeDescriptor = GetFeverData();
-	}, autocomplete: clonedash_fever_autocomplete);
+	public static ConVar fever = new(nameof(fever), "fever/musedash1/battle_fever", FCvar.Saved | FCvar.NotInGame, "Your fever.");
+	public static ConCommand fevers = new(nameof(fevers), (_, in _) => Instance.PrintAll(), "Prints all available fevers");
 
-	private static IMuseDash1FeverDescriptor? GetFeverData(string? name = null) {
-		providers ??= ReflectionTools.InstantiateAllInheritorsOfInterface<IMuseDash1FeverProvider>();
-		name ??= fever == null ? default : new(fever.GetString());
-
-		if (string.IsNullOrWhiteSpace(name))
-			return null;
-
-		foreach (var retriever in providers) {
-			IMuseDash1FeverDescriptor? descriptor = retriever.FindByName(name);
-			if (descriptor == null) continue;
-
-			return descriptor;
-		}
-
-		Logs.Warn($"WARNING: The fever '{name}' could not be found!");
-		return null;
+	static FeverMod() {
+		_ = Instance;
 	}
 
-	private static void clonedash_fever_autocomplete(ConCommandBase cmd, string argsStr, TokenizedCommand args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
-		var availableFevers = GetAvailableFevers().Where(x => x.StartsWith(args.ArgS(curArgPos))).ToArray();
-		returns = availableFevers;
-	}
-
-	public static IEnumerable<string> GetAvailableFevers() {
-		providers ??= ReflectionTools.InstantiateAllInheritorsOfInterface<IMuseDash1FeverProvider>();
-		foreach (var retriever in providers)
-			foreach (var feverName in retriever.GetAvailable())
-				yield return feverName;
-	}
-
-	internal static IMuseDash1FeverRuntime? InstantiateCurrentFever(IGame game) {
-		var descriptor = GetFeverData();
-		if (descriptor == null) return null;
-		return descriptor.Instantiate(game);
+	public FeverMod() : base("Fevers", "fever") {
+		BindConVar(fever);
 	}
 }
 
-public class MuseDash1FeverProvider : IMuseDash1FeverProvider
+public class MuseDash1FeverProvider : ModProvider<IMuseDash1FeverDescriptor>, IMuseDash1FeverProvider
 {
-	public const string UUID_PREFIX = "fever/musedash1";
-	readonly MuseDash1FeverDescriptor[] descriptors = [
-		new("battle_fever"),
-		new("battle_fever_miku"),
-	];
+	readonly MuseDash1FeverDescriptor[] descriptors;
 
-	public IMuseDash1FeverDescriptor? FindByName(ReadOnlySpan<char> name) {
-		if (!name.StartsWith(UUID_PREFIX, StringComparison.InvariantCultureIgnoreCase))
-			return null;
-		var splits = name.Split('/');
-		splits.MoveNext();
-		splits.MoveNext();
-		splits.MoveNext();
-		var piece = name[splits.Current];
-		foreach (var descriptor in descriptors) {
-			if (descriptor.Name.Equals(piece, StringComparison.InvariantCultureIgnoreCase))
-				return descriptor;
-		}
-		return null;
+	public MuseDash1FeverProvider() : base("Muse Dash 1", "musedash1") {
+		descriptors = [
+			new("battle_fever", this),
+			new("battle_fever_miku", this),
+		];
 	}
 
-	public IEnumerable<string> GetAvailable() {
+	public override IMuseDash1FeverDescriptor? FindByID(ReadOnlySpan<char> id) {
 		foreach (var descriptor in descriptors)
-			yield return descriptor.GlobalName;
+			if (id.Equals(descriptor.Name, StringComparison.InvariantCultureIgnoreCase))
+				return descriptor;
+		return null;
+	}
+
+	public override IEnumerable<string> GetAvailableIDs() {
+		foreach (var descriptor in descriptors)
+			yield return descriptor.Name;
 	}
 }
 
-public class MuseDash1FeverDescriptor(string name) : IMuseDash1FeverDescriptor
+public class MuseDash1FeverDescriptor(string name, ICloneDashModProvider provider) : SimpleModDescriptor(name, name, provider), IMuseDash1FeverDescriptor
 {
 	public readonly string Name = name;
-	public readonly string GlobalName = MuseDash1FeverProvider.UUID_PREFIX + "/" + name;
-	public IMuseDash1FeverRuntime? Instantiate(IGame game) {
-		return new MuseDash1FeverRuntime(this, (MuseDash1Game)game);
-	}
+	public IGamemodeDescriptor GetGamemode() => ModStores.Get<GamemodeMod>().GetDescriptorByUID(MuseDash1Gamemode.UUID)!;
+
+	public Type GetRuntimeType() => typeof(MuseDash1FeverRuntime);
 }
 
-public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, MuseDash1Game game) : BaseMuseDash1UnitySimScene, IMuseDash1FeverRuntime
+public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, RhythmGameLevel game) : UnitySimScene, IMuseDash1FeverRuntime
 {
-	readonly MuseDash1Game game = game;
+	readonly RhythmGameLevel game = game;
 	SceneTransform rootTransform = new();
 	SceneObject? background;
 	SceneAnimator? backgroundAnimator;

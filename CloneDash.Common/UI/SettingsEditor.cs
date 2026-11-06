@@ -1,13 +1,17 @@
 ﻿using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Common.Systems;
+using CloneDash.Common.Systems.Discord;
 using CloneDash.Game;
+using CloneDash.Game.Input;
 using CloneDash.Settings;
-using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
+using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Types;
@@ -128,12 +132,12 @@ public class SettingsPanel : ScrollPanel
 	}
 	public NumSlider PercentageNumber(ConVar cv, string name) => Number(cv, name, "{0:P0}");
 
-	public InputActionKeybindingButtonsPanel InputActionKeybindingButtonsPanel(InputAction action, string name) {
+	public InputActionKeybindingButtonsPanel InputActionKeybindingButtonsPanel(string set, InputAction action, Color color, string name) {
 		var back = buildBackPanel(name, "");
 		var buttons = new InputActionKeybindingButtonsPanel(back.Bottom);
 		back.Bottom.Size = new Vector2F(0, 0.13f);
 		buttons.Dock = Dock.Fill;
-		buttons.SetInputAction(action);
+		buttons.SetInputAction(set, action, color);
 		return buttons;
 	}
 }
@@ -307,8 +311,8 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 		panel.Label("Left-click an existing key to rebind the key.\nRight-click an existing key to unbind the key.\nUse the Add button to add a new key.");
 
-		var topButtons = panel.InputActionKeybindingButtonsPanel(InputAction.AirAttack, "Top Keys");
-		var bottomButtons = panel.InputActionKeybindingButtonsPanel(InputAction.GroundAttack, "Bottom Keys");
+		var topButtons = panel.InputActionKeybindingButtonsPanel(MuseDashActions.SET, MuseDashActions.Air, PathwayLayout.MUSEDASH_TOP_COLOR, "Top Keys");
+		var bottomButtons = panel.InputActionKeybindingButtonsPanel(MuseDashActions.SET, MuseDashActions.Ground, PathwayLayout.MUSEDASH_BOTTOM_COLOR, "Bottom Keys");
 	}
 
 
@@ -319,7 +323,8 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 {
-	InputAction action = 0;
+	InputAction action;
+	string set = Key.COMMON;
 	readonly List<ButtonCode> keys = [];
 	readonly List<Button> buttons = [];
 
@@ -394,39 +399,40 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 
 	private void AddSubmittedHandler(ButtonCode key) {
 		// Confirm that key isn't bound.
-		if (InputSettings.IsKeyBound(key, out InputAction action)) {
-			Logs.Warn($"Keyboard key {key} is already bound to {action}. TODO: notification");
+		if (Key.GetSet(set).GetCommand(key) is string command) {
+			Logs.Warn($"Keyboard key {key} is already bound to {command}. TODO: notification");
 			return;
 		}
 
-		InputSettings.BindKey(key, this.action);
+		Key.Bind(set, key, action.Command);
 
 		InvalidateKeys();
 	}
 
 	private void EditSubmittedHandler(ButtonCode keyTarget, ButtonCode keyReplace) {
-		if (!InputSettings.IsKeyBound(keyTarget, out _)) {
+		if (Key.GetSet(set).GetCommand(keyTarget) == null) {
 			Logs.Warn($"Keyboard key target {keyTarget} is not bound. TODO: notification");
 			return;
 		}
 
-		if (InputSettings.IsKeyBound(keyReplace, out InputAction action)) {
-			Logs.Warn($"Keyboard key replacement {keyReplace} is already bound to {action}. TODO: notification");
+		if (Key.GetSet(set).GetCommand(keyReplace) is string command) {
+			Logs.Warn($"Keyboard key replacement {keyReplace} is already bound to {command}. TODO: notification");
 			return;
 		}
 
-		InputSettings.RebindKey(keyTarget, keyReplace, this.action);
+		Key.Unbind(set, keyTarget);
+		Key.Bind(set, keyReplace, action.Command);
 
 		InvalidateKeys();
 	}
 
 	private void RemoveSubmittedHandler(ButtonCode key) {
-		if (!InputSettings.IsKeyBound(key, out _)) {
+		if (Key.GetSet(set).GetCommand(key) == null) {
 			Logs.Warn($"Keyboard key target {key} is not bound. TODO: notification");
 			return;
 		}
 
-		InputSettings.UnbindKey(key);
+		Key.Unbind(set, key);
 
 		InvalidateKeys();
 	}
@@ -460,26 +466,17 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 		}
 	}
 
-	public void SetInputAction(InputAction action) {
+	public void SetInputAction(string set, InputAction action, Color color) {
 		this.action = action;
+		this.set = set;
 
-		switch (action) {
-			case InputAction.AirAttack:
-				SetBgColor(PathwayExts.GetColor(PathwaySide.Top).Adjust(0, -0.2, -0.5));
-				SetFgColor(PathwayExts.GetColor(PathwaySide.Top));
-				InvalidateKeys();
-				break;
-			case InputAction.GroundAttack:
-				SetBgColor(PathwayExts.GetColor(PathwaySide.Bottom).Adjust(0, -0.2, -0.5));
-				SetFgColor(PathwayExts.GetColor(PathwaySide.Bottom));
-				InvalidateKeys();
-				break;
-			default: throw new InvalidOperationException($"Unsupported {nameof(InputAction)} provided to {nameof(InputActionKeybindingButtonsPanel)}.{nameof(SetInputAction)}");
-		}
+		SetBgColor(color.Adjust(0, -0.2, -0.5));
+		SetFgColor(color);
+		InvalidateKeys();
 	}
 
 	private void InvalidateKeys() {
-		LoadButtons(InputSettings.GetKeysOfAction(action));
+		LoadButtons(Key.GetSet(set).ButtonsOf(action.Slot));
 	}
 }
 

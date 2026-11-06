@@ -1,4 +1,6 @@
-﻿using CloneDash.Common.Data;
+using CloneDash.Charts;
+using CloneDash.Common.Compatibility;
+using CloneDash.Common.Data;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Compatibility.MDMC;
 using CloneDash.Compatibility.MuseDash;
@@ -14,8 +16,6 @@ using Nucleus.Common.Localization;
 using Nucleus.Core;
 using Nucleus.Files;
 using Raylib_cs;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.ColorSpaces;
 
 namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 {
@@ -80,7 +80,8 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				AddLocalizedInfo(ILocalize.English, webChart.TitleRomanized, webChart.Artist);
 			}
 
-			public override ReadOnlySpan<char> GetUUID() => UsesWebChart ? $"song/musedash1customs/{WebChart.ID}" : $"song/musedash1customs/{Filepath}";
+			public override string GetID() => UsesWebChart ? WebChart.ID : Filepath ?? "";
+			public override ICloneDashModProvider GetProvider() => ChartMod.Instance.GetProviderByID(UsesWebChart ? "mdmc" : "musedash1customs")!;
 
 			public MD1_CustomChartsSong(string filepath) : base() {
 				Filepath = filepath;
@@ -294,7 +295,9 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				if (map == null)
 					throw new Exception("Bad map difficulty.");
 
-				return loadFromStream(map);
+				string name = Path.GetFileNameWithoutExtension(diskpath);
+				int.TryParse(name.StartsWith("map") ? name[3..] : "", out int difficulty);
+				return loadFromStream(map, difficulty);
 			}
 
 			private MD1_CustomAlbumsChart loadFromStream(Stream map, int difficulty = 0) {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 
 namespace Raylib_cs;
@@ -183,6 +183,25 @@ public unsafe partial struct Mesh
     #region Animation vertex data
 
     /// <summary>
+    /// Number of bones 
+    /// </summary>
+    public int BoneCount = default;
+
+    /// <summary>
+    /// Vertex bone indices, up to 4 bones influence by vertex
+    /// </summary>
+    public byte* BoneIndices = default;
+
+    /// <summary>
+    /// Vertex bone weight, up to 4 bones influence by vertex
+    /// </summary>
+    public float* BoneWeights = default;
+
+    #endregion
+
+    #region Runtime animation vertex data (CPU skinning)
+
+    /// <summary>
     /// Animated vertex positions (after bones transformations)
     /// </summary>
     public float* AnimVertices = default;
@@ -191,16 +210,6 @@ public unsafe partial struct Mesh
     /// Animated normals (after bones transformations)
     /// </summary>
     public float* AnimNormals = default;
-
-    /// <summary>
-    /// Vertex bone ids, up to 4 bones influence by vertex (skinning)
-    /// </summary>
-    public byte* BoneIds = default;
-
-    /// <summary>
-    /// Vertex bone weight, up to 4 bones influence by vertex (skinning)
-    /// </summary>
-    public float* BoneWeights = default;
 
     #endregion
 

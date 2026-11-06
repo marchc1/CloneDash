@@ -31,7 +31,10 @@ public static class Host
 			return;
 		}
 
-		DataStore[key] = JsonConvert.SerializeObject(value);
+		var json = JsonConvert.SerializeObject(value);
+		if (DataStore.TryGetValue(key, out var old) && old == json)
+			return;
+		DataStore[key] = json;
 		TriggerResave();
 	}
 

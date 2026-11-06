@@ -15,8 +15,6 @@ using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
 
-using Poly2Tri;
-
 using Raylib_cs;
 
 using System.Diagnostics;
@@ -25,7 +23,6 @@ using System.Drawing;
 using System.Numerics;
 using Color = Nucleus.Common.Types.Color;
 using RectangleF = Nucleus.Types.RectangleF;
-using Triangle = Poly2Tri.Triangle;
 
 namespace Nucleus.ModelEditor
 {
@@ -49,109 +46,230 @@ namespace Nucleus.ModelEditor
 		public override bool OverrideSelection => true;
 		public override Type[]? SelectableTypes => [typeof(EditorVertex)];
 
+		public static ConVar meshedit_trace_detail = new("meshedit_trace_detail", "50", FCvar.Saved,
+			"Edit Mesh trace: how many hull vertices.");
+		public static ConVar meshedit_trace_concavity = new("meshedit_trace_concavity", "50", FCvar.Saved,
+			"Edit Mesh trace: priority for vertices in concave areas.");
+		public static ConVar meshedit_trace_refinement = new("meshedit_trace_refinement", "50", FCvar.Saved,
+			"Edit Mesh trace: effort spent finding a good hull.");
+		public static ConVar meshedit_trace_alpha = new("meshedit_trace_alpha", "0", FCvar.Saved,
+			"Edit Mesh trace: pixels with alpha at or below this are ignored.");
+		public static ConVar meshedit_trace_padding = new("meshedit_trace_padding", "2", FCvar.Saved,
+			"Edit Mesh trace: pixels between the image and the hull.");
+
 		public void SetMode(EditMesh_Mode mode) {
+			// Leaving New closes the outline, a too short one is dropped
+			if (CurrentMode == EditMesh_Mode.New && mode != EditMesh_Mode.New && WorkingLines.Count >= 3 && HullSegmentAllowed(WorkingLines[WorkingLines.Count - 1], WorkingLines[0], true))
+				ApplyNew();
 			CurrentMode = mode;
 			UpdateButtonState();
+			if (mode == EditMesh_Mode.New)
+				FitUV();
 		}
 
-		private Button ModifyButton, CreateButton, DeleteButton, NewButton, ResetButton;
-		private Checkbox Triangles, Dim, Isolate, Deform;
+		private static readonly Vector2F[] imageCorners = [new(0, 0), new(1, 0), new(1, 1), new(0, 1)];
+
+		private void ReplaceHull(IEnumerable<Vector2F> uvs) {
+			var attachment = Attachment;
+			ModelEditor.Active.Actions.TrackMesh(attachment);
+			FitUV();
+			attachment.ShapeEdges.Clear();
+			foreach (var uv in uvs) {
+				var pos = PosOf(uv);
+				attachment.ShapeEdges.Add(new EditorVertex {
+					X = pos.X,
+					Y = pos.Y,
+					U = uv.X,
+					V = uv.Y,
+					Attachment = attachment
+				});
+			}
+			attachment.SteinerPoints.Clear();
+			attachment.Weights.Clear();
+			attachment.SelectedVertices.Clear();
+			attachment.Invalidate();
+		}
+
+		/// <summary>
+		/// Adds a vertex in the middle of every big triangle. Clears the weights.
+		/// </summary>
+		public void Generate() {
+			var attachment = Attachment;
+			attachment.RefreshDelaunator();
+			var tris = attachment.Triangles;
+
+			float biggest = 0;
+			for (int i = 0; i < tris.Count; i += 3)
+				biggest = MathF.Max(biggest, Area(i, tris));
+			if (biggest <= 0) return;
+
+			ModelEditor.Active.Actions.TrackMesh(attachment);
+			List<EditorVertex> added = [];
+			for (int i = 0; i < tris.Count; i += 3) {
+				if (Area(i, tris) < biggest / 2) continue;
+				EditorVertex t0 = tris[i], t1 = tris[i + 1], t2 = tris[i + 2];
+				added.Add(new EditorVertex {
+					X = (t0.X + t1.X + t2.X) / 3, Y = (t0.Y + t1.Y + t2.Y) / 3,
+					U = (t0.U + t1.U + t2.U) / 3, V = (t0.V + t1.V + t2.V) / 3,
+					Attachment = attachment
+				});
+			}
+			attachment.Weights.Clear();
+			attachment.SteinerPoints.AddRange(added);
+			attachment.Invalidate();
+		}
+
+		private static float Area(int i, IReadOnlyList<EditorVertex> tris)
+			=> MathF.Abs((tris[i + 1].X - tris[i].X) * (tris[i + 2].Y - tris[i].Y) - (tris[i + 1].Y - tris[i].Y) * (tris[i + 2].X - tris[i].X)) / 2;
+
+		readonly Random traceRandom = new();
+		bool traceDirty;
+		Window? traceWindow;
+		CenteredObjectsPanel? panel;
+		float editHeight;
+
+		/// <summary>
+		/// Traces a new hull around the image. Clears the weights and inner vertices.
+		/// </summary>
+		public void Trace() {
+			var attachment = Attachment;
+			var model = attachment.Slot.Bone.Model;
+			var image = attachment.Path == null ? null : model.ResolveImage(attachment.Path);
+			if (image == null || !model.Images.TextureAtlas.UnpackedImages.TryGetValue(image.Name, out var pixels)) {
+				Logs.Warn($"Trace: no image for '{attachment.Path}'");
+				return;
+			}
+
+			var uvs = MeshTracer.Trace(pixels,
+				meshedit_trace_detail.GetFloat(),
+				meshedit_trace_concavity.GetFloat(),
+				meshedit_trace_refinement.GetFloat(),
+				meshedit_trace_alpha.GetFloat(),
+				meshedit_trace_padding.GetFloat(),
+				traceRandom);
+			if (uvs == null) {
+				Logs.Warn($"Trace: '{attachment.Path}' has no pixels above the alpha threshold");
+				return;
+			}
+			ReplaceHull(uvs);
+		}
+
+		private void OpenTrace() {
+			Trace();
+			if (traceWindow != null || panel == null) return;
+
+			var win = traceWindow = new Window(panel);
+			win.Title = "Trace";
+			win.HideNonCloseButtons();
+			win.Resizable = false;
+			win.Removed += _ => {
+				traceWindow = null;
+				FitPanel();
+			};
+
+			var form = new Form(win);
+			form.Dock = Dock.Top;
+			form.DockPadding = RectangleF.TLRB(GAP);
+			form.RowGap = GAP;
+			Slider(form, "Detail", meshedit_trace_detail, 0, 100, "%");
+			Slider(form, "Concavity", meshedit_trace_concavity, 0, 100, "%");
+			Slider(form, "Refinement", meshedit_trace_refinement, 0, 100, "%");
+			Slider(form, "Alpha threshold", meshedit_trace_alpha, 0, 255, "");
+			Slider(form, "Padding", meshedit_trace_padding, 0, 64, " px");
+			var refresh = form.Add(null, r => new Button(r));
+			refresh.Text = "Refresh";
+			refresh.OnButtonClick += (_, _) => Trace();
+
+			// titlebar + window content margins + rows
+			win.Size = new(360, win.Titlebar.Size.H + 8 + GAP * 2 + (ROW_HEIGHT + GAP) * 6);
+			FitPanel();
+		}
+
+		private void Slider(Form form, string label, ConVar convar, double min, double max, string suffix) {
+			var slider = form.Add(label, r => new NumSlider(r));
+			slider.MinimumValue = min;
+			slider.MaximumValue = max;
+			slider.Digits = 0;
+			slider.Suffix = suffix;
+			slider.Value = convar.GetDouble();
+			slider.OnValueChanged += (_, _, value) => {
+				convar.SetValue(value);
+				traceDirty = true;
+			};
+		}
+
+		private void FitPanel() {
+			if (panel == null) return;
+			float height = MathF.Max(editHeight, traceWindow?.Size.H ?? 0);
+			panel.Size = new(0, height + GAP);
+		}
+
+		/// <summary>
+		/// Back to a quad over the image. Clears the weights and inner vertices.
+		/// </summary>
+		public void Reset() => ReplaceHull(imageCorners);
+
+		private Button ModifyButton, CreateButton, DeleteButton, NewButton;
 		List<EditorVertex> WorkingLines = [];
 		private void UpdateButtonState() {
 			ModifyButton.Pulsing = CurrentMode == EditMesh_Mode.Modify;
 			CreateButton.Pulsing = CurrentMode == EditMesh_Mode.Create;
 			DeleteButton.Pulsing = CurrentMode == EditMesh_Mode.Delete;
 			NewButton.Pulsing = CurrentMode == EditMesh_Mode.New;
-			ResetButton.Pulsing = CurrentMode == EditMesh_Mode.Reset;
 			WorkingLines.Clear();
 		}
 
-		public override void ChangeEditorProperties(CenteredObjectsPanel panel) {
-			panel.			Size = new(0, 182);
+		public void CycleMode() {
+			SetMode(CurrentMode switch {
+				EditMesh_Mode.Modify => EditMesh_Mode.Create,
+				EditMesh_Mode.Create => EditMesh_Mode.Delete,
+				_ => EditMesh_Mode.Modify
+			});
+		}
 
+		private const float ROW_HEIGHT = ToolRows.ROW_HEIGHT;
+		private const float GAP = ToolRows.GAP;
+
+		public override void ChangeEditorProperties(CenteredObjectsPanel panel) {
 			var win = new Window(panel);
-			win.			Size = new(330, panel.Size.H);
-			win.Center();
 			win.Title = "Edit Mesh";
 			win.HideNonCloseButtons();
+			win.Resizable = false;
 
-			var row1 = new FlexPanel(win);
-			row1.			DockPadding = RectangleF.TLRB(0, 4, 4, 0);
-			row1.			Dock = Dock.Top;
-			row1.			Size = new(0, 32);
-			row1.Direction = (Axis.Horizontal);
-			row1.ChildrenResizingMode = (FlexChildrenResizingMode.StretchToFit);
+			var content = new Panel(win);
+			content.Dock = Dock.Fill;
+			content.DockPadding = RectangleF.TLRB(GAP);
+			content.SetPaintBackgroundEnabled(false);
+			content.SetPaintBorderEnabled(false);
 
-			var row2 = new FlexPanel(win);
-			row2.			DockPadding = RectangleF.TLRB(0, 4, 4, 0);
-			row2.			Dock = Dock.Top;
-			row2.			Size = new(0, 32);
-			row2.Direction = (Axis.Horizontal);
-			row2.ChildrenResizingMode = (FlexChildrenResizingMode.StretchToFit);
+			var tools = ToolRows.AddRow(content);
+			ModifyButton = ToolRows.AddButton(tools, "Modify", () => SetMode(EditMesh_Mode.Modify));
+			CreateButton = ToolRows.AddButton(tools, "Create", () => SetMode(EditMesh_Mode.Create));
+			DeleteButton = ToolRows.AddButton(tools, "Delete", () => SetMode(EditMesh_Mode.Delete));
+			ToolRows.SpaceCells(tools);
 
-			ModifyButton = new Button(row1);
-			ModifyButton.			Text = "Modify";
-			ModifyButton.SetAutoSize(true);
-			ModifyButton.SetTextPadding(new(64, 0));
-			ModifyButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Modify);
+			var actions = ToolRows.AddRow(content);
+			NewButton = ToolRows.AddButton(actions, "New",
+				() => SetMode(CurrentMode == EditMesh_Mode.New ? EditMesh_Mode.Modify : EditMesh_Mode.New));
+			ToolRows.AddButton(actions, "Reset", Reset);
+			ToolRows.AddButton(actions, "Generate", Generate);
+			ToolRows.AddButton(actions, "Trace", OpenTrace);
+			ToolRows.SpaceCells(actions);
 
-			CreateButton = new Button(row1);
-			CreateButton.			Text = "Create";
-			CreateButton.SetAutoSize(true);
-			CreateButton.SetTextPadding(new(64, 0));
-			CreateButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Create);
+			var display = ToolRows.AddRow(content);
+			display.Size = new(0, ROW_HEIGHT);
+			display.DockMargin = RectangleF.TLRB(0);
+			ToolRows.AddCheckbox(display, "Triangles", meshedit_triangles);
+			ToolRows.AddCheckbox(display, "Dim", meshedit_dim);
+			ToolRows.AddCheckbox(display, "Isolate", meshedit_isolate);
+			ToolRows.AddCheckbox(display, "Deformed", meshedit_deformed);
+			ToolRows.SpaceCells(display);
 
-			DeleteButton = new Button(row1);
-			DeleteButton.			Text = "Delete";
-			DeleteButton.SetAutoSize(true);
-			DeleteButton.SetTextPadding(new(64, 0));
-			DeleteButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Delete);
-
-			NewButton = new Button(row2);
-			NewButton.			Text = "New";
-			NewButton.SetAutoSize(true);
-			NewButton.SetTextPadding(new(64, 0));
-			NewButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.New);
-
-			ResetButton = new Button(row2);
-			ResetButton.			Text = "Reset";
-			ResetButton.SetAutoSize(true);
-			ResetButton.SetTextPadding(new(64, 0));
-			ResetButton.OnButtonClick += (_, _) => SetMode(EditMesh_Mode.Reset);
-
-			var row3 = new FlexPanel(win);
-			row3.			DockPadding = RectangleF.TLRB(0, 4, 4, 0);
-			row3.			Dock = Dock.Top;
-			row3.			Size = new(0, 32);
-			row3.Direction = (Axis.Horizontal);
-			row3.ChildrenResizingMode  = (FlexChildrenResizingMode.StretchToFit);
-
-			Triangles = new(row3);
-			Triangles.			Text = "Triangles";
-			Triangles.SetAutoSize(true);
-			Dim = new(row3);
-			Triangles.			Text = "Dim";
-			Triangles.SetAutoSize(true);
-			Isolate = new(row3);
-			Triangles.			Text = "Isolate";
-			Triangles.SetAutoSize(true);
-
-			Triangles.BindToConVar(meshedit_triangles);
-			Dim.BindToConVar(meshedit_dim);
-			Isolate.BindToConVar(meshedit_isolate);
-
-			var row4 = new FlexPanel(win);
-			row4.			DockPadding = RectangleF.TLRB(0, 4, 4, 0);
-			row4.			Dock = Dock.Top;
-			row4.			Size = new(0, 32);
-			row4.Direction = Axis.Horizontal;
-			row4.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-
-			Deform = new(row4);
-			var deformedLabel = new Label(row4);
-			deformedLabel.			Text = "Deformed";
-			deformedLabel.SetAutoSize(true);
-			Deform.BindToConVar(meshedit_deformed);
+			editHeight = win.Titlebar.Size.H + 8 + GAP * 2 + ROW_HEIGHT * 3 + GAP * 2;
+			win.Size = new(440, editHeight);
+			this.panel = panel;
+			panel.XSeparation = GAP;
+			FitPanel();
 
 			UpdateButtonState();
 
@@ -162,67 +280,361 @@ namespace Nucleus.ModelEditor
 			};
 		}
 
-		public EditorVertex? AttachedVertex;
 		public EditorVertex? HoveredVertex;
-		/// <summary>
-		/// In the context of <see cref="EditMesh_Mode.Create"/>, this is the created vertex.
-		/// <br/>
-		/// In the context of <see cref="EditMesh_Mode.Modify"/>, this is the clicked vertex.
-		/// </summary>
-		public EditorVertex? ClickedVertex;
 		public bool IsHoveredSteinerPoint;
-		public bool IsClickedSteinerPoint;
+		/// <summary>
+		/// Hull or inner edge under the mouse, only when no vertex is
+		/// </summary>
+		public (EditorVertex A, EditorVertex B, bool Hull)? HoveredEdge;
 		public EditorMeshAttachment Attachment => this.UIDeterminations.Last as EditorMeshAttachment ?? throw new Exception("Wtf?");
 
-		public override void Think(ModelEditor editor, Vector2F mousePos) {
-			EditorPanel editorPanel = editor.Editor;
-			float closestVertexDist = 100000000;
+		// in pixels
+		private const float VERTEX_PICK = 10;
+		private const float EDGE_PICK = 6;
+		private const float DRAG_START = 4;
+		private const double DOUBLE_CLICK = 0.3;
+		static bool ShiftDown => EngineCore.Level.FrameState.Keyboard.ShiftDown;
+		static bool CtrlDown => EngineCore.Level.FrameState.Keyboard.ControlDown;
 
+		bool mouseDown;
+		bool dragged;
+		bool boxing;
+		Vector2F clickScreen;
+		EditorVertex? edgeFrom;
+		readonly List<(EditorVertex Vertex, Vector2F Pos, Vector2F UV)> moving = [];
+		readonly HashSet<EditorVertex> movingSet = [];
+		Vector2F moveStartLocal;
+		float[] uvMap = new float[6];
+		double lastClickTime = -1;
+		EditorVertex? lastClickVertex;
+
+		private Vector2F WorldOf(EditorVertex vertex) => Attachment.CalculateVertexWorldPosition(Attachment.WorldTransform, vertex);
+
+		private Vector2F MouseLocal(ModelEditor editor, Vector2F screen) {
+			PatchAttachmentTransform();
+			var local = Attachment.WorldTransform.WorldToLocal(editor.Editor.ScreenToGrid(screen));
+			RestoreAttachmentTransform();
+			return local;
+		}
+
+		public override void Think(ModelEditor editor, Vector2F mousePos) {
 			HoveredVertex = null;
+			HoveredEdge = null;
 			IsHoveredSteinerPoint = false;
+			if (traceDirty && !EngineCore.Level.FrameState.Mouse.MouseHeld) {
+				traceDirty = false;
+				Trace();
+			}
+			if (!editor.Editor.IsHovered() && !mouseDown) return;
 
 			PatchAttachmentTransform();
-			System.Numerics.Vector2 mp = (Attachment.WorldTransform.WorldToLocal(mousePos)).ToNumerics();
-
-			var camsize = ModelEditor.Active.Editor.CameraZoom;
-			var dist = 32f / camsize;
-			var array = (CurrentMode == EditMesh_Mode.New ? WorkingLines : Attachment.ShapeEdges);
-			for (int i = 0; i < array.Count; i++) {
-				var vertex = array[i];
-				var vertexDistance = mp.ToNucleus().Distance(vertex.ToVector());
-				if (vertexDistance < closestVertexDist && vertex != ClickedVertex) {
-					closestVertexDist = vertexDistance;
-					HoveredVertex = vertex;
-					IsHoveredSteinerPoint = false;
-				}
-			}
-
-			if (closestVertexDist > dist && CurrentMode != EditMesh_Mode.New) {
-				closestVertexDist = 1000000000;
-				for (int i = 0; i < Attachment.SteinerPoints.Count; i++) {
-					var vertex = Attachment.SteinerPoints[i];
-					var vertexDistance = mp.ToNucleus().Distance(vertex.ToVector());
-					if (vertexDistance < closestVertexDist && vertex != ClickedVertex) {
-						closestVertexDist = vertexDistance;
-						HoveredVertex = vertex;
-						IsHoveredSteinerPoint = true;
-					}
-				}
-			}
-
-
-			if (closestVertexDist > dist) {
-				HoveredVertex = null;
-			}
-
+			if (CurrentMode == EditMesh_Mode.New)
+				HoverWorkingLines(mousePos);
+			else if (!(mouseDown && edgeFrom != null && ShiftDown))
+				// shift creates on top of a vertex
+				HoverMesh(editor, mousePos, vertices: !(CurrentMode == EditMesh_Mode.Create && ShiftDown));
 			RestoreAttachmentTransform();
 		}
 
-		public Vector2F ClampVertexPosition(Vector2F pos) {
-			return new(
-				Math.Clamp(pos.X, Attachment.LocalWidth / -2, Attachment.LocalWidth / 2),
-				Math.Clamp(pos.Y, Attachment.LocalHeight / -2, Attachment.LocalHeight / 2)
-			);
+		private void HoverWorkingLines(Vector2F mousePos) {
+			float best = VERTEX_PICK / ModelEditor.Active.Editor.CameraZoom;
+			foreach (var vertex in WorkingLines) {
+				var d = Attachment.WorldTransform.LocalToWorld(vertex.X, vertex.Y).Distance(mousePos);
+				if (d < best) {
+					best = d;
+					HoveredVertex = vertex;
+				}
+			}
+		}
+
+		private bool Skipped(EditorVertex vertex) => vertex == edgeFrom || movingSet.Contains(vertex);
+
+		private void HoverMesh(ModelEditor editor, Vector2F mousePos, bool vertices) {
+			var attachment = Attachment;
+			float zoom = editor.Editor.CameraZoom;
+			float best = VERTEX_PICK / zoom;
+			int hull = attachment.ShapeEdges.Count;
+			int i = 0;
+			foreach (var vertex in attachment.GetVertices()) {
+				bool steiner = i++ >= hull;
+				if (!vertices || Skipped(vertex)) continue;
+				float distance = WorldOf(vertex).Distance(mousePos);
+				if (distance < best) {
+					best = distance;
+					HoveredVertex = vertex;
+					IsHoveredSteinerPoint = steiner;
+				}
+			}
+			if (HoveredVertex != null) return;
+
+			best = EDGE_PICK / zoom;
+			foreach (var edge in Edges()) {
+				if (Skipped(edge.A) || Skipped(edge.B)) continue;
+				float distance = DistanceToSegment(mousePos, WorldOf(edge.A), WorldOf(edge.B));
+				if (distance < best) {
+					best = distance;
+					HoveredEdge = edge;
+				}
+			}
+		}
+
+		private IEnumerable<(EditorVertex A, EditorVertex B, bool Hull)> Edges() {
+			var attachment = Attachment;
+			var hull = attachment.ShapeEdges;
+			for (int i = 0; i < hull.Count; i++)
+				yield return (hull[i], hull[(i + 1) % hull.Count], true);
+			foreach (var vertex in attachment.GetVertices()) {
+				foreach (var other in vertex.ConstrainedVertices) {
+					if (attachment.IndexOfVertex(vertex) < attachment.IndexOfVertex(other))
+						yield return (vertex, other, false);
+				}
+			}
+		}
+
+		private static float ProjectT(Vector2F p, Vector2F a, Vector2F b) {
+			var ab = b - a;
+			float len = ab.X * ab.X + ab.Y * ab.Y;
+			if (len <= 0) return 0;
+			return Math.Clamp(((p.X - a.X) * ab.X + (p.Y - a.Y) * ab.Y) / len, 0, 1);
+		}
+
+		private static float DistanceToSegment(Vector2F p, Vector2F a, Vector2F b) => p.Distance(Vector2F.Lerp(ProjectT(p, a, b), a, b));
+
+		private static int Orientation(Vector2F a, Vector2F b, Vector2F c) {
+			double d = ((double)b.X - a.X) * ((double)c.Y - a.Y) - ((double)b.Y - a.Y) * ((double)c.X - a.X);
+			return d switch {
+				> 0 => 1,
+				< 0 => -1,
+				_ => 0
+			};
+		}
+
+		// touching and overlapping count
+		private static bool SegmentsCross(Vector2F a, Vector2F b, Vector2F c, Vector2F d) {
+			int o1 = Orientation(a, b, c), o2 = Orientation(a, b, d);
+			int o3 = Orientation(c, d, a), o4 = Orientation(c, d, b);
+			if (o1 != o2 && o3 != o4) return true;
+			return (o1 == 0 && On(a, c, b)) || (o2 == 0 && On(a, d, b)) || (o3 == 0 && On(c, a, d)) || (o4 == 0 && On(c, b, d));
+		}
+
+		private static bool On(Vector2F p, Vector2F q, Vector2F r) => MathF.Min(p.X, r.X) <= q.X && q.X <= MathF.Max(p.X, r.X)
+				&& MathF.Min(p.Y, r.Y) <= q.Y && q.Y <= MathF.Max(p.Y, r.Y);
+
+		/// <summary>
+		/// Poly2Tri throws on edges that cross another edge or run through a vertex
+		/// </summary>
+		private bool EdgeAllowed(EditorVertex from, EditorVertex? to, Vector2F end, (EditorVertex, EditorVertex)? splitting = null) {
+			Vector2F start = from.ToVector();
+			foreach (var edge in Edges()) {
+				if (edge.A == from || edge.B == from || edge.A == to || edge.B == to) continue;
+				if (splitting is { } split && ((edge.A == split.Item1 && edge.B == split.Item2) || (edge.A == split.Item2 && edge.B == split.Item1))) continue;
+				if (SegmentsCross(start, end, edge.A.ToVector(), edge.B.ToVector())) return false;
+			}
+			foreach (var vertex in Attachment.GetVertices()) {
+				if (vertex != from && vertex != to && DistanceToSegment(vertex.ToVector(), start, end) < 0.01f) return false;
+			}
+			return true;
+		}
+
+		private bool Connected(EditorVertex from, EditorVertex to) {
+			if (from.IsConstrainedTo(to)) return true;
+			var hull = Attachment.ShapeEdges;
+			int i = hull.IndexOf(from), j = hull.IndexOf(to);
+			if (i < 0 || j < 0) return false;
+			int gap = Math.Abs(i - j);
+			return gap == 1 || gap == hull.Count - 1;
+		}
+
+		private void FitUV() => uvMap = FitUVMap(Attachment);
+
+		// uv = (m0 x + m1 y + m2, m3 x + m4 y + m5), least squares over the mesh
+		public static float[] FitUVMap(EditorMeshAttachment attachment) {
+			var uvMap = new float[6];
+			double sxx = 0;
+			double sxy = 0;
+			double sx = 0;
+			double syy = 0;
+			double sy = 0;
+			double n = 0;
+			double sxu = 0;
+			double syu = 0;
+			double su = 0;
+			double sxv = 0;
+			double syv = 0;
+			double sv = 0;
+			foreach (var vertex in attachment.GetVertices()) {
+				double x = vertex.X, y = vertex.Y;
+				sxx += x * x;
+				sxy += x * y;
+				sx += x;
+				syy += y * y;
+				sy += y;
+				n++;
+				sxu += x * vertex.U;
+				syu += y * vertex.U;
+				su += vertex.U;
+				sxv += x * vertex.V;
+				syv += y * vertex.V;
+				sv += vertex.V;
+			}
+			double det = Det3(sxx, sxy, sx, sxy, syy, sy, sx, sy, n);
+			bool fits = n >= 3 && Math.Abs(det) > 1e-9 * Math.Abs(sxx * syy * n);
+			if (fits) {
+				Solve(sxu, syu, su, 0, uvMap, sxx, sxy, sx, syy, sy, n, det);
+				Solve(sxv, syv, sv, 3, uvMap, sxx, sxy, sx, syy, sy, n, det);
+				// All uvs the same, like a freshly converted region
+				fits = Math.Abs(uvMap[0] * uvMap[4] - uvMap[1] * uvMap[3]) > 1e-12;
+			}
+			if (!fits) {
+				// GetVertexUV's mapping
+				float w = attachment.LocalWidth, h = attachment.LocalHeight;
+				uvMap = [1 / w, 0, 0.5f, 0, 1 / h, 0.5f];
+			}
+			return uvMap;
+		}
+
+		private static void Solve(double r0, double r1, double r2, int index, float[] uvMap, double sxx, double sxy, double sx, double syy, double sy, double n, double det) {
+			uvMap[index] = (float)(Det3(r0, sxy, sx, r1, syy, sy, r2, sy, n) / det);
+			uvMap[index + 1] = (float)(Det3(sxx, r0, sx, sxy, r1, sy, sx, r2, n) / det);
+			uvMap[index + 2] = (float)(Det3(sxx, sxy, r0, sxy, syy, r1, sx, sy, r2) / det);
+		}
+
+		private static double Det3(double a, double b, double c, double d, double e, double f, double g, double h, double i)
+			=> a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+
+		/// <summary>
+		/// Inverse of <see cref="FitUVMap"/>
+		/// </summary>
+		public static Vector2F PosOf(float[] uvMap, Vector2F uv) {
+			var offset = uv - new Vector2F(uvMap[2], uvMap[5]);
+			float a = uvMap[0], b = uvMap[1], c = uvMap[3], e = uvMap[4];
+			float det = a * e - b * c;
+			if (det == 0) return Vector2F.Zero;
+			return new((e * offset.X - b * offset.Y) / det, (a * offset.Y - c * offset.X) / det);
+		}
+
+		private Vector2F UvOf(Vector2F pos) => UvDelta(pos) + new Vector2F(uvMap[2], uvMap[5]);
+		private Vector2F PosOf(Vector2F uv) => PosOf(uvMap, uv);
+		private Vector2F ClampToImage(Vector2F pos) {
+			var uv = UvOf(pos);
+			return PosOf(new(Math.Clamp(uv.X, 0, 1), Math.Clamp(uv.Y, 0, 1)));
+		}
+
+		private Vector2F UvDelta(Vector2F delta) => new(uvMap[0] * delta.X + uvMap[1] * delta.Y, uvMap[3] * delta.X + uvMap[4] * delta.Y);
+		private Vector2F PosDelta(Vector2F delta) {
+			float a = uvMap[0], b = uvMap[1], c = uvMap[3], e = uvMap[4];
+			float det = a * e - b * c;
+			if (det == 0) return Vector2F.Zero;
+			return new((e * delta.X - b * delta.Y) / det, (a * delta.Y - c * delta.X) / det);
+		}
+
+		private void BeginMove(IEnumerable<EditorVertex> vertices, Vector2F startLocal) {
+			moving.Clear();
+			movingSet.Clear();
+			foreach (var vertex in vertices) {
+				moving.Add((vertex, vertex.ToVector(), new(vertex.U, vertex.V)));
+				movingSet.Add(vertex);
+			}
+			moveStartLocal = startLocal;
+			FitUV();
+		}
+
+		// Only the vertices move, not the image
+		private void MoveVertices(Vector2F delta) {
+			var uvDelta = UvDelta(delta);
+			foreach (var move in moving) {
+				var uv = move.UV;
+				var want = uv + uvDelta;
+				var got = new Vector2F(
+					Math.Clamp(want.X, MathF.Min(0, uv.X), MathF.Max(1, uv.X)),
+					Math.Clamp(want.Y, MathF.Min(0, uv.Y), MathF.Max(1, uv.Y)));
+				var pos = move.Pos + delta;
+				if (got != want)
+					pos += PosDelta(got - want);
+				move.Vertex.SetPos(pos);
+				move.Vertex.U = got.X;
+				move.Vertex.V = got.Y;
+				UpdateBoneLocals(move.Vertex);
+			}
+			Attachment.Invalidate();
+		}
+
+		private void UpdateBoneLocals(EditorVertex vertex) {
+			var world = Attachment.WorldTransform.LocalToWorld(vertex.X, vertex.Y);
+			foreach (var weights in Attachment.Weights) {
+				if (weights.TryGetVertexWeight(vertex, out _))
+					weights.SetVertexPos(vertex, weights.Bone.WorldTransform.WorldToLocal(world));
+			}
+		}
+
+		// Barycentric weights from the triangle under the point, or the nearest vertex
+		private (EditorVertex, float)[] Interpolation(Vector2F point) {
+			var attachment = Attachment;
+			attachment.RefreshDelaunator();
+			var tris = attachment.Triangles;
+			for (int i = 0; i < tris.Count; i += 3) {
+				EditorVertex t0 = tris[i], t1 = tris[i + 1], t2 = tris[i + 2];
+				double denominator = ((double)t1.Y - t2.Y) * (t0.X - t2.X) + ((double)t2.X - t1.X) * (t0.Y - t2.Y);
+				if (denominator == 0) continue;
+				double w0 = (((double)t1.Y - t2.Y) * (point.X - t2.X) + ((double)t2.X - t1.X) * (point.Y - t2.Y)) / denominator;
+				double w1 = (((double)t2.Y - t0.Y) * (point.X - t2.X) + ((double)t0.X - t2.X) * (point.Y - t2.Y)) / denominator;
+				double w2 = 1 - w0 - w1;
+				if (w0 >= -1e-5 && w1 >= -1e-5 && w2 >= -1e-5)
+					return [(t0, (float)w0), (t1, (float)w1), (t2, (float)w2)];
+			}
+			return [(attachment.GetVertices().MinBy(x => (x.ToVector() - point).Length)!, 1)];
+		}
+
+		private EditorVertex NewVertex(Vector2F pos, (EditorVertex Vertex, float Weight)[] parts) {
+			var vertex = new EditorVertex { X = pos.X, Y = pos.Y, Attachment = Attachment };
+			foreach (var part in parts) {
+				vertex.U += part.Vertex.U * part.Weight;
+				vertex.V += part.Vertex.V * part.Weight;
+			}
+			foreach (var weights in Attachment.Weights) {
+				float value = 0;
+				foreach (var part in parts)
+					value += weights.TryGetVertexWeight(part.Vertex) * part.Weight;
+				if (value > 0)
+					weights.SetVertexWeight(vertex, value);
+			}
+			UpdateBoneLocals(vertex);
+			return vertex;
+		}
+
+		private EditorVertex AddVertex(Vector2F local) {
+			var vertex = NewVertex(local, Interpolation(local));
+			Attachment.SteinerPoints.Add(vertex);
+			Attachment.Invalidate();
+			return vertex;
+		}
+
+		private EditorVertex SplitEdge((EditorVertex A, EditorVertex B, bool Hull) edge, Vector2F local) {
+			float t = ProjectT(local, edge.A, edge.B);
+			var vertex = NewVertex(Vector2F.Lerp(t, edge.A, edge.B), [(edge.A, 1 - t), (edge.B, t)]);
+			if (edge.Hull)
+				Attachment.ShapeEdges.Insert(Attachment.ShapeEdges.IndexOf(edge.A) + 1, vertex);
+			else {
+				Attachment.SteinerPoints.Add(vertex);
+				edge.A.UnconstrainFrom(edge.B);
+				edge.A.ConstrainTo(vertex);
+				vertex.ConstrainTo(edge.B);
+			}
+			Attachment.Invalidate();
+			return vertex;
+		}
+
+		private bool DeleteVertex(EditorVertex vertex) {
+			var attachment = Attachment;
+			if (attachment.ShapeEdges.Contains(vertex) && attachment.ShapeEdges.Count <= 3) return false;
+			attachment.RemoveVertex(vertex);
+			foreach (var weights in attachment.Weights)
+				weights.RemoveVertex(vertex);
+			attachment.SelectedVertices.Remove(vertex);
+			if (HoveredVertex == vertex)
+				HoveredVertex = null;
+			attachment.Invalidate();
+			return true;
 		}
 
 		public override bool SelectMultiple => true;
@@ -232,118 +644,238 @@ namespace Nucleus.ModelEditor
 
 		public Color Color { get; set; } = Color.White;
 
+		public override RectangleF? SelectionBox {
+			get {
+				if (!boxing || !dragged) return null;
+				var mouse = ModelEditor.Active.Editor.GetMousePos();
+				return EditorPanel.ScreenBox(clickScreen, mouse);
+			}
+		}
+
 		public override void Clicked(ModelEditor editor, Vector2F mousePos) {
 			base.Clicked(editor, mousePos);
-			PatchAttachmentTransform();
+			editor.Actions.TrackMesh(Attachment);
+			mouseDown = true;
+			dragged = boxing = false;
+			edgeFrom = null;
+			moving.Clear();
+			movingSet.Clear();
+			clickScreen = mousePos;
+			var local = MouseLocal(editor, mousePos);
 
-			// Overrides, for the create vertex mode, but designed this way in case
-			// other things need it
-			EditorVertex? clickVertexOverride = null;
-			bool? hoveredSteinerOverride = null;
+			var now = EngineCore.Level.Realtime;
+			bool doubleClick = HoveredVertex != null && HoveredVertex == lastClickVertex && now - lastClickTime < DOUBLE_CLICK;
+			lastClickVertex = doubleClick ? null : HoveredVertex;
+			lastClickTime = now;
 
 			switch (CurrentMode) {
-				case EditMesh_Mode.Create:
-					var newPoint = Attachment.WorldTransform.WorldToLocal(editor.Editor.ScreenToGrid(mousePos));
-
-					// TODO + HACK; the 0.05f thing avoids issues with duplicate points.
-					// Really, I probably should just... wait to start dragging before
-					// creating the vertex... just lazy right now
-					EditorVertex vertex = EditorVertex.FromVector(newPoint + new Vector2F(0.05f), Attachment);
-					Attachment.SteinerPoints.Add(vertex);
-					Attachment.Invalidate();
-
-					// Null hover-vertex means we're just creating a lone vertex, but if 
-					// a vertex is hovered, then this creates a vertex with a constrained edge.
-
-					// Later, I need to also resolve during dragging if the user has dragged
-					// the vertex towards another vertex or not, and if so, remove the existing
-					// created vertex, then connect the current hover vertex to the hover vertex
-					// during the dragging context.
-
-					if (HoveredVertex != null) {
-						vertex.ConstrainTo(HoveredVertex);
-						AttachedVertex = HoveredVertex;
+				case EditMesh_Mode.Modify:
+					if (HoveredVertex == null) {
+						boxing = true;
+						break;
 					}
-
-					clickVertexOverride = vertex;
-					hoveredSteinerOverride = true;
-					EditorFile.UpdateVertexPositions(Attachment, onlyThisVertex: vertex);
+					if (doubleClick) {
+						DeleteVertex(HoveredVertex);
+						break;
+					}
+					var selected = Attachment.SelectedVertices;
+					if (CtrlDown) {
+						if (!selected.Remove(HoveredVertex))
+							selected.Add(HoveredVertex);
+						break;
+					}
+					if (!selected.Contains(HoveredVertex)) {
+						selected.Clear();
+						selected.Add(HoveredVertex);
+					}
+					BeginMove(selected, local);
+					break;
+				case EditMesh_Mode.Create:
+					if (HoveredVertex != null) {
+						if (doubleClick)
+							DeleteVertex(HoveredVertex);
+						else
+							edgeFrom = HoveredVertex;
+						break;
+					}
+					EditorVertex? created = null;
+					if (HoveredEdge is { } edge)
+						created = SplitEdge(edge, local);
+					else if (Attachment.InsideHull(local.X, local.Y))
+						created = AddVertex(local);
+					if (created != null)
+						BeginMove([created], local);
 					break;
 				case EditMesh_Mode.Delete:
-					if (HoveredVertex != null) {
-						Attachment.RemoveVertex(HoveredVertex);
-						HoveredVertex = null;
-						Attachment.Invalidate();
-					}
+					if (HoveredVertex != null)
+						DeleteVertex(HoveredVertex);
+					else if (HoveredEdge is { Hull: false } inner)
+						inner.A.UnconstrainFrom(inner.B);
+					else if (HoveredEdge == null)
+						boxing = true;
 					break;
 				case EditMesh_Mode.New:
-					if (WorkingLines.Count > 0 && HoveredVertex == WorkingLines.First()) {
-						Attachment.ShapeEdges.Clear();
-						Attachment.Weights.Clear();
-						RestoreAttachmentTransform();
-						Attachment.ShapeEdges.AddRange(WorkingLines);
-						Attachment.Invalidate();
+					ClickNew(local, doubleClick);
+					break;
+			}
+		}
+
+		private void ClickNew(Vector2F local, bool doubleClick) {
+			if (HoveredVertex != null) {
+				if (HoveredVertex == WorkingLines[0] && WorkingLines.Count >= 3) {
+					if (HullSegmentAllowed(WorkingLines[WorkingLines.Count - 1], WorkingLines[0], true))
 						SetMode(EditMesh_Mode.Modify);
-					}
-					else {
-						var gridpos = ModelEditor.Active.Editor.ScreenToGrid(mousePos);
-						var attachpos = Attachment.WorldTransform.Translation;
-						var attachClickPos = gridpos - attachpos;
-
-						var newClickP = Attachment.WorldTransform.WorldToLocal(ClampVertexPosition(attachClickPos) + Attachment.WorldTransform.Translation);
-						var newTexCoord = Attachment.GetVertexUV(newClickP);
-						Logs.Info($"{newTexCoord}");
-						WorkingLines.Add(EditorVertex.FromVector(newClickP, newTexCoord, Attachment));
-					}
-					break;
+				}
+				else if (doubleClick)
+					WorkingLines.Remove(HoveredVertex);
+				else
+					BeginMove([HoveredVertex], local);
+				return;
 			}
-			RestoreAttachmentTransform();
+			var point = ClampToImage(local);
+			if (WorkingLines.Count > 0 && !HullSegmentAllowed(WorkingLines[WorkingLines.Count - 1], point, false)) return;
+			var uv = UvOf(point);
+			WorkingLines.Add(new EditorVertex {
+				X = point.X,
+				Y = point.Y,
+				U = uv.X,
+				V = uv.Y,
+				Attachment = Attachment
+			});
+		}
 
-			ClickedVertex = clickVertexOverride ?? HoveredVertex;
-			IsClickedSteinerPoint = hoveredSteinerOverride ?? IsHoveredSteinerPoint;
+		private bool HullSegmentAllowed(Vector2F start, Vector2F end, bool closing) {
+			int count = WorkingLines.Count;
+			for (int i = 0; i < count - 1; i++) {
+				if (i == count - 2 || (closing && i == 0)) continue;
+				if (SegmentsCross(start, end, WorkingLines[i], WorkingLines[i + 1])) return false;
+			}
+			for (int i = closing ? 1 : 0; i < count - 1; i++) {
+				if (DistanceToSegment(WorkingLines[i], start, end) < 0.01f) return false;
+			}
+			return true;
 		}
-		public override void DragStart(ModelEditor editor, Vector2F mousePos) {
-			base.DragStart(editor, mousePos);
+
+		private void ApplyNew() {
+			var attachment = Attachment;
+			ModelEditor.Active.Actions.TrackMesh(attachment);
+			attachment.ShapeEdges.Clear();
+			attachment.ShapeEdges.AddRange(WorkingLines);
+			attachment.SteinerPoints.Clear();
+			attachment.Weights.Clear();
+			attachment.SelectedVertices.Clear();
+			attachment.Invalidate();
 		}
+
 		public override void Drag(ModelEditor editor, Vector2F startPos, Vector2F mousePos) {
-			PatchAttachmentTransform();
-			switch (CurrentMode) {
-				case EditMesh_Mode.Create:
-				case EditMesh_Mode.Modify:
-					if (ClickedVertex != null) {
-						var mouseGridPos = editor.Editor.ScreenToGrid(mousePos);
-						var localized = Attachment.WorldTransform.WorldToLocal(mouseGridPos);
-						var clamped = ClampVertexPosition(localized);
-
-						ClickedVertex.SetPos(clamped);
-						EditorFile.UpdateVertexPositions(ClickedVertex.Attachment);
-
-						Attachment.Invalidate();
-					}
-					break;
+			if (!mouseDown) return;
+			if (!dragged && (mousePos - clickScreen).Length < DRAG_START) return;
+			dragged = true;
+			if (moving.Count == 0) return;
+			var delta = MouseLocal(editor, mousePos) - moveStartLocal;
+			if (CurrentMode == EditMesh_Mode.New) {
+				// outline points, the mesh isn't touched yet
+				foreach (var move in moving) {
+					var pos = ClampToImage(move.Pos + delta);
+					var uv = UvOf(pos);
+					move.Vertex.SetPos(pos);
+					move.Vertex.U = uv.X;
+					move.Vertex.V = uv.Y;
+				}
+				return;
 			}
-			RestoreAttachmentTransform();
+			editor.Actions.TrackMesh(Attachment);
+			MoveVertices(delta);
 		}
+
 		public override void DragRelease(ModelEditor editor, Vector2F mousePos) {
 			base.DragRelease(editor, mousePos);
-			switch (CurrentMode) {
-				case EditMesh_Mode.Create:
-					if (HoveredVertex != ClickedVertex && HoveredVertex != null && ClickedVertex != null && AttachedVertex != null) {
-						// Remove the clicked vertex
-						ClickedVertex.Attachment.RemoveVertex(ClickedVertex);
-						// Instead, constraint AttachedVertex to HoveredVertex
-						AttachedVertex.ConstrainTo(HoveredVertex);
-					}
-					break;
-			}
-
-			AttachedVertex = null;
-			ClickedVertex = null;
-			IsClickedSteinerPoint = false;
+			if (!mouseDown) return;
+			mouseDown = false;
+			var screen = editor.Editor.GetMousePos();
+			if (boxing)
+				FinishBox(editor, screen);
+			else if (edgeFrom != null && dragged)
+				FinishEdge(editor, screen);
+			boxing = false;
+			edgeFrom = null;
+			moving.Clear();
+			movingSet.Clear();
 		}
 
-		public bool ShouldRenderUndeformed => CurrentMode == EditMesh_Mode.New || !meshedit_deformed.GetBool();
-		public bool ShouldRenderGizmosThough => CurrentMode != EditMesh_Mode.New && !meshedit_deformed.GetBool();
+		private void FinishBox(ModelEditor editor, Vector2F screen) {
+			var selected = Attachment.SelectedVertices;
+			if (!dragged) {
+				if (CurrentMode == EditMesh_Mode.Modify && !CtrlDown)
+					selected.Clear();
+				return;
+			}
+
+			var start = editor.Editor.ScreenToGrid(clickScreen);
+			var end = editor.Editor.ScreenToGrid(screen);
+			float minX = MathF.Min(start.X, end.X), maxX = MathF.Max(start.X, end.X);
+			float minY = MathF.Min(start.Y, end.Y), maxY = MathF.Max(start.Y, end.Y);
+			PatchAttachmentTransform();
+			List<EditorVertex> inside = [];
+			foreach (var vertex in Attachment.GetVertices()) {
+				var world = WorldOf(vertex);
+				if (world.X >= minX && world.X <= maxX && world.Y >= minY && world.Y <= maxY)
+					inside.Add(vertex);
+			}
+			RestoreAttachmentTransform();
+
+			if (CurrentMode == EditMesh_Mode.Delete) {
+				foreach (var vertex in inside)
+					DeleteVertex(vertex);
+				return;
+			}
+			if (!CtrlDown)
+				selected.Clear();
+			selected.UnionWith(inside);
+		}
+
+		private void FinishEdge(ModelEditor editor, Vector2F screen) {
+			var from = edgeFrom!;
+			bool snap = !ShiftDown;
+			var local = snap ? MouseLocal(editor, screen) : AxisLocal(editor, from, screen);
+
+			EditorVertex to;
+			if (snap && HoveredVertex != null) {
+				to = HoveredVertex;
+				if (to == from || Connected(from, to) || !EdgeAllowed(from, to, to.ToVector())) return;
+			}
+			else if (snap && HoveredEdge is { } edge) {
+				var point = Vector2F.Lerp(ProjectT(local, edge.A, edge.B), edge.A, edge.B);
+				if (!EdgeAllowed(from, null, point, (edge.A, edge.B))) return;
+				to = SplitEdge(edge, local);
+			}
+			else {
+				if (!Attachment.InsideHull(local.X, local.Y) || !EdgeAllowed(from, null, local)) return;
+				to = AddVertex(local);
+			}
+			from.ConstrainTo(to);
+		}
+
+		private static Vector2F AxisSnap(Vector2F start, Vector2F to) {
+			var delta = to - start;
+			return MathF.Abs(delta.X) >= MathF.Abs(delta.Y) ? new(to.X, start.Y) : new(start.X, to.Y);
+		}
+
+		// shift locks a new edge horizontal or vertical
+		private Vector2F AxisLocal(ModelEditor editor, EditorVertex from, Vector2F screen) {
+			PatchAttachmentTransform();
+			var world = AxisSnap(WorldOf(from), editor.Editor.ScreenToGrid(screen));
+			var local = Attachment.WorldTransform.WorldToLocal(world);
+			RestoreAttachmentTransform();
+			return local;
+		}
+
+		public override void RightClicked(ModelEditor editor, Vector2F mousePos) {
+			if (!mouseDown)
+				CycleMode();
+		}
+
+		public bool ShouldRenderUndeformed => !meshedit_deformed.GetBool();
 
 		private Transformation StoredAttachTransform;
 		private void PatchAttachmentTransform() {
@@ -360,39 +892,22 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override bool RenderOverride() {
-			if (ShouldRenderUndeformed) {
-				var camsize = ModelEditor.Active.Editor.CameraZoom;
+			bool newHull = CurrentMode == EditMesh_Mode.New;
+			if (newHull || ShouldRenderUndeformed) {
+				if (!newHull)
+					FitUV();
+				Span<Vector2F> corners = stackalloc Vector2F[4];
+				for (int i = 0; i < 4; i++)
+					corners[i] = PosOf(imageCorners[i]);
 
+				Attachment.SetupWorldTransform();
 				PatchAttachmentTransform();
-
-				if (ShouldRenderGizmosThough) {
-					Attachment.RenderStandalone();
+				Attachment.RenderImage(corners);
+				if (newHull)
+					RenderWorkingLines();
+				else
 					Attachment.RenderOverlay();
-				}
-				else {
-					Attachment.RenderStandalone();
-					var mp = ClampVertexPosition(ModelEditor.Active.Editor.ScreenToGrid(ModelEditor.Active.Editor.GetMousePos()) - Attachment.WorldTransform.Translation) + Attachment.WorldTransform.Translation;
-
-					for (int i = 0; i < WorkingLines.Count; i++) {
-						var edge1 = WorkingLines[i].ToVector();
-						var edge2 = WorkingLines[(i + 1) % WorkingLines.Count].ToVector();
-
-						edge1 = Attachment.WorldTransform.LocalToWorld(edge1);
-						edge2 = Attachment.WorldTransform.LocalToWorld(edge2);
-
-						Color c = i < WorkingLines.Count - 1 ? new Color(150, 150, 255) : new Color(60, 120, 255, 160);
-						Raylib.DrawLineV(edge1.ToNumerics(), edge2.ToNumerics(), c);
-
-						var isHighlighted = HoveredVertex != null && edge1 == HoveredVertex;
-						Raylib.DrawCircleV(edge1.ToNumerics(), (isHighlighted ? 4.5f : 2f) / camsize, new Color(isHighlighted ? 235 : 200, isHighlighted ? 235 : 200, 255));
-					}
-
-					if (HoveredVertex == null)
-						Raylib.DrawCircleV(mp.ToNumerics(), 5 / camsize, Color.Lime);
-
-					RestoreAttachmentTransform();
-
-				}
+				RestoreAttachmentTransform();
 				return true;
 			}
 
@@ -406,11 +921,58 @@ namespace Nucleus.ModelEditor
 			return false;
 		}
 
-		internal void DrawCreateGizmo() {
-			var camsize = ModelEditor.Active.Editor.CameraZoom;
-			var mp = ModelEditor.Active.Editor.ScreenToGrid(ModelEditor.Active.Editor.GetMousePos());
+		private void RenderWorkingLines() {
+			var editor = ModelEditor.Active.Editor;
+			float zoom = editor.CameraZoom;
+			var transform = Attachment.WorldTransform;
+			int count = WorkingLines.Count;
 
-			Raylib.DrawCircleV(mp.ToNumerics(), 5 / camsize, new(100, 180, 100));
+			for (int i = 0; i < count; i++) {
+				var point = transform.LocalToWorld(WorkingLines[i]);
+				if (i < count - 1)
+					Raylib.DrawLineV(point.ToNumerics(), transform.LocalToWorld(WorkingLines[i + 1]).ToNumerics(), new Color(150, 150, 255));
+				bool hovered = HoveredVertex == WorkingLines[i];
+				Raylib.DrawCircleV(point.ToNumerics(), (hovered ? 4.5f : 3f) / zoom, new Color(hovered ? 235 : 200, hovered ? 235 : 200, 255));
+			}
+
+			// next click position
+			var next = HoveredVertex != null ? transform.LocalToWorld(HoveredVertex)
+				: transform.LocalToWorld(ClampToImage(transform.WorldToLocal(editor.ScreenToGrid(editor.GetMousePos()))));
+			if (count > 0)
+				Raylib.DrawLineV(transform.LocalToWorld(WorkingLines[count - 1]).ToNumerics(), next.ToNumerics(), new Color(60, 120, 255, 160));
+			if (HoveredVertex == null)
+				Raylib.DrawCircleV(next.ToNumerics(), 5 / zoom, Color.Lime);
+		}
+		internal void DrawOverlay() {
+			var editor = ModelEditor.Active.Editor;
+			var zoom = editor.CameraZoom;
+			var mouse = editor.ScreenToGrid(editor.GetMousePos());
+
+			if (HoveredEdge is { } edge && (CurrentMode == EditMesh_Mode.Create || (CurrentMode == EditMesh_Mode.Delete && !edge.Hull))) {
+				Color color = CurrentMode == EditMesh_Mode.Delete ? new Color(255, 60, 15) : new Color(100, 220, 100);
+				Rlgl.DrawRenderBatchActive();
+				Rlgl.SetLineWidth(3);
+				Raylib.DrawLineV(WorldOf(edge.A).ToNumerics(), WorldOf(edge.B).ToNumerics(), color);
+				Rlgl.DrawRenderBatchActive();
+				Rlgl.SetLineWidth(1);
+			}
+
+			if (CurrentMode != EditMesh_Mode.Create) return;
+
+			var target = mouse;
+			if (edgeFrom != null && dragged && ShiftDown)
+				target = AxisSnap(WorldOf(edgeFrom), mouse);
+			else if (HoveredVertex != null)
+				target = WorldOf(HoveredVertex);
+			else if (HoveredEdge is { } hoveredEdge) {
+				Vector2F start = WorldOf(hoveredEdge.A), end = WorldOf(hoveredEdge.B);
+				target = Vector2F.Lerp(ProjectT(mouse, start, end), start, end);
+			}
+
+			if (edgeFrom != null && dragged)
+				Raylib.DrawLineV(WorldOf(edgeFrom).ToNumerics(), target.ToNumerics(), new Color(245, 100, 20));
+			if (HoveredVertex == null && moving.Count == 0)
+				Raylib.DrawCircleV(target.ToNumerics(), 5 / zoom, new Color(100, 180, 100));
 		}
 	}
 	public class EditorVertex : IEditorType
@@ -556,13 +1118,30 @@ namespace Nucleus.ModelEditor
 		private List<float> __weights = [];
 		private List<Vector2F> __positions = [];
 
-		public List<EditorVertex> Vertices { get => __vertices; set { Invalidated = true; __vertices = value; } }
-		public List<float> Weights { get => __weights; set { Invalidated = true; __weights = value; } }
-		public List<Vector2F> Positions { get => __positions; set { Invalidated = true; __positions = value; } }
+		public List<EditorVertex> Vertices { get => __vertices; set {
+			Invalidated = true;
+			Version++;
+			__vertices = value;
+		} }
+		public List<float> Weights { get => __weights; set {
+			Invalidated = true;
+			Version++;
+			__weights = value;
+		} }
+		public List<Vector2F> Positions { get => __positions; set {
+			Invalidated = true;
+			Version++;
+			__positions = value;
+		} }
 
 		[JsonIgnore] private Dictionary<EditorVertex, float> TrueWeights = [];
 		[JsonIgnore] private Dictionary<EditorVertex, Vector2F> TruePositions = [];
 		[JsonIgnore] public bool Invalidated = true;
+		[JsonIgnore] public int Version;
+		/// <summary>
+		/// Weights tool edits leave this bone alone
+		/// </summary>
+		[JsonIgnore] public bool Locked;
 
 		public void SetVertexWeight(EditorVertex vertex, float weight) {
 			bool found = false;
@@ -581,7 +1160,7 @@ namespace Nucleus.ModelEditor
 			}
 
 
-			Invalidated = true;
+			Invalidated = true; Version++;
 		}
 		public void SetVertexPos(EditorVertex vertex, Vector2F pos) {
 			bool found = false;
@@ -599,7 +1178,7 @@ namespace Nucleus.ModelEditor
 				Positions.Add(pos);
 			}
 
-			Invalidated = true;
+			Invalidated = true; Version++;
 		}
 
 		public bool AddVertex(EditorVertex vertex, float? weight = null, Vector2F? pos = null) {
@@ -607,7 +1186,7 @@ namespace Nucleus.ModelEditor
 				if (Vertices[i] == vertex) {
 					Weights[i] = weight ?? Weights[i];
 					Positions[i] = pos ?? Positions[i];
-					Invalidated = true;
+					Invalidated = true; Version++;
 					return true;
 				}
 			}
@@ -621,7 +1200,7 @@ namespace Nucleus.ModelEditor
 					Vertices.RemoveAt(i);
 					Positions.RemoveAt(i);
 					Weights.RemoveAt(i);
-					Invalidated = true;
+					Invalidated = true; Version++;
 					return true;
 				}
 			}
@@ -690,9 +1269,10 @@ namespace Nucleus.ModelEditor
 		public bool IsEmpty => Count <= 0;
 
 		public void Clear() {
+			Vertices.Clear();
 			Weights.Clear();
 			Positions.Clear();
-			Invalidated = true;
+			Invalidated = true; Version++;
 		}
 	}
 
@@ -720,39 +1300,65 @@ namespace Nucleus.ModelEditor
 
 		public override string SingleName => "mesh";
 		public override string PluralName => "meshes";
-		public override string EditorIcon => "models/mesh.png";
+		public override string EditorIcon => IsLinked ? "models/linkedmesh.png" : "models/mesh.png";
 
 		public string GetPath() => Path ?? $"<{Name}>";
 		public string? Path { get; set; } = null;
-		private (ITexture Texture, IModelAtlasRegion? Region, Vector2F TL, Vector2F TR, Vector2F BL, Vector2F BR) quadpoints() {
-			var model = Slot.Bone.Model;
 
-			ModelImage? image = model.ResolveImage(Path);
-			if (image == null || Path == null) throw new Exception(":(");
+		/// <summary>
+		/// Mesh this one shares geometry and weights with, if it's linked
+		/// <br/><b>NOTE:</b> Geometry is a synced copy of the parent's, don't edit it directly.
+		/// </summary>
+		public EditorMeshAttachment? LinkedParent { get; set; }
+		public bool InheritDeform { get; set; } = true;
+		public bool Wireframe { get; set; }
+		[JsonIgnore] public bool IsLinked => LinkedParent != null;
+		[JsonIgnore] public override EditorVertexAttachment DeformAttachment => LinkedParent != null && InheritDeform ? LinkedParent : this;
 
-			IModelAtlasRegion? region = model.Images.TextureAtlas.GetRegion(image.Name);
-			bool succeeded = region != null;
+		/// <summary>
+		/// The mesh at the top of the link chain
+		/// </summary>
+		[JsonIgnore]
+		public override EditorVertexAttachment GeometrySource {
+			get {
+				EditorMeshAttachment mesh = this;
+				for (int i = 0; i < 16 && mesh.LinkedParent != null && mesh.LinkedParent != this; i++)
+					mesh = mesh.LinkedParent;
+				return mesh;
+			}
+		}
+		[JsonIgnore] public override int VertexCount => ShapeEdges.Count + SteinerPoints.Count;
 
-			int regW = 512, regH = 512;
-			if (succeeded) region!.GetBounds(out _, out _, out regW, out regH);
+		public override void BuildProperties(Panel props, PreUIDeterminations determinations) {
+			base.BuildProperties(props, determinations);
 
-			float width = regH, height = regW;
-			float widthDiv2 = width / 2, heightDiv2 = height / 2;
-			ITexture tex = succeeded ? model.Images.TextureAtlas.PackedTexture : textures.GetErrorTexture();
+			var optionsRow = PropertiesPanel.NewRow(props, "Options", "models/mesh.png");
+			var wireframe = PropertiesPanel.AddLabeledCheckbox(optionsRow, "Wireframe", Wireframe);
+			wireframe.OnCheckedChanged += (s)
+				=> ModelEditor.Active.File.SetProperty(this, "wireframe", s.Checked, () => Wireframe, v => Wireframe = v);
 
-			Vector2F TL = WorldTransform.LocalToWorld(-heightDiv2, -widthDiv2);
-			Vector2F TR = WorldTransform.LocalToWorld(heightDiv2, -widthDiv2);
-			Vector2F BR = WorldTransform.LocalToWorld(heightDiv2, widthDiv2);
-			Vector2F BL = WorldTransform.LocalToWorld(-heightDiv2, widthDiv2);
+			AddColorRow(props, () => Color, v => Color = v);
 
-			return (
-				tex,
-				region,
-				TL,
-				TR,
-				BL,
-				BR
-			);
+			if (LinkedParent == null) return;
+
+			var parent = LinkedParent;
+			var linkRow = PropertiesPanel.NewRow(props, "Linked", "models/linkedmesh.png");
+			var parentPanel = PropertiesPanel.AddInternalPropPanel(linkRow);
+			var parentButton = new Button(parentPanel);
+			parentButton.Dock = Dock.Fill;
+			parentButton.DockMargin = RectangleF.TLRB(3);
+			parentButton.BorderSize = 0;
+			parentButton.Text = parent.Slot == Slot ? parent.Name : $"{parent.Slot.Name} / {parent.Name}";
+			parentButton.TooltipText = "Select the parent mesh";
+			parentButton.OnButtonClick += (_, _) => ModelEditor.Active.SelectObject(parent);
+
+			var inherit = PropertiesPanel.AddLabeledCheckbox(linkRow, "Inherit deform", InheritDeform);
+			inherit.OnCheckedChanged += (s) => {
+				ModelEditor.Active.File.SetProperty(this, "inherit deform", s.Checked,
+					() => InheritDeform, v => InheritDeform = v);
+				ModelEditor.Active.QueueAnimationUpdate();
+			};
+			linkRow.Thinking += (_) => linkRow.SetMouseInputEnabled(!ModelEditor.Active.AnimationMode);
 		}
 
 		/// <summary>
@@ -774,12 +1380,6 @@ namespace Nucleus.ModelEditor
 
 		//[JsonIgnore] public Dictionary<TriPoint, MeshVertex> triPointToMeshVertex = [];
 
-		public override void UpdateShape(Shape shape) {
-			base.UpdateShape(shape);
-			foreach (var steinerPoint in SteinerPoints)
-				shape.SteinerPoints.Add(new(steinerPoint.X, steinerPoint.Y, steinerPoint));
-		}
-
 		[JsonIgnore] public bool SuppressWorldTransform = false;
 
 		public override Color DetermineVertexColor(bool selected, bool highlighted) {
@@ -794,43 +1394,37 @@ namespace Nucleus.ModelEditor
 		}
 
 		/// <summary>
-		/// This part renders the image, standalone, with no transformation (beyond translation transformation) <br></br>
-		/// It's only used during the Mesh Editor / New operator and nowhere else
+		/// Draws the whole image as a quad, corners local in uv order (0,0) (1,0) (1,1) (0,1).
 		/// </summary>
-		public void RenderStandalone() {
-			// todo ^^ missing texture (prob just purple-black checkerboard)
-			var quadpoints = this.quadpoints();
-
-			IModelAtlasRegion? region = quadpoints.Region;
-			ITexture tex = quadpoints.Texture;
-			Vector2F BL = quadpoints.TL, BR = quadpoints.TR, TL = quadpoints.BL, TR = quadpoints.BR;
+		public void RenderImage(ReadOnlySpan<Vector2F> corners) {
+			var model = Slot.Bone.Model;
+			ModelImage? image = model.ResolveImage(Path);
+			IModelAtlasRegion? region = image != null ? model.Images.TextureAtlas.GetRegion(image.Name) : null;
+			ITexture tex = region != null ? model.Images.TextureAtlas.PackedTexture : textures.GetErrorTexture();
 
 			int regX = 0, regY = 0, regW = 512, regH = 512;
 			region?.GetBounds(out regX, out regY, out regW, out regH);
+			float uStart = (float)regX / tex.GetWidth(), uEnd = uStart + (float)regW / tex.GetWidth();
+			float vStart = (float)regY / tex.GetHeight(), vEnd = vStart + (float)regH / tex.GetHeight();
+
+			Span<Vector2F> points = stackalloc Vector2F[4];
+			for (int i = 0; i < 4; i++)
+				points[i] = WorldTransform.LocalToWorld(corners[i]);
 
 			Rlgl.Begin(DrawMode.TRIANGLES);
 			Rlgl.SetTexture(tex.GetTextureHandle());
-
 			var color = (byte)(ShouldDim ? 90 : 255);
 			Rlgl.Color4ub(color, color, color, 255);
 
-			float uStart, uEnd, vStart, vEnd;
-			uStart = (float)regX / (float)tex.GetWidth();
-			uEnd = uStart + ((float)regW / (float)tex.GetWidth());
+			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(points[0].X, points[0].Y, 0);
+			Rlgl.TexCoord2f(uEnd, vEnd); Rlgl.Vertex3f(points[1].X, points[1].Y, 0);
+			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(points[2].X, points[2].Y, 0);
 
-			vStart = ((float)regY / (float)tex.GetHeight());
-			vEnd = vStart + ((float)regH / (float)tex.GetHeight());
-
-			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(BL.X, BL.Y, 0);
-			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(TR.X, TR.Y, 0);
-			Rlgl.TexCoord2f(uStart, vStart); Rlgl.Vertex3f(TL.X, TL.Y, 0);
-
-			Rlgl.TexCoord2f(uEnd, vEnd); Rlgl.Vertex3f(BR.X, BR.Y, 0);
-			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(TR.X, TR.Y, 0);
-			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(BL.X, BL.Y, 0);
+			Rlgl.TexCoord2f(uEnd, vStart); Rlgl.Vertex3f(points[2].X, points[2].Y, 0);
+			Rlgl.TexCoord2f(uStart, vStart); Rlgl.Vertex3f(points[3].X, points[3].Y, 0);
+			Rlgl.TexCoord2f(uStart, vEnd); Rlgl.Vertex3f(points[0].X, points[0].Y, 0);
 
 			Rlgl.End();
-
 			Rlgl.DrawRenderBatchActive();
 		}
 
@@ -880,6 +1474,15 @@ namespace Nucleus.ModelEditor
 			float arM = Color.R / 255f, agM = Color.G / 255f, abM = Color.B / 255f, aaM = Color.A / 255f;
 
 			Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
+			if (ShowsWeightOverlay) {
+				Rlgl.End();
+				RenderWeightOverlay();
+				return;
+			}
+			var geometry = GeometrySource;
+			if (geometry != this)
+				geometry.RefreshDelaunator();
+			var triangles = geometry.Triangles;
 			if (triangles.Count > 0) {
 				float uStart, uEnd, vStart, vEnd;
 				uStart = (float)regX / (float)tex.GetWidth();
@@ -889,19 +1492,10 @@ namespace Nucleus.ModelEditor
 				vEnd = vStart + ((float)regH / (float)tex.GetHeight());
 
 				bool block = false;
-				foreach (var tri in triangles) {
-					var points = tri.Points;
-
-					var av1 = points[0].AssociatedObject as EditorVertex;
-					var av2 = points[1].AssociatedObject as EditorVertex;
-					var av3 = points[2].AssociatedObject as EditorVertex;
-
-					if (av1 == null || av2 == null || av3 == null)
-						continue;
-
-					Vector2F p1 = new((float)points[0].X, (float)points[0].Y);
-					Vector2F p2 = new((float)points[1].X, (float)points[1].Y);
-					Vector2F p3 = new((float)points[2].X, (float)points[2].Y);
+				for (int i = 0; i < triangles.Count; i += 3) {
+					var av1 = triangles[i];
+					var av2 = triangles[i + 1];
+					var av3 = triangles[i + 2];
 
 					Vector2F t1 = new((float)av1.U, (float)av1.V);
 					Vector2F t2 = new((float)av2.U, (float)av2.V);
@@ -911,9 +1505,9 @@ namespace Nucleus.ModelEditor
 					float u2 = (float)NMath.Remap(t2.X, 0, 1, uStart, uEnd), v2 = (float)NMath.Remap(t2.Y, 0, 1, vEnd, vStart);
 					float u3 = (float)NMath.Remap(t3.X, 0, 1, uStart, uEnd), v3 = (float)NMath.Remap(t3.Y, 0, 1, vEnd, vStart);
 
-					p1 = CalculateVertexWorldPosition(WorldTransform, av1);
-					p2 = CalculateVertexWorldPosition(WorldTransform, av2);
-					p3 = CalculateVertexWorldPosition(WorldTransform, av3);
+					Vector2F p1 = CalculateVertexWorldPosition(WorldTransform, av1);
+					Vector2F p2 = CalculateVertexWorldPosition(WorldTransform, av2);
+					Vector2F p3 = CalculateVertexWorldPosition(WorldTransform, av3);
 
 					Rlgl.TexCoord2f(u1, v1); Rlgl.Vertex3f(p1.X, p1.Y, 0);
 					Rlgl.TexCoord2f(u2, v2); Rlgl.Vertex3f(p2.X, p2.Y, 0);
@@ -924,6 +1518,39 @@ namespace Nucleus.ModelEditor
 			Rlgl.End();
 		}
 
+		/// <summary>
+		/// Weights tool overlay
+		/// </summary>
+		[JsonIgnore] public bool ShowsWeightOverlay => ModelEditor.Active.Editor.InWeightsMode && WeightsPanel.weights_overlay.GetBool()
+			&& VertexWeightOperator.Target == this;
+
+		private void RenderWeightOverlay() {
+			// bones that aren't selected draw black
+			bool onlySelected = WeightsPanel.weights_selected.GetBool();
+			var selectedBones = ModelEditor.Active.Weights.SelectedBones;
+
+			Rlgl.Begin(DrawMode.TRIANGLES);
+			Rlgl.SetTexture(Rlgl.GetTextureIdDefault());
+			foreach (var vertex in Triangles) {
+				float r = 0, g = 0, b = 0;
+				foreach (var weights in Weights) {
+					float weight = weights.TryGetVertexWeight(vertex);
+					if (weight <= 0 || (onlySelected && !selectedBones.Contains(weights))) continue;
+					var color = WeightColor(weights);
+					r += color.R * weight;
+					g += color.G * weight;
+					b += color.B * weight;
+				}
+				Rlgl.Color4ub((byte)Math.Min(r, 255), (byte)Math.Min(g, 255), (byte)Math.Min(b, 255), 255);
+				var pos = CalculateVertexWorldPosition(WorldTransform, vertex);
+				Rlgl.Vertex3f(pos.X, pos.Y, 0);
+			}
+			Rlgl.End();
+		}
+
+		static readonly HashSet<(EditorVertex, EditorVertex)> drawnLines = [];
+		private static bool FirstDraw(EditorVertex from, EditorVertex to) => !drawnLines.Contains((to, from)) && drawnLines.Add((from, to));
+
 		public void RenderTriangleLines() {
 			if (!RenderTriangles) return;
 			if (triangles.Count <= 0) return;
@@ -931,19 +1558,12 @@ namespace Nucleus.ModelEditor
 			Rlgl.DrawRenderBatchActive();
 			Rlgl.SetLineWidth(2);
 
-			Dictionary<TriPoint, HashSet<TriPoint>> avoidDuplicateLineDraws = [];
+			drawnLines.Clear();
 
-			foreach (var tri in triangles) {
-				var tp1 = tri.Points[0];
-				var tp2 = tri.Points[1];
-				var tp3 = tri.Points[2];
-
-				var av1 = tp1.AssociatedObject as EditorVertex;
-				var av2 = tp2.AssociatedObject as EditorVertex;
-				var av3 = tp3.AssociatedObject as EditorVertex;
-
-				if (av1 == null || av2 == null || av3 == null)
-					continue;
+			for (int i = 0; i < triangles.Count; i += 3) {
+				var av1 = triangles[i];
+				var av2 = triangles[i + 1];
+				var av3 = triangles[i + 2];
 
 				bool ic1 = av1.IsConstrainedTo(av2);
 				bool ic2 = av2.IsConstrainedTo(av3);
@@ -952,10 +1572,6 @@ namespace Nucleus.ModelEditor
 				var offset = Graphics2D.Offset;
 				Graphics2D.ResetDrawingOffset();
 
-				if (!avoidDuplicateLineDraws.TryGetValue(tp1, out var h1)) { h1 = []; avoidDuplicateLineDraws[tp1] = h1; }
-				if (!avoidDuplicateLineDraws.TryGetValue(tp2, out var h2)) { h2 = []; avoidDuplicateLineDraws[tp2] = h2; }
-				if (!avoidDuplicateLineDraws.TryGetValue(tp3, out var h3)) { h3 = []; avoidDuplicateLineDraws[tp3] = h3; }
-
 				var v1 = CalculateVertexWorldPosition(WorldTransform, av1);
 				var v2 = CalculateVertexWorldPosition(WorldTransform, av2);
 				var v3 = CalculateVertexWorldPosition(WorldTransform, av3);
@@ -963,15 +1579,16 @@ namespace Nucleus.ModelEditor
 				Graphics2D.SetDrawColor(245, 100, 20);
 				if (ic1) Graphics2D.DrawLine(v1, v2);
 				if (ic2) Graphics2D.DrawLine(v2, v3);
-				if (ic3) Graphics2D.DrawLine(v1, v1);
+				if (ic3)
+					Graphics2D.DrawLine(v3, v1);
 
 				Graphics2D.SetDrawColor(140, 140, 160);
 
-				if (!ic1 && h1.Add(tp2) && h2.Add(tp1))
+				if (!ic1 && FirstDraw(av1, av2))
 					Graphics2D.DrawDottedLine(v1, v2, 0.5f);
-				if (!ic2 && h2.Add(tp3) && h3.Add(tp2))
+				if (!ic2 && FirstDraw(av2, av3))
 					Graphics2D.DrawDottedLine(v2, v3, 0.5f);
-				if (!ic3 && h3.Add(tp1) && h1.Add(tp3))
+				if (!ic3 && FirstDraw(av3, av1))
 					Graphics2D.DrawDottedLine(v3, v1, 0.5f);
 
 				Graphics2D.OffsetDrawing(offset);
@@ -999,13 +1616,8 @@ namespace Nucleus.ModelEditor
 
 			var transform = TransformOverride ?? WorldTransform;
 
-			foreach (var tri in Triangles) {
-				TriPoint tp1 = tri.Points[0], tp2 = tri.Points[1], tp3 = tri.Points[2];
-				EditorVertex? av1 = tp1.AssociatedObject as EditorVertex,
-							av2 = tp2.AssociatedObject as EditorVertex,
-							av3 = tp3.AssociatedObject as EditorVertex;
-
-				if (av1 == null || av2 == null || av3 == null) continue;
+			for (int i = 0; i < triangles.Count; i += 3) {
+				EditorVertex av1 = triangles[i], av2 = triangles[i + 1], av3 = triangles[i + 2];
 
 				//av1.Attachment = this;
 				//av2.Attachment = this;
@@ -1019,7 +1631,8 @@ namespace Nucleus.ModelEditor
 
 				if (ic1) Graphics2D.DrawLine(v1, v2);
 				if (ic2) Graphics2D.DrawLine(v2, v3);
-				if (ic3) Graphics2D.DrawLine(v1, v1);
+				if (ic3)
+					Graphics2D.DrawLine(v3, v1);
 			}
 
 			Graphics2D.SetOffset(offset);
@@ -1044,7 +1657,7 @@ namespace Nucleus.ModelEditor
 
 				Raylib.DrawLineV(vertex1.ToNumerics(), vertex2.ToNumerics(), lineColor);
 
-				if (Selected) {
+				if (Selected || Wireframe || (ModelEditor.Active.Editor.InWeightsMode && VertexWeightOperator.Target == this)) {
 					RenderVertex(edge1, isHighlighted, vertex1);
 				}
 			}
@@ -1060,30 +1673,36 @@ namespace Nucleus.ModelEditor
 			}
 
 			// hack; but has to be done with the current rendering order
-			if (
-				ModelEditor.Active.File.ActiveOperator is EditMeshOperator editMeshOp
-				&& editMeshOp.CurrentMode == EditMesh_Mode.Create
-				&& editMeshOp.HoveredVertex == null
-			) {
-				editMeshOp.DrawCreateGizmo();
-			}
+			if (IsActiveAttachment)
+				meshOp!.DrawOverlay();
 		}
 
 		public override void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
-			PropertiesPanel.OperatorButton<EditMeshOperator>(buttons, "Mesh Editor", "models/mesh.png");
+			// linked meshes take the parent's geometry
+			if (!IsLinked) {
+				PropertiesPanel.OperatorButton<EditMeshOperator>(buttons, "Mesh Editor", "models/mesh.png");
+				PropertiesPanel.ButtonIcon(buttons, "Reset", "models/mesh.png",
+					(_, _) => ModelEditor.Active.File.ResetMesh(this));
+			}
+			base.BuildOperators(buttons, determinations);
 		}
 
 		public override bool HoverTest(Vector2F gridPos) {
 			RefreshDelaunator();
+			var geometry = GeometrySource;
+			if (geometry != this)
+				geometry.RefreshDelaunator();
+			var triangles = geometry == this ? this.triangles : ((EditorMeshAttachment)geometry).triangles;
 
 			var localizedPos = WorldTransform.WorldToLocal(gridPos);
-			foreach (var tri in triangles)
+			for (int i = 0; i < triangles.Count; i += 3) {
 				if (localizedPos.InTriangle(new(
-						tri.Points[0].ToNumerics().ToNucleus(),
-						tri.Points[1].ToNumerics().ToNucleus(),
-						tri.Points[2].ToNumerics().ToNucleus()
+						new Vector2F(triangles[i].X, triangles[i].Y),
+						new Vector2F(triangles[i + 1].X, triangles[i + 1].Y),
+						new Vector2F(triangles[i + 2].X, triangles[i + 2].Y)
 					)))
 					return true;
+			}
 
 			return false;
 

@@ -35,6 +35,8 @@ public struct KeyboardState()
 			KeysPressed[i] = 0;
 			KeysReleased[i] = false;
 		}
+		for (int i = 0; i < MAX_TEXT_INPUTS; i++)
+			TextInputs[i] = null;
 	}
 
 	public void ConsumeFirstKeyPress(ButtonCode key) {
@@ -48,6 +50,17 @@ public struct KeyboardState()
 					KeyTimesThisFrame[j] = KeyTimesThisFrame[j + 1];
 				}
 				TotalKeysThisFrame--;
+				return;
+			}
+		}
+	}
+
+	public void ConsumeFirstKeyRelease(ButtonCode key) {
+		KeysReleased[(int)key] = false;
+
+		for (int i = 0; i < TotalKeysThisFrame; i++) {
+			if (KeysThisFrame[i] == (int)key) {
+				RemoveKeyAtIndex(i);
 				return;
 			}
 		}

@@ -610,6 +610,9 @@ public abstract class Level : IValidatable
 			RootPanel.Painting.Paint(RootPanel, ref solveState, ElementPaintPopupMode.NoPopups);
 			RootPanel.Painting.Paint(RootPanel, ref solveState, ElementPaintPopupMode.OnlyPopups);
 
+			Graphics2D.ResetDrawingOffset();
+			RootPanel.PaintTooltip();
+
 			RunEventPostRenderUI(frameState);
 
 			DebugOverlay.Render();

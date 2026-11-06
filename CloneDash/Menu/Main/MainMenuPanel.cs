@@ -1,9 +1,8 @@
-﻿using CloneDash.Charts;
-using CloneDash.Common.Songs;
+using CloneDash.Charts;
+using CloneDash.Common.Systems.Discord;
+using CloneDash.Common.UI.Searching;
 using CloneDash.Game;
 using CloneDash.Menu.Character;
-using CloneDash.Menu.Searching;
-using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Common.Types;
 using Nucleus.Extensions;
@@ -11,7 +10,6 @@ using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
 using System.Numerics;
-using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 namespace CloneDash.Menu.Main;
 
@@ -102,7 +100,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		CreateNavigationMenu();
 
-		foreach (var provider in ChartMod.GetAll()) {
+		foreach (var provider in ChartMod.Instance.GetAllProviders()) {
 			if (!provider.IsEnabled())
 				continue;
 
@@ -164,6 +162,19 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			Position = new Vector2F(width * .75f, height / 2f + y * (MainMenuButton.Height + MainMenuButton.Spacing));
 			btn.Origin = Anchor.Center;
 		}
+	}
+
+	public float GetButtonsLeft() {
+		if (!buttons.TryPeek(out List<MainMenuButton>? current) || current.Count == 0)
+			return float.MaxValue;
+
+		float left = float.MaxValue;
+		foreach (MainMenuButton btn in current)
+			left = MathF.Min(left, btn.GetRenderBounds().X - MainMenuButton.HoverOffset);
+		if (back.IsVisible())
+			left = MathF.Min(left, back.GetRenderBounds().X);
+
+		return GetGlobalPosition().X + left;
 	}
 
 	IMainMenuLevel mainMenu = null!;

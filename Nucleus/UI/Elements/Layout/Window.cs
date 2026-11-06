@@ -1,6 +1,7 @@
 ﻿using FftSharp;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
+using Nucleus.Common.UI;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Types;
@@ -142,7 +143,10 @@ public class Titlebar : Panel
 	public event TitlebarDragFn? OnTitlebarDragged;
 
 	public ReadOnlySpan<char> GetText() => TitleLabel.Text;
-	public void SetText(ReadOnlySpan<char> text) => TitleLabel.Text = text;
+	public void SetText(ReadOnlySpan<char> text) {
+		TitleLabel.Text = text;
+		InvalidateLayout();
+	}
 
 	public Color GetTextColor() => TitleLabel.GetTextColor();
 	public void SetTextColor(Color value) => TitleLabel.SetTextColor(value);
@@ -169,20 +173,22 @@ public class Titlebar : Panel
 				Image.
 				Texture = textures.LoadTextureFromFile(imagePath);
 			}
+			imageChanged = false;
+			InvalidateLayout();
 		}
 	}
+
+	private const float ICON_GAP = 6;
+	private float IconSize(float height) => height - MathF.Round(height * 0.2f) * 2;
 
 	protected override void PerformLayout(float width, float height) {
 		base.PerformLayout(width, height);
 		if (IValidatable.IsValid(Image)) {
-			float pad = MathF.Round(height * 0.2f);
-			Image.			Size = new(height - (pad * 2), height - (pad * 2));
-			Vector2F basePos = TitlePos switch {
-				Anchor.CenterLeft => new(0, 0),
-				Anchor.Center => new((width / 2) - (Graphics2D.GetTextSize(GetText(), Graphics2D.UI_FONT_NAME, GetTextSize()).W / 2), 0),
-				_ => new(0, 0),
-			};
-			Image.			Position = basePos + new Vector2F(pad, pad);
+			float size = IconSize(height);
+			float x = TitlePos.GetHorizontalRatio() == 0 ? 8
+				: MathF.Round((width - (size + ICON_GAP + Graphics2D.GetTextSize(GetText(), Graphics2D.UI_FONT_NAME, GetTextSize()).W)) / 2);
+			Image.Size = new(size, size);
+			Image.Position = new(x, MathF.Round((height - size) / 2));
 			Image.			ImageOrientation = ImageOrientation.Zoom;
 			Image.SetPaintBackgroundEnabled(false);
 		}
@@ -203,14 +209,12 @@ public class Titlebar : Panel
 		Graphics2D.SetDrawColor(GetBgColor());
 		Graphics2D.DrawRectangle(0, 0, width, height);
 
-		Graphics2D.SetDrawColor(GetFgColor());
-		Graphics2D.DrawRectangleOutline(0, 0, width, height, BorderSize);
-
 		Graphics2D.SetDrawColor(GetTextColor());
 		var pnt = TitlePos.CalculatePosition(new(TitlePos.GetHorizontalRatio() == 0 ? 8 : 0, 0), new(width, height));
 
+		// icon + text are centered as one
 		if (IValidatable.IsValid(Image))
-			pnt.X += height - 4;
+			pnt.X += (IconSize(height) + ICON_GAP) * (TitlePos.GetHorizontalRatio() == 0 ? 1 : 0.5f);
 
 		Graphics2D.DrawText(pnt.X, pnt.Y, GetText(), Graphics2D.UI_FONT_NAME, GetTextSize(), TitlePos);
 	}
@@ -240,6 +244,16 @@ public class Window : Element
 			ResizeTR?.SetVisible(value);
 			ResizeBL?.SetVisible(value);
 			ResizeBR?.SetVisible(value);
+		}
+	}
+
+	internal class WindowContent(Element parent) : Panel(parent)
+	{
+		public override void ApplySchemeSettings(IScheme scheme) {
+			base.ApplySchemeSettings(scheme);
+			Color back = scheme.GetColor("Nucleus.Background");
+			back.A = 170;
+			SetBgSchemeColor(scheme.GetColor("Nucleus.Window.Background", back));
 		}
 	}
 
@@ -282,22 +296,32 @@ public class Window : Element
 			}
 		}
 
+		Vector2F grabMouse, grabPos, grabSize;
+		protected override bool MouseClick(FrameState state, ButtonCode button) {
+			base.MouseClick(state, button);
+			grabMouse = EngineCore.MousePos;
+			grabPos = window.Position;
+			grabSize = window.Size;
+			return true;
+		}
+
 		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
+			Vector2F d = EngineCore.MousePos - grabMouse;
 			switch (anchor) {
 				case Anchor.TopLeft:
-					window.					Position = window.Position + delta;
-					window.					Size = window.Size - delta;
+					window.Size = grabSize - d;
+					window.Position = grabPos + grabSize - window.Size;
 					break;
 				case Anchor.TopRight:
-					window.					Position = window.Position + delta.Mutate(zeroX: true);
-					window.					Size = window.Size - delta.Mutate(negateX: true);
+					window.Size = new(grabSize.W + d.X, grabSize.H - d.Y);
+					window.Position = new(grabPos.X, grabPos.Y + grabSize.H - window.Size.H);
 					break;
 				case Anchor.BottomLeft:
-					window.					Position = window.Position + delta.Mutate(zeroY: true);
-					window.					Size = window.Size - delta.Mutate(negateY: true);
+					window.Size = new(grabSize.W - d.X, grabSize.H + d.Y);
+					window.Position = new(grabPos.X + grabSize.W - window.Size.W, grabPos.Y);
 					break;
 				case Anchor.BottomRight:
-					window.					Size = window.Size + delta;
+					window.Size = grabSize + d;
 					break;
 				default:
 					break;
@@ -350,7 +374,7 @@ public class Window : Element
 		Titlebar.OnTitlebarDragged += dragWindow;
 
 		MakePopup();
-		Panel ap = new(this);
+		Panel ap = new WindowContent(this);
 		ap.		Dock = Dock.Fill;
 		ap.		Size = new(0, 36);
 		ap.		DockMargin = RectangleF.TLRB(4, 8, 8, 4);
@@ -418,7 +442,17 @@ public class Window : Element
 	}
 
 	private void dragWindow(Titlebar self, Vector2F delta) {
-		this.		Position = this.Position + delta;
+		Vector2F pos = this.Position + delta;
+
+		if (GetParent() is Element parent) {
+			const float keepVisible = 64;
+			RectangleF pb = parent.GetRenderBounds();
+			float w = GetRenderBounds().W;
+			pos.X = Math.Clamp(pos.X, MathF.Min(0, keepVisible - w), MathF.Max(0, pb.W - keepVisible));
+			pos.Y = Math.Clamp(pos.Y, 0, MathF.Max(0, pb.H - Titlebar.GetRenderBounds().H));
+		}
+
+		this.Position = pos;
 	}
 
 	protected override void OnThink() {

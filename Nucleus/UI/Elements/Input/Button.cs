@@ -2,6 +2,7 @@
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
+using Nucleus.Common.UI;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Input;
@@ -9,6 +10,7 @@ using Nucleus.Types;
 using Nucleus.UI.Elements;
 using Raylib_cs;
 
+using System.Diagnostics;
 using System.Numerics;
 
 
@@ -44,9 +46,14 @@ public class Button : Label
 	public event ButtonActionFn? OnButtonClick;
 
 	public Button(Element? parent, ReadOnlySpan<char> text = "Button", ReadOnlySpan<char> name = default) : base(parent, text, name) {
-		SetBgColor(new Color(20, 25, 32, 220));
 		SetPaintBackgroundEnabled(true);
 		SetPaintBorderEnabled(true);
+	}
+
+	public override void ApplySchemeSettings(IScheme scheme) {
+		base.ApplySchemeSettings(scheme);
+		SetBgSchemeColor(scheme.GetColor("Button.BackgroundColor", new(20, 25, 32, 220)));
+		lastRenderTime = 0;
 	}
 
 	protected override void OnThink() {
@@ -79,19 +86,19 @@ public class Button : Label
 		get => __triggeredWhenEnterPressed;
 		set {
 			__triggeredWhenEnterPressed = value;
-			startPulse = DateTime.UtcNow;
+			startPulse = Stopwatch.GetTimestamp();
 		}
 	}
 
 	private bool __triggeredWhenEnterPressed = false;
 	private bool __pulsing = false;
-	private DateTime startPulse;
-	public float PulseTime => (float)(DateTime.UtcNow - startPulse).TotalSeconds;
+	private long startPulse = Stopwatch.GetTimestamp();
+	public float PulseTime => (float)Stopwatch.GetElapsedTime(startPulse).TotalSeconds;
 	public bool Pulsing {
 		get => __pulsing;
 		set {
 			__pulsing = value;
-			startPulse = DateTime.UtcNow;
+			startPulse = Stopwatch.GetTimestamp();
 		}
 	}
 
@@ -110,7 +117,7 @@ public class Button : Label
 	bool switchToPaintTimeColors = false;
 	double lastRenderTime;
 
-	public override Color GetBgColor() => switchToPaintTimeColors ? painttimeBgColor :base.GetBgColor();
+	public override Color GetBgColor() => switchToPaintTimeColors ? painttimeBgColor : base.GetBgColor();
 	public override Color GetFgColor() => switchToPaintTimeColors ? painttimeFgColor : base.GetFgColor();
 	// These overrides fix some issues where painting used to set these colors dynamically.
 	// So the last render time gets invalidated so they get calculated again
@@ -129,7 +136,7 @@ public class Button : Label
 			var backpre = GetBgColor();
 			var forepre = GetFgColor();
 
-			var canInput = IsMouseInputEnabled();
+			var canInput = !IsDisabled();
 
 			if ((TriggeredWhenEnterPressed || Pulsing) && canInput) {
 				double val = ((Math.Sin(PulseTime * 6) + 1) / 2);
@@ -143,8 +150,8 @@ public class Button : Label
 			fore = MixColorBasedOnMouseState(this, forepre, HoveredMultiplier, DepressedMultiplier);
 
 			if (!canInput) {
-				back = back.Adjust(0, 0, -0.5f);
-				fore = fore.Adjust(0, 0, -0.5f);
+				back = back.Adjust(0, -0.3f, -0.15f);
+				fore = fore.Adjust(0, -0.3f, -0.15f);
 			}
 
 			if (!DrawBackgroundWhenMouseIdle && !IsHovered() && !Pulsing) {
@@ -180,6 +187,7 @@ public class Button : Label
 		base.Paint(width, height);
 		switchToPaintTimeColors = false;
 	}
+	public override bool CanShareBorders => false;
 	public override void PaintBorder(float width, float height) {
 		ColorStateSetup(out var back, out var fore);
 

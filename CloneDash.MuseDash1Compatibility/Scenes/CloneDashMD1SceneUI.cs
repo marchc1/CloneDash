@@ -1,15 +1,18 @@
-﻿using CloneDash.Characters;
+using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 using CloneDash.Game.Statistics;
 using CommunityToolkit.HighPerformance;
 using Nucleus;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.ManagedMemory;
@@ -29,13 +32,14 @@ namespace CloneDash.Scenes;
 public class StatisticsPanel : Panel
 {
 	ICharacterVictoryInstance victory = null!;
+	MuseDash1VictoryScreen? screen;
 	ISongChart? chart;
 	double start = 0;
 	double Time() => globals.CurTime - start;
-	IGame game;
+	RhythmGameLevel game;
 	StatisticsData stats;
 
-	public StatisticsPanel(Element? parent, IGame game, StatisticsData stats) : base(parent){
+	public StatisticsPanel(Element? parent, RhythmGameLevel game, StatisticsData stats, MuseDash1VictoryAssets? assets) : base(parent){
 		this.game = game;
 		this.stats = stats;
 
@@ -43,7 +47,7 @@ public class StatisticsPanel : Panel
 		if (chart == null) return;
 		start = globals.CurTime;
 
-		ICharacterDescriptor? character = CharacterMod.GetCharacterData();
+		ICharacterDescriptor? character = CharacterMod.Instance.GetActive();
 		if (character == null) return;
 
 		victory = character.CreateVictory();
@@ -51,91 +55,42 @@ public class StatisticsPanel : Panel
 		victory.PlayAudio();
 		stats.Compute();
 
-		var bottom = new Panel(this);
-		bottom.SetPaintBackgroundEnabled(false);
-
-		bottom.DynamicallySized = true;
-		bottom.		Size = new(0.07f);
-		bottom.		Dock = Dock.Bottom;
-
-		var restart = new Button(bottom);
-		restart.DynamicallySized = true;
-		restart.		Size = new(.2f);
-		restart.		Text = "Restart";
-		restart.		Dock = Dock.Left;
-		restart.OnButtonClick += (_,  _) => {
-			// TODO: Probably should just hard restart it...
-			// Maybe seeking is stable enough now to justify this though?
-			game.Restart();
-			this.Remove();
-		};
-
-		var back = new Button(bottom);
-		back.DynamicallySized = true;
-		back.		Size = new(.2f);
-		back.		Text = "Main Menu";
-		back.		Dock = Dock.Right;
-		back.OnButtonClick += (_, _) => LevelTransitions.LoadMainMenu();
+		if (assets != null) {
+			var canvasPanel = new UnityCanvasPanel(this, assets.Canvas);
+			canvasPanel.Dock = Dock.Fill;
+			if (assets.Like != null)
+				canvasPanel.Overlays.Add(assets.Like);
+			assets.Canvas.Play("", "PnlVictoryIn");
+			screen = new MuseDash1VictoryScreen(assets, stats, chart, null, false, false, null, game.GetParameters().Get<bool>(RhythmGameLoadParameters.AUTOPLAY), victory, Restart, LevelTransitions.LoadMainMenu);
+			canvasPanel.Clicked = screen.Click;
+		}
 
 		BorderSize = 0;
+		SetPaintBackgroundEnabled(false);
 	}
-	void RenderOneLine(ReadOnlySpan<char> line, int fs, ref int y) {
-		Graphics2D.DrawText(16, 16 + y, line, Graphics2D.UI_FONT_NAME, fs);
-		y += fs + 4;
+	void Restart() {
+		// TODO: Probably should just hard restart it...
+		// Maybe seeking is stable enough now to justify this though?
+		game.Restart();
+		this.Remove();
 	}
-	public override void Paint(float width, float height) {
-		SetBgColor(new Color(0, 0, 0, (int)(220 * (float)NMath.Ease.OutQuad(NMath.Remap(Time(), 0, 0.5, 0, 1, true)))));
-		base.Paint(width, height);
 
-		Vector2F position = new(width / 2, (1 - (float)NMath.Ease.OutElastic(Math.Clamp(Time() * 0.2, 0, 1))) * (height));
-		EngineCore.Window.BeginMode2D(new() {
-			Zoom = height / 900 / 2.4f,
-			Offset = (new Vector2F(width / 2, height / 1)).ToNumerics()
-		});
-		victory.Render();
-		EngineCore.Window.EndMode2D();
-
-		var chart = this.chart;
-		if (chart == null) return;
-		if (stats == null) return;
-
-		Graphics2D.SetDrawColor(255, 255, 255);
-		stats.Compute();
-		var fs = 24;
-		var y = 0;
-
-		var metadata = chart.GetSong().FetchMetadata();
-		ReadOnlySpan<char> nameSpan = metadata.Name;
-		var matchEnumerator = Util.BoldRegex.EnumerateMatches(nameSpan);
-		bool isSuccess = matchEnumerator.MoveNext();
-		ReadOnlySpan<char> textToDraw = isSuccess
-			? nameSpan.Slice(matchEnumerator.Current.Index, matchEnumerator.Current.Length)
-			: nameSpan;
-		string fontName = isSuccess ? Graphics2D.UI_MONO_BOLD_FONT_NAME : Graphics2D.UI_CN_JP_FONT_NAME;
-		Graphics2D.DrawText(16, 16 + y, textToDraw, fontName, fs);
-		y += fs + 4;
-
-		RenderOneLine($"      Rating: {chart.GetRatingNumber()}", fs, ref y);
-		RenderOneLine($"      Grade: {stats.Grade}", fs, ref y);
-		RenderOneLine($"      Accuracy: {stats.Accuracy}", fs, ref y);
-		RenderOneLine($"      Score: {stats.Score}", fs, ref y);
-		RenderOneLine($"      Max Combo: {stats.MaxCombo}", fs, ref y);
-		RenderOneLine("", fs, ref y);
-		RenderOneLine($"      Perfects: {stats.Perfects}", fs, ref y);
-		RenderOneLine($"      Greats: {stats.Greats}", fs, ref y);
-		RenderOneLine($"      Passes: {stats.Passes}", fs, ref y);
-		RenderOneLine($"      Misses: {stats.Misses}", fs, ref y);
-		RenderOneLine("", fs, ref y);
-		RenderOneLine($"      Earlys: {stats.Earlys}", fs, ref y);
-		RenderOneLine($"      Exacts: {stats.Exacts}", fs, ref y);
-		RenderOneLine($"      Lates: {stats.Lates}", fs, ref y);
-		RenderOneLine("", fs, ref y);
-		RenderOneLine($"      Registered: {stats.OrderedEnemies.Count}", fs, ref y);
-	}
 	protected override void OnThink() {
 		base.OnThink();
-		if (victory != null) 
+		if (victory != null)
 			victory.Think();
+		if (screen == null)
+			return;
+
+		screen.Update(Math.Min(Level.RealtimeDeltaF, 0.1f));
+		if (Level.FrameState.Keyboard.WasKeyPressed(ButtonCode.KeyR))
+			screen.Restart();
+		else if (Level.FrameState.Keyboard.WasKeyPressed(ButtonCode.KeyEnter))
+			screen.Continue();
+		if (Level.FrameState.Keyboard.WasKeyPressed(ButtonCode.KeySpace))
+			screen.PressLike();
+		if (Level.FrameState.Keyboard.WasKeyReleased(ButtonCode.KeySpace))
+			screen.ReleaseLike();
 	}
 }
 
@@ -480,7 +435,7 @@ public enum ComboGrade
 	High = 30
 }
 
-public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1SceneUI
+public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : IMuseDash1SceneUI
 {
 	protected StatisticsPanel? CurrentStatisticsPanel;
 
@@ -531,6 +486,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	protected ITexture? score_English;
 	protected ModelData? fx_combo_1;
 	protected ModelData? fx_combo_2;
+	MuseDash1VictoryAssets? victoryCanvas;
 
 	public virtual void Dispose() {
 		foreach (var item in BackgroundItems) item.Dispose();
@@ -555,7 +511,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		CleanupList(ForegroundItems, curtime);
 	}
 
-	protected double Time => scene.GetGame().GetConductor().GetTime();
+	protected double Time => scene.GetGame().Component<IConductor>().GetTime();
 	bool AllPerfect, FullCombo;
 	int Combo;
 	double CurrentFever, MaxFever;
@@ -575,7 +531,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	public static float MinorTextScale => 0.65f;
 	public static float TextScale => 0.85f;
 
-	protected ITexture? LoadTextureByName(ReadOnlySpan<char> name) => MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(name)!);
+	protected ITexture? LoadTextureByName(ReadOnlySpan<char> name) => UnityAssetUtils.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(name)!);
 	public void SetSeeking(bool seeking) => Seeking = seeking;
 	public virtual void Initialize() {
 		SetupScoreNumber();
@@ -584,16 +540,84 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		StyledTextShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "styled_text.fs");
 		UIAlphatestShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "ui_alphatest.fs");
 
-		score_English = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("score_English")!);
+		score_English = UnityAssetUtils.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("score_English")!);
 		ScoreLabel = new(0, 0, new(0, 0), 0, new(1, 1), score_English, new(165, 254, 254), null);
 
 		LoadScoreAssets();
 		LoadMultiHitAssets();
 		LoadHealthBarAssets();
 		LoadComboModels();
+		victoryCanvas = ImportVictoryCanvas();
 
 		ForceDeactivateCombo1();
 		ForceDeactivateCombo2();
+	}
+
+	static AssetStudio.Transform? FindChild(AssetStudio.Transform? transform, string name)
+		=> transform?.GetChildren().FirstOrDefault(child => child.GetGameObject()?.m_Name == name);
+
+	static MuseDash1VictoryAssets? ImportVictoryCanvas() {
+		var assets = MuseDash1Compatibility.StreamingAssets;
+		var found = assets.FindAssetByName<AssetStudio.GameObject>("PnlVictory");
+		if (found == null)
+			return null;
+
+		HashSet<AssetStudio.SerializedFile> pinned = [found.assetsFile];
+		assets.Pin(found.assetsFile);
+		try {
+			var root = found.assetsFile.Objects.OfType<AssetStudio.Transform>().FirstOrDefault(transform => !transform.m_Father.TryGet(out _) && transform.GetGameObject()?.m_Name == "PnlVictory");
+			var panel = FindChild(FindChild(root, "Default"), "PnlVictory")?.GetGameObject();
+			if (panel == null)
+				return null;
+
+			var script = root!.GetGameObject()?.GetMonoBehaviorByScriptName("PnlVictory");
+			var data = script?.ToType();
+			var settings = new UnityCanvasSettings("GameMain.unity UI_3D canvas (CanvasScaler) + Camera_3D", true, 60, 100, new(1920, 1080), 1);
+			UnityCanvas ImportCanvas(AssetStudio.GameObject gameObject, MuseDash1CanvasBehaviours behaviours) {
+				var canvas = UnityCanvas.Import(gameObject, settings,
+					files => assets.LoadDependenciesContaining("PnlVictory", files, pinned),
+					(canvas, node, behaviour, className, data) => MuseDash1Localization.Apply(canvas, node, behaviour, className, data) || behaviours.Capture(canvas, node, behaviour, className, data));
+				MuseDash1Localization.ApplyGlobalFonts(canvas, assets.Assets.AssetsFileList);
+				if (data?["btnDownloadReports"] is System.Collections.IList reports)
+					foreach (System.Collections.Specialized.OrderedDictionary pointer in reports)
+						if (canvas.TryResolve<AssetStudio.MonoBehaviour>(script!, pointer, out var button) && canvas.FindNode(button) is CanvasNode reportNode)
+							reportNode.Active = false;
+				canvas.Report();
+				return canvas;
+			}
+
+			var behaviours = new MuseDash1CanvasBehaviours();
+			var canvas = ImportCanvas(panel, behaviours);
+
+			UnityCanvas? likeCanvas = null;
+			var likeBehaviours = new MuseDash1CanvasBehaviours();
+			if (data?["pnlControls"] is System.Collections.IList controls)
+				foreach (System.Collections.Specialized.OrderedDictionary control in controls)
+					if (control["mainPnl"] is System.Collections.Specialized.OrderedDictionary mainPnl && Convert.ToInt64(mainPnl["m_PathID"]) == panel.m_PathID
+						&& control["tglLike"] is System.Collections.Specialized.OrderedDictionary tglLike && canvas.TryResolve<AssetStudio.GameObject>(script!, tglLike, out var likeObject)) {
+						likeCanvas = ImportCanvas(likeObject, likeBehaviours);
+						break;
+					}
+
+			IAudioClip? LoadClip(string field) {
+				if (script == null || data?[field] is not System.Collections.Specialized.OrderedDictionary pointer)
+					return null;
+
+				var pptr = new AssetStudio.PPtr<AssetStudio.AudioClip>(Convert.ToInt32(pointer["m_FileID"]), Convert.ToInt64(pointer["m_PathID"]), script.assetsFile);
+				if (!pptr.TryGet(out var clip) && pptr.m_FileID > 0 && pptr.m_FileID <= script.assetsFile.m_Externals.Count)
+					assets.LoadDependenciesContaining("PnlVictory", new HashSet<string> { Path.GetFileName(script.assetsFile.m_Externals[pptr.m_FileID - 1].fileName) }, pinned);
+				return pptr.TryGet(out clip) ? MuseDash1Compatibility.LoadSound(clip) : null;
+			}
+
+			return new MuseDash1VictoryAssets(canvas, behaviours, likeCanvas, likeBehaviours.LikeButton, LoadClip("victoryBgm"), LoadClip("sfxClip"),
+				MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1VictoryScreen.LIKE_SOUND), MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1VictoryScreen.UNLIKE_SOUND));
+		}
+		finally {
+			foreach (var file in pinned)
+				if (file != found.assetsFile)
+					assets.Release(file);
+			assets.Unpin(found.assetsFile);
+		}
 	}
 
 	public virtual void LoadScoreAssets() {
@@ -629,35 +653,38 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		combo2model = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.MonoBehaviour>("fx_combo_2_SkeletonData")!)?.Instantiate();
 	}
 
-	public virtual void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
+	Vector2F TextPosition(PathwaySet pathways) => pathways.Count == 1 ? scene.GetPathwayPosition(pathways.First) : scene.GetCenterPosition();
+	bool IsAirText(PathwaySet pathways) => pathways.Count == 1 && scene.IsAirPathway(pathways.First);
+
+	public virtual void CreateGreatHitText(double precision, PathwaySet pathways, bool inFever, EarlyLate earlylate) {
 		Color color = inFever ? new(255, 108, 0) : new(146, 55, 255);
-		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), inFever ? GoldGreat : ScoreGreat, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : pathway == PathwaySide.Top ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
+		var text = new TextImageRenderItem(Time, 0.5, TextPosition(pathways), 0, new(TextScale), inFever ? GoldGreat : ScoreGreat, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : IsAirText(pathways) ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
 		text.Worldspace = true;
 		BackgroundItems.Add(text);
 	}
 
-	public virtual void CreateHealthText(float healthGiven, PathwaySide pathway) {
-		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(MinorTextScale), $"{Math.Round(healthGiven)}", "Snaps Taste", new(107, 226, 0), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
+	public virtual void CreateHealthText(float healthGiven, PathwaySet pathways) {
+		var text = new TextImageRenderItem(Time, 0.5, TextPosition(pathways), 0, new(MinorTextScale), $"{Math.Round(healthGiven)}", "Snaps Taste", new(107, 226, 0), IsAirText(pathways) ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
 		text.Worldspace = true;
 		ForegroundItems.Add(text);
 	}
 
-	public virtual void CreatePassText(double precision, PathwaySide pathway) {
-		var pos = scene.GetPathwayPosition(pathway);
+	public virtual void CreatePassText(double precision, PathwaySet pathways) {
+		var pos = TextPosition(pathways);
 		pos.X -= 0.8f;
 		var text = new TextImageRenderItem(Time, 0.5, pos, 0, new(TextScale), ScorePass, Color.White, UITextAnimationFns.UpwardFadeoutMoveLeft);
 		text.Worldspace = true;
 		BackgroundItems.Add(text);
 	}
 
-	public virtual void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
-		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), inFever ? GoldPerfect : ScorePerfect, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : pathway == PathwaySide.Top ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
+	public virtual void CreatePerfectHitText(double precision, PathwaySet pathways, bool inFever, EarlyLate earlylate) {
+		var text = new TextImageRenderItem(Time, 0.5, TextPosition(pathways), 0, new(TextScale), inFever ? GoldPerfect : ScorePerfect, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : IsAirText(pathways) ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
 		text.Worldspace = true;
 		BackgroundItems.Add(text);
 	}
 
-	public virtual void CreateScoreText(int scoreGiven, PathwaySide pathway) {
-		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(MinorTextScale), $"{scoreGiven}", "Snaps Taste", new(0, 191, 255), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
+	public virtual void CreateScoreText(int scoreGiven, PathwaySet pathways) {
+		var text = new TextImageRenderItem(Time, 0.5, TextPosition(pathways), 0, new(MinorTextScale), $"{scoreGiven}", "Snaps Taste", new(0, 191, 255), IsAirText(pathways) ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
 		text.Worldspace = true;
 		ForegroundItems.Add(text);
 	}
@@ -688,7 +715,9 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	}
 
 	protected virtual StatisticsPanel? LoadPanel(StatisticsData stats) {
-		var panel = new StatisticsPanel(EngineCore.Level.RootPanel, game, stats);
+		var canvas = victoryCanvas ?? ImportVictoryCanvas();
+		victoryCanvas = null;
+		var panel = new StatisticsPanel(EngineCore.Level.RootPanel, game, stats, canvas);
 		return panel;
 	}
 
@@ -1172,7 +1201,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	}
 }
 
-public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, IGame game) : MD1SceneUI(scene, game)
+public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, RhythmGameLevel game) : MD1SceneUI(scene, game)
 {
 	protected TextImageRenderItem ComboLabel = null!;
 
@@ -1224,7 +1253,7 @@ public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, IGame game) 
 	}
 }
 
-public class CloneDashMD1SceneUIArknights(IMuseDash1SceneInstance scene, IGame game) : MD1SceneUI(scene, game)
+public class CloneDashMD1SceneUIArknights(IMuseDash1SceneInstance scene, RhythmGameLevel game) : MD1SceneUI(scene, game)
 {
 
 }

@@ -1,11 +1,14 @@
-﻿using CloneDash.Charts;
+using CloneDash.Charts;
 using CloneDash.Common;
+using CloneDash.Common.Game;
 using CloneDash.Common.Songs;
 using CloneDash.Common.UI;
 using CloneDash.Common.UI.Binding;
+using CloneDash.Common.UI.Searching;
 using CloneDash.Compatibility.MDMC;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
+using CloneDash.MuseDashCustomPlayCompatibility;
 using CloneDash.Menu;
 using CloneDash.Menu.Character;
 using CloneDash.Menu.Main;
@@ -157,12 +160,13 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 	public override bool OnFileDropped(string filepath, Vector2F pos) {
 		try {
-			var song = CustomAlbumsChartProvider.LoadSong(filepath);
+			bool customPlay = MD1_CustomPlaySong.IsCustomPlayPath(filepath);
+			ISong? song = customPlay ? CustomPlayChartProvider.LoadSong(filepath) : CustomAlbumsChartProvider.LoadSong(filepath);
 			if (song == null)
 				return false;
 
 			// If not in song selector, enter.
-			SongSelector? selector = GetOrEnterSongSelector(ChartMod.GetChartSongProviderByName("Custom Albums"));
+			SongSelector? selector = GetOrEnterSongSelector(ChartMod.Instance.GetProviderByID(customPlay ? CustomPlayChartProvider.PROVIDER_ID : "musedash1customs"));
 			if (selector == null)
 				return false;
 
@@ -259,6 +263,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
 		PushActiveElement(new MainMenuPanel(RootPanel));
+
+		if (LevelTransitions.TakePendingError() is string error)
+			RootPanel.DialogOK("Couldn't load the chart", error);
 	}
 
 	public override void PreThink(ref FrameState frameState) {
@@ -367,7 +374,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 				for (int i = 0; i < frames.Length; i++) {
 					float val = frames[i];
 					currentAvgVolume += val;
-					if (i % 256 == 0)
+					if (i % 512 == 0)
 						framesOverTime.Add(val);
 				}
 				currentAvgVolume /= frames.Length;
@@ -428,6 +435,12 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			Position = Position - GetRenderBounds().Size / 2;
 			Position = Position + new Vector2F(levelSelector.GetRenderBounds().W / 4f, 0);
 			Size = new(256, height);
+
+			foreach (var button in buttons) {
+				var life = button.Lifetime - (button.offset * .15f);
+				var xOffset = (float)NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
+				button.RenderOffset = new(xOffset, 0);
+			}
 		}
 
 		protected override void PerformLayout(float width, float height) {
@@ -437,9 +450,14 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		internal void UpdateHeight(int v) {
 			height = v;
 		}
+
+		readonly List<LevelSelectorSelectDifficultyButton> buttons = [];
+		internal void AddButton(LevelSelectorSelectDifficultyButton button) {
+			buttons.Add(button);
+		}
 	}
 
-	class LevelSelectorSelectDifficultyButton(Element parent, string difficultyName, SongChartMetadata metadata) : Button(parent)
+	class LevelSelectorSelectDifficultyButton : Button
 	{
 		public override void PaintBackground(float w, float h) {
 			var life = Lifetime - (offset * .15f);
@@ -458,10 +476,6 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			}
 		}
 		public override void Paint(float w, float h) {
-			var life = Lifetime - (offset * .15f);
-			var xOffset = (float)NMath.Ease.InQuart(1 - Math.Clamp(life * 2f, 0, 1)) * -256;
-			ChildRenderOffset = new(xOffset, 0);
-
 			base.Paint(w, h);
 
 			Vector2F textDrawingPosition = Anchor.CenterRight.GetPositionGivenAlignment(GetRenderBounds().Size, GetTextPadding());
@@ -470,7 +484,15 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		}
 
 		bool autoplayChart;
-		float offset;
+		public float offset;
+		private readonly string difficultyName;
+		private readonly SongChartMetadata metadata;
+
+		public LevelSelectorSelectDifficultyButton(LevelSelectorDifficultiesPanel parent, string difficultyName, SongChartMetadata metadata) : base(parent) {
+			this.difficultyName = difficultyName;
+			this.metadata = metadata;
+			parent.AddButton(this);
+		}
 
 		protected override void OnThink() {
 			base.OnThink();
@@ -506,7 +528,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		levelSelector.Dock = Dock.Fill;
 
 		selector.EnterSheetSelection();
-		selector.DiscRotateSOS.ResetTo(0);
+		selector.DiscRotateSos.ResetTo(0);
 		levelSelector.Removed += (s) => {
 			if (selector != null) {
 				selector.ExitSheetSelection();
@@ -577,7 +599,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	}
 
 	private static LevelSelectorSelectDifficultyButton? CreateDifficulty(
-		FlexPanel levelSelector, ISongChart chart, in SongChartMetadata metadata
+		LevelSelectorDifficultiesPanel levelSelector, ISongChart chart, in SongChartMetadata metadata
 	)
 		=> CreateDifficulty(levelSelector, (autoplay) => {
 			levelSelector.Level.As<MainMenuLevel>().LoadChartSheetLevel(chart, autoplay);
@@ -585,9 +607,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 
 	public void LoadChartSheetLevel(ISongChart chart, bool autoplay) {
-		LevelTransitions.LoadSongChart($"Loading '{chart.GetSong().FetchMetadata().Name}'...", chart, new() {
-			Autoplay = autoplay
-		});
+		LevelTransitions.LoadSongChart($"Loading '{chart.GetSong().FetchMetadata().Name}'...", chart, new RhythmGameLoadParameters()
+			.Set(RhythmGameLoadParameters.AUTOPLAY, autoplay)
+		);
 	}
 
 
@@ -643,10 +665,11 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		Character.
 		Position = new(x, 0);
+		Character.ExpressionRightLimit = active is MainMenuPanel menuPanel ? menuPanel.GetButtonsLeft() : float.MaxValue;
 		Character.CharacterOffset = new((1 - (float)NMath.Ease.OutCirc(Math.Clamp(Curtime * 1.5, 0, 1))) * -(FrameState.WindowWidth / 2), 0);
 	}
 
-	private static LevelSelectorSelectDifficultyButton? CreateDifficulty(FlexPanel levelSelector, Action<bool> onClick, SongChartMetadata metadata) {
+	private static LevelSelectorSelectDifficultyButton? CreateDifficulty(LevelSelectorDifficultiesPanel levelSelector, Action<bool> onClick, SongChartMetadata metadata) {
 		var difficultyName = metadata.DifficultyName;
 		var buttonColor = metadata.Color;
 		var designer = metadata.ChartAuthors;

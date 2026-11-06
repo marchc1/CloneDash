@@ -1,11 +1,12 @@
-﻿using CloneDash.Common.Songs;
+using CloneDash.Common.Compatibility;
+using CloneDash.Common.Songs;
 
 namespace CloneDash.Charts;
 
 /// <summary>
 /// A producer of source states and chart songs
 /// </summary>
-public interface IChartSongProvider
+public interface IChartSongProvider : ICloneDashModProvider<ISong>
 {
 	public struct NavigationButtonInstructions
 	{
@@ -28,10 +29,6 @@ public interface IChartSongProvider
 	}
 
 	/// <summary>
-	/// The name of the provider, this should be unique and should be a short name for the source of the songs.
-	/// </summary>
-	ReadOnlySpan<char> GetName();
-	/// <summary>
 	/// Produces a new <see cref="ISongSourceState"/> with no filters.
 	/// </summary>
 	ISongSourceState NewState();
@@ -40,16 +37,6 @@ public interface IChartSongProvider
 	/// Find a song by its name.
 	/// </summary>
 	ISong? FindSongByName(ReadOnlySpan<char> name);
-
-	/// <summary>
-	/// Get all available songs.
-	/// </summary>
-	IEnumerable<ISong> GetAvailableSongs();
-
-	/// <summary>
-	/// Is this source available?
-	/// </summary>
-	bool IsEnabled();
 
 	/// <summary>
 	/// Returns the song that the user last was on. This is saved on a per-source basis. This only applies to offline sources,
@@ -72,11 +59,6 @@ public interface IChartSongProvider
 	/// <param name="filter"></param>
 	void UpdateSavedFilter(IChartSongFilter? filter);
 
-
-	/// <summary>
-	/// The sorting index used in the user interface.
-	/// </summary>
-	int GetSortIndex();
 
 	/// <summary>
 	/// Returns the navigation button instructions for the main menu user interface.

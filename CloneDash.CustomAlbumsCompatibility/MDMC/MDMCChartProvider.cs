@@ -1,4 +1,6 @@
-﻿using CloneDash.Common.Songs;
+using CloneDash.Common.Compatibility;
+using CloneDash.Common.Songs;
+using CloneDash.Common.UI.Searching;
 using CloneDash.Compatibility.MDMC;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Menu.Searching;
@@ -13,14 +15,13 @@ namespace CloneDash.Charts;
 
 [MarkForStaticConstruction]
 
-public class MDMCChartProvider : IChartSongProvider
+public class MDMCChartProvider() : ModProvider<ISong>("MDMC", "mdmc"), IChartSongProvider
 {
 	public static readonly ConVar mdmc_lastfilter = new ConVar(nameof(mdmc_lastfilter), "", FCvar.Saved, "The last selected song filter");
 
 	public ISong? FindSongByName(ReadOnlySpan<char> name) => null; // Cannot poll for this
-	public IEnumerable<ISong> GetAvailableSongs() { yield break; } // Cannot poll for this
-
-	public ReadOnlySpan<char> GetName() => "MDMC";
+	public override IEnumerable<string> GetAvailableIDs() { yield break; } // Cannot poll for this
+	public override ISong? FindByID(ReadOnlySpan<char> id) => null; // Cannot poll for this
 	public ISongSourceState NewState() => new MDMCChartSongSourceState();
 
 	public IChartSongFilter? GetSavedFilter() => mdmc_lastfilter.GetString().IsEmpty ? null : JSON.Deserialize<MDMCChartFilter>(new(mdmc_lastfilter.GetString()));
@@ -29,7 +30,7 @@ public class MDMCChartProvider : IChartSongProvider
 	public void UpdateSavedFilter(IChartSongFilter? filter) => mdmc_lastfilter.SetValue(filter == null ? "" : JSON.Serialize((MDMCChartFilter)filter));
 	public void UpdateSavedSong(ISong? selectedSong) { }
 
-	public int GetSortIndex() => 4000;
+	public override int GetSortIndex() => 4000;
 
 	public IChartSongProvider.NavigationButtonInstructions GetNavigationButtonInstructions() => new() {
 		Name = "Browse mdmc.moe Charts",
@@ -37,8 +38,6 @@ public class MDMCChartProvider : IChartSongProvider
 		Hue = 340,
 		Icon = "icons/globe-hemisphere-west.png"
 	};
-
-	public bool IsEnabled() => true;
 }
 
 public class MDMCChartFilter(MDMCChartFilter? baseFilter) : BaseContiguousChartSongFilter(baseFilter)

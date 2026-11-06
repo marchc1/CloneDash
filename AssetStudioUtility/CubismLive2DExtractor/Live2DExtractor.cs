@@ -15,6 +15,7 @@ using AssetStudio;
 using CubismLive2DExtractor.CubismUnityClasses;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Nucleus.Common.Images;
 using static CubismLive2DExtractor.CubismParsers;
 using Object = AssetStudio.Object;
 
@@ -275,13 +276,17 @@ namespace CubismLive2DExtractor
                         return;
                 }
 
-                using (var image = texture2D.ConvertToImage(flip: true))
+                var image = texture2D.ConvertToImage(flip: true);
+                if (!image.IsValid())
+                    return;
+                try
                 {
-                    using (var file = File.OpenWrite(savePath))
-                    {
-                        image.WriteToStream(file, ImageFormat.Png);
-                    }
+                    Image.ExportImage(image, savePath);
                     textureBag.Add($"textures/{texture2D.m_Name}.png");
+                }
+                finally
+                {
+                    Image.UnloadImage(ref image);
                 }
             });
             textures.UnionWith(textureBag);

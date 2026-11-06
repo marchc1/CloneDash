@@ -1,4 +1,5 @@
-﻿using CloneDash.Compatibility.MuseDash;
+﻿using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+using CloneDash.Compatibility.MuseDash;
 
 using System.Text.Json.Nodes;
 
@@ -41,9 +42,23 @@ namespace CloneDash.Compatibility.CustomAlbums
 			config.note_uid = node["note_uid"]?.GetValue<string>() ?? string.Empty;
 			config.length = node["length"].GetValue<decimal>();
 			config.pathway = node["pathway"]?.GetValue<int>() ?? 0;
+			config.pathway_name = node["pathway_name"]?.GetValue<string>();
 			config.blood = node["blood"]?.GetValue<bool>() ?? false;
+			config.layer = node["layer"]?.GetValue<int>() ?? 0;
+			config.curve = node["curve"] is JsonArray curve ? curve.ToCurvePath() : null;
 
 			return config;
+		}
+
+		public static MD1_CurvePath? ToCurvePath(this JsonArray array) {
+			var nodes = new List<MD1_CurveNode>(array.Count);
+			foreach (var item in array) {
+				if (item == null)
+					continue;
+				var ease = Enum.TryParse<MD1_CurveEase>(item["ease"]?.GetValue<string>(), out var parsed) ? parsed : MD1_CurveEase.Linear;
+				nodes.Add(new(item["time"]!.GetValue<double>(), (float)item["value"]!.GetValue<double>(), ease));
+			}
+			return nodes.Count == 0 ? null : new MD1_CurvePath(nodes);
 		}
 	}
 }

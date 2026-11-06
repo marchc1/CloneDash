@@ -43,7 +43,8 @@ public static class Model4System
 	/// <br/>
 	/// Editor can use this too
 	/// </summary>
-	public const string MODEL_FORMAT_VERSION = "Nucleus Model4 2025.04.28.01";
+	public const string MODEL_FORMAT_VERSION = "Nucleus Model4 2026.10.27.01";
+	public const string MODEL_FORMAT_VERSION_NORMALIZED_HANDLES = "Nucleus Model4 2025.04.28.01";
 
 	public static ConVar m4s_wireframe = new(nameof(m4s_wireframe), "0", FCvar.Saved, "Model4 instance wireframe overlay.", 0, 1);
 	public static ConVar m4s_stencilmode = new(nameof(m4s_stencilmode), "1", FCvar.Saved, "Controls stencil rendering.", 0, ((int)M4S_StencilMode.Count) - 1);
@@ -105,6 +106,64 @@ public static class Model4System
 		Rlgl.SetTexture(tex.GetTextureHandle());
 	}
 
+	/// <summary>
+	/// False while a model renders under someone else's shader, tint black needs its own
+	/// </summary>
+	internal static bool DefaultShader = true;
+
+	// Tint black: rgb = (tex.a - tex.rgb) * dark + tex.rgb * light, premultiplied
+	const string TINT_BLACK_FS = """
+		#version 330
+		in vec2 fragTexCoord;
+		in vec4 fragColor;
+		uniform sampler2D texture0;
+		uniform vec4 colDiffuse;
+		uniform vec3 darkColor;
+		uniform int straightTexture;
+		out vec4 finalColor;
+		void main() {
+			vec4 tex = texture(texture0, fragTexCoord);
+			vec4 light = fragColor * colDiffuse;
+			if (straightTexture == 1) {
+				tex.rgb *= tex.a;
+				light.rgb *= light.a;
+			}
+			float a = tex.a * light.a;
+			vec3 rgb = (tex.a - tex.rgb) * darkColor * light.a + tex.rgb * light.rgb;
+			if (straightTexture == 1) rgb = a > 0.0 ? rgb / a : vec3(0.0);
+			finalColor = vec4(rgb, a);
+		}
+		""";
+	private static Shader tintBlackShader;
+	private static bool tintBlackLoaded;
+	private static int tintDarkLoc;
+	private static int tintStraightTextureLoc;
+
+	/// <summary>
+	/// Switches to the tint black shader if the slot has a dark color.
+	/// </summary>
+	/// <returns>true if it did, call <see cref="EndTintBlack"/> after</returns>
+	internal static bool BeginTintBlack(SlotInstance slot, bool premultipliedAlpha) {
+		if (slot.DarkColor is not { } dark || !DefaultShader || !slot.Bone.Model.Data.RenderTintBlack) return false;
+		if (!tintBlackLoaded) {
+			tintBlackShader = Raylib.LoadShaderFromMemory(null, TINT_BLACK_FS);
+			tintDarkLoc = Raylib.GetShaderLocation(tintBlackShader, "darkColor");
+			tintStraightTextureLoc = Raylib.GetShaderLocation(tintBlackShader, "straightTexture");
+			tintBlackLoaded = true;
+		}
+
+		Rlgl.DrawRenderBatchActive();
+		Raylib.BeginShaderMode(tintBlackShader);
+		Raylib.SetShaderValue(tintBlackShader, tintDarkLoc, new System.Numerics.Vector3(dark.R / 255f, dark.G / 255f, dark.B / 255f), ShaderUniformDataType.SHADER_UNIFORM_VEC3);
+		Raylib.SetShaderValue(tintBlackShader, tintStraightTextureLoc, premultipliedAlpha ? 0 : 1, ShaderUniformDataType.SHADER_UNIFORM_INT);
+		return true;
+	}
+
+	internal static void EndTintBlack() {
+		Rlgl.DrawRenderBatchActive();
+		Raylib.EndShaderMode();
+	}
+
 	internal static void PrepareWireframeRendering() {
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.SetLineWidth(1);
@@ -154,8 +213,17 @@ public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>, IMode
 	public Skin DefaultSkin { get; set; }
 	public List<Animation> Animations { get; set; } = [];
 	public List<LinkedMesh> LinkedMeshes { get; set; } = [];
+	public List<IkConstraintData> IkConstraints { get; set; } = [];
+	public List<TransformConstraintData> TransformConstraints { get; set; } = [];
+	public List<PathConstraintData> PathConstraints { get; set; } = [];
+	public List<EventData> Events { get; set; } = [];
 
 	[JsonIgnore] public IRuntimeTextureAtlas TextureAtlas { get; set; }
+
+	/// <summary>
+	/// Draw slot dark colors (tint black), off when the source drew without them. Not saved in .nm4b
+	/// </summary>
+	[JsonIgnore] public bool RenderTintBlack { get; set; } = true;
 
 	// Internal lookup tables (holding off for now)
 	// [JsonIgnore] readonly UtlSymbolTableMT Symbols = new();
@@ -195,9 +263,54 @@ public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>, IMode
 			instance.Slots.Add(slot);
 		}
 
+		foreach (var data in IkConstraints)
+			instance.IkConstraints.Add(new() {
+				Data = data,
+				Bones = BoneInstances(data.Bones, bone_data2instance),
+				Target = bone_data2instance[data.Target]
+			});
+		foreach (var data in TransformConstraints)
+			instance.TransformConstraints.Add(new() {
+				Data = data,
+				Bones = BoneInstances(data.Bones, bone_data2instance),
+				Target = bone_data2instance[data.Target]
+			});
+		foreach (var data in PathConstraints)
+			instance.PathConstraints.Add(new() {
+				Data = data,
+				Bones = BoneInstances(data.Bones, bone_data2instance),
+				Target = instance.Slots[data.Target.Index]
+			});
+
 		instance.SetToSetupPose();
+		instance.UpdateCache();
 
 		return instance;
+	}
+
+	private static List<BoneInstance> BoneInstances(IEnumerable<BoneData> bones, Dictionary<BoneData, BoneInstance> instances) {
+		var result = new List<BoneInstance>();
+		foreach (var boneData in bones)
+			result.Add(instances[boneData]);
+		return result;
+	}
+
+	public EventData? FindEvent(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Events, name);
+	public IkConstraintData? FindIkConstraint(ReadOnlySpan<char> name) =>
+		Model4System.SearchReturnItem(IkConstraints, name);
+	public TransformConstraintData? FindTransformConstraint(ReadOnlySpan<char> name) =>
+		Model4System.SearchReturnItem(TransformConstraints, name);
+	public PathConstraintData? FindPathConstraint(ReadOnlySpan<char> name) =>
+		Model4System.SearchReturnItem(PathConstraints, name);
+
+	public void ResolveLinkedMeshes() {
+		foreach (var skin in Skins) {
+			foreach (var entry in skin.Attachments) {
+				if (entry.Value is not MeshAttachment { ParentKey: string parentKey } mesh) continue;
+				var parentSkin = mesh.ParentSkin == null ? DefaultSkin : FindSkin(mesh.ParentSkin);
+				mesh.ParentMesh = parentSkin?.GetAttachment(entry.Key.SlotIndex, parentKey) as MeshAttachment;
+			}
+		}
 	}
 
 	// May use this later
@@ -247,6 +360,7 @@ public class ModelData : IDisposable, IModelInterface<BoneData, SlotData>, IMode
 	}
 
 	public void SetupAttachments() {
+		ResolveLinkedMeshes();
 		foreach (var skin in Skins) {
 			foreach (var attachment in skin.Attachments) {
 				attachment.Value.Setup(this);
@@ -275,6 +389,9 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 	public List<BoneInstance> Bones { get; set; } = [];
 	public List<SlotInstance> Slots { get; set; } = [];
 	public List<SlotInstance> DrawOrder { get; set; } = [];
+	public List<IkConstraintInstance> IkConstraints { get; set; } = [];
+	public List<TransformConstraintInstance> TransformConstraints { get; set; } = [];
+	public List<PathConstraintInstance> PathConstraints { get; set; } = [];
 
 	public RuntimeClipper Clipping;
 
@@ -297,6 +414,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 
 	public void Render(bool useDefaultShader = true) {
 		var offset = Graphics2D.Offset;
+		Model4System.DefaultShader = useDefaultShader;
 		Model4System.NotifyNewModelRender();
 		Graphics2D.ResetDrawingOffset();
 		Rlgl.DrawRenderBatchActive();
@@ -307,12 +425,10 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 			Rlgl.Translatef(Position.X, Position.Y, 0);
 			Rlgl.Scalef(Scale.X, Scale.Y, 1);
 
-			foreach (var bone in Bones) {
-				bone.UpdateWorldTransform();
-			}
+			UpdateWorldTransform();
 
 			foreach (var slot in DrawOrder) {
-				var attachment = slot.Attachment;
+				var attachment = slot.Bone.Active ? slot.Attachment : null;
 				if (attachment == null) {
 					Clipping.NextSlot(slot);
 					continue;
@@ -355,6 +471,209 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 		SetSlotsToSetupPose();
 	}
 
+	readonly List<IModelUpdatable> updateCache = [];
+	readonly List<BoneInstance> updateCacheReset = [];
+	bool cacheDirty = true;
+
+	/// <summary>
+	/// Rebuilds the bone/constraint update order
+	/// <br/><b>NOTE:</b> Call after changing constraints, timelines skip whatever this marks inactive.
+	/// </summary>
+	public void InvalidateUpdateCache() => UpdateCache();
+
+	/// <summary>
+	/// Poses every bone and runs the constraints
+	/// </summary>
+	public void UpdateWorldTransform() {
+		if (cacheDirty)
+			UpdateCache();
+
+		foreach (var bone in updateCacheReset) {
+			bone.Applied = new() {
+				X = bone.Position.X, Y = bone.Position.Y,
+				Rotation = bone.Rotation,
+				ScaleX = bone.Scale.X, ScaleY = bone.Scale.Y,
+				ShearX = bone.Shear.X, ShearY = bone.Shear.Y,
+				Valid = true
+			};
+		}
+		foreach (var updatable in updateCache)
+			updatable.Update();
+	}
+
+	public void UpdateCache() {
+		cacheDirty = false;
+		updateCache.Clear();
+		updateCacheReset.Clear();
+
+		foreach (var bone in Bones) {
+			bone.Sorted = bone.Data.SkinRequired;
+			bone.Active = !bone.Sorted;
+		}
+		// Merged default skins (Muse Dash) can hold bones and constraints
+		var skin = Skin ?? Data.DefaultSkin;
+		if (skin != null) {
+			foreach (var boneData in skin.Bones) {
+				BoneInstance? bone = Bones[boneData.Index];
+				do {
+					bone.Sorted = false;
+					bone.Active = true;
+					bone = bone.Parent;
+				} while (bone != null);
+			}
+		}
+
+		int constraintCount = IkConstraints.Count + TransformConstraints.Count + PathConstraints.Count;
+		for (int order = 0; order < constraintCount; order++) {
+			foreach (var ik in IkConstraints) {
+				if (ik.Data.Order == order) {
+					SortIk(ik);
+					goto next;
+				}
+			}
+			foreach (var transform in TransformConstraints) {
+				if (transform.Data.Order == order) {
+					SortTransform(transform);
+					goto next;
+				}
+			}
+			foreach (var path in PathConstraints) {
+				if (path.Data.Order == order) {
+					SortPath(path);
+					goto next;
+				}
+			}
+			next:;
+		}
+
+		foreach (var bone in Bones)
+			SortBone(bone);
+	}
+
+	private bool SkinHas(ConstraintData data) =>
+		!data.SkinRequired || (Skin ?? Data.DefaultSkin)?.Constraints.Contains(data) == true;
+
+	private void SortIk(IkConstraintInstance constraint) {
+		constraint.Active = constraint.Target.Active && SkinHas(constraint.Data);
+		if (!constraint.Active) return;
+
+		SortBone(constraint.Target);
+		var constrained = constraint.Bones;
+		var parent = constrained[0];
+		SortBone(parent);
+		if (constrained.Count > 1) {
+			var child = constrained[constrained.Count - 1];
+			if (!updateCache.Contains(child))
+				updateCacheReset.Add(child);
+		}
+		updateCache.Add(constraint);
+		SortReset(parent.Children);
+		constrained[constrained.Count - 1].Sorted = true;
+	}
+
+	private void SortTransform(TransformConstraintInstance constraint) {
+		constraint.Active = constraint.Target.Active && SkinHas(constraint.Data);
+		if (!constraint.Active) return;
+
+		SortBone(constraint.Target);
+		var constrained = constraint.Bones;
+		if (constraint.Data.Local) {
+			foreach (var child in constrained) {
+				if (child.Parent != null)
+					SortBone(child.Parent);
+				if (!updateCache.Contains(child))
+					updateCacheReset.Add(child);
+			}
+		}
+		else {
+			foreach (var bone in constrained)
+				SortBone(bone);
+		}
+		updateCache.Add(constraint);
+		foreach (var bone in constrained)
+			SortReset(bone.Children);
+		foreach (var bone in constrained)
+			bone.Sorted = true;
+	}
+
+	private void SortPath(PathConstraintInstance constraint) {
+		constraint.Active = constraint.Target.Bone.Active && SkinHas(constraint.Data);
+		if (!constraint.Active) return;
+
+		var slot = constraint.Target;
+		int slotIndex = slot.Index;
+		var slotBone = slot.Bone;
+		if (Skin != null)
+			SortPathAttachments(Skin, slotIndex, slotBone);
+		if (Data.DefaultSkin != null && Data.DefaultSkin != Skin)
+			SortPathAttachments(Data.DefaultSkin, slotIndex, slotBone);
+		foreach (var skin in Data.Skins)
+			SortPathAttachments(skin, slotIndex, slotBone);
+		SortPathAttachment(slot.Attachment, slotBone);
+
+		var constrained = constraint.Bones;
+		foreach (var bone in constrained)
+			SortBone(bone);
+		updateCache.Add(constraint);
+		foreach (var bone in constrained)
+			SortReset(bone.Children);
+		foreach (var bone in constrained)
+			bone.Sorted = true;
+	}
+
+	private void SortPathAttachments(Skin skin, int slotIndex, BoneInstance slotBone) {
+		foreach (var entry in skin.Attachments) {
+			if (entry.Key.SlotIndex == slotIndex)
+				SortPathAttachment(entry.Value, slotBone);
+		}
+	}
+
+	private void SortPathAttachment(Attachment? attachment, BoneInstance slotBone) {
+		if (attachment is not PathAttachment path) return;
+		bool weighted = false;
+		foreach (var vertex in path.GetVertices()) {
+			if (vertex.Weights == null || vertex.Weights.Length == 0) continue;
+			weighted = true;
+			foreach (var weight in vertex.Weights)
+				SortBone(Bones[weight.Bone]);
+		}
+		if (!weighted)
+			SortBone(slotBone);
+	}
+
+	private void SortBone(BoneInstance bone) {
+		if (bone.Sorted) return;
+		if (bone.Parent != null)
+			SortBone(bone.Parent);
+		bone.Sorted = true;
+		updateCache.Add(bone);
+	}
+
+	private static void SortReset(List<BoneInstance> bones) {
+		foreach (var bone in bones) {
+			if (!bone.Active) continue;
+			if (bone.Sorted)
+				SortReset(bone.Children);
+			bone.Sorted = false;
+		}
+	}
+
+	public void SetConstraintsToSetupPose() {
+		foreach (var ik in IkConstraints)
+			ik.SetToSetupPose();
+		foreach (var transform in TransformConstraints)
+			transform.SetToSetupPose();
+		foreach (var path in PathConstraints)
+			path.SetToSetupPose();
+	}
+
+	public IkConstraintInstance? FindIkConstraint(ReadOnlySpan<char> name) =>
+		Model4System.SearchReturnItem(IkConstraints, name);
+	public TransformConstraintInstance? FindTransformConstraint(ReadOnlySpan<char> name) =>
+		Model4System.SearchReturnItem(TransformConstraints, name);
+	public PathConstraintInstance? FindPathConstraint(ReadOnlySpan<char> name) =>
+		Model4System.SearchReturnItem(PathConstraints, name);
+
 	public BoneInstance? FindBone(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Bones, name);
 
 	public SlotInstance? FindSlot(ReadOnlySpan<char> name) => Model4System.SearchReturnItem(Slots, name);
@@ -379,6 +698,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 	public void SetBonesToSetupPose() {
 		foreach (var bone in Bones)
 			bone.SetToSetupPose();
+		SetConstraintsToSetupPose();
 	}
 
 	public void SetSlotsToSetupPose() {
@@ -400,6 +720,7 @@ public class ModelInstance : IContainsSetupPose, IModelInterface<BoneInstance, S
 	public void SetSkin(Skin? skin) {
 		Skin = skin;
 		SetSlotsToSetupPose();
+		UpdateCache();
 	}
 }
 
@@ -429,9 +750,13 @@ public class BoneData : IModel4Nameable
 	public float Rotation { get; set; }
 	public Vector2F Scale { get; set; }
 	public Vector2F Shear { get; set; }
+	/// <summary>
+	/// Only active when the skin lists it (or a child of it)
+	/// </summary>
+	public bool SkinRequired { get; set; }
 }
 
-public class BoneInstance : IContainsSetupPose, IModelInstanceObject, IModel4Nameable
+public class BoneInstance : IContainsSetupPose, IModelInstanceObject, IModel4Nameable, IConstraintBone, IModelUpdatable
 {
 	public ModelInstance GetModel() => Model;
 
@@ -449,6 +774,27 @@ public class BoneInstance : IContainsSetupPose, IModelInstanceObject, IModel4Nam
 	public float Rotation;
 	public Vector2F Scale;
 	public Vector2F Shear;
+
+	/// <summary>
+	/// The local transform the world transform was last built from, constraints change it
+	/// </summary>
+	public BoneApplied Applied;
+	/// <summary>
+	/// False when a skin-required bone isn't in the current skin
+	/// </summary>
+	public bool Active = true;
+	internal bool Sorted;
+
+	IConstraintBone? IConstraintBone.ParentBone => Parent;
+	float IConstraintBone.BoneLength => Data.Length;
+	TransformMode IConstraintBone.BoneTransformMode => TransformMode;
+	ref BoneApplied IConstraintBone.Applied => ref Applied;
+	ref Transformation IConstraintBone.World => ref WorldTransform;
+
+	public void Update() => UpdateWorldTransform();
+
+	public void UpdateWorldTransform(float x, float y, float rotation, float scaleX, float scaleY, float shearX, float shearY)
+		=> UpdateWorldTransform(new Vector2F(x, y), rotation, new Vector2F(scaleX, scaleY), new Vector2F(shearX, shearY));
 
 	public void SetToSetupPose() {
 		Position = Data.Position;
@@ -475,8 +821,16 @@ public class BoneInstance : IContainsSetupPose, IModelInstanceObject, IModel4Nam
 
 	public void UpdateWorldTransform() => UpdateWorldTransform(in Position, Rotation, in Scale, in Shear);
 
-	public void UpdateWorldTransform(in Vector2F pos, float rot, in Vector2F scale, in Vector2F shear)
-		=> WorldTransform = Transformation.CalculateWorldTransformation(in pos, rot, in scale, in shear, TransformMode, Parent?.WorldTransform ?? null);
+	public void UpdateWorldTransform(in Vector2F pos, float rot, in Vector2F scale, in Vector2F shear) {
+		Applied = new() {
+			X = pos.X, Y = pos.Y,
+			Rotation = rot,
+			ScaleX = scale.X, ScaleY = scale.Y,
+			ShearX = shear.X, ShearY = shear.Y,
+			Valid = true
+		};
+		WorldTransform = Transformation.CalculateWorldTransformation(in pos, rot, in scale, in shear, TransformMode, Parent?.WorldTransform ?? null);
+	}
 }
 
 public class SlotData : IModel4Nameable
@@ -503,10 +857,37 @@ public class SlotInstance : IContainsSetupPose, IModel4Nameable
 	public int Index => Data.Index;
 	public SlotData Data;
 
-	public Attachment? Attachment;
+	Attachment? attachment;
+	/// <summary>
+	/// Setting a different attachment clears the deform, unless both deform the same vertices
+	/// </summary>
+	public Attachment? Attachment {
+		get => attachment;
+		set {
+			if (attachment == value) return;
+			if (value is not VertexAttachment next || attachment is not VertexAttachment current || next.DeformAttachment != current.DeformAttachment)
+				DeformCount = 0;
+			attachment = value;
+		}
+	}
 	public BoneInstance Bone;
 	public Color Color;
 	public Color? DarkColor;
+
+	/// <summary>
+	/// Vertex offsets from deform timelines, only the first <see cref="DeformCount"/> are used
+	/// </summary>
+	public float[] Deform = [];
+	public int DeformCount;
+
+	public float[] EnsureDeform(int count) {
+		if (Deform.Length < count)
+			Array.Resize(ref Deform, count);
+		if (DeformCount < count)
+			Array.Clear(Deform, DeformCount, count - DeformCount);
+		DeformCount = count;
+		return Deform;
+	}
 
 	public byte R => Color.R;
 	public byte G => Color.G;
@@ -520,18 +901,36 @@ public class SlotInstance : IContainsSetupPose, IModel4Nameable
 		DarkColor = Data.DarkColor;
 		BlendMode = Data.BlendMode;
 		Attachment = Data.Attachment == null ? null : Bone.Model.GetAttachment(Index, Data.Attachment);
+		DeformCount = 0;
 	}
 
 	public void SetAttachment(string? value) => Attachment = value == null ? null : Model.GetAttachment(Index, value);
 
+	/// <summary>
+	/// Sets the blend factors for an attachment.
+	/// Premultiplied pages need <see cref="VertexColor"/> too.
+	/// </summary>
 	public void StartBlendModeFor(Attachment attachment, bool premultipliedAlpha) {
 		Raylib.BeginBlendMode(BlendMode switch {
-			BlendMode.Normal => (A < 255 || attachment.Alpha < 255) ? Raylib_cs.BlendMode.Alpha : premultipliedAlpha ? Raylib_cs.BlendMode.AlphaPremultiply : Raylib_cs.BlendMode.Alpha,
-			BlendMode.Additive => Raylib_cs.BlendMode.Additive,
+			BlendMode.Normal => premultipliedAlpha ? Raylib_cs.BlendMode.AlphaPremultiply : Raylib_cs.BlendMode.Alpha,
+			BlendMode.Additive => premultipliedAlpha ? Raylib_cs.BlendMode.AddColors : Raylib_cs.BlendMode.Additive,
 			BlendMode.Multiply => Raylib_cs.BlendMode.Multiplied,
-			BlendMode.Screen => Raylib_cs.BlendMode.Alpha, // need to implement this in a shader I believe
+			// todo: screen should be ONE, ONE_MINUS_SRC_COLOR, drawn like normal for now
+			BlendMode.Screen => premultipliedAlpha ? Raylib_cs.BlendMode.AlphaPremultiply : Raylib_cs.BlendMode.Alpha,
 			_ => throw new Exception($"Unsupported blend mode! (got {BlendMode})")
 		});
+	}
+
+	/// <summary>
+	/// Slot color times the attachment's, premultiplied for premultiplied pages
+	/// </summary>
+	public (float R, float G, float B, float A) VertexColor(Color attachmentColor, bool premultipliedAlpha) {
+		var color = Color * Model4System.GetRenderBlend();
+		float r = color.R / 255f * attachmentColor.R / 255f;
+		float g = color.G / 255f * attachmentColor.G / 255f;
+		float b = color.B / 255f * attachmentColor.B / 255f;
+		float a = color.A / 255f * attachmentColor.A / 255f;
+		return premultipliedAlpha ? (r * a, g * a, b * a, a) : (r, g, b, a);
 	}
 
 	public void EndBlendMode() {
@@ -573,15 +972,21 @@ public class Skin : IModel4Nameable
 	public string Name { get; set; }
 	public Dictionary<SkinEntry, Attachment> Attachments { get; set; } = [];
 	public List<BoneData> Bones { get; set; } = [];
+	public List<ConstraintData> Constraints { get; set; } = [];
 
 	public void AddSkin(Skin skin) {
 		foreach (var attachment in skin.Attachments) Attachments.TryAdd(attachment.Key, attachment.Value);
 		foreach (var bone in skin.Bones) if (!Bones.Contains(bone)) Bones.Add(bone);
+		foreach (var constraint in skin.Constraints) {
+			if (!Constraints.Contains(constraint))
+				Constraints.Add(constraint);
+		}
 	}
 
 	public void Clear() {
 		Attachments.Clear();
 		Bones.Clear();
+		Constraints.Clear();
 	}
 
 	public Attachment? GetAttachment(int slot, ReadOnlySpan<char> name) {
@@ -615,13 +1020,26 @@ public class Animation : IModel4Nameable
 	public string Name { get; set; }
 	public List<Timeline> Timelines { get; set; } = [];
 
-	public void Apply(ModelInstance? model, double time, float mix = 1, MixBlendMode mixBlend = MixBlendMode.Setup) {
+	public void Apply(ModelInstance? model, double time, float mix = 1, MixBlendMode mixBlend = MixBlendMode.Setup)
+		=> Apply(model, -1, time, false, null, mix, mixBlend);
+
+	/// <summary>
+	/// Collects events between lastTime and time into events
+	/// </summary>
+	public void Apply(ModelInstance? model, double lastTime, double time, bool loop, List<ModelEvent>? events, float mix = 1, MixBlendMode mixBlend = MixBlendMode.Setup) {
 		if (model == null)
 			return;
 
+		if (loop && Duration != 0) {
+			time %= Duration;
+			if (lastTime > 0)
+				lastTime %= Duration;
+		}
+
 		foreach (var tl in Timelines) {
-			// todo: lasttime
-			tl.Apply(model, 0, time, mix, mixBlend);
+			tl.Apply(model, lastTime, time, mix, mixBlend, MixDirection.In);
+			if (events != null)
+				tl.CollectEvents(lastTime, time, events);
 		}
 	}
 }
@@ -706,14 +1124,12 @@ public class RegionAttachment : Attachment
 		}
 
 		Model4System.CheckTextureUpdate(tex);
+		bool tintBlack = Model4System.BeginTintBlack(slot, region.GetPage().GetPreMultipliedAlpha());
 		Rlgl.Begin(DrawMode.TRIANGLES);
 		Model4System.SetTexture(tex);
 
-		var color = slot.Color * Model4System.GetRenderBlend();
-		float srM = color.R / 255f, sgM = color.G / 255f, sbM = color.B / 255f, saM = color.A / 255f;
-		float arM = Color.R / 255f, agM = Color.G / 255f, abM = Color.B / 255f, aaM = Color.A / 255f;
-
-		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
+		var vertexColor = slot.VertexColor(Color, region.GetPage().GetPreMultipliedAlpha());
+		Rlgl.Color4f(vertexColor.R, vertexColor.G, vertexColor.B, vertexColor.A);
 
 		AtlasUV.ComputeRegionUVs(rx, ry, rw, rh, rotation, tex.GetWidth(), tex.GetHeight(), out var uvTL, out var uvTR, out var uvBR, out var uvBL);
 		if (tex.HasPublicFlags(PublicTextureFlags.RequiresFlippedV)) {
@@ -731,6 +1147,8 @@ public class RegionAttachment : Attachment
 		Rlgl.TexCoord2f(uvBL.X, uvBL.Y); Rlgl.Vertex2f(BL.X, BL.Y);
 
 		Rlgl.End();
+		if (tintBlack)
+			Model4System.EndTintBlack();
 
 		if (Model4System.m4s_wireframe.GetBool()) {
 			Model4System.PrepareWireframeRendering();
@@ -782,17 +1200,54 @@ public class VertexAttachment : Attachment
 	[JsonIgnore] public IModelAtlasRegion Region;
 	[JsonIgnore] public bool InitializedRegion;
 
+	/// <summary>
+	/// The vertices this attachment uses, the parent's for linked meshes
+	/// </summary>
+	public virtual AttachmentVertex[] GetVertices() => Vertices;
+
+	/// <summary>
+	/// The attachment deform timelines are keyed on, can be the parent for linked meshes
+	/// </summary>
+	[JsonIgnore] public virtual VertexAttachment DeformAttachment => this;
+
+	[JsonIgnore] int[]? weightStarts;
+	[JsonIgnore] AttachmentVertex[]? weightStartsFor;
+
+	/// <summary>
+	/// Index of each vertex's first weight across the whole attachment
+	/// </summary>
+	public int[] GetWeightStarts() {
+		var vertices = GetVertices();
+		if (weightStartsFor != vertices || weightStarts == null) {
+			weightStartsFor = vertices;
+			weightStarts = new int[vertices.Length];
+			int k = 0;
+			for (int i = 0; i < vertices.Length; i++) {
+				weightStarts[i] = k;
+				k += vertices[i].Weights?.Length ?? 0;
+			}
+		}
+		return weightStarts;
+	}
+
 	protected Vector2F CalculateVertexWorldPosition(SlotInstance slot, int vertexI) {
-		if (Vertices == null)
+		var vertices = GetVertices();
+		if (vertices == null)
 			return default;
 
-		var vertex = Vertices![vertexI];
+		var vertex = vertices[vertexI];
+		float[]? deform = slot.DeformCount > 0 ? slot.Deform : null;
 
 		if (vertex.Weights == null || vertex.Weights.Length <= 0) {
 			ref var transform = ref slot.Bone.WorldTransform;
+			float vx = vertex.X, vy = vertex.Y;
+			if (deform != null && vertexI * 2 + 1 < slot.DeformCount) {
+				vx += deform[vertexI * 2];
+				vy += deform[vertexI * 2 + 1];
+			}
 			return new(
-				vertex.X * transform.A + vertex.Y * transform.B + transform.X,
-				vertex.X * transform.C + vertex.Y * transform.D + transform.Y
+				vx * transform.A + vy * transform.B + transform.X,
+				vx * transform.C + vy * transform.D + transform.Y
 			);
 		}
 
@@ -800,17 +1255,33 @@ public class VertexAttachment : Attachment
 		float px = 0, py = 0;
 
 		var weights = vertex.Weights;
-		for (int i = 0; i < weights.Length; i++) {
+		int k = deform != null ? GetWeightStarts()[vertexI] : 0;
+		for (int i = 0; i < weights.Length; i++, k++) {
 			var wd = weights[i];
 			float w = wd.Weight;
 			if (w == 0) continue;
 			ref var t = ref bones[wd.Bone].WorldTransform;
 			float lx = wd.Position.X, ly = wd.Position.Y;
+			if (deform != null && k * 2 + 1 < slot.DeformCount) {
+				lx += deform[k * 2];
+				ly += deform[k * 2 + 1];
+			}
 			px += (lx * t.A + ly * t.B + t.X) * w;
 			py += (lx * t.C + ly * t.D + t.Y) * w;
 		}
 
 		return new(px, py);
+	}
+
+	/// <summary>
+	/// World x/y floats, start and count are in floats too
+	/// </summary>
+	public void ComputeWorldFloats(SlotInstance slot, int start, int count, float[] world, int offset) {
+		for (int f = start, o = offset; f < start + count; f += 2, o += 2) {
+			var pos = CalculateVertexWorldPosition(slot, f / 2);
+			world[o] = pos.X;
+			world[o + 1] = pos.Y;
+		}
 	}
 
 	public int ComputeWorldVertices(SlotInstance slot, int startAt, int length, Vector2F[] worldVertices, int offset) {
@@ -822,7 +1293,7 @@ public class VertexAttachment : Attachment
 	}
 
 	public int ComputeWorldVerticesInto(SlotInstance slot, Vector2F[] worldVertices)
-		=> ComputeWorldVertices(slot, 0, Vertices.Length, worldVertices, 0);
+		=> ComputeWorldVertices(slot, 0, GetVertices().Length, worldVertices, 0);
 }
 
 public class LinkedMesh
@@ -842,7 +1313,27 @@ public class MeshAttachment : VertexAttachment
 {
 	public AttachmentTriangle[] Triangles;
 	public string Path;
-	public MeshAttachment? ParentMesh;
+	[JsonIgnore] public MeshAttachment? ParentMesh;
+
+	/// <summary>
+	/// Set on linked meshes: skin key of the parent mesh in the same slot
+	/// </summary>
+	public string? ParentKey;
+	/// <summary>
+	/// Skin the parent lives in, null for the default skin
+	/// </summary>
+	public string? ParentSkin;
+	/// <summary>
+	/// Linked mesh uses the parent's deform keys
+	/// </summary>
+	public bool InheritDeform = true;
+	/// <summary>
+	/// How many vertices at the start make up the hull, 0 = unknown. Not saved in .nm4b
+	/// </summary>
+	public int HullCount;
+
+	[JsonIgnore] public bool IsLinked => ParentKey != null;
+	public override VertexAttachment DeformAttachment => ParentMesh != null && InheritDeform ? ParentMesh : this;
 
 	public string ToDesmosPointArray() {
 		string[] triangles = new string[Triangles.Length];
@@ -864,9 +1355,10 @@ public class MeshAttachment : VertexAttachment
 		Region = data.TextureAtlas.GetRegion(Path)!;
 	}
 
-	public AttachmentVertex[] GetVertices() => ParentMesh?.Vertices ?? Vertices;
+	public override AttachmentVertex[] GetVertices() => ParentMesh?.Vertices ?? Vertices;
 
 	public AttachmentTriangle[] GetTriangles() => ParentMesh?.Triangles ?? Triangles;
+	public int GetHullCount() => ParentMesh?.HullCount ?? HullCount;
 
 	public override void Render(SlotInstance slot) {
 		var vertices = GetVertices();
@@ -895,14 +1387,12 @@ public class MeshAttachment : VertexAttachment
 		ITexture tex = region.GetTexture();
 
 		Model4System.CheckTextureUpdate(tex);
+		bool tintBlack = Model4System.BeginTintBlack(slot, region.GetPage().GetPreMultipliedAlpha());
 		Rlgl.Begin(DrawMode.TRIANGLES);
 		Model4System.SetTexture(tex);
 
-		var color = slot.Color * Model4System.GetRenderBlend();
-		float srM = color.R / 255f, sgM = color.G / 255f, sbM = color.B / 255f, saM = color.A / 255f;
-		float arM = Color.R / 255f, agM = Color.G / 255f, abM = Color.B / 255f, aaM = Color.A / 255f;
-
-		Rlgl.Color4f(srM * arM, sgM * agM, sbM * abM, saM * aaM);
+		var vertexColor = slot.VertexColor(Color, region.GetPage().GetPreMultipliedAlpha());
+		Rlgl.Color4f(vertexColor.R, vertexColor.G, vertexColor.B, vertexColor.A);
 		bool wireframe = Model4System.m4s_wireframe.GetBool();
 
 		const int HEAP_ALLOCATING_VERTEXCOUNT_THRESHOLD = 512;
@@ -932,6 +1422,8 @@ public class MeshAttachment : VertexAttachment
 		}
 
 		Rlgl.End();
+		if (tintBlack)
+			Model4System.EndTintBlack();
 
 		if (wireframe) {
 			Model4System.PrepareWireframeRendering();
@@ -1040,6 +1532,11 @@ public static class AtlasUV
 public abstract class Timeline
 {
 	public abstract void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir = MixDirection.Out);
+
+	/// <summary>
+	/// Adds events keyed after lastTime, up to and including time.
+	/// </summary>
+	public virtual void CollectEvents(double lastTime, double time, List<ModelEvent> into) { }
 }
 
 public interface IBoneTimeline
@@ -1228,8 +1725,10 @@ public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatProperty
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static float PERFORM_ROT_WRAP(float r) {
 		r %= 360f;
-		if (r > 180f) r -= 360f;
-		else if (r <= -180f) r += 360f;
+		if (r >= 180f)
+			r -= 360f;
+		else if (r < -180f)
+			r += 360f;
 		return r;
 	}
 
@@ -1269,15 +1768,7 @@ public abstract class MonoBoneRotationPropertyTimeline() : MonoBoneFloatProperty
 				default: return;
 			}
 
-		// Some more manual work has to be done for rotation delta..
-		var curve = Curve(0);
-		int frame = curve.BinarySearchKeyframe(time);
-		float p = curve[frame].Value;
-		float percentage = (float)curve.GetPercentage(frame, time);
-
-		float delta = (curve.Count == 1 ? curve[frame] : curve[frame + 1]).Value - p;
-		delta = PERFORM_ROT_WRAP(delta);
-		r = p + delta * percentage;
+		r = Curve(0).DetermineValueAtTime(time);
 
 		switch (blend) {
 			case MixBlendMode.Setup:
@@ -1462,6 +1953,145 @@ public class SlotColor4Timeline() : CurveTimeline<float>(4), ISlotTimeline
 	}
 }
 
+/// <summary>
+/// Slot color without alpha, for slots keyed with color and alpha apart
+/// </summary>
+public class SlotRGBTimeline() : CurveTimeline<float>(3), ISlotTimeline
+{
+	public int SlotIndex { get; set; }
+
+	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
+		var slot = this.Slot(model);
+		var setup = slot.Data.Color;
+		if (BeforeFirstFrame(time)) {
+			switch (blend) {
+				case MixBlendMode.Setup: slot.Color = new(setup.R, setup.G, setup.B, slot.Color.A); return;
+				case MixBlendMode.First: {
+						var now = slot.Color;
+						slot.Color = new(
+							(byte)(now.R + (setup.R - now.R) * mix),
+							(byte)(now.G + (setup.G - now.G) * mix),
+							(byte)(now.B + (setup.B - now.B) * mix),
+							now.A);
+						return;
+					}
+				default: return;
+			}
+		}
+
+		float r, g, b;
+		if (AfterLastFrame(time)) {
+			r = Curve(0).Last?.Value ?? 1;
+			g = Curve(1).Last?.Value ?? 1;
+			b = Curve(2).Last?.Value ?? 1;
+		}
+		else {
+			int index = Curve(0).DetermineIndexAtTime(time);
+			r = Curve(0).DetermineValueAtTime(time, index);
+			g = Curve(1).DetermineValueAtTime(time, index);
+			b = Curve(2).DetermineValueAtTime(time, index);
+		}
+
+		var current = slot.Color;
+		if (mix != 1) {
+			var basecolor = blend == MixBlendMode.Setup ? setup : current;
+			r = basecolor.R / 255f + (r - basecolor.R / 255f) * (float)mix;
+			g = basecolor.G / 255f + (g - basecolor.G / 255f) * (float)mix;
+			b = basecolor.B / 255f + (b - basecolor.B / 255f) * (float)mix;
+		}
+		slot.Color = new(
+			(byte)Math.Clamp(r * 255f, 0, 255),
+			(byte)Math.Clamp(g * 255f, 0, 255),
+			(byte)Math.Clamp(b * 255f, 0, 255),
+			current.A);
+	}
+}
+
+/// <summary>
+/// Slot alpha on its own, for slots keyed with color and alpha apart
+/// </summary>
+public class SlotAlphaTimeline() : CurveTimeline<float>(1), ISlotTimeline
+{
+	public int SlotIndex { get; set; }
+
+	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
+		var slot = this.Slot(model);
+		var now = slot.Color;
+		byte setup = slot.Data.Color.A;
+		if (BeforeFirstFrame(time)) {
+			switch (blend) {
+				case MixBlendMode.Setup: slot.Color = new(now.R, now.G, now.B, setup); return;
+				case MixBlendMode.First:
+					slot.Color = new(now.R, now.G, now.B, (byte)(now.A + (setup - now.A) * mix));
+					return;
+				default: return;
+			}
+		}
+
+		float a = AfterLastFrame(time) ? Curve(0).Last?.Value ?? 1 : Curve(0).DetermineValueAtTime(time);
+		if (mix != 1) {
+			float baseA = (blend == MixBlendMode.Setup ? setup : now.A) / 255f;
+			a = baseA + (a - baseA) * (float)mix;
+		}
+		slot.Color = new(now.R, now.G, now.B, (byte)Math.Clamp(a * 255f, 0, 255));
+	}
+}
+
+/// <summary>
+/// Slot color plus the tint black (dark) color, curves R, G, B, A, dark R, G, B
+/// </summary>
+public class SlotRGBA2Timeline() : CurveTimeline<float>(7), ISlotTimeline
+{
+	public int SlotIndex { get; set; }
+
+	private static byte ToByte(float value) => (byte)Math.Clamp(value * 255f, 0, 255);
+
+	public override void Apply(ModelInstance model, double lastTime, double time, double mix, MixBlendMode blend, MixDirection dir) {
+		var slot = this.Slot(model);
+		Color setupLight = slot.Data.Color, setupDark = slot.Data.DarkColor ?? Color.Black;
+		Color light = slot.Color, dark = slot.DarkColor ?? Color.Black;
+
+		if (BeforeFirstFrame(time)) {
+			switch (blend) {
+				case MixBlendMode.Setup:
+					slot.Color = setupLight;
+					slot.DarkColor = setupDark;
+					return;
+				case MixBlendMode.First:
+					slot.Color = light + (setupLight - light) * (float)mix;
+					slot.DarkColor = dark + (setupDark - dark) * (float)mix;
+					return;
+				default: return;
+			}
+		}
+
+		Span<float> values = stackalloc float[7];
+		if (AfterLastFrame(time)) {
+			for (int i = 0; i < 7; i++)
+				values[i] = Curve(i).Last?.Value ?? 1;
+		}
+		else {
+			int index = Curve(0).DetermineIndexAtTime(time);
+			for (int i = 0; i < 7; i++)
+				values[i] = Curve(i).DetermineValueAtTime(time, index);
+		}
+
+		if (mix != 1) {
+			Color baseLight = blend == MixBlendMode.Setup ? setupLight : light;
+			Color baseDark = blend == MixBlendMode.Setup ? setupDark : dark;
+			ReadOnlySpan<float> baseValues = [
+				baseLight.R / 255f, baseLight.G / 255f, baseLight.B / 255f, baseLight.A / 255f,
+				baseDark.R / 255f, baseDark.G / 255f, baseDark.B / 255f
+			];
+			for (int i = 0; i < 7; i++)
+				values[i] = baseValues[i] + (values[i] - baseValues[i]) * (float)mix;
+		}
+
+		slot.Color = new(ToByte(values[0]), ToByte(values[1]), ToByte(values[2]), ToByte(values[3]));
+		slot.DarkColor = new(ToByte(values[4]), ToByte(values[5]), ToByte(values[6]), (byte)255);
+	}
+}
+
 public class ActiveAttachmentTimeline() : CurveTimeline<string?>(1), ISlotTimeline
 {
 	public int SlotIndex { get; set; }
@@ -1622,6 +2252,8 @@ public delegate void AnimPlaybackEndFn(AnimationChannelEntry entry);
 
 public delegate void AnimPlaybackCompleteFn(AnimationChannelEntry entry);
 
+public delegate void AnimEventFn(AnimationChannelEntry entry, ModelEvent modelEvent);
+
 public class AnimationChannelEntry
 {
 	public Animation Animation;
@@ -1638,6 +2270,11 @@ public class AnimationChannelEntry
 	/// <summary> Called when the animation playback has fully completed (loop exclusive) </summary>
 	public AnimPlaybackCompleteFn? OnPlaybackComplete;
 
+	/// <summary>
+	/// Called for each event key playback passes
+	/// </summary>
+	public AnimEventFn? OnEvent;
+
 	public bool Looping;
 	public double LoopDuration = -1;
 
@@ -1652,6 +2289,10 @@ public class AnimationChannel
 	public float Mix = 1;
 	public double ElapsedTime;
 	public MixBlendMode Blending;
+	/// <summary>
+	/// Time events were last collected up to, -1 so keys at 0 fire
+	/// </summary>
+	public double EventTime = -1;
 
 	public void ElapseTime(double deltaTime) {
 		Time += deltaTime;
@@ -1661,6 +2302,7 @@ public class AnimationChannel
 	public void ResetTime() {
 		Time = 0;
 		ElapsedTime = 0;
+		EventTime = -1;
 	}
 
 	public void EnqueueNext() {
@@ -1811,16 +2453,30 @@ public class AnimationHandler
 		Channels[channel].Time = 0;
 	}
 
+	/// <summary>
+	/// Called for each event key any channel passes
+	/// </summary>
+	public event AnimEventFn? OnEvent;
+
+	readonly List<ModelEvent> firedEvents = [];
+
 	public void Apply(ModelInstance model) {
 		model.ResetDrawOrderToSetup();
 
 		bool first = true;
 		foreach (var channel in Channels) {
-			if (channel.CurrentEntry == null) continue;
+			var entry = channel.CurrentEntry;
+			if (entry == null) continue;
 
 			MixBlendMode blending = first ? MixBlendMode.First : channel.Blending;
 			float mix = channel.Mix;
-			channel.CurrentEntry.Animation.Apply(model, channel.Time, mix, blending);
+			firedEvents.Clear();
+			entry.Animation.Apply(model, channel.EventTime, channel.Time, false, firedEvents, mix, blending);
+			channel.EventTime = channel.Time;
+			foreach (var firedEvent in firedEvents) {
+				entry.OnEvent?.Invoke(entry, firedEvent);
+				OnEvent?.Invoke(entry, firedEvent);
+			}
 			first = false;
 		}
 	}
@@ -1854,6 +2510,21 @@ public enum NucleusModel_SaveType : ushort
 	Timeline_ShearY = Timeline | 10,
 	Timeline_SlotColor4 = Timeline | 11,
 	Timeline_ActiveAttachment = Timeline | 12,
+
+	Attachment_Path = Attachment | 4,
+	Attachment_LinkedMesh = Attachment | 5,
+
+	Timeline_DrawOrder = Timeline | 13,
+	Timeline_Deform = Timeline | 14,
+	Timeline_IkConstraint = Timeline | 15,
+	Timeline_TransformConstraint = Timeline | 16,
+	Timeline_PathConstraintPosition = Timeline | 17,
+	Timeline_PathConstraintSpacing = Timeline | 18,
+	Timeline_PathConstraintMix = Timeline | 19,
+	Timeline_Event = Timeline | 20,
+	Timeline_SlotRGB = Timeline | 21,
+	Timeline_SlotAlpha = Timeline | 22,
+	Timeline_SlotRGBA2 = Timeline | 23,
 }
 
 public static class NucleusModel_SaveType_Ext
@@ -1873,7 +2544,25 @@ public class ModelBinary : IModelFormat
 	public const string EXTENSION = "nm4b";
 	public const string FULL_EXTENSION = $".{EXTENSION}";
 
-	private static BoneData readBone(BinaryReader reader, List<BoneData> workingArray) {
+	/// <summary>
+	/// Pack and write the atlas beside the model when saving
+	/// </summary>
+	public bool PackAtlas { get; set; } = true;
+	public AtlasPackSettings PackSettings { get; set; } = new();
+	/// <summary>
+	/// The atlas packed by the last save, for its warnings
+	/// </summary>
+	public PackedAtlas? LastAtlas { get; private set; }
+
+	/// <summary>
+	/// First format version with constraints, events, path attachments and linked meshes
+	/// </summary>
+	public const string VERSION_CONSTRAINTS = "Nucleus Model4 2026.10.27.01";
+
+	private static bool HasConstraints(string? formatVersion) =>
+		formatVersion != null && string.CompareOrdinal(formatVersion, VERSION_CONSTRAINTS) >= 0;
+
+	private static BoneData readBone(BinaryReader reader, List<BoneData> workingArray, bool constraints) {
 		BoneData bone = new();
 
 		bone.Name = reader.ReadString();
@@ -1887,8 +2576,93 @@ public class ModelBinary : IModelFormat
 		bone.Rotation = reader.ReadSingle();
 		bone.Scale = reader.ReadVector2F();
 		bone.Shear = reader.ReadVector2F();
+		if (constraints)
+			bone.SkinRequired = reader.ReadBoolean();
 
 		return bone;
+	}
+
+	private static List<BoneData> readBoneRefs(BinaryReader reader, ModelData modelData) {
+		int count = reader.Read7BitEncodedInt();
+		List<BoneData> bones = new(count);
+		for (int i = 0; i < count; i++)
+			bones.Add(reader.ReadIndexThenFetch(modelData.BoneDatas));
+		return bones;
+	}
+
+	private static void readIntoConstraint(BinaryReader reader, ModelData modelData, ConstraintData constraint) {
+		constraint.Name = reader.ReadString();
+		constraint.Order = reader.ReadInt32();
+		constraint.SkinRequired = reader.ReadBoolean();
+		constraint.Bones = readBoneRefs(reader, modelData);
+	}
+
+	private static IkConstraintData readIkConstraint(BinaryReader reader, ModelData modelData) {
+		IkConstraintData ik = new();
+		readIntoConstraint(reader, modelData, ik);
+		ik.Target = reader.ReadIndexThenFetch(modelData.BoneDatas);
+		ik.BendDirection = reader.ReadInt32();
+		ik.Compress = reader.ReadBoolean();
+		ik.Stretch = reader.ReadBoolean();
+		ik.Uniform = reader.ReadBoolean();
+		ik.Mix = reader.ReadSingle();
+		ik.Softness = reader.ReadSingle();
+		return ik;
+	}
+
+	private static TransformConstraintData readTransformConstraint(BinaryReader reader, ModelData modelData) {
+		TransformConstraintData transform = new();
+		readIntoConstraint(reader, modelData, transform);
+		transform.Target = reader.ReadIndexThenFetch(modelData.BoneDatas);
+		transform.Local = reader.ReadBoolean();
+		transform.Relative = reader.ReadBoolean();
+		transform.OffsetRotation = reader.ReadSingle();
+		transform.OffsetX = reader.ReadSingle();
+		transform.OffsetY = reader.ReadSingle();
+		transform.OffsetScaleX = reader.ReadSingle();
+		transform.OffsetScaleY = reader.ReadSingle();
+		transform.OffsetShearY = reader.ReadSingle();
+		transform.RotateMix = reader.ReadSingle();
+		transform.TranslateMix = reader.ReadSingle();
+		transform.ScaleMix = reader.ReadSingle();
+		transform.ShearMix = reader.ReadSingle();
+		return transform;
+	}
+
+	private static PathConstraintData readPathConstraint(BinaryReader reader, ModelData modelData) {
+		PathConstraintData path = new();
+		readIntoConstraint(reader, modelData, path);
+		path.Target = reader.ReadIndexThenFetch(modelData.SlotDatas);
+		path.PositionMode = (PositionMode)reader.ReadInt32();
+		path.SpacingMode = (SpacingMode)reader.ReadInt32();
+		path.RotateMode = (RotateMode)reader.ReadInt32();
+		path.OffsetRotation = reader.ReadSingle();
+		path.Position = reader.ReadSingle();
+		path.Spacing = reader.ReadSingle();
+		path.RotateMix = reader.ReadSingle();
+		path.TranslateMix = reader.ReadSingle();
+		return path;
+	}
+
+	private static EventData readEventData(BinaryReader reader) => new() {
+		Name = reader.ReadString(),
+		Int = reader.ReadInt32(),
+		Float = reader.ReadSingle(),
+		String = reader.ReadNullableString(),
+		AudioPath = reader.ReadNullableString(),
+		Volume = reader.ReadSingle(),
+		Balance = reader.ReadSingle()
+	};
+
+	// Skin constraint refs: 0 ik, 1 transform, 2 path
+	private static ConstraintData readConstraintRef(BinaryReader reader, ModelData modelData) {
+		var kind = reader.ReadByte();
+		return kind switch {
+			0 => (ConstraintData)reader.ReadIndexThenFetch(modelData.IkConstraints),
+			1 => reader.ReadIndexThenFetch(modelData.TransformConstraints),
+			2 => reader.ReadIndexThenFetch(modelData.PathConstraints),
+			_ => throw new NotSupportedException($"Unknown constraint kind '{kind}'")
+		};
 	}
 
 	private static SlotData readSlot(BinaryReader reader, ModelData workingModelData) {
@@ -1969,6 +2743,41 @@ public class ModelBinary : IModelFormat
 
 					return attachment;
 				}
+			case NucleusModel_SaveType.Attachment_Path: {
+					PathAttachment attachment = new() { Name = name };
+					attachment.Vertices = reader.ReadArray(readMeshVertex);
+
+					attachment.Position = reader.ReadVector2F();
+					attachment.Rotation = reader.ReadSingle();
+					attachment.Scale = reader.ReadVector2F();
+
+					attachment.Closed = reader.ReadBoolean();
+					attachment.ConstantSpeed = reader.ReadBoolean();
+					attachment.Lengths = reader.ReadArray(r => r.ReadSingle());
+					attachment.Color = reader.ReadColor();
+
+					return attachment;
+				}
+			case NucleusModel_SaveType.Attachment_LinkedMesh: {
+					MeshAttachment attachment = new() { Name = name };
+					attachment.ParentKey = reader.ReadString();
+					attachment.ParentSkin = reader.ReadNullableString();
+					attachment.InheritDeform = reader.ReadBoolean();
+
+					attachment.Position = reader.ReadVector2F();
+					attachment.Rotation = reader.ReadSingle();
+					attachment.Scale = reader.ReadVector2F();
+					attachment.Color = reader.ReadColor();
+					attachment.Path = reader.ReadNullableString()!;
+
+					// Own geometry, only when it differs from the parent's
+					if (reader.ReadBoolean()) {
+						attachment.Vertices = reader.ReadArray(readMeshVertex);
+						attachment.Triangles = reader.ReadArray(readMeshTriangle);
+					}
+
+					return attachment;
+				}
 			default: throw new NotImplementedException($"Weird attachment type given '{type}'");
 		}
 	}
@@ -1983,6 +2792,9 @@ public class ModelBinary : IModelFormat
 		skin.Bones.EnsureCapacity(c);
 		for (int i = 0; i < c; i++)
 			skin.Bones.Add(reader.ReadIndexThenFetch(modelData.BoneDatas));
+
+		if (HasConstraints(modelData.FormatVersion))
+			skin.Constraints = reader.ReadList(modelData, readConstraintRef);
 
 		return skin;
 	}
@@ -2042,7 +2854,30 @@ public class ModelBinary : IModelFormat
 		fcf.Keyframes = reader.ReadList(readKeyframeFloat);
 	}
 
-	private static Timeline readTimeline(BinaryReader reader) {
+	private static Keyframe<int[]?> readKeyframeDrawOrder(BinaryReader reader) {
+		Keyframe<int[]?> keyframe = new() { Time = reader.ReadDouble() };
+		keyframe.Value = reader.ReadBoolean() ? reader.ReadArray(r => r.ReadInt32()) : null;
+		keyframe.Interpolation = (KeyframeInterpolation)reader.ReadInt32();
+		return keyframe;
+	}
+
+	private static ModelEvent readEvent(BinaryReader reader, ModelData modelData) => new() {
+		Time = reader.ReadDouble(),
+		Data = reader.ReadIndexThenFetch(modelData.Events),
+		Int = reader.ReadInt32(),
+		Float = reader.ReadSingle(),
+		String = reader.ReadNullableString(),
+		Volume = reader.ReadSingle(),
+		Balance = reader.ReadSingle()
+	};
+
+	private static void readIntoCurves(BinaryReader reader, CurveTimeline<float> timeline) {
+		timeline.NewCurves();
+		for (int i = 0; i < timeline.Curves.Length; i++)
+			readIntoFCurveFloat(reader, timeline.Curves[i]);
+	}
+
+	private static Timeline readTimeline(BinaryReader reader, ModelData modelData) {
 		var type = reader.ReadSaveType();
 		switch (type) {
 			case NucleusModel_SaveType.Timeline_Translate: {
@@ -2125,18 +2960,112 @@ public class ModelBinary : IModelFormat
 					readIntoFCurveFloat(reader, tl.Curves[3]);
 					return tl;
 				}
+			case NucleusModel_SaveType.Timeline_SlotRGB: {
+					SlotRGBTimeline tl = new();
+					tl.NewCurves();
+					tl.SlotIndex = reader.ReadInt32();
+					readIntoCurves(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_SlotAlpha: {
+					SlotAlphaTimeline tl = new();
+					tl.NewCurves();
+					tl.SlotIndex = reader.ReadInt32();
+					readIntoCurves(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_SlotRGBA2: {
+					SlotRGBA2Timeline tl = new();
+					tl.NewCurves();
+					tl.SlotIndex = reader.ReadInt32();
+					readIntoCurves(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_DrawOrder: {
+					DrawOrderTimeline tl = new();
+					tl.NewCurves();
+					tl.Curves[0].Keyframes = reader.ReadList(readKeyframeDrawOrder);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_Deform: {
+					DeformTimeline tl = new();
+					tl.SlotIndex = reader.ReadInt32();
+					tl.Skin = reader.ReadNullableString();
+					tl.Attachment = reader.ReadString();
+					readIntoFCurveFloat(reader, tl.Curve);
+					tl.Offsets = reader.ReadList(r => r.ReadArray(r2 => r2.ReadSingle()));
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_IkConstraint: {
+					IkConstraintTimeline tl = new();
+					tl.ConstraintIndex = reader.ReadInt32();
+					readIntoCurves(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_TransformConstraint: {
+					TransformConstraintTimeline tl = new();
+					tl.ConstraintIndex = reader.ReadInt32();
+					readIntoCurves(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_PathConstraintPosition: {
+					PathConstraintPositionTimeline tl = new();
+					tl.ConstraintIndex = reader.ReadInt32();
+					readIntoCurves(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_PathConstraintSpacing: {
+					PathConstraintSpacingTimeline tl = new();
+					tl.ConstraintIndex = reader.ReadInt32();
+					readIntoCurves(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_PathConstraintMix: {
+					PathConstraintMixTimeline tl = new();
+					tl.ConstraintIndex = reader.ReadInt32();
+					readIntoCurves(reader, tl);
+					return tl;
+				}
+			case NucleusModel_SaveType.Timeline_Event: {
+					EventTimeline tl = new();
+					tl.Events = reader.ReadList(modelData, readEvent);
+					return tl;
+				}
 			default: throw new NotSupportedException($"Unknown timeline type '{type}'");
 		}
 	}
 
-	private static Animation readAnimation(BinaryReader reader) {
+	private static Animation readAnimation(BinaryReader reader, ModelData modelData) {
 		Animation anim = new Animation();
 
 		anim.Duration = reader.ReadDouble();
 		anim.Name = reader.ReadString();
-		anim.Timelines = reader.ReadList(readTimeline);
+		anim.Timelines = reader.ReadList(modelData, readTimeline);
 
 		return anim;
+	}
+
+	// Linked meshes without their own geometry share the parent's arrays
+	private static void ShareLinkedGeometry(ModelData data) {
+		foreach (var skin in data.Skins) {
+			foreach (var entry in skin.Attachments) {
+				if (entry.Value is not MeshAttachment { IsLinked: true, ParentMesh: MeshAttachment parent } mesh)
+					continue;
+				mesh.Vertices ??= parent.Vertices;
+				mesh.Triangles ??= parent.Triangles;
+			}
+		}
+	}
+
+	private static void MigrateNormalizedHandles(ModelData data) {
+		foreach (var animation in data.Animations) {
+			foreach (var timeline in animation.Timelines) {
+				if (timeline is CurveTimeline<float> curves) {
+					foreach (var curve in curves.Curves)
+						LegacyCurves.ConvertNormalizedHandles(curve, timeline is MonoBoneRotationPropertyTimeline);
+				}
+			}
+		}
 	}
 
 	public ModelData LoadModelFromFile(string pathID, string path) {
@@ -2152,28 +3081,34 @@ public class ModelBinary : IModelFormat
 
 				data.Name = reader.ReadNullableString();
 
-				data.BoneDatas = reader.ReadList<BoneData>(readBone);
+				bool constraints = HasConstraints(data.FormatVersion);
+				data.BoneDatas = reader.ReadList<BoneData>((r, bones) => readBone(r, bones, constraints));
 				data.SlotDatas = reader.ReadList(data, readSlot);
+				if (constraints) {
+					data.IkConstraints = reader.ReadList(data, readIkConstraint);
+					data.TransformConstraints = reader.ReadList(data, readTransformConstraint);
+					data.PathConstraints = reader.ReadList(data, readPathConstraint);
+					data.Events = reader.ReadList(readEventData);
+				}
 				data.Skins = reader.ReadList(data, readSkin);
 				data.DefaultSkin = reader.ReadIndexThenFetch(data.Skins);
-				data.Animations = reader.ReadList(readAnimation);
+				data.Animations = reader.ReadList(data, readAnimation);
+				if (data.FormatVersion == Model4System.MODEL_FORMAT_VERSION_NORMALIZED_HANDLES)
+					MigrateNormalizedHandles(data);
 
-				// Try to load the texture atlas
-				string? texatlas = filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas"));
-				byte[]? imagedata = filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png"));
+				data.ResolveLinkedMeshes();
+				ShareLinkedGeometry(data);
 
-				if (texatlas == null && imagedata == null)
+				var atlas = ModelAtlasFiles.Load(
+					filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas")),
+					page => filesystem.ReadAllBytes(pathID, Path.Combine(Path.GetDirectoryName(path) ?? "", page))
+				);
+				if (atlas == null)
 					return data;
 
-				if (texatlas == null)
-					throw new NullReferenceException("Got image data, expected texture atlas as well");
-				if (imagedata == null)
-					throw new NullReferenceException("Got texture atlas, expected image data as well");
-
-				throw new NotImplementedException("Need to fix incoming texture atlases!!! :(");
-				// data.SetupAttachments();
-
-				// return data;
+				data.TextureAtlas = atlas;
+				data.SetupAttachments();
+				return data;
 			}
 		}
 	}
@@ -2189,6 +3124,86 @@ public class ModelBinary : IModelFormat
 		writer.Write(bone.Rotation);
 		writer.Write(bone.Scale);
 		writer.Write(bone.Shear);
+		writer.Write(bone.SkinRequired);
+	}
+
+	private static void writeConstraint(ModelData modelData, BinaryWriter writer, ConstraintData constraint) {
+		writer.Write(constraint.Name);
+		writer.Write(constraint.Order);
+		writer.Write(constraint.SkinRequired);
+		writer.Write7BitEncodedInt(constraint.Bones.Count);
+		foreach (var bone in constraint.Bones)
+			writer.WriteIndexOf(modelData.BoneDatas, bone);
+	}
+
+	private static void writeIkConstraint(ModelData modelData, BinaryWriter writer, IkConstraintData ik) {
+		writeConstraint(modelData, writer, ik);
+		writer.WriteIndexOf(modelData.BoneDatas, ik.Target);
+		writer.Write(ik.BendDirection);
+		writer.Write(ik.Compress);
+		writer.Write(ik.Stretch);
+		writer.Write(ik.Uniform);
+		writer.Write(ik.Mix);
+		writer.Write(ik.Softness);
+	}
+
+	private static void writeTransformConstraint(ModelData modelData, BinaryWriter writer, TransformConstraintData transform) {
+		writeConstraint(modelData, writer, transform);
+		writer.WriteIndexOf(modelData.BoneDatas, transform.Target);
+		writer.Write(transform.Local);
+		writer.Write(transform.Relative);
+		writer.Write(transform.OffsetRotation);
+		writer.Write(transform.OffsetX);
+		writer.Write(transform.OffsetY);
+		writer.Write(transform.OffsetScaleX);
+		writer.Write(transform.OffsetScaleY);
+		writer.Write(transform.OffsetShearY);
+		writer.Write(transform.RotateMix);
+		writer.Write(transform.TranslateMix);
+		writer.Write(transform.ScaleMix);
+		writer.Write(transform.ShearMix);
+	}
+
+	private static void writePathConstraint(ModelData modelData, BinaryWriter writer, PathConstraintData path) {
+		writeConstraint(modelData, writer, path);
+		writer.WriteIndexOf(modelData.SlotDatas, path.Target);
+		writer.Write((int)path.PositionMode);
+		writer.Write((int)path.SpacingMode);
+		writer.Write((int)path.RotateMode);
+		writer.Write(path.OffsetRotation);
+		writer.Write(path.Position);
+		writer.Write(path.Spacing);
+		writer.Write(path.RotateMix);
+		writer.Write(path.TranslateMix);
+	}
+
+	private static void writeEventData(BinaryWriter writer, EventData eventData) {
+		writer.Write(eventData.Name);
+		writer.Write(eventData.Int);
+		writer.Write(eventData.Float);
+		writer.WriteNullableString(eventData.String);
+		writer.WriteNullableString(eventData.AudioPath);
+		writer.Write(eventData.Volume);
+		writer.Write(eventData.Balance);
+	}
+
+	private static void writeConstraintRef(ModelData modelData, BinaryWriter writer, ConstraintData constraint) {
+		switch (constraint) {
+			case IkConstraintData ik:
+				writer.Write((byte)0);
+				writer.WriteIndexOf(modelData.IkConstraints, ik);
+				break;
+			case TransformConstraintData transform:
+				writer.Write((byte)1);
+				writer.WriteIndexOf(modelData.TransformConstraints, transform);
+				break;
+			case PathConstraintData path:
+				writer.Write((byte)2);
+				writer.WriteIndexOf(modelData.PathConstraints, path);
+				break;
+			default:
+				throw new NotSupportedException($"Unknown constraint type '{constraint.GetType()}'");
+		}
 	}
 
 	private static void writeSlot(ModelData modelData, BinaryWriter writer, SlotData slot) {
@@ -2244,6 +3259,40 @@ public class ModelBinary : IModelFormat
 				writer.Write(regionAttachment.Path);
 				break;
 
+			case MeshAttachment { IsLinked: true } linkedMesh: {
+					writer.WriteSaveType(NucleusModel_SaveType.Attachment_LinkedMesh);
+					writer.Write(linkedMesh.ParentKey!);
+					writer.WriteNullableString(linkedMesh.ParentSkin);
+					writer.Write(linkedMesh.InheritDeform);
+					writer.Write(linkedMesh.Position);
+					writer.Write(linkedMesh.Rotation);
+					writer.Write(linkedMesh.Scale);
+					writer.Write(linkedMesh.Color);
+					writer.WriteNullableString(linkedMesh.Path);
+
+					var parent = linkedMesh.ParentMesh;
+					bool ownGeometry = linkedMesh.Vertices != null && linkedMesh.Triangles != null
+						&& (parent == null || !ReferenceEquals(linkedMesh.Vertices, parent.Vertices) || !ReferenceEquals(linkedMesh.Triangles, parent.Triangles));
+					writer.Write(ownGeometry);
+					if (ownGeometry) {
+						writer.WriteArray(linkedMesh.Vertices!, writeMeshVertex);
+						writer.WriteArray(linkedMesh.Triangles!, writeMeshTriangle);
+					}
+					break;
+				}
+
+			case PathAttachment pathAttachment:
+				writer.WriteSaveType(NucleusModel_SaveType.Attachment_Path);
+				writer.WriteArray(pathAttachment.Vertices, writeMeshVertex);
+				writer.Write(pathAttachment.Position);
+				writer.Write(pathAttachment.Rotation);
+				writer.Write(pathAttachment.Scale);
+				writer.Write(pathAttachment.Closed);
+				writer.Write(pathAttachment.ConstantSpeed);
+				writer.WriteArray(pathAttachment.Lengths, (w, length) => w.Write(length));
+				writer.Write(pathAttachment.Color);
+				break;
+
 			case MeshAttachment meshAttachment:
 				writer.WriteSaveType(NucleusModel_SaveType.Attachment_Mesh);
 				writer.WriteArray(meshAttachment.Vertices, writeMeshVertex);
@@ -2263,6 +3312,9 @@ public class ModelBinary : IModelFormat
 				writer.Write(clippingAttachment.Scale);
 				writer.WriteNullableString(clippingAttachment.EndSlot);
 				break;
+
+			default:
+				throw new NotSupportedException($"Unknown attachment type '{attachment.GetType()}'");
 		}
 	}
 
@@ -2271,6 +3323,7 @@ public class ModelBinary : IModelFormat
 		writer.WriteDictionary(skin.Attachments, writeSkinEntry, writeAttachment);
 		writer.Write(skin.Bones.Count);
 		foreach (var bone in skin.Bones) writer.WriteIndexOf(modelData.BoneDatas, bone);
+		writer.WriteList(skin.Constraints, (w, constraint) => writeConstraintRef(modelData, w, constraint));
 	}
 
 	private static void writeKeyframeStringN(BinaryWriter writer, Keyframe<string?> kf) {
@@ -2318,7 +3371,30 @@ public class ModelBinary : IModelFormat
 		writer.WriteList(fcf.Keyframes, writeKeyframeFloat);
 	}
 
-	private static void writeTimeline(BinaryWriter writer, Timeline timeline) {
+	private static void writeKeyframeDrawOrder(BinaryWriter writer, Keyframe<int[]?> keyframe) {
+		writer.Write(keyframe.Time);
+		writer.Write(keyframe.Value != null);
+		if (keyframe.Value != null)
+			writer.WriteArray(keyframe.Value, (w, index) => w.Write(index));
+		writer.Write((int)keyframe.Interpolation);
+	}
+
+	private static void writeEvent(ModelData modelData, BinaryWriter writer, ModelEvent modelEvent) {
+		writer.Write(modelEvent.Time);
+		writer.WriteIndexOf(modelData.Events, modelEvent.Data);
+		writer.Write(modelEvent.Int);
+		writer.Write(modelEvent.Float);
+		writer.WriteNullableString(modelEvent.String);
+		writer.Write(modelEvent.Volume);
+		writer.Write(modelEvent.Balance);
+	}
+
+	private static void writeCurves(BinaryWriter writer, CurveTimeline<float> timeline) {
+		for (int i = 0; i < timeline.Curves.Length; i++)
+			writeFCurveFloat(writer, timeline.Curves[i]);
+	}
+
+	private static void writeTimeline(ModelData modelData, BinaryWriter writer, Timeline timeline) {
 		writer.WriteSaveType(timeline switch {
 			TranslateTimeline => NucleusModel_SaveType.Timeline_Translate,
 			TranslateXTimeline => NucleusModel_SaveType.Timeline_TranslateX,
@@ -2332,6 +3408,18 @@ public class ModelBinary : IModelFormat
 			ShearYTimeline => NucleusModel_SaveType.Timeline_ShearY,
 			ActiveAttachmentTimeline => NucleusModel_SaveType.Timeline_ActiveAttachment,
 			SlotColor4Timeline => NucleusModel_SaveType.Timeline_SlotColor4,
+			SlotRGBTimeline => NucleusModel_SaveType.Timeline_SlotRGB,
+			SlotAlphaTimeline => NucleusModel_SaveType.Timeline_SlotAlpha,
+			SlotRGBA2Timeline => NucleusModel_SaveType.Timeline_SlotRGBA2,
+			DrawOrderTimeline => NucleusModel_SaveType.Timeline_DrawOrder,
+			DeformTimeline => NucleusModel_SaveType.Timeline_Deform,
+			IkConstraintTimeline => NucleusModel_SaveType.Timeline_IkConstraint,
+			TransformConstraintTimeline => NucleusModel_SaveType.Timeline_TransformConstraint,
+			PathConstraintPositionTimeline => NucleusModel_SaveType.Timeline_PathConstraintPosition,
+			PathConstraintSpacingTimeline => NucleusModel_SaveType.Timeline_PathConstraintSpacing,
+			PathConstraintMixTimeline => NucleusModel_SaveType.Timeline_PathConstraintMix,
+			EventTimeline => NucleusModel_SaveType.Timeline_Event,
+			_ => throw new NotSupportedException($"Unknown timeline type '{timeline.GetType()}'")
 		});
 
 		switch (timeline) {
@@ -2354,9 +3442,65 @@ public class ModelBinary : IModelFormat
 				writeFCurveFloat(writer, sc4.Curves[3]);
 				break;
 
+			case SlotRGBTimeline rgb:
+				writer.Write(rgb.SlotIndex);
+				writeCurves(writer, rgb);
+				break;
+
+			case SlotAlphaTimeline alpha:
+				writer.Write(alpha.SlotIndex);
+				writeCurves(writer, alpha);
+				break;
+
+			case SlotRGBA2Timeline rgba2:
+				writer.Write(rgba2.SlotIndex);
+				writeCurves(writer, rgba2);
+				break;
+
 			case ActiveAttachmentTimeline duo:
 				writer.Write(duo.SlotIndex);
 				writeFCurveStringN(writer, duo.Curves[0]);
+				break;
+
+			case DrawOrderTimeline drawOrder:
+				writer.WriteList(drawOrder.Curves[0].Keyframes, writeKeyframeDrawOrder);
+				break;
+
+			case DeformTimeline deform:
+				writer.Write(deform.SlotIndex);
+				writer.WriteNullableString(deform.Skin);
+				writer.Write(deform.Attachment);
+				writeFCurveFloat(writer, deform.Curve);
+				writer.WriteList(deform.Offsets, (w, offsets) => w.WriteArray(offsets, (w2, value) => w2.Write(value)));
+				break;
+
+			case IkConstraintTimeline ik:
+				writer.Write(ik.ConstraintIndex);
+				writeCurves(writer, ik);
+				break;
+
+			case TransformConstraintTimeline transform:
+				writer.Write(transform.ConstraintIndex);
+				writeCurves(writer, transform);
+				break;
+
+			case PathConstraintPositionTimeline position:
+				writer.Write(position.ConstraintIndex);
+				writeCurves(writer, position);
+				break;
+
+			case PathConstraintSpacingTimeline spacing:
+				writer.Write(spacing.ConstraintIndex);
+				writeCurves(writer, spacing);
+				break;
+
+			case PathConstraintMixTimeline mix:
+				writer.Write(mix.ConstraintIndex);
+				writeCurves(writer, mix);
+				break;
+
+			case EventTimeline events:
+				writer.WriteList(events.Events, (w, ev) => writeEvent(modelData, w, ev));
 				break;
 
 			default:
@@ -2364,10 +3508,10 @@ public class ModelBinary : IModelFormat
 		}
 	}
 
-	private static void writeAnimation(BinaryWriter writer, Animation anim) {
+	private static void writeAnimation(ModelData modelData, BinaryWriter writer, Animation anim) {
 		writer.Write(anim.Duration);
 		writer.Write(anim.Name);
-		writer.WriteList(anim.Timelines, writeTimeline);
+		writer.WriteList(anim.Timelines, (w, timeline) => writeTimeline(modelData, w, timeline));
 	}
 
 	public void SaveModelToFile(string absoluteFilePath, ModelData modelData) {
@@ -2381,13 +3525,16 @@ public class ModelBinary : IModelFormat
 
 			writer.WriteList(modelData.BoneDatas, writeBone);
 			writer.WriteList(modelData.SlotDatas, (writer, slot) => writeSlot(modelData, writer, slot));
+			writer.WriteList(modelData.IkConstraints, (w, ik) => writeIkConstraint(modelData, w, ik));
+			writer.WriteList(modelData.TransformConstraints, (w, transform) => writeTransformConstraint(modelData, w, transform));
+			writer.WriteList(modelData.PathConstraints, (w, path) => writePathConstraint(modelData, w, path));
+			writer.WriteList(modelData.Events, writeEventData);
 			writer.WriteList(modelData.Skins, (writer, slot) => writeSkin(modelData, writer, slot));
 			writer.WriteIndexOf(modelData.Skins, modelData.DefaultSkin);
-			writer.WriteList(modelData.Animations, writeAnimation);
+			writer.WriteList(modelData.Animations, (w, anim) => writeAnimation(modelData, w, anim));
 		}
 
-		//modelData.TextureAtlas.SaveTo(absoluteFilePath);
-		throw new NotImplementedException("Need to fix outgoing texture atlases!!! :(");
+		LastAtlas = PackAtlas ? ModelAtlasFiles.SaveNextTo(absoluteFilePath, modelData, PackSettings) : null;
 	}
 }
 
@@ -2397,6 +3544,16 @@ public class ModelRefJSON : IModelFormat
 {
 	public const string EXTENSION = "nm4rj";
 	public const string FULL_EXTENSION = $".{EXTENSION}";
+
+	/// <summary>
+	/// Pack and write the atlas beside the model when saving
+	/// </summary>
+	public bool PackAtlas { get; set; } = true;
+	public AtlasPackSettings PackSettings { get; set; } = new();
+	/// <summary>
+	/// The atlas packed by the last save, for its warnings
+	/// </summary>
+	public PackedAtlas? LastAtlas { get; private set; }
 
 	public class ModelRefJsonSerializationBinder : ISerializationBinder
 	{
@@ -2449,29 +3606,21 @@ public class ModelRefJSON : IModelFormat
 		if (data == null)
 			throw new FormatException("Issue occured during deserialization of a Model4-refjson");
 
-		// Try to load the texture atlas
-		string? texatlas = filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas"));
-		byte[]? imagedata = filesystem.ReadAllBytes(pathID, Path.ChangeExtension(path, ".png"));
-
-		if (texatlas == null && imagedata == null)
+		var atlas = ModelAtlasFiles.Load(
+			filesystem.ReadAllText(pathID, Path.ChangeExtension(path, ".texatlas")),
+			page => filesystem.ReadAllBytes(pathID, Path.Combine(Path.GetDirectoryName(path) ?? "", page))
+		);
+		if (atlas == null)
 			return data;
 
-		if (texatlas == null)
-			throw new NullReferenceException("Got image data, expected texture atlas as well");
-		if (imagedata == null)
-			throw new NullReferenceException("Got texture atlas, expected image data as well");
-
-		throw new NotImplementedException("Need to fix incoming texture atlases!!! :(");
-
-		// data.SetupAttachments();
-
-		// return data;
+		data.TextureAtlas = atlas;
+		data.SetupAttachments();
+		return data;
 	}
 
 	public void SaveModelToFile(string filepath, ModelData data) {
 		var serialized = JsonConvert.SerializeObject(data, Settings);
 		File.WriteAllText(filepath, serialized);
-		throw new NotImplementedException("Need to fix outgoing texture atlases!!! :(");
-		//data.TextureAtlas.TrySaveTo(filepath);
+		LastAtlas = PackAtlas ? ModelAtlasFiles.SaveNextTo(filepath, data, PackSettings) : null;
 	}
 }

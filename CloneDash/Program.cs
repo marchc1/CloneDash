@@ -4,13 +4,15 @@
 
 using CloneDash.Common;
 using CloneDash.Common.Compatibility.Valve;
+using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
-using CloneDash.Common.Songs;
+using CloneDash.Common.Systems.Discord;
+using CloneDash.Common.UI.Searching;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.UnbeatableWhiteLabel;
 using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
+using CloneDash.MuseDashCustomPlayCompatibility;
 using CloneDash.Game;
-using CloneDash.Menu.Searching;
 using CloneDash.Settings;
 using CloneDash.Systems;
 
@@ -54,7 +56,7 @@ internal class Program
 		VelopackApp.Build().Run();
 
 		LevelTransitions.OnLoadMainMenu += () => EngineCore.LoadLevel(new MainMenuLevel());
-		LevelTransitions.OnLoadSongChart += (chart, parms) => chart.GetGamemode().Load(chart, parms);
+		LevelTransitions.OnLoadSongChart += (chart, parms) => EngineCore.LoadLevel(chart.GetGamemode().Load(chart, parms));
 		LevelTransitions.OnLoadSongSelector += LevelTransitions_OnLoadSongSelector;
 
 		if (!NucleusSingleton.TryRedirect("Clone Dash", Environment.CommandLine))
@@ -120,7 +122,9 @@ public class GameDLL : IGameDLL
 		// This will work better:
 		Assembly.Load("CloneDash.CustomAlbumsCompatibility");
 		Assembly.Load("CloneDash.MuseDash1Compatibility");
+		Assembly.Load("CloneDash.MuseDashCustomPlayCompatibility");
 		Assembly.Load("CloneDash.UnbeatableWhiteLabelCompatibility");
+		Assembly.Load("CloneDash.Adapters");
 	}
 	public void Init() {
 		/*new Platform.MessageBoxBuilder()
@@ -286,9 +290,9 @@ public class GameDLL : IGameDLL
 			var chart = song.GetSheet(difficulty);
 
 			if (chart != null)
-				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new() {
-					Autoplay = cmd.FindParm("-autoplay") != 0
-				});
+				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new RhythmGameLoadParameters()
+					.Set(RhythmGameLoadParameters.AUTOPLAY, cmd.FindParm("-autoplay") != 0)
+				);
 		}
 
 		else if (cmd.HasParm("-cam_level")) {
@@ -308,11 +312,38 @@ public class GameDLL : IGameDLL
 						break;
 				}
 				if (chart != null)
-					LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new() {
-						Autoplay = cmd.FindParm("-autoplay") != 0,
-						StartMeasure = cmd.ParmValue("-startmeasure", 0)
-					});
+					LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new RhythmGameLoadParameters() 
+						.Set(RhythmGameLoadParameters.AUTOPLAY, cmd.FindParm("-autoplay") != 0)
+						.Set(RhythmGameLoadParameters.START_MEASURE, cmd.ParmValue("-startmeasure", 0))
+					);
 			}
+			else
+				LevelTransitions.LoadMainMenu();
+		}
+
+		else if (cmd.HasParm("-ubwl_level")) {
+			string ubwl_level = cmd.ParmValue("-ubwl_level", "");
+			int difficulty = cmd.ParmValue("-difficulty", 0);
+			BeatmapIndexSong? song = UnbeatableWhiteLabelCompatibility.BeatmapIndex?.Songs.FirstOrDefault(x => x.Name.Equals(ubwl_level, StringComparison.InvariantCultureIgnoreCase));
+
+			if (song != null && difficulty >= 0 && difficulty < song.Beatmaps.Length)
+				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", song.Beatmaps[difficulty], new RhythmGameLoadParameters()
+					.Set(RhythmGameLoadParameters.AUTOPLAY, cmd.FindParm("-autoplay") != 0)
+				);
+			else
+				LevelTransitions.LoadMainMenu();
+		}
+
+		else if (cmd.HasParm("-mdcp_level")) {
+			string mdcp_level = cmd.ParmValue("-mdcp_level", "");
+			Logs.Info($"mdcp_level specified: {mdcp_level}");
+
+			var chart = CustomPlayChartProvider.LoadSong(mdcp_level)?.GetChart();
+			if (chart != null)
+				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new RhythmGameLoadParameters()
+					.Set(RhythmGameLoadParameters.AUTOPLAY, cmd.FindParm("-autoplay") != 0)
+					.Set(RhythmGameLoadParameters.START_MEASURE, cmd.ParmValue("-startmeasure", 0))
+				);
 			else
 				LevelTransitions.LoadMainMenu();
 		}

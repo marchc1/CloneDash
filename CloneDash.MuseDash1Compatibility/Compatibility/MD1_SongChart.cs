@@ -1,4 +1,6 @@
-﻿using CloneDash.Common.Data;
+﻿using CloneDash.Common.Compatibility;
+using CloneDash.Common.Data;
+using CloneDash.Common.Game;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
@@ -22,11 +24,15 @@ public class MD1_GamemodeData
 	public readonly List<TempoChange> TempoChanges = [];
 	public readonly List<TimeSignatureChange> TimeSignatureChanges = [];
 	public readonly List<ChartSceneChange> SceneChanges = [];
+	public readonly Dictionary<int, TimeRemap> LayerRemaps = [];
+	public PathwayLayout Layout = PathwayLayout.MuseDash;
 	public string? InitialScene;
 	public double StartOffset;
 
 	public ITexture? BackgroundTextureOverride;
 	public float BackgroundTextureOpacity;
+
+	public ChartTiming GetTiming() => new(TempoChanges, TimeSignatureChanges);
 }
 
 /// <summary>
@@ -48,10 +54,11 @@ public class MD1_SongChart : ISongChart
 	}
 	public ISong GetSong() => Song;
 	public IGamemodeDescriptor GetGamemode() {
-		if (Difficulty == MuseDashDifficulty.Touhou)
-			return GamemodeMod.GetGamemode(MuseDash1TouhouGamemode.UUID)!;
-		else
-			return GamemodeMod.GetGamemode(MuseDash1Gamemode.UUID)!;
+		return ModStores.Get<GamemodeMod>().GetDescriptorByUID(
+			Difficulty == MuseDashDifficulty.Touhou
+				? "gamemode/musedash1/touhou"
+				: "gamemode/musedash1/standard"
+			)!;
 	}
 	public object GetGamemodeData() => (GamemodeData ?? Song.ProduceGamemodeData(this, (int)Difficulty))
 									?? throw new Exception("uninitialized gamemode data");
@@ -85,5 +92,6 @@ public class MD1_SongChart : ISongChart
 	}
 
 	public IAudioClip GetAudioTrack() => Song.GetAudioTrack();
+	public ChartTiming GetTiming() => ((MD1_GamemodeData)GetGamemodeData()).GetTiming();
 	public int GetRatingNumber() => RatingNumber;
 }

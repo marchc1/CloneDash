@@ -376,7 +376,8 @@ namespace AssetStudio
                 }
                 else
                 {
-                    resourceFileReaders.TryAdd(file.fileName, subReader);
+                    // a reloaded bundle replaces the reader its unloaded copy closed
+                    resourceFileReaders[file.fileName] = subReader;
                 }
             }
             return true;

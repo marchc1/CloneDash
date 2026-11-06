@@ -8,7 +8,7 @@ using System.Net.Mail;
 
 namespace Nucleus.ModelEditor
 {
-	public class EditorBone : PoseableObject, IEditorType, IModel4Nameable
+	public class EditorBone : PoseableObject, IEditorType, IModel4Nameable, IConstraintBone
 	{
 		public EditorModel GetModel() => Model;
 		[JsonIgnore] public bool Hovered { get; set; } = false;
@@ -31,7 +31,8 @@ namespace Nucleus.ModelEditor
 			}
 		}
 
-		[JsonIgnore] private Vector2F q1, q2, q3, q4;
+		// hover quad width from the last draw
+		[JsonIgnore] private float hoverWidth = 0.2f;
 
 		public void GetTexCoords(float byHowMuch, out Vector2F baseBottom, out Vector2F baseTop, out Vector2F tipBottom, out Vector2F tipTop, out float lengthLimit) {
 			var length = Length;
@@ -47,12 +48,7 @@ namespace Nucleus.ModelEditor
 			tipBottom = wt.LocalToWorld(new Vector2F(xMa, lengthLimit * byHowMuch));
 			tipTop = wt.LocalToWorld(new Vector2F(xMa, -lengthLimit * byHowMuch));
 
-			byHowMuch /= 5;
-
-			q1 = wt.LocalToWorld(new Vector2F(xMi, lengthLimit * byHowMuch));
-			q2 = wt.LocalToWorld(new Vector2F(xMi, -lengthLimit * byHowMuch));
-			q3 = wt.LocalToWorld(new Vector2F(xMa, lengthLimit * byHowMuch));
-			q4 = wt.LocalToWorld(new Vector2F(xMa, -lengthLimit * byHowMuch));
+			hoverWidth = byHowMuch / 5;
 		}
 
 		private EditorBone? parent;
@@ -85,6 +81,59 @@ namespace Nucleus.ModelEditor
 		/// </summary>
 		public Color Color { get; set; } = new Color(170, 255);
 
+		/// <summary>
+		/// Only active when the active skin lists it
+		/// </summary>
+		public bool SkinRequired { get; set; }
+		/// <summary>
+		/// False while skin required and not in the active skin
+		/// </summary>
+		[JsonIgnore] public bool IsActive { get; internal set; } = true;
+
+		// Constraints
+		[JsonIgnore] public BoneApplied Applied;
+		IConstraintBone? IConstraintBone.ParentBone => Parent;
+		float IConstraintBone.BoneLength => Length;
+		TransformMode IConstraintBone.BoneTransformMode => TransformMode;
+		ref BoneApplied IConstraintBone.Applied => ref Applied;
+		ref Transformation IConstraintBone.World => ref worldTransform;
+
+		public void UpdateWorldTransform(float x, float y, float rotation, float scaleX, float scaleY, float shearX, float shearY) {
+			Applied = new() {
+				X = x, Y = y,
+				Rotation = rotation,
+				ScaleX = scaleX, ScaleY = scaleY,
+				ShearX = shearX, ShearY = shearY,
+				Valid = true
+			};
+			worldTransform = Transformation.CalculateWorldTransformation(new Vector2F(x, y), rotation,
+				new Vector2F(scaleX, scaleY), new Vector2F(shearX, shearY), TransformMode, Parent?.WorldTransform);
+			WorldTransformValid = true;
+		}
+
+		void IConstraintBone.UpdateWorldTransform() {
+			ResetApplied();
+			UpdateWorldTransform(Applied.X, Applied.Y, Applied.Rotation, Applied.ScaleX, Applied.ScaleY, Applied.ShearX, Applied.ShearY);
+		}
+
+		/// <summary>
+		/// Applied transform back to the posed local values
+		/// </summary>
+		public void ResetApplied() {
+			Applied = new() {
+				X = SetupPositionX + PositionX, Y = SetupPositionY + PositionY,
+				Rotation = SetupRotation + Rotation,
+				ScaleX = SetupScaleX * ScaleX, ScaleY = SetupScaleY * ScaleY,
+				ShearX = SetupShearX + ShearX, ShearY = SetupShearY + ShearY,
+				Valid = true
+			};
+		}
+
+		/// <summary>
+		/// World transform in the setup pose, without constraints
+		/// </summary>
+		public Transformation CalculateSetupWorldTransform()
+			=> Transformation.CalculateWorldTransformation(SetupPosition, SetupRotation, SetupScale, SetupShear, SetupTransformMode, Parent?.CalculateSetupWorldTransform());
 		public List<EditorBone> Children { get; set; } = [];
 		public List<EditorSlot> Slots { get; set; } = [];
 
@@ -100,8 +149,12 @@ namespace Nucleus.ModelEditor
 			var zoom = ModelEditor.Active.Editor.CameraZoom;
 			if (Length <= 0)
 				return gridPos.Distance(WorldTransform.Translation) < 1.5f * Math.Clamp(zoom, 0, 2);
-			else
-				return gridPos.TestPointInQuad(q1, q2, q3, q4);
+			// The drawn quad lags behind at high fps.
+			var world = WorldTransform;
+			float width = Math.Clamp(Length, 0f, 230f) * hoverWidth;
+			return gridPos.TestPointInQuad(
+				world.LocalToWorld(new Vector2F(0, width)), world.LocalToWorld(new Vector2F(0, -width)),
+				world.LocalToWorld(new Vector2F(Length, width)), world.LocalToWorld(new Vector2F(Length, -width)));
 		}
 
 		public void BuildTopOperators(Panel props, PreUIDeterminations determinations) {
@@ -136,13 +189,10 @@ namespace Nucleus.ModelEditor
 
 		public void BuildProperties(Panel props, PreUIDeterminations determinations) {
 			var separateRow = PropertiesPanel.NewRow(props, "Separate", "models/separate.png");
-			props.Thinking += (self) => {
-				self.GetParent()!.SetVisible(ModelEditor.Active.AnimationMode);
-				self.SetMouseInputEnabled(ModelEditor.Active.File.ActiveAnimation == null);
+			props.Thinking += (_) => {
+				separateRow.GetParent()!.SetVisible(ModelEditor.Active.AnimationMode);
+				separateRow.SetMouseInputEnabled(ModelEditor.Active.File.ActiveAnimation != null);
 			};
-
-			ModelEditor.Active.File.AnimationActivated += (_, _, _) => { };
-			ModelEditor.Active.File.AnimationDeactivated += (_, _, _) => { };
 
 
 			var separateTranslation = PropertiesPanel.AddLabeledCheckbox(separateRow, "Translate", ModelEditor.Active.File.ActiveAnimation?.DoesBoneHaveSeparatedProperty(this, KeyframeProperty.Bone_Translation) ?? false);
@@ -155,10 +205,22 @@ namespace Nucleus.ModelEditor
 
 			var transformRow = PropertiesPanel.NewRow(props, "Transform", "models/bonetransform.png");
 
-			var boneTransformData = TransformMode.Unpack();
+			var boneTransformData = SetupTransformMode.Unpack();
 			var boneRotation = PropertiesPanel.AddLabeledCheckbox(transformRow, "Rotation", boneTransformData.Rotation);
 			var boneScale = PropertiesPanel.AddLabeledCheckbox(transformRow, "Scale", boneTransformData.Scale);
 			var boneReflection = PropertiesPanel.AddLabeledCheckbox(transformRow, "Reflection", boneTransformData.Reflection);
+			Checkbox.CheckboxClicked transformChanged = _ => {
+				var mode = TransformTools.Pack(boneRotation.Checked, boneScale.Checked, boneReflection.Checked);
+				ModelEditor.Active.File.SetProperty(this, "transform", mode, () => SetupTransformMode,
+					v => SetupTransformMode = v);
+				var unpacked = mode.Unpack();
+				boneRotation.Checked = unpacked.Rotation;
+				boneScale.Checked = unpacked.Scale;
+				boneReflection.Checked = unpacked.Reflection;
+			};
+			boneRotation.OnCheckedChanged += transformChanged;
+			boneScale.OnCheckedChanged += transformChanged;
+			boneReflection.OnCheckedChanged += transformChanged;
 
 			var lengthRow = PropertiesPanel.NewRow(props, "Length", "models/bonelength.png");
 
@@ -171,11 +233,21 @@ namespace Nucleus.ModelEditor
 			var boneViewportIconContainer = PropertiesPanel.AddInternalPropPanel(viewportRow);
 			var boneViewportName = PropertiesPanel.AddLabeledCheckbox(viewportRow, "Name", ViewportShowName);
 			var boneViewportSelectable = PropertiesPanel.AddLabeledCheckbox(viewportRow, "Selectable", ViewportCanSelect);
+			boneViewportName.OnCheckedChanged += (s) => ModelEditor.Active.File.SetProperty(this, "show name",
+				s.Checked, () => ViewportShowName, v => ViewportShowName = v);
+			boneViewportSelectable.OnCheckedChanged += (s) => ModelEditor.Active.File.SetProperty(this, "selectable",
+				s.Checked, () => ViewportCanSelect, v => ViewportCanSelect = v);
+
+			var skinRow = PropertiesPanel.NewRow(props, "Skin", "models/skin.png");
+			var skinRequired = PropertiesPanel.AddLabeledCheckbox(skinRow, "Skin required", SkinRequired);
+			skinRequired.OnCheckedChanged += (s) => ModelEditor.Active.File.SetProperty(this, "skin required",
+				s.Checked, () => SkinRequired, v => SkinRequired = v);
+			skinRow.Thinking += (_) => skinRow.SetMouseInputEnabled(!ModelEditor.Active.AnimationMode);
 
 			var boneColorRow = PropertiesPanel.NewRow(props, "Color", "models/colorwheel.png");
 			var boneColor = PropertiesPanel.AddColorSelector(boneColorRow, Color);
 			boneColor.SelectedColor = Color;
-			boneColor.OnColorChanged += (_, ref nc) => Color = nc;
+			boneColor.OnColorChanged += (_, ref color) => ModelEditor.Active.File.SetBoneColor(this, color);
 		}
 
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) {
@@ -185,7 +257,22 @@ namespace Nucleus.ModelEditor
 							ModelEditor.Active.SelectObject(bone.ResultOrThrow);
 						}),
 						new("Slot", () => PropertiesPanel.NewSlotDialog(ModelEditor.Active.File, this)),
+						new("IK Constraint", () => NewConstraint(UI.Operators.NewConstraintKind.IK)),
+						new("Transform Constraint", () => NewConstraint(UI.Operators.NewConstraintKind.Transform)),
+						new("Path Constraint", () => NewConstraint(UI.Operators.NewConstraintKind.Path)),
 					]);
+			if (Parent != null)
+				PropertiesPanel.OperatorButton<UI.Operators.SetParentOperator>(buttons, "Set Parent",
+					"models/setparent.png");
+		}
+
+		private static void NewConstraint(UI.Operators.NewConstraintKind kind) {
+			var problem = UI.Operators.NewConstraintOperator.Problem(kind);
+			if (problem != null) {
+				UI.EditorDialogs.ConfirmAction("New constraint", problem);
+				return;
+			}
+			ModelEditor.Active.File.ActivateOperator(new UI.Operators.NewConstraintOperator { Kind = kind });
 		}
 
 		public string? GetName() => Name;
@@ -199,8 +286,11 @@ namespace Nucleus.ModelEditor
 		public bool CanScale() => true;
 		public bool CanShear() => true;
 
-		public float GetTranslationX(UserTransformMode transform = UserTransformMode.LocalSpace) => transform == UserTransformMode.WorldSpace ? WorldTransform.LocalToWorld(SetupPositionX + PositionX, SetupPositionY + PositionY).X : SetupPositionX + PositionX;
-		public float GetTranslationY(UserTransformMode transform = UserTransformMode.LocalSpace) => transform == UserTransformMode.WorldSpace ? WorldTransform.LocalToWorld(SetupPositionX + PositionX, SetupPositionY + PositionY).Y : SetupPositionY + PositionY;
+		public float GetTranslationX(UserTransformMode transform = UserTransformMode.LocalSpace)
+			=> transform == UserTransformMode.WorldSpace ? WorldTransform.X : SetupPositionX + PositionX;
+		public float GetTranslationY(UserTransformMode transform = UserTransformMode.LocalSpace)
+			=> transform == UserTransformMode.WorldSpace ? WorldTransform.Y : SetupPositionY + PositionY;
+
 		public float GetRotation(UserTransformMode transform = UserTransformMode.LocalSpace) => transform == UserTransformMode.WorldSpace ? GetWorldRotation() : SetupRotation + Rotation;
 		public float GetScaleX() => SetupScaleX * ScaleX;
 		public float GetScaleY() => SetupScaleY * ScaleY;
@@ -226,17 +316,17 @@ namespace Nucleus.ModelEditor
 			if (AnimationMode)
 				Rotation = value - SetupRotation;
 			else
-				SetupRotation = value;
+				SetupRotation = value is >= 0 and < 360 ? value : (float)(((double)value % 360 + 360) % 360);
 		}
 		public void EditScaleX(float value) {
 			if (AnimationMode)
-				ScaleX = value;
+				ScaleX = SetupScaleX == 0 ? value : value / SetupScaleX;
 			else
 				SetupScaleX = value;
 		}
 		public void EditScaleY(float value) {
 			if (AnimationMode)
-				ScaleY = value;
+				ScaleY = SetupScaleY == 0 ? value : value / SetupScaleY;
 			else
 				SetupScaleY = value;
 		}

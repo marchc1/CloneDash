@@ -131,6 +131,4 @@ public interface IEditorTextureAtlas : ITextureAtlas
 	bool RemoveTexture(ReadOnlySpan<char> name);
 
 	bool RemoveTexturesByName(AtlasRegionCheckFn fn);
-
-	bool Serialize(StringWriter sw);
 }

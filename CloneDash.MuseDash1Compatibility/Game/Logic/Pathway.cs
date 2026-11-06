@@ -1,4 +1,8 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Game.Input;
+using CloneDash.Scenes;
+using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Common.Types;
 using Nucleus.Core;
@@ -13,67 +17,42 @@ namespace CloneDash.Game;
 
 public class Pathway : LogicalEntity
 {
-	public bool IsClicked() => ValueDependantOnPathway(Side, Level.As<MuseDash1Game>().GetInputState().TopClicked > 0, Level.As<MuseDash1Game>().GetInputState().BottomClicked > 0);
-	public bool IsPressed() => ValueDependantOnPathway(Side, Level.As<MuseDash1Game>().GetInputState().TopHeld, Level.As<MuseDash1Game>().GetInputState().BottomHeld);
-	public int PressedKeysCount => ValueDependantOnPathway(Side, Level.As<MuseDash1Game>().GetInputState().TopHeldCount, Level.As<MuseDash1Game>().GetInputState().BottomHeldCount);
+	readonly Conductor conductor;
+	readonly InputComponent input;
+	readonly PathwaysComponent pathways;
+	readonly MuseDash1ScenesComponent scenes;
 
-	/// <summary>
-	/// The half of the screen the pathway resides on.
-	/// </summary>
-	public PathwaySide Side { get; set; } = PathwaySide.None;
+	InputAction Action => pathways.Layout[Id].Action;
+	public bool IsClicked() => input.State.ClickCount(Action) > 0;
+	public bool IsPressed() => input.State.IsHeld(Action);
+	public int PressedKeysCount => input.State.HeldKeys(Action);
 
-	private bool checkSide(PathwaySide side) {
-		if (Side == PathwaySide.None || Side == PathwaySide.Both)
-			throw new NotImplementedException("A pathway must be attached to either the top or bottom side of the screen.");
-
-		return Side == side;
-	}
-
-	/// <summary>
-	/// Is this the top pathway?
-	/// </summary>
-	public bool IsTopPathway => checkSide(PathwaySide.Top);
-	/// <summary>
-	/// Is this the bottom pathway?
-	/// </summary>
-	public bool IsBottomPathway => checkSide(PathwaySide.Bottom);
+	public PathwayId Id { get; }
 
 	/// <summary>
 	/// The size of the pathway hit marker is changed by both every quarter note and when an input event occurs; this animation smoother is used for input events.
 	/// </summary>
 	public SecondOrderSystem InputAnimator { get; private set; } = new(0.4f, 0.5f, 1f, 1);
 
-	public Pathway(PathwaySide side) : base() {
-		Side = side;
-
+	public Pathway(PathwayId id, Conductor conductor, InputComponent input, PathwaysComponent pathways, MuseDash1ScenesComponent scenes) : base() {
+		Id = id;
+		this.conductor = conductor;
+		this.input = input;
+		this.pathways = pathways;
+		this.scenes = scenes;
 	}
 
-	public static bool ComparePathwayType(PathwaySide a, PathwaySide b) {
-		if (a == b)
-			return true;
-		else if (a == PathwaySide.Both || b == PathwaySide.Both)
-			return true;
-
-		return false;
-	}
-
-	public static T ValueDependantOnPathway<T>(PathwaySide input, T topResult, T bottomResult) {
-		return input == PathwaySide.Top ? topResult : bottomResult;
-	}
-
-	public Color Color => Side.GetColor();
+	public Color Color => pathways.Layout[Id].Color;
 
 	public SecondOrderSystem Animator { get; private set; } = new(8.4f, 0.5f, 1f, 1);
 	public override void Think(FrameState frameState) {
-		Position = Level.As<MuseDash1Game>().GetPathwayPosition(Side);
+		Position = scenes.GetPathwayPosition(Id);
 	}
 	public override void PostRender(FrameState frameState) {
 
 	}
 
 	public void Render() {
-		var lvl = Level.As<MuseDash1Game>();
-		var conductor = lvl.Conductor;
 		var beatInfluence = 1 - conductor.NoteDivisorRealtime(4);
 		var realInfluence = Animator.Update((IsClicked() || IsPressed()) ? 2 : beatInfluence);
 		var size = Raymath.Remap(realInfluence, 0, 1, 0.85f, 1f);
@@ -85,7 +64,7 @@ public class Pathway : LogicalEntity
 		float ring_offset = 360 / divisors / 2;
 
 		var alpha = (int)(Raymath.Remap(realInfluence, 0, 1, 79, 130) * alphaM);
-		if (lvl.HasActiveScene(out var scene))
-			scene.RenderPathway(Side, alpha, size, curtimeOffset);
+		if (scenes.HasActiveScene(out var scene))
+			scene.RenderPathway(Id, alpha, size, curtimeOffset);
 	}
 }

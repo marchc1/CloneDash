@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Raylib_cs;
 
@@ -143,6 +144,21 @@ public static unsafe partial class Raylib
 
 	/// <summary>Export image data to file</summary>
 	public static CBool ExportImage(Image image, string fileName) {
+		// raylib can't open non-ASCII paths on Windows.
+		if (!Ascii.IsValid(fileName)) {
+			using var ext = Path.GetExtension(fileName).ToAnsiBuffer();
+			int size = 0;
+			byte* data = (byte*)ExportImageToMemory(image, ext.AsPointer(), &size);
+			if (data == null) return false;
+			try {
+				File.WriteAllBytes(fileName, new ReadOnlySpan<byte>(data, size));
+				return true;
+			}
+			catch (IOException) { return false; }
+			catch (UnauthorizedAccessException) { return false; }
+			finally { MemFree(data); }
+		}
+
 		using var str1 = fileName.ToAnsiBuffer();
 		return ExportImage(image, str1.AsPointer());
 	}
