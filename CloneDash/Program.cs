@@ -122,6 +122,7 @@ public class GameDLL : IGameDLL
 		Assembly.Load("CloneDash.CustomAlbumsCompatibility");
 		Assembly.Load("CloneDash.MuseDash1Compatibility");
 		Assembly.Load("CloneDash.UnbeatableWhiteLabelCompatibility");
+		Assembly.Load("CloneDash.Adapters");
 	}
 	public void Init() {
 		/*new Platform.MessageBoxBuilder()

@@ -72,15 +72,20 @@ public sealed class ContentSlot<T>(RhythmGameLevel level) where T : class
 		if (source == null || !Plan(source, out var adapter))
 			return false;
 
-		var runtime = ActivatorUtilities.CreateInstance(level, source.GetRuntimeType(), source);
+		var runtime = Create(source.GetRuntimeType(), source);
 		if (adapter == null) {
 			value = (T)runtime;
 			return true;
 		}
 
 		Logs.Info($"Using {adapter.Name} to fit {source.GetName()} into the {typeof(T).Name} slot.");
-		value = (T)ActivatorUtilities.CreateInstance(level, adapter, source, runtime);
+		value = (T)Create(adapter, source, runtime);
 		return true;
+	}
+
+	object Create(Type type, params object[] candidates) {
+		var used = candidates.Where(candidate => type.GetConstructors().Any(ctor => ctor.GetParameters().Any(p => p.ParameterType.IsInstanceOfType(candidate)))).ToArray();
+		return ActivatorUtilities.CreateInstance(level, type, used);
 	}
 
 	bool CanConstruct(Type type, IContentSource source, Type? runtimeType = null) {
