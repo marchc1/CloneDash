@@ -18,6 +18,6 @@
 	
 	<ItemGroup>
 	  <PackageReference Include="FFMediaToolkit" Version="4.8.1" />
-	  <PackageReference Include="SharpCompress" Version="0.50.4" />
+	  <PackageReference Include="SharpCompress" Version="0.50.8" />
 	</ItemGroup>
 </Project>
