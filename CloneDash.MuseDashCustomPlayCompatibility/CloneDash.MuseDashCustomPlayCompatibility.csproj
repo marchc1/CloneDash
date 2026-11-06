@@ -12,7 +12,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="NVorbis" Version="0.10.4" />
+		<PackageReference Include="NVorbis" Version="0.10.5" />
 	</ItemGroup>
 
 	<Import Project="..\ApplyNucleusAssemblyAttribute.targets" />
