@@ -40,7 +40,7 @@ public class UnbeatableWhiteLabelGamemode(ICloneDashModProvider provider) : Rhyt
 	protected override void Compose(RhythmGameLevel level, ServiceCollection parts, ISongChart chart) {
 		var beatmap = (Beatmap)chart.GetGamemodeData();
 
-		parts.AddStandardParts(level);
+		parts.AddStandardParts(level, UnbeatableWhiteLabelActions.Binds);
 		AddRules(level, parts, beatmap);
 		AddBehaviour(level, parts);
 		AddPresentation(parts);

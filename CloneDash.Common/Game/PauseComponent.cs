@@ -1,4 +1,5 @@
-﻿using CloneDash.Menu;
+﻿using CloneDash.Game.Input;
+using CloneDash.Menu;
 using Nucleus;
 using Nucleus.Common.Input;
 using Nucleus.Engine;
@@ -67,7 +68,7 @@ public class PauseComponent(RhythmGameLevel level, MusicComponent music, GameEve
 	}
 
 	public void Think(FrameState frameState) {
-		if (input.State.PauseButton) {
+		if (input.State.ClickCount(CommonActions.Pause) > 0) {
 			TogglePauseMenu();
 			level.EndFrame();
 		}

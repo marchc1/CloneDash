@@ -26,8 +26,8 @@ public class UnbeatableWhiteLabelJudgeComponent(UnbeatableWhiteLabelChartCompone
 	public RhythmGameThinkPhase Phase => RhythmGameThinkPhase.Judge;
 	public double Position => conductor.Time - InputSettings.JudgementOffset;
 	public bool PressedAny => PressedTop || PressedLow;
-	public bool PressedLow => input.State.ClickCount(InputAction.GroundAttack) > 0;
-	public bool PressedTop => input.State.ClickCount(InputAction.AirAttack) > 0;
+	public bool PressedLow => input.State.ClickCount(UnbeatableWhiteLabelActions.Low) > 0;
+	public bool PressedTop => input.State.ClickCount(UnbeatableWhiteLabelActions.Top) > 0;
 	public IReadOnlyDictionary<(PathwayId Pathway, Side Side), UnbeatableWhiteLabelNote> Upcoming => upcoming;
 	public UnbeatableWhiteLabelDodgeNote? UpcomingDodgeLow { get; private set; }
 	public UnbeatableWhiteLabelDodgeNote? UpcomingDodgeTop { get; private set; }
@@ -52,8 +52,8 @@ public class UnbeatableWhiteLabelJudgeComponent(UnbeatableWhiteLabelChartCompone
 	}
 
 	public bool IsHeldAt(PathwayId pathway) {
-		bool top = input.State.IsHeld(InputAction.AirAttack);
-		bool low = input.State.IsHeld(InputAction.GroundAttack);
+		bool top = input.State.IsHeld(UnbeatableWhiteLabelActions.Top);
+		bool low = input.State.IsHeld(UnbeatableWhiteLabelActions.Low);
 		if (pathway == UnbeatableWhiteLabelPathways.Top)
 			return top;
 		if (pathway == UnbeatableWhiteLabelPathways.Low)

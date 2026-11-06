@@ -36,14 +36,14 @@ public class UnbeatableWhiteLabelAutoPlayer(UnbeatableWhiteLabelChartComponent c
 			low = true;
 
 		if (top)
-			inputState.Click(InputAction.AirAttack);
+			inputState.Click(UnbeatableWhiteLabelActions.Top);
 		if (low)
-			inputState.Click(InputAction.GroundAttack);
+			inputState.Click(UnbeatableWhiteLabelActions.Low);
 
 		if (top || IsHolding(UnbeatableWhiteLabelPathways.Top, position))
-			inputState.Hold(InputAction.AirAttack);
+			inputState.Hold(UnbeatableWhiteLabelActions.Top);
 		if (low || IsHolding(UnbeatableWhiteLabelPathways.Low, position))
-			inputState.Hold(InputAction.GroundAttack);
+			inputState.Hold(UnbeatableWhiteLabelActions.Low);
 	}
 
 	double GetDodgeTime(UnbeatableWhiteLabelDodgeNote dodge, PathwayId pressPathway) {

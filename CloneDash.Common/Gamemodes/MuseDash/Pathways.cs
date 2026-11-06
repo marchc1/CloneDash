@@ -1,4 +1,4 @@
-﻿using CloneDash.Settings;
+﻿using CloneDash.Game.Input;
 using Nucleus.Common.Types;
 using System.Numerics;
 using System.Text.Json.Serialization;
@@ -61,8 +61,8 @@ public sealed class PathwayLayout
 	public static readonly PathwayId MuseDashBottom = new(1);
 
 	public static readonly PathwayLayout MuseDash = new(
-		new PathwayDefinition("Top", InputAction.AirAttack, 1, [new(ASSETS_AIR)], MUSEDASH_TOP_COLOR),
-		new PathwayDefinition("Bottom", InputAction.GroundAttack, 0, [new(ASSETS_ROAD)], MUSEDASH_BOTTOM_COLOR)
+		new PathwayDefinition("Top", MuseDashActions.Air, 1, [new(ASSETS_AIR)], MUSEDASH_TOP_COLOR),
+		new PathwayDefinition("Bottom", MuseDashActions.Ground, 0, [new(ASSETS_ROAD)], MUSEDASH_BOTTOM_COLOR)
 	);
 
 	readonly PathwayDefinition[] definitions;

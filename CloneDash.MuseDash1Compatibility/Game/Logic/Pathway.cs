@@ -1,5 +1,6 @@
 ﻿using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes.MuseDash;
+using CloneDash.Game.Input;
 using CloneDash.Scenes;
 using CloneDash.Settings;
 using Nucleus;

@@ -111,7 +111,7 @@ namespace CloneDash.Game.Logic
 
 			// Mash state functionality
 			if (mash.InMashState && CanHitMasher) {
-				input.Clicked[(int)InputAction.AirAttack] = 1; // Attack the masher
+				input.Clicked[MuseDashActions.Air.Slot] = 1; // Attack the masher
 				LastMasherHit = conductor.Time; // Set the masher
 				return;
 			}
@@ -137,15 +137,15 @@ namespace CloneDash.Game.Logic
 							case EntityInteractivity.Sustain:
 								if (NMath.InRange((float)timeToHit, -ent.PrePerfectRange, 0.001f) && AvoidHittingAgain(ent)) {
 									if (ent.Pathway == pathways.JumpPathway.AsSet && !avoidedTop)
-										input.Click(InputAction.AirAttack);
+										input.Click(MuseDashActions.Air);
 									else if (!avoidedBottom) {
 										if (ent.Interactivity == EntityInteractivity.SamePath) {
 											// If currently in the air, always try to click a same path ... or if sustaining
 											if (character.InAir || sustains.IsSustaining())
-												input.Click(InputAction.GroundAttack);
+												input.Click(MuseDashActions.Ground);
 										}
 										else
-											input.Click(InputAction.GroundAttack);
+											input.Click(MuseDashActions.Ground);
 									}
 
 									// Special logic for sustain beams, hold them in memory so they can continue to be held
@@ -162,12 +162,12 @@ namespace CloneDash.Game.Logic
 								if (NMath.InRange((float)timeToHit, -ent.PrePerfectRange, -0.001f)) {
 									if (character.IsCharacterOn(ent.Pathway)) {
 										// The entity needs to be avoided, so pick the opposite side the entity is on
-										if (ent.Pathway == pathways.GroundPathway.AsSet && input.ClickCount(InputAction.AirAttack) <= 0) {
-											input.Click(InputAction.AirAttack);
+										if (ent.Pathway == pathways.GroundPathway.AsSet && input.ClickCount(MuseDashActions.Air) <= 0) {
+											input.Click(MuseDashActions.Air);
 											avoidedTop = true;
 										}
-										else if (input.ClickCount(InputAction.GroundAttack) <= 0) {
-											input.Click(InputAction.GroundAttack);
+										else if (input.ClickCount(MuseDashActions.Ground) <= 0) {
+											input.Click(MuseDashActions.Ground);
 											avoidedBottom = true;
 										}
 									}

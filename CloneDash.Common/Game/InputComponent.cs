@@ -1,5 +1,4 @@
 ﻿using CloneDash.Game.Input;
-using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Engine;
 using Nucleus.Types;
@@ -8,6 +7,7 @@ namespace CloneDash.Common.Game;
 
 public class InputComponent(Level level) : IRhythmGameThinker
 {
+	public KeyBindSet? Binds;
 	public Func<bool> CanPoll = () => true;
 	public readonly List<IInputReceiver> Receivers = [];
 
@@ -19,6 +19,7 @@ public class InputComponent(Level level) : IRhythmGameThinker
 	public ref readonly InputState State => ref state;
 
 	public void Initialize() {
+		Receivers.Add(new BindInput(this));
 		Receivers.AddRange(ICloneDashInputSystem.InstantiateAllInputSystems());
 	}
 
@@ -35,7 +36,7 @@ public class InputComponent(Level level) : IRhythmGameThinker
 			claimant.Poll(frameState, ref state);
 			foreach (var receiver in Receivers)
 				if (receiver != claimant)
-					receiver.Poll(frameState, ref state, InputAction.PauseGame);
+					receiver.Poll(frameState, ref state, CommonActions.Pause);
 		}
 
 		else if (!IValidatable.IsValid(level.RootPanel.GetKeyboardFocusedElement())) {

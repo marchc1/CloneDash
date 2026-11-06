@@ -16,9 +16,9 @@ public static class UnbeatableWhiteLabelPathways
 	public static readonly PathwayId Low = new(2);
 
 	public static readonly PathwayLayout Layout = new(
-		new PathwayDefinition("Top", InputAction.AirAttack, 1, [], new(255, 140, 170, 255)),
-		new PathwayDefinition("Mid", InputAction.MiddleAttack, 0.5f, [], new(255, 210, 120, 255)),
-		new PathwayDefinition("Low", InputAction.GroundAttack, 0, [], new(130, 200, 255, 255))
+		new PathwayDefinition("Top", UnbeatableWhiteLabelActions.Top, 1, [], new(255, 140, 170, 255)),
+		new PathwayDefinition("Mid", UnbeatableWhiteLabelActions.Mid, 0.5f, [], new(255, 210, 120, 255)),
+		new PathwayDefinition("Low", UnbeatableWhiteLabelActions.Low, 0, [], new(130, 200, 255, 255))
 	);
 
 	public static PathwayId FromHeight(Height height) => height switch {
