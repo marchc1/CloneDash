@@ -140,7 +140,8 @@ public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, Muse
 					// Checks if the player has completely failed to avoid the entity, and if so, damages the player.
 
 					bool broken = false;
-					if (Character.IsCharacterOn(entity.Pathway) && timeToHit < -entity.PrePerfectRange && !entity.DidRewardPlayer) {
+					bool windowEnded = timeToHit < -entity.PreGreatRange;
+					if (Character.IsCharacterOn(entity.Pathway) && timeToHit < -entity.PrePerfectRange && !windowEnded && !entity.DidRewardPlayer) {
 						//entity.Hit(Game.PlayerController.Pathway);
 						if (Rules.BreaksAvoids()) {
 							if (entity.Hits == 0)
@@ -152,7 +153,7 @@ public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, Muse
 					}
 
 					// If the player is now avoiding the entity, then reward the player for missing it, and make it so they cant be damaged by it)
-					if (!broken && !Character.IsCharacterOn(entity.Pathway) && timeToHit < 0 && !entity.DidDamagePlayer) {
+					if (!broken && windowEnded && !entity.DidDamagePlayer) {
 						entity.Pass();
 					}
 
