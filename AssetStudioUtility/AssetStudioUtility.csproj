@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Kyaru.Texture2DDecoder" Version="0.17.0" />
+        <PackageReference Include="Kyaru.Texture2DDecoder" Version="0.17.1" />
         <PackageReference Include="Mono.Cecil" Version="0.11.6" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     </ItemGroup>
