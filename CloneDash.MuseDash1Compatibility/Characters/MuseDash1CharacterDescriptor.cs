@@ -280,7 +280,20 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 		return MuseDash1ModelConverter.MD_GetModelData(level, jsonPathID, atlasPathID, textureIDs, materialsIn);
 	}
 
-	public static ModelData PullModelDataFromGameObject(Level level, ReadOnlySpan<char> name) {
+	public static ModelData PullModelDataFromGameObject(Level level, ReadOnlySpan<char> name)
+		=> PullModelDataFromSkeletonMecanim(level, FindSkeletonBehaviour(name)!);
+
+	public static float GetSkeletonScale(ReadOnlySpan<char> name) {
+		var skeleton = FindSkeletonBehaviour(name);
+		var pointer = skeleton?.ToType()["skeletonDataAsset"] as System.Collections.Specialized.OrderedDictionary;
+		if (skeleton == null || pointer == null)
+			return 1;
+
+		var dataAsset = new PPtr<MonoBehaviour>(Convert.ToInt32(pointer["m_FileID"]), Convert.ToInt64(pointer["m_PathID"]), skeleton.assetsFile);
+		return dataAsset.TryGet(out var asset) && asset.ToType()["scale"] is float scale ? scale : 1;
+	}
+
+	static MonoBehaviour? FindSkeletonBehaviour(ReadOnlySpan<char> name) {
 		var assets = MuseDash1Compatibility.StreamingAssets;
 
 		var mainshowObject = assets.FindAssetByName<GameObject>(name);
@@ -297,8 +310,10 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 			skeletonMecanim = mainshowObject.GetMonoBehaviorByScriptName("SkeletonGraphic");
 		}
 
-		return PullModelDataFromSkeletonMecanim(level, skeletonMecanim!);
+		return skeletonMecanim;
 	}
+
+	public float GetVictoryModelScale() => GetSkeletonScale(ConfigData.VictoryShow);
 
 	public ModelData GetMainShowModel(Level level) => PullModelDataFromGameObject(level, ConfigData.MainShow);
 

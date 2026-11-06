@@ -295,7 +295,9 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				if (map == null)
 					throw new Exception("Bad map difficulty.");
 
-				return loadFromStream(map);
+				string name = Path.GetFileNameWithoutExtension(diskpath);
+				int.TryParse(name.StartsWith("map") ? name[3..] : "", out int difficulty);
+				return loadFromStream(map, difficulty);
 			}
 
 			private MD1_CustomAlbumsChart loadFromStream(Stream map, int difficulty = 0) {

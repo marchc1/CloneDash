@@ -931,6 +931,11 @@ namespace CloneDash.Compatibility.MuseDash
 			var audioclip = StreamingAssets.FindAssetByName<AudioClip>(audioName);
 			if (audioclip == null) throw new FileNotFoundException();
 
+			return LoadSound(audioclip);
+		}
+
+		public static IAudioClip? LoadSound(AudioClip audioclip) {
+			string audioName = audioclip.m_Name;
 			var audiodata = audioclip.m_AudioData.GetData();
 
 			if (audioclip.m_Type == FMODSoundType.UNKNOWN) {
