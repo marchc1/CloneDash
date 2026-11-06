@@ -52,10 +52,10 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore dependencies
-        run: dotnet restore ./CloneDash.sln -p:RestoreNoWarn=NU1605
+        run: dotnet restore ./CloneDash.slnx -p:RestoreNoWarn=NU1605
 
       - name: Build (Release)
-        run: dotnet build ./CloneDash.sln --configuration Release --no-restore
+        run: dotnet build ./CloneDash.slnx --configuration Release --no-restore
 
       - name: Zip for Release (Windows)
         if: matrix.os == 'windows-latest'
