@@ -12,7 +12,7 @@ public class UnbeatableWhiteLabelCharacterVictoryInstance(UnbeatableWhiteLabelCh
 
 	public ICharacterDescriptor GetCharacter() => descriptor;
 
-	public void Initialize(RhythmGameLevel game) {
+	public void Initialize(RhythmGameLevel? game) {
 		model = new UnbeatableWhiteLabelBeatModel();
 		model.PlayBeat(UnbeatableWhiteLabelCharacterMainMenuInstance.STANDBY);
 	}

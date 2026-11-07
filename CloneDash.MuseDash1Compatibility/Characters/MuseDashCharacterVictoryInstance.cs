@@ -16,7 +16,7 @@ public class MuseDashCharacterVictoryInstance(MuseDash1CharacterDescriptor descr
 	ModelInstance? model;
 	readonly AnimationHandler anims = new();
 
-	public void Initialize(RhythmGameLevel game){
+	public void Initialize(RhythmGameLevel? game){
 		model = Descriptor.GetVictoryModel(EngineCore.Level).Instantiate();
 		float scale = Descriptor.GetVictoryModelScale() * 100;
 		model.Scale = new(scale, scale);

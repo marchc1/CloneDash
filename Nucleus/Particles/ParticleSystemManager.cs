@@ -7,6 +7,7 @@ public sealed class ParticleSystemManager
 	public const int PARALLEL_PARTICLE_THRESHOLD = 2048;
 
 	readonly List<ParticleCollection> collections = [];
+	readonly List<ParticleRenderItem> renderQueue = [];
 	int nextRandomSeed;
 
 	public IReadOnlyList<ParticleCollection> Collections => collections;
@@ -22,9 +23,13 @@ public sealed class ParticleSystemManager
 
 	public void Remove(ParticleCollection collection) => collections.Remove(collection);
 
-	public void Render(in Matrix4x4 transform) {
+	public void Render(in Matrix4x4 transform, int minSortOrder = int.MinValue, int maxSortOrder = int.MaxValue) {
+		renderQueue.Clear();
 		foreach (var collection in collections)
-			collection.Render(transform);
+			collection.CollectRenderers(renderQueue, minSortOrder, maxSortOrder);
+		renderQueue.Sort(ParticleRenderItem.Compare);
+		foreach (var item in renderQueue)
+			item.Render(transform);
 	}
 
 	public void Simulate(float dt) {

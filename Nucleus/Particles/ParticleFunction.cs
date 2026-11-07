@@ -41,6 +41,19 @@ public abstract class ParticleConstraint : ParticleFunction
 	public abstract void EnforceConstraint(ParticleCollection particles, object? context);
 }
 
+public readonly record struct ParticleRenderItem(ParticleRenderer Renderer, ParticleCollection Particles, object? Context, int Index)
+{
+	public static int Compare(ParticleRenderItem a, ParticleRenderItem b) {
+		int cmp = a.Renderer.SortOrder.CompareTo(b.Renderer.SortOrder);
+		return cmp != 0 ? cmp : a.Index.CompareTo(b.Index);
+	}
+
+	public void Render(in Matrix4x4 transform) {
+		if (Particles.ActiveCount > 0)
+			Renderer.Render(Particles, transform, Context);
+	}
+}
+
 public abstract class ParticleRenderer : ParticleFunction
 {
 	public ParticleMaterial Material = new();

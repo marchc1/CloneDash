@@ -40,6 +40,8 @@ public interface IMuseDash1SceneInstance : ISceneInstance
 	void SetSceneArrayIndex(int idx);
 
 	ModelData? GetEnemyModel(DashEnemy enemy);
+	MuseDash1ParticleEffect? GetEnemyHitEffect(EntityVariant variant, PathwayId pathway);
+	MuseDash1ParticleEffect? GetPressEffect(PathwayId pathway, bool top);
 	ModelData? GetHP(out string? mountAnimation);
 	string? GetMasherHitAnimation(int speed, EntityEnterDirection dir);
 	double GetBossAnimationTime(BossAnimationType type, AnimationHandler anim);

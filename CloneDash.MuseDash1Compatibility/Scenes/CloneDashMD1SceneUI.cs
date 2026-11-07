@@ -36,7 +36,7 @@ public class StatisticsPanel : Panel
 	ISongChart? chart;
 	double start = 0;
 	double Time() => globals.CurTime - start;
-	RhythmGameLevel game;
+	RhythmGameLevel? game;
 	StatisticsData stats;
 
 	public StatisticsPanel(Element? parent, RhythmGameLevel game, StatisticsData stats, MuseDash1VictoryAssets? assets) : base(parent){
@@ -47,13 +47,24 @@ public class StatisticsPanel : Panel
 		if (chart == null) return;
 		start = globals.CurTime;
 
+		stats.Compute();
+		Open(assets, game.GetParameters().Get<bool>(RhythmGameLoadParameters.AUTOPLAY), Restart, LevelTransitions.LoadMainMenu);
+	}
+
+	public StatisticsPanel(Element? parent, StatisticsData stats, MuseDash1VictoryAssets? assets, Action onClose) : base(parent) {
+		this.stats = stats;
+		start = globals.CurTime;
+
+		Open(assets, false, onClose, onClose);
+	}
+
+	void Open(MuseDash1VictoryAssets? assets, bool autoplay, Action onRestart, Action onContinue) {
 		ICharacterDescriptor? character = CharacterMod.Instance.GetActive();
 		if (character == null) return;
 
 		victory = character.CreateVictory();
 		victory.Initialize(game);
 		victory.PlayAudio();
-		stats.Compute();
 
 		if (assets != null) {
 			var canvasPanel = new UnityCanvasPanel(this, assets.Canvas);
@@ -61,7 +72,7 @@ public class StatisticsPanel : Panel
 			if (assets.Like != null)
 				canvasPanel.Overlays.Add(assets.Like);
 			assets.Canvas.Play("", "PnlVictoryIn");
-			screen = new MuseDash1VictoryScreen(assets, stats, chart, null, false, false, null, game.GetParameters().Get<bool>(RhythmGameLoadParameters.AUTOPLAY), victory, Restart, LevelTransitions.LoadMainMenu);
+			screen = new MuseDash1VictoryScreen(assets, stats, chart, null, false, false, null, autoplay, victory, onRestart, onContinue);
 			canvasPanel.Clicked = screen.Click;
 		}
 
@@ -71,7 +82,7 @@ public class StatisticsPanel : Panel
 	void Restart() {
 		// TODO: Probably should just hard restart it...
 		// Maybe seeking is stable enough now to justify this though?
-		game.Restart();
+		game?.Restart();
 		this.Remove();
 	}
 
@@ -556,7 +567,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	static AssetStudio.Transform? FindChild(AssetStudio.Transform? transform, string name)
 		=> transform?.GetChildren().FirstOrDefault(child => child.GetGameObject()?.m_Name == name);
 
-	static MuseDash1VictoryAssets? ImportVictoryCanvas() {
+	internal static MuseDash1VictoryAssets? ImportVictoryCanvas() {
 		var assets = MuseDash1Compatibility.StreamingAssets;
 		var found = assets.FindAssetByName<AssetStudio.GameObject>("PnlVictory");
 		if (found == null)

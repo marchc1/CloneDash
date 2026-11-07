@@ -17,7 +17,7 @@ public sealed class ParticleCollection
 	readonly List<int> killList = [];
 	readonly object?[] operatorContexts;
 	readonly object?[] rendererContexts;
-	readonly List<(ParticleRenderer Renderer, ParticleCollection Particles, object? Context, int Index)> renderQueue = [];
+	readonly List<ParticleRenderItem> renderQueue = [];
 	readonly ParticleAttributeMask uninitializedAttributes;
 
 	int capacity;
@@ -201,17 +201,22 @@ public sealed class ParticleCollection
 
 	public Vector3 RandomVector(int particle, int offset) => ParticleRandom.UnitVector(RandomSeed, particleIds[particle], offset);
 
+	public void CollectRenderers(List<ParticleRenderItem> items, int minSortOrder = int.MinValue, int maxSortOrder = int.MaxValue) {
+		var renderers = Definition.Renderers;
+		for (int i = 0; i < renderers.Count; i++)
+			if (renderers[i].SortOrder >= minSortOrder && renderers[i].SortOrder <= maxSortOrder)
+				items.Add(new(renderers[i], this, rendererContexts[i], items.Count));
+
+		foreach (var child in children)
+			child.CollectRenderers(items, minSortOrder, maxSortOrder);
+	}
+
 	public void Render(in Matrix4x4 transform) {
 		renderQueue.Clear();
 		CollectRenderers(renderQueue);
-		renderQueue.Sort(static (a, b) => {
-			int cmp = a.Renderer.SortOrder.CompareTo(b.Renderer.SortOrder);
-			return cmp != 0 ? cmp : a.Index.CompareTo(b.Index);
-		});
-
-		foreach (var (renderer, particles, context, _) in renderQueue)
-			if (particles.ActiveCount > 0)
-				renderer.Render(particles, transform, context);
+		renderQueue.Sort(ParticleRenderItem.Compare);
+		foreach (var item in renderQueue)
+			item.Render(transform);
 	}
 
 	public void SetControlPoint(int index, in Matrix4x4 transform) {
@@ -231,6 +236,12 @@ public sealed class ParticleCollection
 
 		foreach (var child in children)
 			child.Simulate(dt);
+	}
+
+	public void StartEmission() {
+		EmissionStopped = false;
+		foreach (var child in children)
+			child.StartEmission();
 	}
 
 	public void StopEmission(bool removeAllParticles = false) {
@@ -282,15 +293,6 @@ public sealed class ParticleCollection
 
 		ActiveCount = active;
 		killList.Clear();
-	}
-
-	void CollectRenderers(List<(ParticleRenderer Renderer, ParticleCollection Particles, object? Context, int Index)> queue) {
-		var renderers = Definition.Renderers;
-		for (int i = 0; i < renderers.Count; i++)
-			queue.Add((renderers[i], this, rendererContexts[i], queue.Count));
-
-		foreach (var child in children)
-			child.CollectRenderers(queue);
 	}
 
 	void CopyInitialAttributeValues(int first, int count) {

@@ -27,6 +27,46 @@ public sealed class ColorOverLifetimeOperator : ParticleOperator
 	}
 }
 
+public sealed class ControlPointLockOperator : ParticleOperator
+{
+	sealed class LockState
+	{
+		public bool Initialized;
+		public Matrix4x4 Previous;
+	}
+
+	public override bool RunsBeforeEmitters => true;
+	public override ParticleAttributeMask ReadAttributes => ParticleAttributeMask.Position | ParticleAttributeMask.Velocity;
+	public override ParticleAttributeMask WrittenAttributes => ParticleAttributeMask.Position | ParticleAttributeMask.Velocity;
+
+	public override object? CreateContext() => new LockState();
+
+	public override void Operate(ParticleCollection particles, object? context) {
+		var state = (LockState)context!;
+		var current = particles.GetControlPoint(0);
+		if (!state.Initialized || state.Previous == current || !Matrix4x4.Invert(state.Previous, out var inverse)) {
+			state.Previous = current;
+			state.Initialized = true;
+			return;
+		}
+
+		var delta = inverse * current;
+		state.Previous = current;
+		particles.GetVector(ParticleAttribute.Position, out var px, out var py, out var pz);
+		particles.GetVector(ParticleAttribute.Velocity, out var vx, out var vy, out var vz);
+		for (int i = 0; i < particles.ActiveCount; i++) {
+			var position = Vector3.Transform(new(px[i], py[i], pz[i]), delta);
+			var velocity = Vector3.TransformNormal(new(vx[i], vy[i], vz[i]), delta);
+			px[i] = position.X;
+			py[i] = position.Y;
+			pz[i] = position.Z;
+			vx[i] = velocity.X;
+			vy[i] = velocity.Y;
+			vz[i] = velocity.Z;
+		}
+	}
+}
+
 public sealed class DecayOperator : ParticleOperator
 {
 	public override ParticleAttributeMask ReadAttributes => ParticleAttributeMask.Lifetime | ParticleAttributeMask.CreationTime;

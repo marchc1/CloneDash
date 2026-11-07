@@ -17,6 +17,7 @@ public record MuseDash1VictoryAssets(UnityCanvas Canvas, MuseDash1CanvasBehaviou
 public class MuseDash1VictoryScreen
 {
 	public static ConVar md_advancedjudgment = new(nameof(md_advancedjudgment), "1", FCvar.Saved, "Shows the EARLY/LATE counts on the victory screen, like Muse Dash's Advanced Judgment toggle.", 0, 1);
+	public static ConCommand md_dummyvictory = new(nameof(md_dummyvictory), OpenDummyVictory, DummyVictoryAutocomplete, "Opens a dummy Muse Dash 1 victory panel on the current level. Optional grade: SSS, SS, S, A, B, C or D.");
 
 	const string ACCURACY = "PnlVictory_3D/SongTittle/TxtAccurcacy/TxtValue";
 	const string ADVANCED_JUDGMENT = "PnlVictory_3D/DetailInfo/Other/AdvJudgment";
@@ -53,6 +54,7 @@ public class MuseDash1VictoryScreen
 
 	readonly MuseDash1VictoryAssets assets;
 	readonly bool hidden;
+	readonly AudioPlaybackHandle music;
 	readonly Action onContinue;
 	readonly Action<bool>? onLikedChanged;
 	readonly Action onRestart;
@@ -109,7 +111,7 @@ public class MuseDash1VictoryScreen
 		if (character != null && Canvas.Find(CHARACTER) is CanvasNode point)
 			point.CustomRender = character.Render;
 
-		Play(assets.Music);
+		music = Play(assets.Music);
 	}
 
 	public UnityCanvas Canvas => assets.Canvas;
@@ -135,6 +137,7 @@ public class MuseDash1VictoryScreen
 			return;
 
 		finished = true;
+		StopMusic();
 		Play(assets.Click);
 		onContinue();
 	}
@@ -155,6 +158,7 @@ public class MuseDash1VictoryScreen
 			return;
 
 		finished = true;
+		StopMusic();
 		Play(assets.Click);
 		onRestart();
 	}
@@ -179,12 +183,43 @@ public class MuseDash1VictoryScreen
 			marquee.Update(deltaTime);
 	}
 
-	static void Play(IAudioClip? clip) {
-		if (clip == null)
+	static void DummyVictoryAutocomplete(ConCommandBase cmd, string argsStr, TokenizedCommand args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
+		if (curArgPos == 1)
+			returns = [.. GradeObjects.Keys.Select(grade => grade.ToString())];
+	}
+
+	static void OpenDummyVictory(ConCommand cmd, in TokenizedCommand args) {
+		var gradeName = args.Arg(1);
+		var grade = StatisticsGrade.SSS;
+		if (!gradeName.IsEmpty && (!Enum.TryParse(gradeName, true, out grade) || !GradeObjects.ContainsKey(grade))) {
+			Logs.Warn($"Unknown grade '{gradeName}'. Use SSS, SS, S, A, B, C or D.");
 			return;
+		}
+
+		if (EngineCore.LoadingLevel || EngineCore.Level?.RootPanel == null) {
+			Logs.Warn("No level is ready yet; open the dummy victory panel once a level (like the main menu) has loaded.");
+			return;
+		}
+
+		var assets = MD1SceneUI.ImportVictoryCanvas();
+		if (assets == null) {
+			Logs.Warn("Couldn't load the Muse Dash victory panel.");
+			return;
+		}
+
+		StatisticsPanel? panel = null;
+		panel = new StatisticsPanel(EngineCore.Level.RootPanel, StatisticsData.CreateDummy(grade), assets, () => panel?.Remove()) {
+			Size = new(1, 1),
+			DynamicallySized = true
+		};
+	}
+
+	static AudioPlaybackHandle Play(IAudioClip? clip) {
+		if (clip == null)
+			return AudioPlaybackHandle.Null;
 
 		clip.BindVolumeToConVar(AudioSettings.snd_hitvolume);
-		audiosystem.PlaySound(clip, AudioPlaybackSettings.Unaltered);
+		return audiosystem.PlaySound(clip, AudioPlaybackSettings.Unaltered);
 	}
 
 	void HideText(string path) {
@@ -197,6 +232,11 @@ public class MuseDash1VictoryScreen
 			canvasText.Text = text;
 		else
 			Logs.Warn($"[MuseDash1VictoryScreen] No text at '{path}'.");
+	}
+
+	void StopMusic() {
+		if (music.IsValid())
+			audiosystem.StopSound(music);
 	}
 
 	void UpdateLikeIcons() {

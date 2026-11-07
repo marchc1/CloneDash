@@ -19,9 +19,9 @@ public class StackBasedSustainManager(GameEventManager events, InputComponent in
 
 	private Stack<SustainBeam> StackOf(SustainBeam beam) => stacks[pathways.PrimaryPathway(beam.Pathway).Index];
 
-	private void callbackToLevel(SustainBeam beam, int prevCount) {
+	private void callbackToLevel(SustainBeam beam, int prevCount, bool completed = false) {
 		var c = StackOf(beam).Count;
-		events.Fire(new SustainStateChangedGameEvent(beam, pathways.PrimaryPathway(beam.Pathway), prevCount > 0, c > 0, c));
+		events.Fire(new SustainStateChangedGameEvent(beam, pathways.PrimaryPathway(beam.Pathway), prevCount > 0, c > 0, c, completed));
 	}
 
 	public void StartSustainBeam(SustainBeam sustain) {
@@ -44,7 +44,7 @@ public class StackBasedSustainManager(GameEventManager events, InputComponent in
 		var stk = StackOf(sustain);
 		var prevCount = StackOf(sustain).Count;
 		stk.Pop();
-		callbackToLevel(sustain, prevCount);
+		callbackToLevel(sustain, prevCount, true);
 	}
 
 	public PathwaySet GetSustainState() {

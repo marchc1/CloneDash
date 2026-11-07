@@ -7,6 +7,7 @@ using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
+using Nucleus.Particles;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
@@ -102,6 +103,7 @@ public class CanvasNode
 	public string Name = "";
 	public CanvasOutline? Outline;
 	public CanvasNode? Parent;
+	public ParticleSystemDefinition? ParticleDefinition;
 	public string Path = "";
 	public Quaternion Rotation = Quaternion.Identity;
 	public Vector3 Scale = Vector3.One;
@@ -119,6 +121,8 @@ public class CanvasNode
 
 	internal Vector3 Euler;
 	internal bool EulerAnimated;
+	internal ParticleCollection? ParticleCollection;
+	internal int ParticleScalingMode;
 	internal float RenderAlpha = 1;
 
 	public CanvasNode? Find(ReadOnlySpan<char> path) {
@@ -200,10 +204,12 @@ public class UnityCanvas
 	readonly List<(CanvasNode Node, MonoBehaviour Behaviour, string ClassName, OrderedDictionary Data)> behaviours = [];
 	readonly HashSet<string> missingFiles = [];
 	readonly Dictionary<(string File, long PathID), CanvasNode> nodesByGameObject = [];
+	readonly List<CanvasNode> particleNodes = [];
 	readonly Dictionary<long, ITexture> textures;
 	float lastHeight;
 	Matrix4x4 lastProjection = Matrix4x4.Identity;
 	float lastWidth;
+	int nextRandomSeed;
 	double time;
 
 	public UnityCanvas(CanvasNode root, UnityCanvasSettings settings) : this(root, settings, []) { }
@@ -354,6 +360,13 @@ public class UnityCanvas
 			Evaluate(animator.Current, Math.Min(animator.Time, animator.Current.Decoded.StopTime));
 		}
 		UpdateTweens(Root);
+		foreach (var node in particleNodes)
+			UpdateParticles(node, deltaTime);
+	}
+
+	bool AddMissingFile(string fileName) {
+		missingFiles.Add(fileName);
+		return false;
 	}
 
 	static float Ease(int ease, float t, List<(float time, float value, float inSlope, float outSlope)> curve) {
@@ -689,7 +702,7 @@ public class UnityCanvas
 	}
 
 	void DrawNode(CanvasNode node, bool stencilOnly = false, bool popping = false) {
-		if (node.Image == null && node.Text == null && node.CustomRender == null && !stencilOnly)
+		if (node.Image == null && node.Text == null && node.CustomRender == null && node.ParticleCollection == null && !stencilOnly)
 			return;
 
 		Rlgl.PushMatrix();
@@ -713,6 +726,32 @@ public class UnityCanvas
 			Rlgl.DrawRenderBatchActive();
 			Rlgl.PopMatrix();
 		}
+
+		if (node.ParticleCollection != null && !stencilOnly && GetParticleFrame(node, out _, out var particleFrame)) {
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.PushMatrix();
+			Rlgl.LoadIdentity();
+			Rlgl.MultMatrixf(Matrix4x4.Transpose(particleFrame));
+			node.ParticleCollection.Render(Matrix4x4.Identity);
+			Rlgl.PopMatrix();
+		}
+	}
+
+	static bool GetParticleFrame(CanvasNode node, out Matrix4x4 controlPoint, out Matrix4x4 frame) {
+		if (!Matrix4x4.Decompose(node.World, out var scale, out var rotation, out var translation)) {
+			controlPoint = frame = Matrix4x4.Identity;
+			return false;
+		}
+
+		var frameScale = node.ParticleScalingMode switch {
+			0 => scale,
+			1 => node.Scale,
+			_ => Vector3.One
+		};
+		var shapeScale = node.ParticleScalingMode == 2 ? scale : Vector3.One;
+		controlPoint = Matrix4x4.CreateScale(shapeScale) * Matrix4x4.CreateFromQuaternion(rotation);
+		frame = Matrix4x4.CreateScale(frameScale) * Matrix4x4.CreateTranslation(translation);
+		return true;
 	}
 
 	public bool HitTest(CanvasNode node, float x, float y) {
@@ -989,6 +1028,16 @@ public class UnityCanvas
 			case "DOTweenAnimation":
 				ImportTween(node, data);
 				break;
+			case "ParticleSystem":
+				if (component is AssetStudio.Component particleComponent && particleComponent.m_GameObject.TryGet(out var particleObject)) {
+					node.ParticleDefinition = UnityParticleConverter.ConvertSystem(particleObject, LoadTexture, AddMissingFile);
+					node.ParticleScalingMode = GetInt(data, "scalingMode");
+					particleNodes.Add(node);
+				}
+				break;
+			case "ParticleSystemRenderer":
+				node.SortingOrder = GetInt(data, "m_SortingOrder");
+				break;
 			case "CanvasRenderer":
 			case "GraphicRaycaster":
 				break;
@@ -1062,9 +1111,7 @@ public class UnityCanvas
 			return;
 
 		image.TextureName = $"{texture.m_Name} [{Describe(texture)}]";
-		if (!textures.TryGetValue(texture.m_PathID, out var converted))
-			textures[texture.m_PathID] = converted = UnityAssetUtils.ConvertTexture(EngineCore.Level, texture);
-		image.Texture = converted;
+		image.Texture = LoadTexture(texture);
 	}
 
 	void ImportTween(CanvasNode node, OrderedDictionary data) {
@@ -1089,6 +1136,12 @@ public class UnityCanvas
 			foreach (OrderedDictionary key in keys)
 				tween.EaseCurve.Add((GetFloat(key, "time"), GetFloat(key, "value"), GetFloat(key, "inSlope"), GetFloat(key, "outSlope")));
 		node.Tweens.Add(tween);
+	}
+
+	ITexture LoadTexture(Texture2D texture) {
+		if (!textures.TryGetValue(texture.m_PathID, out var converted))
+			textures[texture.m_PathID] = converted = UnityAssetUtils.ConvertTexture(EngineCore.Level, texture);
+		return converted;
 	}
 
 	void Layout(float width, float height) {
@@ -1153,6 +1206,20 @@ public class UnityCanvas
 	}
 
 	static void SetDrawColor(Vector4 color) => Graphics2D.SetDrawColor((int)(Math.Clamp(color.X, 0, 1) * 255), (int)(Math.Clamp(color.Y, 0, 1) * 255), (int)(Math.Clamp(color.Z, 0, 1) * 255), (int)(Math.Clamp(color.W, 0, 1) * 255));
+
+	void UpdateParticles(CanvasNode node, float deltaTime) {
+		if (node.ParticleDefinition == null || !node.IsActiveInHierarchy()) {
+			node.ParticleCollection = null;
+			return;
+		}
+
+		GetParticleFrame(node, out var transform, out _);
+		if (node.ParticleCollection == null)
+			node.ParticleCollection = new ParticleCollection(node.ParticleDefinition, transform, nextRandomSeed += 7919);
+		else
+			node.ParticleCollection.SetControlPoint(0, transform);
+		node.ParticleCollection.Simulate(deltaTime);
+	}
 
 	void UpdateTweens(CanvasNode node) {
 		if (!node.Active)

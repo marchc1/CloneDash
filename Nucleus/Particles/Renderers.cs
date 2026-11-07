@@ -1,4 +1,5 @@
 ﻿using Nucleus.Common.Graphics;
+using Nucleus.Rendering;
 using Raylib_cs;
 using System.Numerics;
 
@@ -64,10 +65,12 @@ public sealed class ParticleStretchedRenderer : ParticleRenderer
 
 static class ParticleQuads
 {
+	static bool culling;
 	static bool flipV;
 
 	public static void Begin(ParticleMaterial material) {
 		Rlgl.DrawRenderBatchActive();
+		culling = OpenGL.IsEnabled(OpenGL.CULL_FACE);
 		Rlgl.DisableBackfaceCulling();
 		Rlgl.SetBlendMode(material.BlendMode switch {
 			ParticleBlendMode.Premultiplied => BlendMode.AlphaPremultiply,
@@ -94,7 +97,8 @@ static class ParticleQuads
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.SetTexture(0);
 		Rlgl.SetBlendMode(BlendMode.Alpha);
-		Rlgl.EnableBackfaceCulling();
+		if (culling)
+			Rlgl.EnableBackfaceCulling();
 	}
 
 	public static void Quad(ParticleMaterial material, in Matrix4x4 transform, Vector2 topLeft, Vector2 bottomLeft, Vector2 bottomRight, Vector2 topRight, float sequence, Vector4 color) {

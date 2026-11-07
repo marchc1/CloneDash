@@ -125,6 +125,8 @@ public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, Muse
 						var entityPathway = Pathways.PrimaryPathway(entity.Pathway);
 						if ((characterPathways.Count >= 2 || Character.IsCharacterOn(entity.Pathway) || Character.IsCharacterNear(entityPathway)) && entity.Hits == 0) {
 							entity.Hit(entityPathway, 0);
+							if (!level.IsSeeking)
+								events.Fire(new BonusCollectedGameEvent(entity, entityPathway));
 							Hitsounds.Play(entity.Type switch {
 								MuseDash1EntityType.Heart => SceneSound.GotHeart,
 								MuseDash1EntityType.Score => SceneSound.GotScore,

@@ -361,6 +361,8 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 	readonly Conductor conductor;
 	readonly PathwaysComponent pathways;
 	protected readonly Dictionary<long, ModelData> loadedModels = [];
+	readonly Dictionary<string, MuseDash1ParticleEffect?> particleEffects = [];
+	readonly HashSet<SerializedFile> pinnedFiles = [];
 
 	static readonly string[] providedAssetSets = [PathwayLayout.ASSETS_AIR, PathwayLayout.ASSETS_ROAD];
 	public readonly MuseDash1SceneDescriptor Descriptor;
@@ -440,6 +442,7 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 			Position = (pathwayInfo[0].Position + pathwayInfo[^1].Position) / 2,
 			Color = PathwayLayout.CENTER_COLOR
 		};
+		ReleasePinnedFiles();
 	}
 
 	internal ModelData LoadModel(MonoBehaviour? skeletonAnimation) {
@@ -468,6 +471,38 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 	}
 
 	bool AirAssets(DashEnemy enemy) => pathwayAirAssets[pathways.PrimaryPathway(enemy.Pathway).Index];
+
+	static GameObject? FindChild(GameObject? parent, string name) {
+		var transform = parent?.GetFirstComponent<Transform>();
+		if (transform == null)
+			return null;
+
+		foreach (var child in transform.GetChildren())
+			if (child.GetGameObject() is GameObject gameObject && gameObject.m_Name == name)
+				return gameObject;
+		return null;
+	}
+
+	string GetNotePrefabName(string code, bool air) => $"{SceneInfo.MapIdx:00}{code}{(air ? "04_air_nor_1" : "01_road_nor_1")}";
+
+	MuseDash1ParticleEffect? LoadParticleEffect(string key, string source, Func<GameObject?> find) {
+		if (particleEffects.TryGetValue(key, out var effect))
+			return effect;
+
+		particleEffects[key] = effect = MuseDash1ParticleEffect.Load(find(), LoadTexture, fileName => LoadDependency(source, fileName));
+		ReleasePinnedFiles();
+		return effect;
+	}
+
+	bool LoadDependency(string source, string fileName) => MuseDash1Compatibility.StreamingAssets.LoadDependenciesContaining(source, new HashSet<string> { fileName }, pinnedFiles);
+
+	protected override bool LoadMissingFile(string fileName) => LoadDependency(SceneInfo.MapName, fileName);
+
+	void ReleasePinnedFiles() {
+		foreach (var file in pinnedFiles)
+			MuseDash1Compatibility.StreamingAssets.Release(file);
+		pinnedFiles.Clear();
+	}
 	public bool IsAirTarget(PathwaySet pathways) => IsAirPathway(this.pathways.PrimaryPathway(pathways));
 	delegate T? ProducerFn<T>();
 	class NullLazyLoad<T>(ProducerFn<T> producer) where T : class
@@ -1160,6 +1195,26 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 			case MuseDash1EntityType.Score: return AirAssets(enemy) ? AirScoreModel : RoadScoreModel;
 			default: throw new NotImplementedException();
 		}
+	}
+	public MuseDash1ParticleEffect? GetEnemyHitEffect(EntityVariant variant, PathwayId pathway) {
+		var code = variant switch {
+			EntityVariant.Small => MuseDash1SceneEnemyInfo.CODE_SMALL,
+			EntityVariant.Boss1 => MuseDash1SceneEnemyInfo.CODE_BOSS1,
+			_ => null
+		};
+		if (code == null)
+			return null;
+
+		var prefab = GetNotePrefabName(code, pathwayAirAssets[pathway.Index]);
+		return LoadParticleEffect($"{prefab}/out_fx", prefab, () => FindChild(MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(prefab), "out_fx"));
+	}
+	public MuseDash1ParticleEffect? GetPressEffect(PathwayId pathway, bool top) {
+		var prefab = GetNotePrefabName(MuseDash1SceneEnemyInfo.CODE_SUSTAIN, pathwayAirAssets[pathway.Index]);
+		var field = top ? "destroyEffect" : "clipEffect";
+		return LoadParticleEffect($"{prefab}/{field}", prefab, () => {
+			var controller = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(prefab)?.GetMonoBehaviorByScriptName("SpineActionController");
+			return controller == null ? null : new MonoBehaviourReader(controller).Get<GameObject>(field);
+		});
 	}
 	public ModelData? GetHP(out string? mountAnimation) {
 		if (HpMountModel == null)

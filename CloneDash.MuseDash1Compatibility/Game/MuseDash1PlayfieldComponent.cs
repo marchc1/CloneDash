@@ -11,8 +11,9 @@ using Raylib_cs;
 
 namespace CloneDash.Game;
 
-public class MuseDash1PlayfieldComponent(MuseDash1ChartComponent chart, ScreenEffectsComponent effects, MuseDash1HudComponent hud, RhythmGameLevel level, PathwaysComponent pathways) : IRhythmGameComponent, IRhythmGameBackgroundPreRenderer, IRhythmGameRenderer
+public class MuseDash1PlayfieldComponent(MuseDash1BattleFXComponent battleFX, MuseDash1ChartComponent chart, ScreenEffectsComponent effects, MuseDash1HudComponent hud, RhythmGameLevel level, PathwaysComponent pathways) : IRhythmGameComponent, IRhythmGameBackgroundPreRenderer, IRhythmGameRenderer
 {
+	readonly MuseDash1BattleFXComponent BattleFX = battleFX;
 	readonly MuseDash1ChartComponent Chart = chart;
 	readonly ScreenEffectsComponent Effects = effects;
 
@@ -66,12 +67,16 @@ public class MuseDash1PlayfieldComponent(MuseDash1ChartComponent chart, ScreenEf
 		foreach (var pathway in Pathways)
 			pathway.Render();
 
-		if (Effects.Get<NoteVisibilityScreenEffect>().Visible) {
-			Span<DashEnemy> visibleEnemies = Chart.EnemyManager.GetLastVisible();
+		bool notesVisible = Effects.Get<NoteVisibilityScreenEffect>().Visible;
+		Span<DashEnemy> visibleEnemies = Chart.EnemyManager.GetLastVisible();
 
-			// Hold notes
+		// Hold notes
+		if (notesVisible)
 			ConditionallyRenderVisibleEntities(frameState, static x => x.Type == MuseDash1EntityType.SustainBeam, visibleEnemies);
 
+		BattleFX.RenderBelowEntities();
+
+		if (notesVisible) {
 			// Boss
 			Chart.Boss.Render();
 

@@ -189,6 +189,32 @@ public class StatisticsData : IRhythmGameComponent
 		Reset();
 	}
 
+	public static StatisticsData CreateDummy(StatisticsGrade grade) {
+		var (perfects, greats, misses) = grade switch {
+			StatisticsGrade.SSS => (500, 0, 0),
+			StatisticsGrade.SS => (480, 20, 0),
+			StatisticsGrade.S => (440, 40, 20),
+			StatisticsGrade.A => (380, 60, 60),
+			StatisticsGrade.B => (330, 80, 90),
+			StatisticsGrade.C => (280, 90, 130),
+			_ => (200, 100, 200)
+		};
+
+		return new(null) {
+			Accuracy = (perfects + greats * .5d) / (perfects + greats + misses) * 100d,
+			Earlys = greats / 2,
+			Grade = grade,
+			Greats = greats,
+			Lates = greats - greats / 2,
+			MaxCombo = misses == 0 ? perfects + greats : (perfects + greats) / 3,
+			Misses = misses,
+			Passes = 40,
+			Perfects = perfects,
+			Score = perfects * 600 + greats * 300,
+			Title = misses > 0 ? StatisticsImpressiveness.Cleared : greats > 0 ? StatisticsImpressiveness.FullCombo : StatisticsImpressiveness.AllPerfect
+		};
+	}
+
 	public bool CalculateFullCombo() {
 		Compute();
 		return Misses <= 0;

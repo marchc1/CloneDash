@@ -2,6 +2,11 @@
 
 namespace CloneDash.Common.Game;
 
+/// <summary>
+/// The phase in which an <see cref="IRhythmGameComponent"/> thinks. Only applicable to components
+/// that implement <see cref="IRhythmGameThinker"/>. This does not control which method it runs in,
+/// just the ordering of the component when thinking is executing
+/// </summary>
 public enum RhythmGameThinkPhase
 {
 	Input,

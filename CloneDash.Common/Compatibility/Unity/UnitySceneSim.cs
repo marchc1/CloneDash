@@ -1,6 +1,7 @@
 ﻿using AssetStudio;
 using Nucleus;
 using Nucleus.Common.Graphics;
+using Nucleus.Particles;
 using Raylib_cs;
 using System;
 using System.Collections.Generic;
@@ -663,6 +664,45 @@ public class SceneMeshRenderer : SceneComponent
 	public MeshRenderer UnityMeshRenderer { get; }
 }
 
+public class SceneParticleSystem : SceneRenderer
+{
+	static readonly System.Numerics.Matrix4x4 UnityToWorld = System.Numerics.Matrix4x4.CreateScale(1, -1, 1);
+	static int nextRandomSeed;
+
+	ParticleCollection? particles;
+
+	public SceneParticleSystem(ParticleSystemDefinition definition, ParticleSystemRenderer? renderer) {
+		Definition = definition;
+		UnityParticleSystemRenderer = renderer;
+		if (renderer != null) {
+			SortingOrder = renderer.m_SortingOrder;
+			SortingLayerID = (int)renderer.m_SortingLayerID;
+		}
+	}
+
+	public ParticleSystemDefinition Definition { get; }
+	public ParticleSystemRenderer? UnityParticleSystemRenderer { get; }
+
+	public override void Render(UnitySimScene scene) {
+		if (particles != null && UnitySimScene.IsActiveInHierarchy(Object))
+			particles.Render(UnityToWorld);
+	}
+
+	public void Simulate(float dt) {
+		if (!UnitySimScene.IsActiveInHierarchy(Object)) {
+			particles = null;
+			return;
+		}
+
+		var transform = Transform.GetWorldMatrix();
+		if (particles == null)
+			particles = new ParticleCollection(Definition, transform, nextRandomSeed += 7919);
+		else
+			particles.SetControlPoint(0, transform);
+		particles.Simulate(dt);
+	}
+}
+
 class RuntimeClip
 {
 	public record struct TargetCurve(
@@ -1155,6 +1195,9 @@ public class SceneObject
 				case SceneMeshRenderer mr:
 					clone.AddComponent(new SceneMeshRenderer(mr.UnityMeshRenderer, mr.UnityMeshFilter));
 					break;
+				case SceneParticleSystem ps:
+					clone.AddComponent(new SceneParticleSystem(ps.Definition, ps.UnityParticleSystemRenderer));
+					break;
 			}
 		}
 
@@ -1293,6 +1336,7 @@ public abstract class UnitySimScene
 	protected readonly List<SceneObject> allObjects = [];
 	protected readonly List<SceneRenderer> sortedRenderers = [];
 	protected readonly List<SceneAnimator> animators = [];
+	protected readonly List<SceneParticleSystem> particleSystems = [];
 	protected SceneObject? root;
 	protected readonly Dictionary<long, ITexture> textureCache = [];
 	public bool RenderSpriteMeshes { get; protected set; }
@@ -1452,12 +1496,15 @@ public abstract class UnitySimScene
 
 	protected void RunThinkFuncs(double dt) {
 		foreach (var anim in animators) anim.Evaluate((float)dt);
+		foreach (var system in particleSystems) system.Simulate((float)dt);
 	}
 
 	internal void RegisterObject(SceneObject obj) {
 		allObjects.Add(obj);
 		foreach (var anim in obj.GetComponents<SceneAnimator>())
 			animators.Add(anim);
+		foreach (var system in obj.GetComponents<SceneParticleSystem>())
+			particleSystems.Add(system);
 	}
 
 	internal void DestroyObject(SceneObject obj) {
@@ -1468,9 +1515,13 @@ public abstract class UnitySimScene
 		allObjects.Remove(obj);
 		foreach (var anim in obj.GetComponents<SceneAnimator>())
 			animators.Remove(anim);
+		foreach (var system in obj.GetComponents<SceneParticleSystem>())
+			particleSystems.Remove(system);
 		obj.Transform.SetParent(null);
 		obj.Active = false;
 	}
+
+	protected virtual bool LoadMissingFile(string fileName) => false;
 
 	protected internal ITexture LoadTexture(AssetStudio.Texture2D? texture2D) {
 		if (textureCache.TryGetValue(texture2D!.m_PathID, out var tex)) return tex;
@@ -1498,6 +1549,7 @@ public abstract class UnitySimScene
 				case SpriteRenderer sr: obj.AddComponent(new SceneSpriteRenderer(sr)); break;
 				case Animator animator: obj.AddComponent(new SceneAnimator { UnityAnimator = animator }); break;
 				case MeshRenderer mr: obj.AddComponent(new SceneMeshRenderer(mr, unityGO.GetFirstComponent<MeshFilter>())); break;
+				case ParticleSystem: particleSystems.Add(obj.AddComponent(new SceneParticleSystem(UnityParticleConverter.ConvertSystem(unityGO, LoadTexture, LoadMissingFile), unityGO.GetFirstComponent<ParticleSystemRenderer>()))); break;
 			}
 		}
 

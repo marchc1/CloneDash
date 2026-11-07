@@ -87,6 +87,7 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, RhythmGa
 	SceneSpriteRenderer? whitBoardRenderer;
 	Vector2F outScenePosition = new(15, 0.8f);
 	SceneObject?[] particles = new SceneObject[7];
+	readonly HashSet<SerializedFile> pinnedFiles = [];
 	bool isActivatedComeOut;
 	bool ifShow = true;
 
@@ -141,6 +142,10 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, RhythmGa
 
 		isActivatedComeOut = false;
 		ifShow = true;
+
+		foreach (var file in pinnedFiles)
+			MuseDash1Compatibility.StreamingAssets.Release(file);
+		pinnedFiles.Clear();
 	}
 
 	public void Activate() {
@@ -237,6 +242,8 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, RhythmGa
 
 		BuildRenderOrder();
 	}
+
+	protected override bool LoadMissingFile(string fileName) => MuseDash1Compatibility.StreamingAssets.LoadDependenciesContaining(descriptor.Name, new HashSet<string> { fileName }, pinnedFiles);
 
 	public void Render() {
 		Rlgl.PushMatrix();
