@@ -319,8 +319,11 @@ public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
 
 	public static MuseDash1SceneDescriptor? GetScene(ReadOnlySpan<char> name) {
 		var sceneInfo = MuseDash1SceneInfo.GetSceneInfo(name);
-		if (sceneInfo == null)
-			return null;
+		if (sceneInfo == null) {
+			if (name.SequenceEqual("scene_01")) return null;
+			Logs.Warn($"The scene '{name}' is unknown, so 'Space Station' will be selected as a fallback for this scene.");
+			return GetScene("scene_01");
+		}
 
 		if (sceneInfo.Unusable) {
 			Logs.Warn($"The scene '{sceneInfo.OfficialName}' is currently broken, so 'Space Station' will be selected as a fallback for this scene.");
