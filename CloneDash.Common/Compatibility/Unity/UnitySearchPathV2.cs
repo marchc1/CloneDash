@@ -523,25 +523,6 @@ public class UnitySearchAsset : UnitySearchBase
 		return false;
 	}
 
-	public IEnumerable<SerializedFile> LoadNextBundle(string baseFolder, string platform, AssetsManager assets) {
-		lock (sync) {
-			var bundleFiles = Catalog.ResolveBundleFiles(DependencyKey);
-
-			string? bundleFile = null;
-			foreach (var candidate in bundleFiles) {
-				if (!IsBundleLoaded(assets, candidate)) {
-					bundleFile = candidate;
-					break;
-				}
-			}
-			if (bundleFile == null)
-				yield break;
-
-			foreach (var bundle in LoadBundle(baseFolder, platform, assets, bundleFile))
-				yield return bundle;
-		}
-	}
-
 	public IEnumerable<SerializedFile> LoadBundle(string baseFolder, string platform, AssetsManager assets, string bundleFile) {
 		lock (sync) {
 			HashSet<SerializedFile> previousState = assets.AssetsFileList.ToHashSet();
@@ -553,14 +534,6 @@ public class UnitySearchAsset : UnitySearchBase
 				yield return bundle;
 			}
 		}
-	}
-
-	public bool HasMoreBundles(AssetsManager assets) {
-		var bundleFiles = Catalog.ResolveBundleFiles(DependencyKey);
-		foreach (var candidate in bundleFiles)
-			if (!IsBundleLoaded(assets, candidate))
-				return true;
-		return false;
 	}
 
 	public IEnumerable<SerializedFile> FindLoadedBundles(AssetsManager assets) {
@@ -933,6 +906,24 @@ public class UnitySearchPathV2 : SearchPath
 		if (!CachedObjectFileNameLookup.TryGetAlternateLookup<ReadOnlySpan<char>>(out var fnLookup))
 			throw new Exception();
 
+		var match = FindInLoadedBundles<T>(searchAsset, name, fnLookup);
+		if (match != null)
+			return match;
+
+		// An addressable asset lives in its own bundle (the first of its bundle files); the rest are dependencies holding what it
+		// references. Walking those for a name loaded every dependency on a miss (GameMain: 132 bundles, 745 MB) and evicted the
+		// earlier ones as it went, so HasMoreBundles never ran out and the search never ended. Only load the asset's own bundle.
+		var ownBundle = Catalog.ResolveBundleFiles(searchAsset.DependencyKey).FirstOrDefault();
+		if (ownBundle == null || UnitySearchAsset.IsBundleLoaded(Assets, ownBundle))
+			return null;
+
+		CacheNewBundles(searchAsset.LoadBundle(_basePath, _platform, Assets, ownBundle).ToList());
+		if (fnLookup.TryGetValue(name, out var lookups) && FindTypedInCache<T>(lookups) is T cached)
+			return cached;
+		return FindInLoadedBundles<T>(searchAsset, name, fnLookup);
+	}
+
+	private T? FindInLoadedBundles<T>(UnitySearchAsset searchAsset, ReadOnlySpan<char> name, Dictionary<string, List<CachedObjectLookup_t>>.AlternateLookup<ReadOnlySpan<char>> fnLookup) where T : AssetStudio.Object {
 		foreach (var bundle in searchAsset.FindLoadedBundles(Assets)) {
 			var match = FindInBundle<T>(bundle, name);
 			if (match != null) {
@@ -944,28 +935,6 @@ public class UnitySearchPathV2 : SearchPath
 				return (T)match;
 			}
 		}
-
-		while (searchAsset.HasMoreBundles(Assets)) {
-			var newBundles = searchAsset.LoadNextBundle(_basePath, _platform, Assets);
-			CacheNewBundles(newBundles);
-
-			if (fnLookup.TryGetValue(name, out var lookups)) {
-				var cached = FindTypedInCache<T>(lookups);
-				if (cached != null)
-					return cached;
-			}
-
-			foreach (var bundle in searchAsset.FindLoadedBundles(Assets)) {
-				var match = FindInBundle<T>(bundle, name);
-				if (match != null) {
-					if (!fnLookup.TryGetValue(name, out var cacheList))
-						fnLookup[name] = cacheList = [];
-					cacheList.Add(new() { File = bundle, PathID = match.m_PathID });
-					return (T)match;
-				}
-			}
-		}
-
 		return null;
 	}
 
@@ -1057,24 +1026,6 @@ public class UnitySearchPathV2 : SearchPath
 
 			return null;
 		}
-	}
-
-	/// <summary>
-	/// Loads (and pins) only the bundle holding <paramref name="name"/> itself, not its dependency bundles. FindAssetByName would
-	/// load every dependency while looking for an object of that name, which for a scene like GameMain (132 bundles) never fits
-	/// in <see cref="MaxResidentBytes"/> and thrashes evict/reload forever.
-	/// </summary>
-	public bool LoadOwnBundle(ReadOnlySpan<char> name, ISet<SerializedFile> pinned) {
-		lock (sync)
-			foreach (var entry in Catalog.SearchAll(name)) {
-				if (entry is not UnitySearchAsset searchAsset)
-					continue;
-
-				var bundleFiles = Catalog.ResolveBundleFiles(searchAsset.DependencyKey);
-				if (bundleFiles.Count > 0) // Addressables lists the entry's own bundle first
-					return LoadDependenciesContaining(name, GetBundleDirectory(bundleFiles[0]).ToHashSet(), pinned);
-			}
-		return false;
 	}
 
 	public bool LoadDependenciesContaining(ReadOnlySpan<char> name, IReadOnlySet<string> fileNames, ISet<SerializedFile> pinned) {

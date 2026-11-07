@@ -172,6 +172,7 @@ public class MuseDash1FailPanel : Panel
 			assets.Panel.Root.Active = true;
 			assets.Panel.Play("", "PnlFailIn");
 			scene.PlaySound(SceneSound.Fail, 0); // PnlFail.m_FailMusic
+			character?.PlayAudio();
 		}
 		if (!panelShown)
 			return;

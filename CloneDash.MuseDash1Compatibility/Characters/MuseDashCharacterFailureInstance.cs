@@ -1,5 +1,9 @@
 ﻿using CloneDash.Common.Game;
+using CloneDash.Compatibility.MuseDash;
+using CloneDash.Settings;
 using Nucleus;
+using Nucleus.Audio;
+using Nucleus.Common.Audio;
 using Nucleus.Models.Runtime;
 
 namespace CloneDash.Characters;
@@ -34,7 +38,15 @@ public class MuseDashCharacterFailureInstance(MuseDash1CharacterDescriptor descr
 	}
 
 	public void PlayAudio() {
-		// Muse Dash's fail screen has no character voice line
+		int role = MuseDash1Compatibility.Characters.IndexOf(Descriptor.ConfigData);
+		if (MuseDash1VoiceSetting.GetRandomVoice(MuseDash1VoiceSetting.FAIL, role) is not string name)
+			return;
+
+		var voice = MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, name);
+		if (voice == null)
+			return;
+		voice.BindVolumeToConVar(AudioSettings.snd_voicevolume);
+		audiosystem.PlaySound(voice, AudioPlaybackSettings.Unaltered);
 	}
 
 	public void Think() {

@@ -11,7 +11,6 @@ namespace CloneDash.Game;
 
 public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPostRenderer, IRhythmGamePostRenderer, IRhythmGameThinker, IDisposable
 {
-	readonly MuseDash1CharacterComponent Character;
 	readonly ComboComponent Combo;
 	readonly ScreenEffectsComponent Effects;
 	readonly FeverComponent Fever;
@@ -25,8 +24,7 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 	readonly StatisticsData Stats;
 	double deathTime;
 
-	public MuseDash1HudComponent(MuseDash1CharacterComponent character, ComboComponent combo, ScreenEffectsComponent effects, GameEventManager events, FeverComponent fever, HealthComponent health, RhythmGameLevel level, MashComponent mash, MusicComponent music, ResultComponent results, MuseDash1RulesComponent rules, MuseDash1ScenesComponent scenes, ScoreComponent score, StatisticsData stats) {
-		Character = character;
+	public MuseDash1HudComponent(ComboComponent combo, ScreenEffectsComponent effects, GameEventManager events, FeverComponent fever, HealthComponent health, RhythmGameLevel level, MashComponent mash, MusicComponent music, ResultComponent results, MuseDash1RulesComponent rules, MuseDash1ScenesComponent scenes, ScoreComponent score, StatisticsData stats) {
 		Combo = combo;
 		Effects = effects;
 		Fever = fever;
@@ -39,7 +37,7 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 		Score = score;
 		Stats = stats;
 
-		results.CanClear = () => UI != null && !UI.ShowingVictoryScreen() && !rules.IsDead();
+		results.CanClear = () => UI != null && !UI.ShowingVictoryScreen();
 
 		events.Listen<FeverChangedGameEvent>(UpdateFeverProgress);
 		events.Listen<FeverStartGameEvent>(EnterFever);
@@ -88,13 +86,6 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 	public void PostRenderEntities(FrameState frameState) {
 		UI?.PostRenderWorldspace();
 		Rlgl.DrawRenderBatchActive();
-
-		// Like Muse Dash, the fail fade-in covers the stage but the tripping character stays on top of it
-		if (UI != null && UI.ShowingFailureScreen()) {
-			UI.RenderFailureUnderlay();
-			Character.RenderPlayerAgain();
-			Rlgl.DrawRenderBatchActive();
-		}
 	}
 
 	public void Reset() {
