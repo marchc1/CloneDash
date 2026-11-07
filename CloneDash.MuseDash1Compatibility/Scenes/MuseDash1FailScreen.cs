@@ -10,6 +10,7 @@ using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
+using Nucleus.Types;
 using Nucleus.UI;
 
 namespace CloneDash.Scenes;
@@ -50,6 +51,7 @@ public class MuseDash1FailPanel : Panel
 		Size = new(1, 1);
 		DynamicallySized = true;
 		BorderSize = 0;
+		DockPadding = RectangleF.TLRB(0); // Panel's default 2px padding let the game show around the edges
 		SetPaintBackgroundEnabled(false);
 
 		// PnlFailText (the intro) isn't drawn here: the game draws it under the character via RenderIntro

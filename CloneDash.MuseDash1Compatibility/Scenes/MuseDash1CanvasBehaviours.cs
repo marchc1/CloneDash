@@ -20,6 +20,8 @@ public class MuseDash1SongNameMarquee
 	public int LongBound;
 	public CanvasNode Mask = null!;
 	public CanvasNode? Middle;
+	/// <summary>LongSongNameController.normalFont (Source Han Sans): covers CJK, unlike the language's global UI font (Teko in English).</summary>
+	public AssetStudio.Font? NormalFont;
 	public CanvasNode? RightMask;
 	public CanvasNode? Simple;
 	public float Speed = 70;
@@ -27,9 +29,13 @@ public class MuseDash1SongNameMarquee
 	public bool Scrolling { get; private set; }
 
 	public void SetText(string text) {
+		bool needsNormalFont = NormalFont != null && text.Any(c => c > 0x7F);
 		foreach (var node in new[] { Middle, Simple, Backup })
-			if (node?.Text != null)
+			if (node?.Text != null) {
 				node.Text.Text = text;
+				if (needsNormalFont)
+					UnityCanvas.SetFont(node.Text, NormalFont!);
+			}
 
 		width = Middle?.Text != null ? UnityCanvas.MeasureTextWidth(Middle.Text) : 0;
 		Scrolling = width > LongBound;
@@ -158,6 +164,7 @@ public class MuseDash1CanvasBehaviours
 					LongBound = Convert.ToInt32(data["m_LongBound"]),
 					Mask = node,
 					Middle = Resolve(canvas, behaviour, data["m_MidSimpleName"]),
+					NormalFont = data["normalFont"] is OrderedDictionary font && canvas.TryResolve<AssetStudio.Font>(behaviour, font, out var normalFont) ? normalFont : null,
 					RightMask = Resolve(canvas, behaviour, data["m_RMask"]),
 					Simple = Resolve(canvas, behaviour, data["m_SimpleName"]),
 					Speed = Convert.ToSingle(data["m_Speed"])
