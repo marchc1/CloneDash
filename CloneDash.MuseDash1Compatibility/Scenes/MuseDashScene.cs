@@ -1,4 +1,4 @@
-using AssetStudio;
+﻿using AssetStudio;
 using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.Compatibility;
@@ -941,7 +941,13 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 			case SceneSound.HitBossFast: audiosystem.PlaySound(Forte2Sound, in AudioPlaybackSettings.Unaltered); break;
 			case SceneSound.HitBossSlow: audiosystem.PlaySound(Forte2Sound, in AudioPlaybackSettings.Unaltered); break;
 			case SceneSound.Victory: audiosystem.PlaySound(VictoryBgmSound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.Fail: audiosystem.PlaySound(FailBgmSound, AudioPlaybackSettings.Unaltered with { Looping = true }); break;
 		}
+	}
+
+	public void StopSound(SceneSound sound) {
+		if (sound == SceneSound.Fail)
+			audiosystem.StopSounds(FailBgmSound);
 	}
 
 	public MD1_SpineActionControllerData GetBossActions() => BossAnims;

@@ -1,4 +1,6 @@
-﻿namespace CloneDash.Characters;
+﻿using CloneDash.Common.Game;
+
+namespace CloneDash.Characters;
 
 public interface ICharacterFailureInstance
 {
@@ -10,8 +12,10 @@ public interface ICharacterFailureInstance
 	/// Plays the audio track this character says.
 	/// </summary>
 	void PlayAudio();
+	void Initialize(RhythmGameLevel game);
 	/// <summary>
 	/// Renders the model.
 	/// </summary>
 	void Render();
+	void Think();
 }

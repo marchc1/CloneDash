@@ -2,6 +2,7 @@
 using CloneDash.Compatibility.Unity;
 using System.Collections;
 using System.Collections.Specialized;
+using Vector2 = System.Numerics.Vector2;
 
 namespace CloneDash.Scenes;
 
@@ -77,6 +78,23 @@ public class MuseDash1LikeButton
 	public CanvasNode? Like;
 }
 
+/// <summary>
+/// One of PnlFail's scrolling barrage lines (FailTxtBarrageAnimation): slides from StartPos to TargetX over Duration, after Delay.
+/// </summary>
+public class MuseDash1FailBarrageLine
+{
+	public float Delay;
+	public float Duration;
+	public CanvasNode Node = null!;
+	public Vector2 Start;
+	public float TargetX;
+
+	public void Update(float time) {
+		float t = Duration > 0 ? Math.Clamp((time - Delay) / Duration, 0, 1) : 1;
+		Node.AnchoredPosition = new(Start.X + (TargetX - Start.X) * t, Start.Y);
+	}
+}
+
 public class MuseDash1CanvasBehaviours
 {
 	UnityCanvas? canvas;
@@ -84,6 +102,9 @@ public class MuseDash1CanvasBehaviours
 	public List<CanvasNode> GradeObjects { get; } = [];
 	public MuseDash1LikeButton? LikeButton { get; private set; }
 	public List<MuseDash1SongNameMarquee> Marquees { get; } = [];
+	/// <summary>FailBarrage.barrages, in the order the fail_barrage config fills them.</summary>
+	public List<CanvasNode> FailBarrageTexts { get; } = [];
+	public List<MuseDash1FailBarrageLine> FailBarrageLines { get; } = [];
 
 	public bool Capture(UnityCanvas canvas, CanvasNode node, MonoBehaviour behaviour, string className, OrderedDictionary data) {
 		if (this.canvas != canvas) {
@@ -91,6 +112,8 @@ public class MuseDash1CanvasBehaviours
 			GradeObjects.Clear();
 			LikeButton = null;
 			Marquees.Clear();
+			FailBarrageTexts.Clear();
+			FailBarrageLines.Clear();
 		}
 
 		switch (className) {
@@ -103,6 +126,23 @@ public class MuseDash1CanvasBehaviours
 					Like = Resolve(canvas, behaviour, data["imgLike"])
 				};
 				node.Notes.Add($"like button: like={LikeButton.Like?.Path} hide={LikeButton.Hide?.Path} button={LikeButton.ButtonName} holdTime={LikeButton.HoldTime}");
+				return true;
+			case "FailBarrage":
+				if (data["barrages"] is IList texts)
+					foreach (OrderedDictionary pointer in texts)
+						if (Resolve(canvas, behaviour, pointer) is CanvasNode text)
+							FailBarrageTexts.Add(text);
+				node.Notes.Add($"fail barrage: {string.Join(", ", FailBarrageTexts.Select(text => text.Name))}");
+				return true;
+			case "FailTxtBarrageAnimation":
+				var start = (OrderedDictionary)data["m_StartPos"]!;
+				FailBarrageLines.Add(new MuseDash1FailBarrageLine {
+					Delay = Convert.ToSingle(data["m_StartDelay"]),
+					Duration = Convert.ToSingle(data["m_Duration"]),
+					Node = node,
+					Start = new(Convert.ToSingle(start["x"]), Convert.ToSingle(start["y"])),
+					TargetX = Convert.ToSingle(data["m_TargetPosX"])
+				});
 				return true;
 			case "GameMainGrade":
 				if (data["gradeObjects"] is IList grades)

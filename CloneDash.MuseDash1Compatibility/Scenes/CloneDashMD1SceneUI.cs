@@ -1,4 +1,4 @@
-using CloneDash.Characters;
+﻿using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes.MuseDash;
@@ -497,6 +497,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	protected ModelData? fx_combo_1;
 	protected ModelData? fx_combo_2;
 	MuseDash1VictoryAssets? victoryCanvas;
+	MuseDash1FailAssets? failCanvas;
+	protected MuseDash1FailPanel? CurrentFailPanel;
 
 	public virtual void Dispose() {
 		foreach (var item in BackgroundItems) item.Dispose();
@@ -557,6 +559,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		LoadHealthBarAssets();
 		LoadComboModels();
 		victoryCanvas = ImportVictoryCanvas();
+		failCanvas = ImportFailCanvas();
 
 		ForceDeactivateCombo1();
 		ForceDeactivateCombo2();
@@ -626,6 +629,58 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 				if (file != found.assetsFile)
 					assets.Release(file);
 			assets.Unpin(found.assetsFile);
+		}
+	}
+
+	static MuseDash1FailAssets? ImportFailCanvas() {
+		var assets = MuseDash1Compatibility.StreamingAssets;
+		// PnlFail isn't an addressable prefab (the "PnlFail" key is its animator controller); it lives in the GameMain scene.
+		// Looking the scene up loads its bundle and indexes its objects by name.
+		var failText = assets.FindAssetByName<AssetStudio.GameObject>("PnlFailText");
+		if (failText == null) {
+			assets.FindAssetByName<AssetStudio.GameObject>("GameMain");
+			failText = assets.FindAssetByName<AssetStudio.GameObject>("PnlFailText");
+		}
+		if (failText == null) {
+			Logs.Warn("[MD1SceneUI] Couldn't find PnlFailText in the GameMain scene; no fail screen.");
+			return null;
+		}
+
+		var file = failText.assetsFile;
+		// There's another PnlFail under AreaFail; the real one is UI_2D/Standard/PnlFail, next to PnlFailText
+		var panel = file.Objects.OfType<AssetStudio.Transform>()
+			.FirstOrDefault(transform => transform.GetGameObject()?.m_Name == "PnlFail" && transform.GetFather()?.GetGameObject()?.m_Name == "Standard")
+			?.GetGameObject();
+		if (panel == null) {
+			Logs.Warn("[MD1SceneUI] Couldn't find UI_2D/Standard/PnlFail in the GameMain scene; no fail screen.");
+			return null;
+		}
+
+		HashSet<AssetStudio.SerializedFile> pinned = [file];
+		assets.Pin(file);
+		try {
+			// UI_2D: CanvasScaler 1920x1080, match width
+			var settings = new UnityCanvasSettings("GameMain.unity UI_2D canvas (CanvasScaler)", false, 60, 100, new(1920, 1080), 0);
+			UnityCanvas ImportCanvas(AssetStudio.GameObject gameObject, MuseDash1CanvasBehaviours behaviours) {
+				var canvas = UnityCanvas.Import(gameObject, settings,
+					files => assets.LoadDependenciesContaining("GameMain", files, pinned),
+					(canvas, node, behaviour, className, data) => MuseDash1Localization.Apply(canvas, node, behaviour, className, data) || behaviours.Capture(canvas, node, behaviour, className, data));
+				MuseDash1Localization.ApplyGlobalFonts(canvas, assets.Assets.AssetsFileList);
+				canvas.Report();
+				return canvas;
+			}
+
+			var behaviours = new MuseDash1CanvasBehaviours();
+			var intro = ImportCanvas(failText, new MuseDash1CanvasBehaviours());
+			var canvas = ImportCanvas(panel, behaviours);
+			return new MuseDash1FailAssets(intro, canvas, behaviours,
+				MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1VictoryScreen.LIKE_SOUND), MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1VictoryScreen.UNLIKE_SOUND));
+		}
+		finally {
+			foreach (var pinnedFile in pinned)
+				if (pinnedFile != file)
+					assets.Release(pinnedFile);
+			assets.Unpin(file);
 		}
 	}
 
@@ -720,7 +775,23 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	}
 
 	public void OpenFailure() {
+		if (IValidatable.IsValid(CurrentFailPanel))
+			return;
 
+		var assets = failCanvas ?? ImportFailCanvas();
+		failCanvas = null;
+		if (assets != null)
+			CurrentFailPanel = new MuseDash1FailPanel(EngineCore.Level.RootPanel, game, scene, assets);
+	}
+
+	void CloseFailure() {
+		if (CurrentFailPanel == null)
+			return;
+
+		CurrentFailPanel.Remove();
+		CurrentFailPanel = null;
+		// Canvas state (animators, nodes) is single-use; import a fresh one now (restart) rather than at the next death
+		failCanvas = ImportFailCanvas();
 	}
 
 	protected virtual StatisticsPanel? LoadPanel(StatisticsData stats) {
@@ -1047,7 +1118,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	}
 
 	public bool ShowingVictoryScreen() => IValidatable.IsValid(CurrentStatisticsPanel);
-	public bool ShowingFailureScreen() => false; // todo
+	public bool ShowingFailureScreen() => IValidatable.IsValid(CurrentFailPanel);
 
 
 	public void StartMultiHitText() {
@@ -1208,6 +1279,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		FeverTotalTime = 0;
 		CloseVictory();
 		EndWarning();
+		CloseFailure();
 
 		ForceDeactivateCombo1();
 		ForceDeactivateCombo2();
