@@ -322,8 +322,13 @@ public class MuseDash1SceneDescriptor : ModDescriptor, IMuseDash1SceneDescriptor
 
 	public static MuseDash1SceneDescriptor? GetScene(ICloneDashModProvider provider, ReadOnlySpan<char> name) {
 		var sceneInfo = MuseDash1SceneInfo.GetSceneInfo(name);
-		if (sceneInfo == null)
-			return null;
+		if (sceneInfo == null) {
+			// Custom charts can name scenes that don't exist (mdmc.moe charts use 'scene_10'; only scene_10_miku/scene_10_rin_len do),
+			// which left the required scene slot empty
+			if (name.SequenceEqual("scene_01")) return null;
+			Logs.Warn($"The scene '{name}' is unknown, so 'Space Station' will be selected as a fallback for this scene.");
+			return GetScene(provider, "scene_01");
+		}
 
 		if (sceneInfo.Unusable) {
 			Logs.Warn($"The scene '{sceneInfo.OfficialName}' is currently broken, so 'Space Station' will be selected as a fallback for this scene.");
