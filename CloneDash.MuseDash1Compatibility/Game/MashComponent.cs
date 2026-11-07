@@ -36,6 +36,7 @@ public class MashComponent(GameEventManager events, PathwaysComponent pathways, 
 	public void SubmitMashHit() {
 		if (!InMashState || rules.IsDead())
 			return;
+		events.Fire(new MashHitGameEvent());
 		MashingEntity.Hit(pathways.GroundPathway, 0);
 	}
 }

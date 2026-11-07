@@ -50,6 +50,7 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 		events.Listen<SongClearedGameEvent>(ShowVictory);
 		events.Listen<SongFailedGameEvent>(ShowFailure);
 		events.Listen<UnpauseStartGameEvent>(PlayUnpauseSound);
+		events.Listen<WarningStartGameEvent>(StartWarning);
 	}
 
 	public RhythmGameThinkPhase Phase => RhythmGameThinkPhase.Present;
@@ -168,6 +169,8 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 			UpdateMashTextEffect();
 		}
 	}
+
+	private void StartWarning(ref WarningStartGameEvent ev) => UI?.StartWarning();
 
 	private void UpdateFeverProgress(ref FeverChangedGameEvent ev) {
 		UI?.UpdateFeverProgress(ev.Value, ev.Max);
