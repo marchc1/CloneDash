@@ -7,6 +7,7 @@ using Nucleus.ManagedMemory;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
+using Nucleus.Util;
 using Raylib_cs;
 using System.Globalization;
 using System.Numerics;
@@ -154,11 +155,11 @@ namespace Nucleus.Core
 		}
 
 		public readonly record struct TextMetrics(float LineHeight, float CapTop, float CapHeight);
-		static readonly Dictionary<(string Font, int Size), TextMetrics> s_metrics = [];
+		static readonly Dictionary<(ulong FontHash, int Size), TextMetrics> s_metrics = [];
 
 		public static TextMetrics GetTextMetrics(ReadOnlySpan<char> font, float fontSize) {
 			int size = QuantizeFontSize(fontSize);
-			var key = (font.ToString(), size);
+			var key = (font.Hash(invariant: false), size);
 			if (s_metrics.TryGetValue(key, out var m))
 				return m;
 
@@ -186,11 +187,29 @@ namespace Nucleus.Core
 
 		public struct TextChunk
 		{
+			private const int MaxReusedStrings = 4096;
+			private static readonly HashSet<string> s_reusedStrings = [];
+			private static readonly HashSet<string>.AlternateLookup<ReadOnlySpan<char>> s_reusedStringsLookup = s_reusedStrings.GetAlternateLookup<ReadOnlySpan<char>>();
+
 			public string Text;
 			public string Font;
 			public TextChunk(ReadOnlySpan<char> text, ReadOnlySpan<char> font) {
-				Text = new(text);
-				Font = new(font);
+				Text = Reuse(text);
+				Font = Reuse(font);
+			}
+
+			private static string Reuse(ReadOnlySpan<char> str) {
+				lock (s_reusedStrings) {
+					if (s_reusedStringsLookup.TryGetValue(str, out string? existing))
+						return existing;
+
+					if (s_reusedStrings.Count >= MaxReusedStrings)
+						s_reusedStrings.Clear();
+
+					string created = new(str);
+					s_reusedStrings.Add(created);
+					return created;
+				}
 			}
 		}
 

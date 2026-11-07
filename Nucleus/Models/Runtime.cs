@@ -963,7 +963,7 @@ public class SkinEntryTypeConverter : TypeConverter
 /// </summary>
 /// <param name="Name"></param>
 /// <param name="SlotIndex"></param>
-[TypeConverter(typeof(SkinEntryTypeConverter))] public record SkinEntry(UtlSymbol Name, int SlotIndex);
+[TypeConverter(typeof(SkinEntryTypeConverter))] public record struct SkinEntry(UtlSymbol Name, int SlotIndex);
 // iirc, records handle this automatically; saving in case they don't
 // public override int GetHashCode() => HashCode.Combine(Name, SlotIndex);
 

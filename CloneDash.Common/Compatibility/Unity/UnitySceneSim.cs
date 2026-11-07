@@ -1565,7 +1565,9 @@ public abstract class UnitySimScene
 		sortedRenderers.Clear();
 		foreach (var obj in allObjects) {
 			if (!IsActiveInHierarchy(obj)) continue;
-			foreach (var renderer in obj.GetComponents<SceneRenderer>()) sortedRenderers.Add(renderer);
+			var components = obj.Components;
+			for (int i = 0; i < components.Count; i++)
+				if (components[i] is SceneRenderer renderer) sortedRenderers.Add(renderer);
 		}
 		sortedRenderers.Sort(static (a, b) => {
 			int cmp = a.SortingLayerID.CompareTo(b.SortingLayerID);
