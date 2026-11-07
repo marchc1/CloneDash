@@ -2,6 +2,7 @@
 using CloneDash.Compatibility.Unity;
 using System.Collections;
 using System.Collections.Specialized;
+using Vector2 = System.Numerics.Vector2;
 
 namespace CloneDash.Scenes;
 
@@ -19,6 +20,8 @@ public class MuseDash1SongNameMarquee
 	public int LongBound;
 	public CanvasNode Mask = null!;
 	public CanvasNode? Middle;
+	// LongSongNameController.normalFont (Source Han Sans): covers CJK, unlike the language's global UI font (Teko in English)
+	public AssetStudio.Font? NormalFont;
 	public CanvasNode? RightMask;
 	public CanvasNode? Simple;
 	public float Speed = 70;
@@ -26,9 +29,13 @@ public class MuseDash1SongNameMarquee
 	public bool Scrolling { get; private set; }
 
 	public void SetText(string text) {
+		bool needsNormalFont = NormalFont != null && text.Any(c => c > 0x7F);
 		foreach (var node in new[] { Middle, Simple, Backup })
-			if (node?.Text != null)
+			if (node?.Text != null) {
 				node.Text.Text = text;
+				if (needsNormalFont)
+					UnityCanvas.SetFont(node.Text, NormalFont!);
+			}
 
 		width = Middle?.Text != null ? UnityCanvas.MeasureTextWidth(Middle.Text) : 0;
 		Scrolling = width > LongBound;
@@ -77,6 +84,21 @@ public class MuseDash1LikeButton
 	public CanvasNode? Like;
 }
 
+// One of PnlFail's scrolling barrage lines (FailTxtBarrageAnimation): slides from Start to TargetX over Duration, after Delay
+public class MuseDash1FailBarrageLine
+{
+	public float Delay;
+	public float Duration;
+	public CanvasNode Node = null!;
+	public Vector2 Start;
+	public float TargetX;
+
+	public void Update(float time) {
+		float t = Duration > 0 ? Math.Clamp((time - Delay) / Duration, 0, 1) : 1;
+		Node.AnchoredPosition = new(Start.X + (TargetX - Start.X) * t, Start.Y);
+	}
+}
+
 public class MuseDash1CanvasBehaviours
 {
 	UnityCanvas? canvas;
@@ -84,6 +106,9 @@ public class MuseDash1CanvasBehaviours
 	public List<CanvasNode> GradeObjects { get; } = [];
 	public MuseDash1LikeButton? LikeButton { get; private set; }
 	public List<MuseDash1SongNameMarquee> Marquees { get; } = [];
+	// FailBarrage.barrages, in the order the fail_barrage config fills them
+	public List<CanvasNode> FailBarrageTexts { get; } = [];
+	public List<MuseDash1FailBarrageLine> FailBarrageLines { get; } = [];
 
 	public bool Capture(UnityCanvas canvas, CanvasNode node, MonoBehaviour behaviour, string className, OrderedDictionary data) {
 		if (this.canvas != canvas) {
@@ -91,6 +116,8 @@ public class MuseDash1CanvasBehaviours
 			GradeObjects.Clear();
 			LikeButton = null;
 			Marquees.Clear();
+			FailBarrageTexts.Clear();
+			FailBarrageLines.Clear();
 		}
 
 		switch (className) {
@@ -103,6 +130,23 @@ public class MuseDash1CanvasBehaviours
 					Like = Resolve(canvas, behaviour, data["imgLike"])
 				};
 				node.Notes.Add($"like button: like={LikeButton.Like?.Path} hide={LikeButton.Hide?.Path} button={LikeButton.ButtonName} holdTime={LikeButton.HoldTime}");
+				return true;
+			case "FailBarrage":
+				if (data["barrages"] is IList texts)
+					foreach (OrderedDictionary pointer in texts)
+						if (Resolve(canvas, behaviour, pointer) is CanvasNode text)
+							FailBarrageTexts.Add(text);
+				node.Notes.Add($"fail barrage: {string.Join(", ", FailBarrageTexts.Select(text => text.Name))}");
+				return true;
+			case "FailTxtBarrageAnimation":
+				var start = (OrderedDictionary)data["m_StartPos"]!;
+				FailBarrageLines.Add(new MuseDash1FailBarrageLine {
+					Delay = Convert.ToSingle(data["m_StartDelay"]),
+					Duration = Convert.ToSingle(data["m_Duration"]),
+					Node = node,
+					Start = new(Convert.ToSingle(start["x"]), Convert.ToSingle(start["y"])),
+					TargetX = Convert.ToSingle(data["m_TargetPosX"])
+				});
 				return true;
 			case "GameMainGrade":
 				if (data["gradeObjects"] is IList grades)
@@ -118,6 +162,7 @@ public class MuseDash1CanvasBehaviours
 					LongBound = Convert.ToInt32(data["m_LongBound"]),
 					Mask = node,
 					Middle = Resolve(canvas, behaviour, data["m_MidSimpleName"]),
+					NormalFont = data["normalFont"] is OrderedDictionary font && canvas.TryResolve<AssetStudio.Font>(behaviour, font, out var normalFont) ? normalFont : null,
 					RightMask = Resolve(canvas, behaviour, data["m_RMask"]),
 					Simple = Resolve(canvas, behaviour, data["m_SimpleName"]),
 					Speed = Convert.ToSingle(data["m_Speed"])

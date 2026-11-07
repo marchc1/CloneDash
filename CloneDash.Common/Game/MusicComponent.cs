@@ -52,5 +52,7 @@ public class MusicComponent
 		audiosystem.SetSoundPitchControl(Handle, (float)speed);
 	}
 
+	public void SetVolume(float volume) => audiosystem.SetSoundVolume(in Handle, volume);
+
 	public void Update() => audiosystem.UpdatePlayback(in Handle);
 }

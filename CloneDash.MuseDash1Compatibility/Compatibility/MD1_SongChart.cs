@@ -60,8 +60,13 @@ public class MD1_SongChart : ISongChart
 				: "gamemode/musedash1/standard"
 			)!;
 	}
-	public object GetGamemodeData() => (GamemodeData ?? Song.ProduceGamemodeData(this, (int)Difficulty))
+	ChartTiming? timing;
+	public object GetGamemodeData() {
+		var data = (GamemodeData ?? Song.ProduceGamemodeData(this, (int)Difficulty))
 									?? throw new Exception("uninitialized gamemode data");
+		timing = data.GetTiming();
+		return data;
+	}
 
 	public SongChartMetadata FetchMetadata() {
 		var designers = Song.GetInfo()?.LevelDesigners;
@@ -92,6 +97,8 @@ public class MD1_SongChart : ISongChart
 	}
 
 	public IAudioClip GetAudioTrack() => Song.GetAudioTrack();
-	public ChartTiming GetTiming() => ((MD1_GamemodeData)GetGamemodeData()).GetTiming();
+	// Timing never changes per chart, so reuse it rather than producing the whole gamemode data again
+	// (for cinema charts that opened a second, throwaway video decoder)
+	public ChartTiming GetTiming() => timing ?? ((MD1_GamemodeData)GetGamemodeData()).GetTiming();
 	public int GetRatingNumber() => RatingNumber;
 }

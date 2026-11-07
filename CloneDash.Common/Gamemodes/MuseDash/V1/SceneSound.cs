@@ -27,6 +27,7 @@ public enum SceneSound
 	HitBossSlow,
 
 	Victory,
+	Fail,
 
 	Count
 }

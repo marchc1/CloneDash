@@ -85,6 +85,9 @@ public class MuseDash1PlayfieldComponent(MuseDash1BattleFXComponent battleFX, Mu
 				ConditionallyRenderVisibleEntities(frameState, Layout.PathwayAt(i).AsSet, visibleEnemies);
 		}
 
+		// The fail screen's fade-in covers the stage and notes; character entities render after this, so they stay on top of it
+		hud.UI?.RenderFailureUnderlay();
+
 		level.AddDebugString("Visible Entities", Chart.EnemyManager.GetLastVisible().Length);
 		level.AddDebugString("Active Effects", Effects.GetActiveEffects());
 

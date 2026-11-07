@@ -183,30 +183,25 @@ public struct MDMCChart
 			});
 		});
 	}
-	private class checkProgressTemp : IProgress<float>
-	{
-		public string id { get; set; }
-		public float Progress { get; set; }
-		public void Report(float value) {
-			Progress = value;
-			Logs.Info($"[{id}]: {value}%");
-		}
-	}
-	public void DownloadTo(string filename, Action<bool> callback) {
+	// progress reports 0-100, from a worker thread
+	public void DownloadTo(string filename, Action<bool> callback, IProgress<float>? progress = null) {
 		var id = ID;
 
 		Task.Run(async () => {
-			Directory.CreateDirectory(Path.GetDirectoryName(filename));
-			using (FileStream fileOut = new FileStream(filename, FileMode.Create, FileAccess.Write)) {
-				var progress = new checkProgressTemp();
-				progress.id = id;
-
+			bool worked = true;
+			try {
+				Directory.CreateDirectory(Path.GetDirectoryName(filename));
+				using FileStream fileOut = new FileStream(filename, FileMode.Create, FileAccess.Write);
 				await MDMCWebAPI.Http.DownloadDataAsync($"https://api.mdmc.moe/v3/charts/{id}/download", fileOut, progress);
-
-				MainThread.RunASAP(() => {
-					callback?.Invoke(true);
-				});
 			}
+			catch (Exception ex) {
+				worked = false;
+				Logs.Warn($"Downloading chart {id} failed: {ex.Message}");
+				// Don't leave a partial .mdm behind, it would be treated as cached next time
+				try { File.Delete(filename); } catch { }
+			}
+
+			MainThread.RunASAP(() => callback?.Invoke(worked));
 		});
 	}
 }
@@ -300,7 +295,7 @@ public class MDMCWebAPIPromise
 /// </summary>
 public static class MDMCWebAPI
 {
-	public static async Task DownloadDataAsync(this HttpClient client, string requestUrl, Stream destination, IProgress<float> progress = null, CancellationToken cancellationToken = default) {
+	public static async Task DownloadDataAsync(this HttpClient client, string requestUrl, Stream destination, IProgress<float>? progress = null, CancellationToken cancellationToken = default) {
 		using (var response = await client.GetAsync(requestUrl, HttpCompletionOption.ResponseHeadersRead)) {
 			var contentLength = response.Content.Headers.ContentLength;
 			using (var download = await response.Content.ReadAsStreamAsync()) {
@@ -385,20 +380,6 @@ public static class MDMCWebAPI
 		}
 
 		return string.Join("&", list);
-	}
-
-	public const int MAX_CHARTS_PER_PAGE = 15;
-
-	/// <summary>
-	/// Chart starts at 0, page starts at 1.
-	/// </summary>
-	/// <param name="chart"></param>
-	/// <returns></returns>
-	public static int ChartIdxToPageIdx(int chart) {
-		return (chart / MAX_CHARTS_PER_PAGE) + 1;
-	}
-	public static int PageIdxToChartIdxStart(int page) {
-		return (page - 1) * MAX_CHARTS_PER_PAGE;
 	}
 
 	public static string BuildFetchRequestURL(string endpoint, Dictionary<string, object> parameters) =>

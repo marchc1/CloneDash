@@ -314,6 +314,7 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 	}
 
 	public float GetVictoryModelScale() => GetSkeletonScale(ConfigData.VictoryShow);
+	public float GetFailModelScale() => GetSkeletonScale(ConfigData.FailShow);
 
 	public ModelData GetMainShowModel(Level level) => PullModelDataFromGameObject(level, ConfigData.MainShow);
 
@@ -391,7 +392,8 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 		handler.PlaySkeletonAction(new() {
 			ActionName = name,
 			CustomCompleteEvent = (a) => {
-				if (!a.IsEndLoop)
+				// Dying holds the last (fallen) frame instead of getting back up
+				if (!a.IsEndLoop && animationType != CharacterAnimationType.Die)
 					playCharacterAnimation(CharacterAnimationType.Run, handler);
 			}
 		}, false);
@@ -436,6 +438,8 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 	public ModelData GetPlayGhostModel(Level level) => PullModelDataFromGameObject(level, ConfigData.GetBattleShowGhost());
 	public ModelData GetVictoryModel(Level level) => PullModelDataFromGameObject(level, ConfigData.VictoryShow);
 	public string GetVictoryStandby() => "standby";
+	public ModelData GetFailModel(Level level) => PullModelDataFromGameObject(level, ConfigData.FailShow);
+	public string GetFailStandby() => "standby";
 
 	public ICharacterMainMenuInstance CreateMainMenu() => new MuseDashCharacterMainMenuInstance(this);
 	public ICharacterVictoryInstance CreateVictory() => new MuseDashCharacterVictoryInstance(this);

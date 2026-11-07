@@ -202,6 +202,7 @@ public class UnityCanvas
 	readonly List<CanvasAnimator> animators = [];
 	readonly List<(int Order, int Index, List<(int Op, CanvasNode Node)> Ops)> layers = [];
 	readonly List<(CanvasNode Node, MonoBehaviour Behaviour, string ClassName, OrderedDictionary Data)> behaviours = [];
+	readonly List<(AssetStudio.Object Button, OrderedDictionary Target, Vector4 Tint)> buttonTints = [];
 	readonly HashSet<string> missingFiles = [];
 	readonly Dictionary<(string File, long PathID), CanvasNode> nodesByGameObject = [];
 	readonly List<CanvasNode> particleNodes = [];
@@ -233,6 +234,7 @@ public class UnityCanvas
 		do {
 			canvas = new UnityCanvas(new CanvasNode(), settings, textures);
 			canvas.ImportNode(root, canvas.Root, "");
+			canvas.ApplyButtonTints();
 			foreach (var (node, behaviour, className, data) in canvas.behaviours)
 				if (behaviourHandler == null || !behaviourHandler(canvas, node, behaviour, className, data))
 					node.Unsupported.Add($"{className} [{Describe(behaviour)}]");
@@ -243,6 +245,18 @@ public class UnityCanvas
 				canvas.GetClip(animator, state);
 		canvas.Root.Active = true;
 		return canvas;
+	}
+
+	void ApplyButtonTints() {
+		foreach (var (button, target, tint) in buttonTints) {
+			if (!TryResolve<AssetStudio.Object>(button, target, out var graphic) || FindNode(graphic) is not CanvasNode node)
+				continue;
+			var color = Vector4.Clamp(tint, Vector4.Zero, Vector4.One);
+			if (node.Text != null)
+				node.Text.Color *= color;
+			if (node.Image != null)
+				node.Image.Color *= color;
+		}
 	}
 
 	public void Report() {
@@ -1021,6 +1035,10 @@ public class UnityCanvas
 			case "Button":
 			case "Toggle":
 				node.Button = true;
+				// Selectable ColorTint transition: Unity multiplies the target graphic by the normal color (e.g. white button text
+				// becomes the button's blue). Applied once the whole tree is imported, since the target is usually a child.
+				if (GetInt(data, "m_Transition") == 1 && data["m_Colors"] is OrderedDictionary colors && data["m_TargetGraphic"] is OrderedDictionary target)
+					buttonTints.Add((component, target, GetColor(colors, "m_NormalColor") * GetFloat(colors, "m_ColorMultiplier", 1)));
 				break;
 			case "Animator":
 				ImportAnimator(node, component, data);

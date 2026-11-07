@@ -162,7 +162,10 @@ namespace Nucleus.ManagedMemory
 				Raylib.UnloadTexture(Underlying);
 				parent?.EnsureTextureRemoved(this);
 			});
-			regenerator?.Dispose();
+			// Only on an explicit Dispose: from the finalizer the regenerator's own objects may already be finalized (e.g. a cinema
+			// background's FFmpeg decoder), and disposing them again crashes natively on the finalizer thread
+			if (usercall)
+				regenerator?.Dispose();
 			disposed = true;
 		}
 

@@ -240,6 +240,9 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			}
 
 			private bool __downloading = false;
+			public bool IsDownloading => __downloading;
+			// 0-100, written from the download thread
+			public float DownloadProgress { get; private set; }
 
 			public static string GetDownloadCachePath(string localPath) {
 				var download = filesystem.GetSearchPathID("download").FirstOrDefault() as DiskSearchPath ?? throw new Exception("Cannot find download cache directory?");
@@ -255,12 +258,13 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 					}
 					// Ensure Archive is populated from either a download or a cache
 					var filename = GetDownloadCachePath(WebChart.ID);
-					__downloading = true;
 					var mdmFilename = $"{WebChart.ID}.mdm";
 					var canStream = filesystem.CanOpen("charts", mdmFilename);
 					if (!canStream) {
+						__downloading = true;
+						DownloadProgress = 0;
 						WebChart.DownloadTo(filename, (worked) => {
-							System.Diagnostics.Debug.Assert(worked);
+							__downloading = false;
 							if (worked) {
 								// Invalidate everything
 								Filepath = filename;
@@ -270,7 +274,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 								Logs.Info($"Downloaded {mdmFilename}");
 							}
 							else Logs.Warn($"Couldn't download {mdmFilename}");
-						});
+						}, new Progress<float>(p => DownloadProgress = p));
 						Logs.Info($"Downloading {mdmFilename}..");
 					}
 					else {
