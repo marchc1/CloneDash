@@ -1821,7 +1821,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		HitLogic(PathwaySide.Top);
 
 		// This loop is mostly for per-tick polls that need to occur, ie. when entities have been fully missed.
-		// It is ran after input processing.
+		// It is ran after input processing. Skipped while dead: notes still scroll by during the fail fade-in, but
+		// nothing gets collected/missed/hit (that played pickup sounds and healed a dead player).
+		if (!IsDead())
 		foreach (var entity in visibleEnemies) {
 			var timeToHit = entity.GetJudgementTimeUntilHit();
 			switch (entity.Interactivity) {
@@ -2382,6 +2384,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 			Dead = true;
 			DeathTime = Curtime;
 			Character.GetPrimary().PlayAnimation(CharacterAnimationType.Die);
+			// Input stops on death, so a held note would never see its release and its hold sound would keep looping
+			if (Sustains.IsSustaining() && HasActiveScene(out var scene))
+				scene.OnPressStateChange(false, true);
+			Sustains.Reset();
 			SceneUI?.OpenFailure(); // its magenta fade-in plays over the death animation, like Muse Dash's PnlFailText
 		}
 	}
