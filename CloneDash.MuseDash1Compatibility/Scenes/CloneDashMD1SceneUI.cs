@@ -780,10 +780,11 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		if (IValidatable.IsValid(CurrentFailPanel))
 			return;
 
-		var assets = failCanvas ?? ImportFailCanvas();
-		failCanvas = null;
-		if (assets != null)
-			CurrentFailPanel = new MuseDash1FailPanel(EngineCore.Level.RootPanel, game, scene, assets);
+		// Reused across deaths: each open replays the clips from 0, which resets every animated node, and re-sets the rest.
+		// Re-importing on restart meant parsing the whole scenes bundle mid-game, which froze the game.
+		failCanvas ??= ImportFailCanvas();
+		if (failCanvas != null)
+			CurrentFailPanel = new MuseDash1FailPanel(EngineCore.Level.RootPanel, game, scene, failCanvas);
 	}
 
 	public void RenderFailureUnderlay() {
@@ -797,8 +798,6 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 
 		CurrentFailPanel.Remove();
 		CurrentFailPanel = null;
-		// Canvas state (animators, nodes) is single-use; import a fresh one now (restart) rather than at the next death
-		failCanvas = ImportFailCanvas();
 	}
 
 	protected virtual StatisticsPanel? LoadPanel(StatisticsData stats) {
