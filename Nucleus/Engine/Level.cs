@@ -581,8 +581,11 @@ public abstract class Level : IValidatable
 				CalcView2D(frameState, ref cam2d);
 				RunEventPreRenderBackground(frameState);
 
+				cam2d.Offset += Graphics2D.Offset.ToNumerics();
 				EngineCore.Window.BeginMode2D(cam2d);
 			}
+			var drawOffset = Graphics2D.Offset;
+			Graphics2D.ResetDrawingOffset();
 			//Raylib.DrawLine3D(new(0, 0, 0), new(256, 0, 0), new Color(255, 70, 60, 200));
 			//Raylib.DrawLine3D(new(0, 0, 0), new(0, 256, 0), new Color(80, 255, 70, 200));
 
@@ -593,6 +596,7 @@ public abstract class Level : IValidatable
 				EngineCore.Window.EndMode3D();
 			else
 				EngineCore.Window.EndMode2D();
+			Graphics2D.SetOffset(drawOffset);
 			//Graphics.ScissorRect();
 
 			//Raylib.EndTextureMode();
