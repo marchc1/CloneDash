@@ -2,6 +2,7 @@
 using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
+using CloneDash.Game.Input;
 using CloneDash.Game.Logic;
 using CloneDash.Settings;
 
@@ -19,6 +20,9 @@ namespace CloneDash.Game.Entities
 {
 	public class SustainBeam : DashEnemy
 	{
+		const decimal HOLD_TICK_INTERVAL = 0.1m;
+		const int HOLD_TICK_SCORE = 10;
+
 		readonly HitsoundComponent hitsounds;
 		readonly PathwaysComponent pathways;
 		readonly ISustainManager sustains;
@@ -38,10 +42,13 @@ namespace CloneDash.Game.Entities
 		public bool HeldState { get; private set; } = false;
 		public bool StopAcceptingInput { get; private set; } = false;
 
-		private double lastCheckTime;
+		private int holdTicksScored;
+
+		public int HoldTickCount => Math.Max((int)Math.Ceiling((decimal)Length / HOLD_TICK_INTERVAL) - 1, 0);
 
 		public override void OnReset() {
 			base.OnReset();
+			holdTicksScored = 0;
 			WasHit = false;
 			HeldState = false;
 			StopAcceptingInput = false;
@@ -56,9 +63,10 @@ namespace CloneDash.Game.Entities
 			HeldState = true;
 			WasHit = true;
 			ForceDraw = true;
-			lastCheckTime = GetConductor().Time;
+			holdTicksScored = 0;
 			sustains.StartSustainBeam(this);
 			Components.Combo.Add();
+			addJudgedScore(distanceToHit);
 			Components.Rules.AddFever(FeverGiven, this);
 			GetStats().Hit(this, distanceToHit);
 		}
@@ -98,6 +106,8 @@ namespace CloneDash.Game.Entities
 		private float pathY(double time) => -worldY(time);
 
 		public float GetHeldY() => worldY(curveStartTime());
+
+		public float? GetNormalizedY(double time) => Curve?.Evaluate(Math.Clamp(time, HitTime, HitTime + Length));
 
 		private void buildCurveSamples() {
 			curveTimes = null;
@@ -288,7 +298,10 @@ namespace CloneDash.Game.Entities
 			buildCurveSamples();
 		}
 
+		private void addJudgedScore(double distanceToHit) => Components.Rules.AddScore(Components.Rules.DetermineScoreMultiplied(ScoreGiven, PollResult.Create(this, distanceToHit)), this);
+
 		internal void Complete(double distanceToEnd) {
+			Hold();
 			HeldState = false;
 			StopAcceptingInput = true;
 			ShouldDraw = false;
@@ -296,6 +309,7 @@ namespace CloneDash.Game.Entities
 			RewardPlayer();
 
 			Components.Combo.Add();
+			addJudgedScore(distanceToEnd);
 			Components.Rules.AddFever(FeverGiven, this);
 			sustains.CompleteSustainBeam(this);
 			hitsounds.Play(SceneSound.StartedHold, 1);
@@ -311,12 +325,9 @@ namespace CloneDash.Game.Entities
 			GetStats().MissEnd(this);
 		}
 		internal void Hold() {
-			var now = GetConductor().Time;
-			var delta = now - lastCheckTime;
-			if (delta >= 0.1) { // Give 10 score for every 100ms held (should this be done differently?)
-				lastCheckTime = now;
-				Components.Rules.AddScore(10, this);
-			}
+			int ticks = Math.Min(HoldTickCount, (int)Math.Floor(-GetJudgementTimeUntilHit() / (double)HOLD_TICK_INTERVAL));
+			for (; holdTicksScored < ticks; holdTicksScored++)
+				Components.Rules.AddScore(HOLD_TICK_SCORE, this);
 		}
 	}
 }

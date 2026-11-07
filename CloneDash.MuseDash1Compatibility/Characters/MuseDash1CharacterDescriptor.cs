@@ -333,7 +333,10 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 	private static MD1_SpineActionControllerData? black_girl_battle;
 	private MD1_SpineActionControllerData? anims;
 	private MD1_SpineActionControllerData? ghostanims;
-
+	private MuseDash1GhostMaterial ghostMaterial = MuseDash1GhostMaterial.Default;
+	private MuseDash1GhostMotion? ghostMotion;
+	private string? ghostName;
+	private bool ghostResolved;
 
 	[MemberNotNull(nameof(black_girl_battle))]
 	private static void convertBaseAnimationData() {
@@ -360,9 +363,45 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 		}
 
 		if (ghostanims == null) {
-			var mainshowObject = assets.FindAssetByName<GameObject>(ConfigData.GetBattleShowGhost());
+			var mainshowObject = assets.FindAssetByName<GameObject>(GetPlayGhostName());
 			var actionController = mainshowObject!.GetMonoBehaviorByScriptName("SpineActionController")!;
 			ghostanims = new(new(actionController), black_girl_battle);
+		}
+	}
+
+	private void convertGhost() {
+		if (ghostResolved)
+			return;
+
+		ghostResolved = true;
+		if (ConfigData.BattleShow.Contains(','))
+			return;
+
+		var assets = MuseDash1Compatibility.StreamingAssets;
+		var name = GetPlayGhostName();
+		var ghost = assets.FindAssetByName<GameObject>(name);
+		if (ghost == null)
+			return;
+
+		HashSet<SerializedFile> pinned = [];
+		bool resolve<T>(AssetStudio.Object owner, PPtr<T> pointer, out T result) where T : AssetStudio.Object {
+			if (!pointer.TryGet(out result!) && pointer.m_FileID > 0 && pointer.m_FileID <= owner.assetsFile.m_Externals.Count)
+				assets.LoadDependenciesContaining(name, new HashSet<string> { Path.GetFileName(owner.assetsFile.m_Externals[pointer.m_FileID - 1].fileName) }, pinned);
+			return pointer.TryGet(out result!);
+		}
+
+		try {
+			var renderer = ghost.GetFirstComponent<MeshRenderer>();
+			if (renderer != null && renderer.m_Materials.Count > 0 && resolve(renderer, renderer.m_Materials[0], out var material))
+				ghostMaterial = MuseDash1GhostMaterial.From(material);
+
+			var animator = ghost.GetFirstComponent<Animator>();
+			if (animator != null && resolve(animator, animator.m_Controller, out var controller) && controller is AnimatorController animatorController)
+				ghostMotion = new(animatorController);
+		}
+		finally {
+			foreach (var file in pinned)
+				assets.Release(file);
 		}
 	}
 
@@ -374,6 +413,27 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 	public MD1_SpineActionControllerData GetPlayGhostAnimationData() {
 		convertAnimations();
 		return ghostanims;
+	}
+
+	public float? GetPlayGhostHeight(CharacterAnimationType animationType, double time) {
+		convertGhost();
+		return ghostMotion?.GetHeight(convertAnimationTypeToName(animationType), time);
+	}
+
+	public MuseDash1GhostMaterial GetPlayGhostMaterial() {
+		convertGhost();
+		return ghostMaterial;
+	}
+
+	private string GetPlayGhostName() {
+		if (ghostName != null)
+			return ghostName;
+
+		if (ConfigData.BattleShow.Contains(','))
+			return ghostName = ConfigData.GetBattleShowGhost().ToString();
+
+		var ghost = $"{ConfigData.GetBattleShow()}_ghost";
+		return ghostName = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(ghost) != null ? ghost : ConfigData.GetBattleShow().ToString();
 	}
 
 	public void PlayCharacterAnimation(CharacterAnimationType animationType, MD1_SpineActionController handler) {
@@ -433,7 +493,7 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 	}
 
 	public ModelData GetPlayModel(Level level) => PullModelDataFromGameObject(level, ConfigData.GetBattleShow());
-	public ModelData GetPlayGhostModel(Level level) => PullModelDataFromGameObject(level, ConfigData.GetBattleShowGhost());
+	public ModelData GetPlayGhostModel(Level level) => PullModelDataFromGameObject(level, GetPlayGhostName());
 	public ModelData GetVictoryModel(Level level) => PullModelDataFromGameObject(level, ConfigData.VictoryShow);
 	public string GetVictoryStandby() => "standby";
 

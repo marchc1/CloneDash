@@ -16,7 +16,15 @@ public class BossMasher(DashEventComponents components, int type) : DashEvent(co
 			Variant = type == 1 ? EntityVariant.BossMasher : EntityVariant.BossMasherEnd,
 			ShowTime = Time - Dt,
 			HitTime = Time,
-			Length = Length
+			Length = Length,
+			Speed = Speed,
+			LeftGreatRange = LeftGreatRange,
+			LeftPerfectRange = LeftPerfectRange,
+			RightGreatRange = RightGreatRange,
+			RightPerfectRange = RightPerfectRange,
+			Fever = Fever ?? 0,
+			Damage = Damage ?? 0,
+			Score = Score ?? 0
 		});
 	}
 }

@@ -27,8 +27,7 @@ public class Boss : DashEnemy
 	}
 
 	public void Advance(double time) {
-		foreach (var visual in Visuals)
-			visual.Animations.AddDeltaTime(time);
+		GetActiveVisuals().Animations.AddDeltaTime(time);
 	}
 
 	public bool HasClip(string clip) => GetActiveVisuals().Model?.Data.FindAnimation(clip) != null;
@@ -37,34 +36,26 @@ public class Boss : DashEnemy
 		Hidden = true;
 	}
 
-	public void Play(string action) {
+	public void Play(string action, bool isOverride = false) {
 		Visible = true;
-		foreach (var visual in Visuals)
-			if (controllers.TryGetValue(visual.Scene, out var controller))
-				controller.PlaySkeletonAction(new(action), false);
+		if (controllers.TryGetValue(GetActiveVisuals().Scene, out var controller))
+			controller.PlaySkeletonAction(new(action), isOverride);
 	}
 
-	public void PlayClip(string clip, bool loop) {
+	public void PlayClip(string clip, bool loop, double time = 0) {
 		Visible = true;
-		foreach (var visual in Visuals)
-			visual.Animations.SetAnimation(ANIMATION_CHANNEL_MAIN, clip, loop);
+		var animations = GetActiveVisuals().Animations;
+		animations.SetAnimation(ANIMATION_CHANNEL_MAIN, clip, loop);
+		if (time > 0)
+			animations.AddDeltaTime(time);
 	}
 
 	public void QueueClip(string clip, bool loop) {
-		foreach (var visual in Visuals)
-			visual.Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, clip, loop);
+		GetActiveVisuals().Animations.AddAnimation(ANIMATION_CHANNEL_MAIN, clip, loop);
 	}
 
 	public void Show() {
 		Hidden = false;
-	}
-
-	public void SyncScenes(IMuseDash1SceneInstance? prev, IMuseDash1SceneInstance? now) {
-		// Patch up animations
-		var prevVisuals = prev == null ? null : Visuals[prev.GetSceneArrayIndex()];
-		var nowVisuals = now == null ? null : Visuals[now.GetSceneArrayIndex()];
-		if (prevVisuals != null && nowVisuals != null)
-			nowVisuals.Animations.Channels[ANIMATION_CHANNEL_MAIN].Time = prevVisuals.Animations.Channels[ANIMATION_CHANNEL_MAIN].Time;
 	}
 
 	public override void Render() {

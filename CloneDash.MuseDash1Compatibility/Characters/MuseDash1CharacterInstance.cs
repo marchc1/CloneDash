@@ -47,6 +47,8 @@ public class MuseDash1CharacterIndividual(MuseDash1CharacterInstance instance, R
 			LastAnimationDuration = entry.Animation.Duration;
 	}
 
+	public float? GetAnimatedHeight() => instance.GetHologramHeight(this);
+
 	public void SetPos(Vector2F pos) => Player.Position = pos;
 	public void SetScale(Vector2F scale) => Player.Scale = scale;
 	public double GetAnimationDuration() {
@@ -86,6 +88,9 @@ public class MuseDash1CharacterIndividual(MuseDash1CharacterInstance instance, R
 
 public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 {
+	const double HOLOGRAM_DISSOLVE_TIME = 0.2;
+	const double HOLOGRAM_HOLD_TIME = 0.3;
+
 	internal MuseDash1CharacterDescriptor descriptor;
 	private RhythmGameLevel game;
 	private readonly Conductor conductor;
@@ -124,8 +129,16 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 		HologramPlayer.Player = level.Add(ModelEntity.Create(descriptor.GetPlayGhostModel(level)));
 		Player.Player = level.Add(ModelEntity.Create(descriptor.GetPlayModel(level)));
 		// set hologram shader (todo: we really need models to have materials here instead...)
-		if (!hasSupport)
+		if (!hasSupport) {
+			var material = descriptor.GetPlayGhostMaterial();
 			HologramPlayer.Player.Shader = hologramShader;
+			HologramPlayer.Player.SetShaderUniform("alpha", material.Alpha);
+			HologramPlayer.Player.SetShaderUniform("size", material.Size);
+			hologramShader.SetUniform("addColor", material.AddColor);
+			hologramShader.SetUniform("color", material.Color);
+			hologramShader.SetUniform("tint", material.Tint);
+			HologramPlayer.Player.Visible = false;
+		}
 
 		// setup animations
 		Player.Player.SetToSetupPose();
@@ -138,20 +151,25 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 		if (hasSupport)
 			return;
 
-		if (HologramPlayer.Player.PlayingAnimation || HologramPlayer.Player.AnimationQueued) {
-			HologramPlayer.Player.Visible = true;
-			HologramPlayer.Player.SetShaderUniform("time", NMath.Ease.InQuint((float)(conductor.Time - lastHologramAnimationTime) * 3));
-		}
-		else {
-			HologramPlayer.Player.Visible = false;
-		}
+		var time = conductor.Time - lastHologramAnimationTime;
+		HologramPlayer.Player.Visible = time >= 0 && time < HOLOGRAM_HOLD_TIME + HOLOGRAM_DISSOLVE_TIME;
+		if (HologramPlayer.Player.Visible)
+			HologramPlayer.Player.SetShaderUniform("distortion", (float)Math.Clamp((time - HOLOGRAM_HOLD_TIME) / HOLOGRAM_DISSOLVE_TIME, 0, 1));
 	}
 
 	public double GetJumpDuration() {
 		return 0.5;
 	}
 
+	CharacterAnimationType lastHologramAnimation;
 	double lastHologramAnimationTime = -20000000;
+
+	internal float? GetHologramHeight(MuseDash1CharacterIndividual individual) {
+		if (hasSupport || individual != HologramPlayer)
+			return null;
+
+		return descriptor.GetPlayGhostHeight(lastHologramAnimation, conductor.Time - lastHologramAnimationTime);
+	}
 
 	internal void NotifyAnimation(MuseDash1CharacterIndividual museDash1CharacterIndividual, bool isSecondary, CharacterAnimationType type) {
 		if (hasSupport) {
@@ -170,15 +188,17 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 					break;
 			}
 		}
-		else if (isSecondary)
+		else if (isSecondary) {
+			lastHologramAnimation = type;
 			lastHologramAnimationTime = conductor.Time;
+		}
 	}
 
 	public void Reset(){
-		lastHologramAnimationTime = -200000;
 		swapped = false;
 		Player.Reset();
 		HologramPlayer.Reset();
+		lastHologramAnimationTime = -200000;
 
 		if (hasSupport)
 			return;

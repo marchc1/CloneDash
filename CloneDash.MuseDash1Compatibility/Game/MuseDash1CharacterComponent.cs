@@ -25,6 +25,7 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 	readonly MuseDash1ScenesComponent Scenes;
 	readonly ISustainManager Sustains;
 
+	bool HologramInAir;
 	double LastHologramJumpTIme = -2000000000000d;
 	PathwayId LastJumpPathway;
 	double LastJumpTime = -2000000000000d;
@@ -96,11 +97,15 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 			if (isDHE)
 				PlayCharacterAnimation(CharacterAnimationType.BigHit);
 			else if (result.HitEntity is not SustainBeam)
-				if (!InAir && !Sustains.IsSustaining() && PathwayTransitionAnimation)
+				if (Sustains.IsSustaining())
+					PlayCharacterAnimation(HologramInAir || Character.GetSecondary().GetAnimatedHeight() == null ? (result.IsPerfect ? CharacterAnimationType.JumpHit : CharacterAnimationType.JumpHitGreat) : CharacterAnimationType.UpHit);
+				else if (!InAir && PathwayTransitionAnimation)
 					PlayCharacterAnimation(CharacterAnimationType.UpHit);
 				else
 					PlayCharacterAnimation(result.IsPerfect ? CharacterAnimationType.JumpHit : CharacterAnimationType.JumpHitGreat);
 
+			if (!isDHE)
+				HologramInAir = true;
 			LastJumpPathway = pathway;
 			if (Sustains.IsSustaining())
 				LastHologramJumpTIme = Conductor.Time;
@@ -138,10 +143,15 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 			if (result.HitEntity is DoubleHitEnemy)
 				PlayCharacterAnimation(CharacterAnimationType.BigHit);
 			else if (result.HitEntity is not SustainBeam)
-				if (InAir && PathwayTransitionAnimation)
+				if (Sustains.IsSustaining())
+					PlayCharacterAnimation(HologramInAir ? CharacterAnimationType.DownHit : (result.IsPerfect ? CharacterAnimationType.AttackPerfect : CharacterAnimationType.AttackGreat));
+				else if (InAir && PathwayTransitionAnimation)
 					PlayCharacterAnimation(CharacterAnimationType.DownHit);
 				else
 					PlayCharacterAnimation(result.IsPerfect ? CharacterAnimationType.AttackPerfect : CharacterAnimationType.AttackGreat);
+
+			if (result.HitEntity is not DoubleHitEnemy)
+				HologramInAir = false;
 		}
 		else if (!Sustains.IsSustaining()) {
 			if (InAir)
@@ -159,10 +169,13 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 
 		var bot = Scenes.GetPathwayPosition(Pathways.GroundPathway);
 		var character = secondary ? Character.GetSecondary() : Character.GetPrimary();
+		var top = Scenes.GetPathwayPosition(LastJumpPathway);
+		if (secondary && character.GetAnimatedHeight() is float animatedHeight)
+			return bot.Y + (top.Y - bot.Y) * animatedHeight + -1f;
+
 		if (!character.IsInAir())
 			return bot.Y + -1f;
 
-		var top = Scenes.GetPathwayPosition(LastJumpPathway);
 		float ratio = (float)NMath.Remap(character.GetTimeToAnimationEnd(), character.GetAnimationDuration(), 0, 0, 1, clampOutput: true);
 		return (float)NMath.Remap(NMath.Ease.InCirc(NMath.Ease.InExpo(ratio)), 0, 1, top.Y, bot.Y) + -1f; // TODO: re-evaluate
 	}
@@ -257,6 +270,7 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 			scene.OnPressStateChange(false, true);
 
 		Character.Reset();
+		HologramInAir = false;
 		LastJumpPathway = Pathways.JumpPathway;
 		LastJumpTime = -2000000000000d;
 		LastHologramJumpTIme = -2000000000000d;

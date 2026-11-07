@@ -480,6 +480,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	protected ITexture? ScorePerfect;
 	protected ITexture? ScorePass;
 
+	protected MuseDash1MultiHitCombo? MultiHitCombo;
 	protected MuseDash1MultiHitTip? MultiHitTip;
 	protected ITexture? HitsBase;
 	protected ITexture? BelowBase;
@@ -504,6 +505,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		ScoreNumber?.Dispose();
 		ScoreLabel?.Dispose();
 		ComboNumber?.Dispose();
+		MultiHitCombo?.Dispose();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -638,6 +640,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	}
 
 	public virtual void LoadMultiHitAssets() {
+		MultiHitCombo = new();
+		MultiHitCombo.Initialize();
 		MultiHitTip = new();
 		MultiHitTip.Initialize();
 		HitsBase = LoadTextureByName("HitsBase");
@@ -700,6 +704,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 
 	public void EndMultiHitText() {
 		InMultiHit = false;
+		MultiHits = 0;
+		MultiHitCombo?.SetCount(0);
 	}
 
 	public void EndWarning() {
@@ -750,6 +756,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		foreach (var text in ForegroundItems)
 			text.Render(t, StyledTextShader);
 		MultiHitTip?.Render();
+		MultiHitCombo?.Render(StyledTextShader);
 	}
 
 	public void RenderUI() {
@@ -1024,8 +1031,10 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 
 		animations_1.AddDeltaTime(dt);
 		animations_2.AddDeltaTime(dt);
-		if (!game.Paused)
+		if (!game.Paused) {
+			MultiHitCombo?.Think(dt);
 			MultiHitTip?.Think(dt);
+		}
 
 		if (ScoreLabel != null && ScoreNumber != null) {
 			ScoreLabel.TopLeftAligned = ScoreNumber.TopLeftAligned = true;
@@ -1188,7 +1197,10 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	}
 
 	public void UpdateMultiHitText(int hits) {
+		if (!InMultiHit || hits == MultiHits)
+			return;
 		MultiHits = hits;
+		MultiHitCombo?.SetCount(hits);
 	}
 
 	public void UpdateScore(double score) {
@@ -1208,6 +1220,9 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		FeverTotalTime = 0;
 		CloseVictory();
 		EndWarning();
+		InMultiHit = false;
+		MultiHits = 0;
+		MultiHitCombo?.Hide();
 
 		ForceDeactivateCombo1();
 		ForceDeactivateCombo2();

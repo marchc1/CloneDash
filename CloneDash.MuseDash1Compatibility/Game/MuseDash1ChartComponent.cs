@@ -212,6 +212,11 @@ public class MuseDash1ChartComponent : IRhythmGameComponent, IRhythmGameThinker
 		ev.Damage = ChartEvent.Damage;
 		ev.BossAction = ChartEvent.BossAction;
 		ev.Dt = ChartEvent.Dt;
+		ev.LeftGreatRange = ChartEvent.LeftGreatRange;
+		ev.LeftPerfectRange = ChartEvent.LeftPerfectRange;
+		ev.RightGreatRange = ChartEvent.RightGreatRange;
+		ev.RightPerfectRange = ChartEvent.RightPerfectRange;
+		ev.Speed = ChartEvent.Speed;
 
 		Events.Add(ev);
 		ReadyToBuildEvents.Add(ev);

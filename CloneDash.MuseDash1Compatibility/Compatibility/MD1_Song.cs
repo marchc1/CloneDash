@@ -256,6 +256,8 @@ public class MD1_Song : ModDescriptor, ISong, IHasLowToHighDifficulties
 
 	readonly MuseDashSongInfoJSON __jsonInfo = new();
 
+	public string UID => __jsonInfo.UID;
+
 	public void AddBaseJSONInfo(MuseDashSongInfoJSON baseInfo, bool doNotLocalize = false) {
 		baseInfo.CloneInto(__jsonInfo);
 		Graphics2D.RegisterCodepoints(baseInfo.Name);

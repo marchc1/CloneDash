@@ -445,6 +445,29 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 		ReleasePinnedFiles();
 	}
 
+	string GetBossPrefab() {
+		string fallback = MuseDash1SceneEnemyInfo.GetBoss(SceneInfo);
+		string name = fallback;
+		var song = Game.GetSongChart().GetSong() as MD1_Song;
+		if (song?.GetInfo()?.Scene == SceneInfo.MapName && MuseDash1Compatibility.Bosses.Find(boss => boss.scene_name == SceneInfo.MapName)?.boss_name is string configured)
+			name = configured;
+		if (name == "0501_boss" && song?.UID is "0-47" or "38-1" or "43-68")
+			name = "0501_boss_christmas";
+		return name != fallback && MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(name) == null ? fallback : name;
+	}
+
+	ModelData? LoadBossModel(string prefab) {
+		if (prefab == MuseDash1SceneEnemyInfo.GetBoss(SceneInfo))
+			return null;
+
+		var skeleton = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(prefab)?.GetMonoBehaviorByScriptName("SkeletonAnimation");
+		if (skeleton?.ToType()["skeletonDataAsset"] is not System.Collections.Specialized.OrderedDictionary pointer)
+			return null;
+
+		var dataAsset = new PPtr<MonoBehaviour>(Convert.ToInt32(pointer["m_FileID"]), Convert.ToInt64(pointer["m_PathID"]), skeleton.assetsFile);
+		return dataAsset.TryGet(out var asset) ? LoadModel(asset) : null;
+	}
+
 	internal ModelData LoadModel(MonoBehaviour? skeletonAnimation) {
 		if (loadedModels.TryGetValue(skeletonAnimation!.m_PathID, out var mdl)) return mdl;
 
@@ -671,6 +694,7 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 			HueShiftShader = game.Shaders.LoadFragmentShaderFromFile("shaders", "hue_shift.fs");
 
 		string bossID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSS}";
+		string bossPrefab = GetBossPrefab();
 		string gearAirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GEARS}_air";
 		string gearRoadID = SceneInfo.MapIdx switch {
 			// :(
@@ -712,7 +736,7 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 		string ghostRoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GHOST}_road";
 
 		// Populate models
-		BossModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossID}_SkeletonData")!));
+		BossModel = new ProducerFn<ModelData>(() => LoadBossModel(bossPrefab) ?? LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossID}_SkeletonData")!));
 		AirHeartModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>("0002_hp_SkeletonData")!));
 		RoadHeartModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>("0002_hp_SkeletonData")!));
 		AirScoreModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>("0003_score_SkeletonData")!));
@@ -754,7 +778,7 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 
 		// Populate animations
 
-		BossAnims = new(getSpineController(MuseDash1SceneEnemyInfo.GetBoss(SceneInfo)));
+		BossAnims = new(getSpineController(bossPrefab));
 		PopulateThreeSpeedPathwayAnimations(AirHeartAnims, RoadHeartAnims, static (in req) => MuseDash1SceneEnemyInfo.GetHeart(req.air, req.speed));
 		PopulateThreeSpeedPathwayAnimations(AirScoreAnims, RoadScoreAnims, static (in req) => MuseDash1SceneEnemyInfo.GetScore(req.air, req.speed));
 		PopulateThreeSpeedAnimations(MasherAnims, [EntityEnterDirection.RightSide, EntityEnterDirection.TopDown], static (in req) => MuseDash1SceneEnemyInfo.GetMasher(req.scene, req.dir, req.speed));
@@ -762,7 +786,6 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 		PopulateThreeSpeedPathwayAnimations(AirDoubleAnims, RoadDoubleAnims, static (in req) => MuseDash1SceneEnemyInfo.GetDouble(req.scene, req.air, req.speed));
 		PopulateThreeSpeedPathwayAnimations(AirBoss1Anims, RoadBoss1Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss1(req.scene, req.air, req.speed));
 		PopulateThreeSpeedPathwayAnimations(AirBoss2Anims, RoadBoss2Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss2(req.scene, req.air, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirBoss3Anims, RoadBoss3Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss3(req.scene, req.air, req.speed));
 		PopulateThreeSpeedPathwayAnimations(AirBoss3Anims, RoadBoss3Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss3(req.scene, req.air, req.speed));
 		PopulateThreeSpeedPathwayAnimations(AirBossGearA_Anims, RoadBossGearA_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBossGear(req.scene, req.air, req.speed, false));
 		PopulateThreeSpeedPathwayAnimations(AirBossGearB_Anims, RoadBossGearB_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBossGear(req.scene, req.air, req.speed, true));
@@ -1063,7 +1086,7 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 			case MuseDash1EntityType.Gear:
 				anim = (enemy.Variant switch {
 					EntityVariant.Boss1 => AirAssets(enemy) ? AirBossGearA_Anims : RoadBossGearA_Anims,
-					EntityVariant.Boss2 => AirAssets(enemy) ? AirBossGearA_Anims : RoadBossGearB_Anims,
+					EntityVariant.Boss2 => AirAssets(enemy) ? AirBossGearB_Anims : RoadBossGearB_Anims,
 					_ => AirAssets(enemy) ? AirGearAnims : RoadGearAnims,
 				}).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
 				break;

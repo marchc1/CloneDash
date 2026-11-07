@@ -11,6 +11,7 @@ namespace CloneDash.Common.Gamemodes.MuseDash.V1;
 /// </summary>
 public interface IMuseDash1CharacterIndividual
 {
+	float? GetAnimatedHeight();
 	double GetTimeToAnimationEnd();
 	double GetAnimationDuration();
 	void PlayAnimation(CharacterAnimationType type);

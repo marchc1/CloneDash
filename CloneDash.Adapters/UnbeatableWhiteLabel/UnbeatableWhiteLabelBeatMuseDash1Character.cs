@@ -89,6 +89,8 @@ public class UnbeatableWhiteLabelBeatIndividual(Conductor conductor, UnbeatableW
 	public float Alpha { get; set; } = 1;
 	public double LastAnimationTime { get; private set; } = double.NegativeInfinity;
 
+	public float? GetAnimatedHeight() => null;
+
 	public double GetAnimationDuration() => duration;
 
 	public double GetTimeToAnimationEnd() => Math.Max(0, duration - (conductor.Time - LastAnimationTime));

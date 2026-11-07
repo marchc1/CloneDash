@@ -39,6 +39,16 @@ public static partial class MuseDash1Compatibility
 		IncludeFields = true
 	});
 
+	static T? ReadOptionalJSON<T>(string path) {
+		try {
+			return StreamingAssets.ReadText(path) == null ? default : ReadJSON<T>(path);
+		}
+		catch (JsonException ex) {
+			Logs.Warn($"Couldn't read {path}: {ex.Message}");
+			return default;
+		}
+	}
+
 	public static AppStatus InitializeCompatibilityLayer() {
 		if (Initialized)
 			return AppStatus.OK;
@@ -65,6 +75,7 @@ public static partial class MuseDash1Compatibility
 
 		using (StaticSequentialProfiler.StartStackFrame("Parallel Process Critical JSON Files"))
 			Parallel.Invoke(
+				() => Bosses = ReadOptionalJSON<List<BossConfigData>>("Assets/Static Resources/Data/Configs/others/boss.json") ?? [],
 				() => NoteDataManager = ReadJSON<List<NoteConfigData>>("Assets/Static Resources/Data/Configs/others/notedata.json")!,
 				() => Characters = ReadJSON<List<CharacterConfigData>>("Assets/Static Resources/Data/Configs/others/character.json")!,
 				() => CharactersEN = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/english/character_English.json")!,

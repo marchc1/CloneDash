@@ -243,6 +243,7 @@ namespace CloneDash.Compatibility.MuseDash
 		public static FrozenDictionary<string, NoteConfigData> IBMSToNote { get; private set; } = null!;
 		public static FrozenDictionary<string, NoteConfigData> UIDToNote { get; private set; } = null!;
 
+		public static List<BossConfigData> Bosses { get; set; } = [];
 		public static List<CharacterConfigData> Characters { get; set; } = null!;
 		public static List<CharacterLocalizationData> CharactersEN { get; set; } = [];
 		public static List<CharacterLocalizationData> CharactersZHCN { get; set; } = [];
@@ -537,7 +538,12 @@ namespace CloneDash.Compatibility.MuseDash
 								Type = eventType,
 								Time = tick_hit,
 								Length = (double)s.configData.length,
-								Dt = (double)s.dt
+								Dt = (double)s.dt,
+								LeftGreatRange = (double)s.noteData.left_great_range,
+								LeftPerfectRange = (double)s.noteData.left_perfect_range,
+								RightGreatRange = (double)s.noteData.right_great_range,
+								RightPerfectRange = (double)s.noteData.right_perfect_range,
+								Speed = s.noteData.speed
 							};
 
 							if (s.noteData.damage > 0)

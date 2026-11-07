@@ -4,7 +4,10 @@ using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
+using CloneDash.Game.Entities;
+using CloneDash.Game.Logic;
 using CloneDash.Scenes;
+using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Common.Graphics;
 using Nucleus.Particles;
@@ -39,6 +42,7 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 	static readonly Matrix4x4 UnityToWorld = Matrix4x4.CreateScale(1, -1, 1);
 
 	readonly MuseDash1ChartComponent Chart;
+	readonly Conductor Conductor;
 	readonly Dictionary<DashEnemy, ParticleCollection> hearts = [];
 	readonly ParticleSystemManager Particles = new();
 	readonly PathwaysComponent Pathways;
@@ -47,6 +51,7 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 	readonly MuseDash1ScenesComponent Scenes;
 	readonly RhythmGameLevel level;
 	readonly HashSet<DashEnemy> seenHearts = [];
+	readonly ISustainManager Sustains;
 	readonly Dictionary<AssetStudio.Texture2D, ITexture> textures = [];
 
 	MuseDash1ParticleEffect? attackCrit;
@@ -57,10 +62,12 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 	MuseDash1ParticleEffect? scorePickup;
 	MuseDash1ParticleEffect? skill;
 
-	public MuseDash1BattleFXComponent(MuseDash1ChartComponent chart, GameEventManager events, PathwaysComponent pathways, MuseDash1ScenesComponent scenes, RhythmGameLevel level) {
+	public MuseDash1BattleFXComponent(MuseDash1ChartComponent chart, Conductor conductor, GameEventManager events, PathwaysComponent pathways, MuseDash1ScenesComponent scenes, ISustainManager sustains, RhythmGameLevel level) {
 		Chart = chart;
+		Conductor = conductor;
 		Pathways = pathways;
 		Scenes = scenes;
+		Sustains = sustains;
 		this.level = level;
 
 		events.Listen<BonusCollectedGameEvent>(PlayBonusEffect);
@@ -99,10 +106,10 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 
 	public void PostRenderEntities(FrameState frameState) {
 		UpdateHeartEffects();
-		Particles.Render(UnityToWorld, CHARACTER_SORTING_ORDER);
+		Particles.Render(UnityToWorld, CHARACTER_SORTING_ORDER, beginCollection: BeginHueShift, endCollection: Scenes.EndPathwayHueShift);
 	}
 
-	public void RenderBelowEntities() => Particles.Render(UnityToWorld, maxSortOrder: CHARACTER_SORTING_ORDER - 1);
+	public void RenderBelowEntities() => Particles.Render(UnityToWorld, maxSortOrder: CHARACTER_SORTING_ORDER - 1, beginCollection: BeginHueShift, endCollection: Scenes.EndPathwayHueShift);
 
 	public void Reset() {
 		Particles.Clear();
@@ -111,9 +118,13 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 	}
 
 	public void Think(FrameState frameState) {
-		if (!level.Paused)
+		if (!level.Paused) {
+			UpdatePressPositions();
 			Particles.Simulate((float)globals.CurTimeDelta);
+		}
 	}
+
+	bool BeginHueShift(ParticleCollection particles) => particles.Tag is PathwayId pathway && Scenes.BeginPathwayHueShift(pathway);
 
 	MuseDash1ParticleEffect? LoadEffect(string name)
 		=> MuseDash1ParticleEffect.Load(MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.GameObject>(name), LoadTexture,
@@ -127,10 +138,7 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 
 	float PathwayY(PathwayId pathway, float roadY, float airY) => PathwayLayout.LerpY(Pathways.Layout[pathway].NormalizedY, roadY, airY);
 
-	void Play(MuseDash1ParticleEffect? effect, in Matrix4x4 transform) {
-		if (effect != null)
-			Particles.Create(effect.Definition, transform);
-	}
+	ParticleCollection? Play(MuseDash1ParticleEffect? effect, in Matrix4x4 transform) => effect == null ? null : Particles.Create(effect.Definition, transform);
 
 	void PlayBonus(DashEnemy note, PathwayId pathway) {
 		var effect = note.Type == MuseDash1EntityType.Heart ? hpPickup : scorePickup;
@@ -154,7 +162,7 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 		if (ev.Note.Type == MuseDash1EntityType.Single && Scenes.HasActiveScene(out var scene)) {
 			var enemyHit = scene.GetEnemyHitEffect(ev.Note.Variant, ev.Pathway);
 			if (enemyHit != null)
-				Play(enemyHit, enemyHit.At(ENEMY_HIT_X, y));
+				Play(enemyHit, enemyHit.At(ENEMY_HIT_X, y))?.Tag = ev.Pathway;
 		}
 	}
 
@@ -163,8 +171,10 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 			Play(skill, skill.At(PathwayY(ev.Pathway, SKILL_ROAD_Y, SKILL_AIR_Y)));
 	}
 
-	float PressY(IMuseDash1SceneInstance scene, PathwayId pathway, MuseDash1ParticleEffect effect, bool top)
-		=> PathwayY(pathway, scene.GetPressEffect(Pathways.GroundPathway, top)?.Transform.M42 ?? effect.Transform.M42, PRESS_AIR_Y);
+	float PressNormalizedY(SustainBeam sustain, PathwayId pathway) => sustain.GetNormalizedY(Conductor.Time - InputSettings.VisualOffset) ?? Pathways.Layout[pathway].NormalizedY;
+
+	float PressY(IMuseDash1SceneInstance scene, float normalizedY, MuseDash1ParticleEffect effect, bool top)
+		=> PathwayLayout.LerpY(normalizedY, scene.GetPressEffect(Pathways.GroundPathway, top)?.Transform.M42 ?? effect.Transform.M42, PRESS_AIR_Y);
 
 	void UpdateHeartEffects() {
 		if (heartOnNote == null)
@@ -208,12 +218,16 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 			if (effect == null)
 				return;
 
+			var transform = effect.At(PressY(scene, PressNormalizedY(ev.Sustain, ev.Pathway), effect, false));
 			if (press == null || press.Definition != effect.Definition) {
 				if (press != null)
 					Particles.Remove(press);
-				press = Particles.Create(effect.Definition, effect.At(PressY(scene, ev.Pathway, effect, false)));
+				press = Particles.Create(effect.Definition, transform);
 				press.ReleaseWhenFinished = false;
+				press.Tag = ev.Pathway;
 			}
+			else
+				press.SetControlPoint(0, transform);
 			press.StartEmission();
 			return;
 		}
@@ -222,7 +236,21 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 		if (ev.Completed) {
 			var top = scene.GetPressEffect(ev.Pathway, true);
 			if (top != null)
-				Play(top, top.At(PressY(scene, ev.Pathway, top, true)));
+				Play(top, top.At(PressY(scene, PressNormalizedY(ev.Sustain, ev.Pathway), top, true)))?.Tag = ev.Pathway;
+		}
+	}
+
+	void UpdatePressPositions() {
+		if (!Scenes.HasActiveScene(out var scene))
+			return;
+
+		for (int i = 0; i < Pathways.Layout.Count; i++) {
+			var pathway = Pathways.Layout.PathwayAt(i);
+			var sustain = Sustains.GetActiveSustain(pathway);
+			var effect = scene.GetPressEffect(pathway, false);
+			var press = presses[i];
+			if (press != null && sustain?.Curve != null && effect != null)
+				press.SetControlPoint(0, effect.At(PressY(scene, PressNormalizedY(sustain, pathway), effect, false)));
 		}
 	}
 }

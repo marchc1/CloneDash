@@ -33,6 +33,11 @@ public class DashEvent : IDashChunkable
 
 	public string? BossAction { get; set; }
 	public double Dt { get; set; }
+	public double LeftGreatRange { get; set; }
+	public double LeftPerfectRange { get; set; }
+	public double RightGreatRange { get; set; }
+	public double RightPerfectRange { get; set; }
+	public int Speed { get; set; }
 
 	public void Build() {
 		OnBuild();

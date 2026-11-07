@@ -23,13 +23,17 @@ public sealed class ParticleSystemManager
 
 	public void Remove(ParticleCollection collection) => collections.Remove(collection);
 
-	public void Render(in Matrix4x4 transform, int minSortOrder = int.MinValue, int maxSortOrder = int.MaxValue) {
+	public void Render(in Matrix4x4 transform, int minSortOrder = int.MinValue, int maxSortOrder = int.MaxValue, Func<ParticleCollection, bool>? beginCollection = null, Action? endCollection = null) {
 		renderQueue.Clear();
 		foreach (var collection in collections)
 			collection.CollectRenderers(renderQueue, minSortOrder, maxSortOrder);
 		renderQueue.Sort(ParticleRenderItem.Compare);
-		foreach (var item in renderQueue)
+		foreach (var item in renderQueue) {
+			bool began = beginCollection?.Invoke(item.Particles) ?? false;
 			item.Render(transform);
+			if (began)
+				endCollection?.Invoke();
+		}
 	}
 
 	public void Simulate(float dt) {

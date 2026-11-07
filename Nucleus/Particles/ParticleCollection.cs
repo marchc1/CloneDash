@@ -25,6 +25,7 @@ public sealed class ParticleCollection
 	int[] particleIds = [];
 	int randomQueryCount;
 	float[] scratchX = [], scratchY = [], scratchZ = [];
+	object? tag;
 
 	public ParticleCollection(ParticleSystemDefinition definition, in Matrix4x4 transform, int randomSeed = 0, float delay = 0) {
 		Definition = definition;
@@ -98,6 +99,15 @@ public sealed class ParticleCollection
 	public int RandomSeed { get; }
 
 	public bool ReleaseWhenFinished { get; set; } = true;
+
+	public object? Tag {
+		get => tag;
+		set {
+			tag = value;
+			foreach (var child in children)
+				child.Tag = value;
+		}
+	}
 
 	public int TotalActiveCount {
 		get {

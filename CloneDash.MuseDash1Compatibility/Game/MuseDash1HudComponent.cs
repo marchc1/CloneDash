@@ -138,7 +138,11 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 		UI?.UpdateHit();
 	}
 
-	private void EndMultiHitText(ref MashEndGameEvent ev) => UI?.EndMultiHitText();
+	private void EndMultiHitText(ref MashEndGameEvent ev) {
+		if (ev.Note != null)
+			UI?.UpdateMultiHitText(ev.Note.Hits);
+		UI?.EndMultiHitText();
+	}
 
 	private void EndSeeking(ref SeekFinishedGameEvent ev) => UI?.SetSeeking(false);
 

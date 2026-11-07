@@ -13,7 +13,15 @@ public class BossSingleHit(DashEventComponents components) : DashEvent(component
 			Pathway = PathwaySet.Any,
 			Variant = BossAction == "boss_close_atk_2" ? EntityVariant.BossHitFast : EntityVariant.BossHitSlow,
 			ShowTime = Time - Dt,
-			HitTime = Time
+			HitTime = Time,
+			Speed = Speed,
+			LeftGreatRange = LeftGreatRange,
+			LeftPerfectRange = LeftPerfectRange,
+			RightGreatRange = RightGreatRange,
+			RightPerfectRange = RightPerfectRange,
+			Fever = Fever ?? 0,
+			Damage = Damage ?? 0,
+			Score = Score ?? 0
 		});
 	}
 }

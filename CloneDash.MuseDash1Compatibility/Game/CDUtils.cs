@@ -5,24 +5,11 @@ namespace CloneDash;
 
 public static class CDUtils
 {
-	public static int DetermineScoreMultiplied(float baseScore, bool inFever, int combo, double accuracy) {
-		if (combo <= 9) baseScore *= 1.0f;
-		else if (combo <= 19) baseScore *= 1.1f;
-		else if (combo <= 29) baseScore *= 1.2f;
-		else if (combo <= 39) baseScore *= 1.3f;
-		else if (combo <= 49) baseScore *= 1.4f;
-		else baseScore *= 1.5f;
-
-		accuracy = Math.Abs(accuracy);
-
-		if (inFever)
-			baseScore *= 1.5f;
-
-		if (accuracy >= 25)
-			baseScore *= (inFever ? 0.66666666666f : .5f);
-
-		return (int)MathF.Round(baseScore);
+	public static int DetermineScoreMultiplied(float baseScore, bool inFever, int combo, bool perfect) {
+		float comboRate = MathF.Min(combo / 10 * .1f, .5f) + 1;
+		float judgementRate = (perfect ? 1f : .5f) + (inFever ? .5f : 0f);
+		return (int)Math.Round(judgementRate * (baseScore * comboRate), MidpointRounding.AwayFromZero);
 	}
 
-	public static int DetermineScoreMultiplied(this MuseDash1RulesComponent rules, float baseScore, PollResult pollResult) => DetermineScoreMultiplied(baseScore, rules.Fever.InFever, rules.Combo.Value, pollResult.DistanceToHit);
+	public static int DetermineScoreMultiplied(this MuseDash1RulesComponent rules, float baseScore, PollResult pollResult) => DetermineScoreMultiplied(baseScore, rules.Fever.InFever, rules.Combo.Value, pollResult.IsPerfect);
 }

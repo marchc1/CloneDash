@@ -10,6 +10,12 @@ public class MD1_SongChartEvent
 	public EventType Type;
 	public string? BossAction;
 
+	public double LeftGreatRange = 0.08;
+	public double LeftPerfectRange = 0.05;
+	public double RightGreatRange = 0.08;
+	public double RightPerfectRange = 0.05;
+	public int Speed;
+
 	public int? Damage;
 	public int? Score;
 	public int? Fever;

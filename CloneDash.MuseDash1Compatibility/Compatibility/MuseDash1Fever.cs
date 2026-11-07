@@ -90,6 +90,7 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, RhythmGa
 	readonly HashSet<SerializedFile> pinnedFiles = [];
 	bool isActivatedComeOut;
 	bool ifShow = true;
+	bool rootActive;
 
 	public void Initialize() {
 		var gameobject = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(descriptor.Name);
@@ -142,6 +143,7 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, RhythmGa
 
 		isActivatedComeOut = false;
 		ifShow = true;
+		rootActive = false;
 
 		foreach (var file in pinnedFiles)
 			MuseDash1Compatibility.StreamingAssets.Release(file);
@@ -150,6 +152,7 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, RhythmGa
 
 	public void Activate() {
 		// Mirrors InvokeNormalFever
+		rootActive = true;
 		if (background != null) {
 			background.Active = true;
 			if (backgroundAnimator != null) {
@@ -178,6 +181,7 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, RhythmGa
 
 	public void Reset() {
 		isActivatedComeOut = false;
+		rootActive = false;
 		backgroundAnimator?.ResetTime();
 		backgroundAnimator?.Rebind();
 	}
@@ -185,7 +189,8 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, RhythmGa
 	public void Think() {
 		float dt = (float)globals.CurTimeDelta;
 
-		RunThinkFuncs(dt);
+		if (rootActive)
+			RunThinkFuncs(dt);
 
 		if (isActivatedComeOut) {
 			if (ifShow) {
@@ -231,11 +236,13 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, RhythmGa
 							backgroundAnimator.Play("waiting_outside");
 						}
 						ifShow = true;
+						rootActive = false;
 					}
 				}
 				else {
 					isActivatedComeOut = false;
 					ifShow = true;
+					rootActive = false;
 				}
 			}
 		}
@@ -246,6 +253,8 @@ public class MuseDash1FeverRuntime(MuseDash1FeverDescriptor descriptor, RhythmGa
 	protected override bool LoadMissingFile(string fileName) => MuseDash1Compatibility.StreamingAssets.LoadDependenciesContaining(descriptor.Name, new HashSet<string> { fileName }, pinnedFiles);
 
 	public void Render() {
+		if (!rootActive) return;
+
 		Rlgl.PushMatrix();
 		foreach (var renderer in sortedRenderers) renderer.Render(this);
 		Rlgl.PopMatrix();

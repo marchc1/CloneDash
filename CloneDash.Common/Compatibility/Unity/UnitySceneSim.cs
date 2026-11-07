@@ -30,7 +30,7 @@ static class UnityCRC32
 	}
 }
 
-class DecodedClip
+public class DecodedClip
 {
 	public struct CurveData
 	{
@@ -742,6 +742,10 @@ public class SceneAnimator : SceneComponent
 	static readonly uint HashColorG = UnityCRC32.Hash("m_Color.g");
 	static readonly uint HashColorB = UnityCRC32.Hash("m_Color.b");
 	static readonly uint HashColorA = UnityCRC32.Hash("m_Color.a");
+	static readonly uint HashFontColorR = UnityCRC32.Hash("m_fontColor.r");
+	static readonly uint HashFontColorG = UnityCRC32.Hash("m_fontColor.g");
+	static readonly uint HashFontColorB = UnityCRC32.Hash("m_fontColor.b");
+	static readonly uint HashFontColorA = UnityCRC32.Hash("m_fontColor.a");
 	static readonly uint HashIsActive = UnityCRC32.Hash("m_IsActive");
 
 	public Animator? UnityAnimator { get; set; }
@@ -909,6 +913,20 @@ public class SceneAnimator : SceneComponent
 				else if (curve.Binding.typeID == ClassIDType.GameObject) {
 					if (attr == HashIsActive)
 						activeGrouped[pathHash] = i;
+				}
+				else if (curve.Binding.typeID == ClassIDType.MonoBehaviour) {
+					if (attr != HashFontColorR && attr != HashFontColorG && attr != HashFontColorB && attr != HashFontColorA)
+						continue;
+
+					if (!colorGrouped.TryGetValue(pathHash, out var c))
+						c = (-1, -1, -1, -1);
+
+					if (attr == HashFontColorR) c.r = i;
+					else if (attr == HashFontColorG) c.g = i;
+					else if (attr == HashFontColorB) c.b = i;
+					else c.a = i;
+
+					colorGrouped[pathHash] = c;
 				}
 			}
 
