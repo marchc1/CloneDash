@@ -102,7 +102,9 @@ public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, Muse
 			HitLogic(Pathways.Layout.PathwayAt(pathway));
 
 		// This loop is mostly for per-tick polls that need to occur, ie. when entities have been fully missed.
-		// It is ran after input processing.
+		// It is ran after input processing. Skipped while dead: notes still scroll by during the fail fade-in, but
+		// nothing gets collected/missed/hit (that played pickup sounds and healed a dead player).
+		if (!Rules.IsDead())
 		foreach (var entity in visibleEnemies) {
 			var timeToHit = entity.GetJudgementTimeUntilHit();
 			switch (entity.Interactivity) {

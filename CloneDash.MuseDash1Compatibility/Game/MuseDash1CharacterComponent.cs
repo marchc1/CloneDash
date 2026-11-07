@@ -343,5 +343,8 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 
 		dead = true;
 		Character.GetPrimary().PlayAnimation(CharacterAnimationType.Die);
+		// Input stops on death, so a held note would never see its release and its hold sound would keep looping
+		if (Sustains.IsSustaining() && Scenes.HasActiveScene(out var scene))
+			scene.OnPressStateChange(false, true);
 	}
 }
