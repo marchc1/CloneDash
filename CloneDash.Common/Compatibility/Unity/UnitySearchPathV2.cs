@@ -196,7 +196,9 @@ public class AddressablesCatalog
 
 		internalIdWrite = internalIdWrite[..incInternalId.Length];
 		incInternalId.Replace(internalIdWrite, '\\', Path.DirectorySeparatorChar);
-		ReadOnlySpan<char> internalId = incInternalId;
+		// Use the separator-normalized copy: catalog ids use '\', which isn't a separator on Linux/macOS, so
+		// Path.GetFileName on the original returned "\StandaloneWindows64\x.bundle" and every bundle load failed
+		ReadOnlySpan<char> internalId = internalIdWrite;
 
 		// Handle the {UnityEngine.AddressableAssets.Addressables.RuntimePath}/Platform/bundle.bundle format
 		int prefixEnd = internalId.IndexOf('}');
