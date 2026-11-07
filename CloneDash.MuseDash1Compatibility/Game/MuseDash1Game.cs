@@ -1682,48 +1682,16 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 				}
 				else {
 					if (startPause()) {
-						PauseWindow = new Panel(this.RootPanel);
-						PauseWindow.Size = new(300, 400);
-						PauseWindow.Center();
+						var flex = OpenMenuWindow(400);
 
-						var flex = new FlexPanel(PauseWindow);
-						flex.Dock = Dock.Fill;
-						flex.Direction = Axis.Vertical;
-						flex.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-						flex.DockPadding = RectangleF.TLRB(4);
-
-						var play = new PauseMenuButton(flex, "ui/pause_play.png");
-						play.BorderSize = 0;
-						play.Text = "Return to Game";
-						play.TextSize = 24;
-						play.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
-							PauseWindow.Remove();
+						AddMenuButton(flex, "ui/pause_play.png", "Return to Game", () => {
+							PauseWindow!.Remove();
 							startUnpause();
-						};
+						});
 
-						var restart = new PauseMenuButton(flex, "ui/pause_restart.png");
-						restart.BorderSize = 0;
-						restart.Text = "Restart Level";
-						restart.TextSize = 24;
-						restart.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
-							// Interlude.Begin($"Reloading '{gameParameters.Chart?.Song?.Name ?? "<NULL>"}'...");
-							// 
-							// if (profilegameload.GetBool())
-							// 	StaticSequentialProfiler.Start();
-							// 
-							// EngineCore.LoadLevel(new MuseDash1Game(gameParameters));
+						AddRestartButton(flex);
 
-							// Maybe seeking is stable enough now to justify this though?
-							SeekTo(0);
-							PauseWindow.Remove();
-							fullUnpause();
-						};
-
-						var settings = new PauseMenuButton(flex, "ui/pause_settings.png");
-						settings.BorderSize = 0;
-						settings.Text = "Open Preferences...";
-						settings.TextSize = 24;
-						settings.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
+						AddMenuButton(flex, "ui/pause_settings.png", "Open Preferences...", () => {
 							var panel = new Panel(RootPanel);
 							panel.SetPaintBackgroundEnabled(false);
 							panel.Anchor = Anchor.Center;
@@ -1745,15 +1713,9 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 							settings.DockMargin = RectangleF.TLRB(0, 8, 8, 0);
 
 							panel.MakePopup();
-						};
+						});
 
-						var back2menu = new PauseMenuButton(flex, "ui/pause_exit.png");
-						back2menu.BorderSize = 0;
-						back2menu.Text = "Exit to Menu";
-						back2menu.TextSize = 24;
-						back2menu.OnButtonClick += delegate (Button self, ButtonCode clickedButton) {
-							LevelTransitions.LoadMainMenu();
-						};
+						AddExitButton(flex);
 					}
 				}
 				return;
@@ -2322,11 +2284,57 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if ((Curtime - DeathTime) > 5) {
 			if (SceneUI != null && !SceneUI.ShowingFailureScreen())
 				SceneUI.OpenFailure();
+			// Input is off while dead (including pause), so this menu is the only way out
+			if (!IValidatable.IsValid(PauseWindow)) {
+				var flex = OpenMenuWindow(200);
+				AddRestartButton(flex);
+				AddExitButton(flex);
+			}
 			// always return true if curtime - deathtime > 5
 			return true;
 		}
 		return false;
 	}
+
+	/// <summary>
+	/// Opens <see cref="PauseWindow"/> (used by the pause and failure menus) and returns the column to add buttons to.
+	/// </summary>
+	private FlexPanel OpenMenuWindow(float height) {
+		PauseWindow = new Panel(RootPanel);
+		PauseWindow.Size = new(300, height);
+		PauseWindow.Center();
+
+		var flex = new FlexPanel(PauseWindow);
+		flex.Dock = Dock.Fill;
+		flex.Direction = Axis.Vertical;
+		flex.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
+		flex.DockPadding = RectangleF.TLRB(4);
+		return flex;
+	}
+
+	private void AddMenuButton(FlexPanel flex, string icon, string text, Action onClick) {
+		var button = new PauseMenuButton(flex, icon);
+		button.BorderSize = 0;
+		button.Text = text;
+		button.TextSize = 24;
+		button.OnButtonClick += (_, _) => onClick();
+	}
+
+	private void AddRestartButton(FlexPanel flex) => AddMenuButton(flex, "ui/pause_restart.png", "Restart Level", () => {
+		// Interlude.Begin($"Reloading '{gameParameters.Chart?.Song?.Name ?? "<NULL>"}'...");
+		// 
+		// if (profilegameload.GetBool())
+		// 	StaticSequentialProfiler.Start();
+		// 
+		// EngineCore.LoadLevel(new MuseDash1Game(gameParameters));
+
+		// Maybe seeking is stable enough now to justify this though? (SeekTo -> Reset also revives the player)
+		SeekTo(0);
+		PauseWindow!.Remove();
+		fullUnpause();
+	});
+
+	private void AddExitButton(FlexPanel flex) => AddMenuButton(flex, "ui/pause_exit.png", "Exit to Menu", LevelTransitions.LoadMainMenu);
 
 	// WIP pausing
 	// return false to not spawn the pause menu
@@ -2363,6 +2371,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (Health <= 0) {
 			Dead = true;
 			DeathTime = Curtime;
+			audiosystem.PauseSound(in Music); // the song stops when you die
 			Character.GetPrimary().PlayAnimation(CharacterAnimationType.Die);
 		}
 	}

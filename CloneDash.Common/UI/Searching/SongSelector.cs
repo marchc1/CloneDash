@@ -180,7 +180,7 @@ public class SongSelector : Panel, IMainMenuPanel
 		internal void SetImageRotation(float value) => imageRenderer.ImageRotation = value;
 		internal void SetImageOrientation(ImageOrientation value) => imageRenderer.ImageOrientation = value;
 		internal void SetImagePadding(Vector2F value) => imageRenderer.ImagePadding = value;
-		internal void SetImage(ITexture value) => imageRenderer.Texture = value;
+		internal void SetImage(ITexture? value) => imageRenderer.Texture = value;
 		internal void SetImageOffset(Vector2F value) => imageRenderer.ImageRotationOffset = value;
 		internal void SetImageFlipX(bool value) => imageRenderer.ImageFlipX = value;
 		internal void SetImageFlipY(bool value) => imageRenderer.ImageFlipY = value;
@@ -438,10 +438,10 @@ public class SongSelector : Panel, IMainMenuPanel
 
 			disc.
 			Text = "";
+			disc.SetImage(cover.Texture); // null while the cover is still loading, so don't keep showing the previous song's cover
 			if (cover.Texture != null) {
 				disc.SetImageOrientation(ImageOrientation.Stretch);
 				disc.SetImagePadding(new(16));
-				disc.SetImage(cover.Texture);
 				disc.SetImageOffset(new(0.5f));
 				disc.SetImageFlipX(false);
 				disc.SetImageFlipY(cover.Flipped);
