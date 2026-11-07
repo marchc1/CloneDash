@@ -71,6 +71,7 @@ public class MD1_SongChartEntity
 	/// Is the entity related to the boss in any way.
 	/// </summary>
 	public bool RelatedToBoss;
+	public string? BossAction;
 
 	public string? DebuggingInfo { get; internal set; }
 }

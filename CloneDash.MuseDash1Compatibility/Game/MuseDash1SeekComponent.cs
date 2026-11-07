@@ -60,7 +60,7 @@ public class MuseDash1SeekComponent(AutoPlayer autoPlayer, MuseDash1CharacterCom
 							Mash.EnterMashState(masher);
 							for (int i = 0; i < masher.MaxHits; i++)
 								masher.Hit(Pathways.PrimaryPathway(mEnt.Pathway), 0);
-							Mash.ExitMashState();
+							Mash.ExitMashState(true);
 							masher.RewardPlayer();
 							AutoPlayer.MarkEntityAsPassed(mEnt);
 							break;

@@ -2,4 +2,4 @@
 
 namespace CloneDash.Game;
 
-public record struct MashEndGameEvent : IGameEvent;
+public record struct MashEndGameEvent(DashEnemy? Note, bool Success) : IGameEvent;

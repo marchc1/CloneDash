@@ -536,7 +536,8 @@ namespace CloneDash.Compatibility.MuseDash
 							MD1_SongChartEvent ChartEvent = new() {
 								Type = eventType,
 								Time = tick_hit,
-								Length = (double)s.configData.length
+								Length = (double)s.configData.length,
+								Dt = (double)s.dt
 							};
 
 							if (s.noteData.damage > 0)
@@ -655,6 +656,7 @@ namespace CloneDash.Compatibility.MuseDash
 								Blood = blood,
 
 								RelatedToBoss = isBoss,
+								BossAction = s.noteData.boss_action,
 								DebuggingInfo = $"ib.code: {ib.Code}"
 							});
 						}

@@ -32,6 +32,7 @@ public class DashEvent : IDashChunkable
 	public int SortIndex;
 
 	public string? BossAction { get; set; }
+	public double Dt { get; set; }
 
 	public void Build() {
 		OnBuild();
@@ -54,19 +55,19 @@ public class DashEvent : IDashChunkable
 	public static DashEvent CreateFromType(DashEventComponents components, EventType type) {
 		DashEvent ret;
 		switch (type) {
-			case EventType.BossIn: ret = new BossInEvent(components); break;
-			case EventType.BossOut: ret = new BossOutEvent(components); break;
+			case EventType.BossIn: ret = new BossActionEvent(components); break;
+			case EventType.BossOut: ret = new BossActionEvent(components); break;
 			case EventType.BossShow: ret = new BossVisibilityEvent(components, true); break;
 			case EventType.BossHide: ret = new BossVisibilityEvent(components, false); break;
 			case EventType.BossSingleHit: ret = new BossSingleHit(components); break;
 			case EventType.BossMasher: ret = new BossMasher(components, 1); break;
 			case EventType.BossMasherEnd: ret = new BossMasher(components, 2); break;
-			case EventType.BossFar1Start: ret = new BossFar1Start(components); break;
-			case EventType.BossFar1End: ret = new BossFar1End(components); break;
-			case EventType.BossFar1To2: ret = new BossFar1To2(components); break;
-			case EventType.BossFar2Start: ret = new BossFar2Start(components); break;
-			case EventType.BossFar2End: ret = new BossFar2End(components); break;
-			case EventType.BossFar2To1: ret = new BossFar2To1(components); break;
+			case EventType.BossFar1Start: ret = new BossActionEvent(components); break;
+			case EventType.BossFar1End: ret = new BossActionEvent(components); break;
+			case EventType.BossFar1To2: ret = new BossActionEvent(components); break;
+			case EventType.BossFar2Start: ret = new BossActionEvent(components); break;
+			case EventType.BossFar2End: ret = new BossActionEvent(components); break;
+			case EventType.BossFar2To1: ret = new BossActionEvent(components); break;
 
 			case EventType.AirSpeed1: ret = new SpeedChange(components, components.Pathways.AirSidePathways, 1); break;
 			case EventType.AirSpeed2: ret = new SpeedChange(components, components.Pathways.AirSidePathways, 2); break;

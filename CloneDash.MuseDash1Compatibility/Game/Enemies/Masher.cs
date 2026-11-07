@@ -42,7 +42,7 @@ namespace CloneDash.Game.Entities
 			bool ended = time > GetJudgementHitTime() + Math.Max(Length, PreGreatRange);
 			if (!StartedHitting) {
 				if (ended)
-					End();
+					End(false);
 				return;
 			}
 
@@ -85,20 +85,18 @@ namespace CloneDash.Game.Entities
 			else
 				Components.Hud.UI?.CreateGreatHitText(0, PathwaySet.Any, fever.InFever, 0);
 			Kill();
-			End();
+			End(true);
 		}
 
-		private void End() {
+		private void End(bool success) {
 			ForceDraw = false;
 			if (Components.Mash.MashingEntity == this)
-				Components.Mash.ExitMashState();
-			if (Variant.IsBoss())
-				SendSignal(Components.Chart.Boss, EntitySignalType.MashOver);
+				Components.Mash.ExitMashState(success);
 			SoftKill();
 		}
 
 		private void Fail() {
-			End();
+			End(false);
 			DamagePlayer();
 			GetStats().Miss(this);
 		}

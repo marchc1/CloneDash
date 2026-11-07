@@ -162,6 +162,7 @@ public partial class MuseDash1Gamemode(ICloneDashModProvider provider) : RhythmG
 		parts.AddPart<DashEnemyComponents>();
 		parts.AddEntityPart<Boss>(boss => boss.RendersItself = false);
 		AddChart(parts, data);
+		parts.AddPart<MuseDash1BossComponent>();
 		parts.AddPart<MuseDash1SeekComponent>();
 		parts.AddPart<MuseDash1WarningComponent>();
 		parts.AddPart<DashEventComponents>();

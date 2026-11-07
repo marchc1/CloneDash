@@ -126,13 +126,6 @@ public class DashEnemy : RhythmNote
 
 	public override double GetShowTime() => GetActiveVisuals().GetShowTime() ?? ShowTime;
 
-	public virtual void OnSignalReceived(DashEnemy? from, EntitySignalType signalType, object? data = null) {
-
-	}
-
-	public void SendSignal(DashEnemy? to, EntitySignalType signalType, object? data = null) => Components.Chart.SendEntitySignal(this, to, signalType, data);
-	public void BroadcastSignal(EntitySignalType signalType, object? data = null) => Components.Chart.BroadcastEntitySignal(this, signalType, data);
-
 	protected override void OnPunishment() {
 		Components.NoteRules.Punish(this);
 	}
@@ -146,17 +139,8 @@ public class DashEnemy : RhythmNote
 	/// </summary>
 	public bool Warns { get; set; } = false;
 
-	protected override void OnFirstVisible() {
-		if (Variant.IsBoss())
-			SendSignal(Components.Chart.Boss, EntitySignalType.FirstAppearance);
-	}
-
-	protected override void OnHit(PathwayId pathway, double distanceToHit) {
-		if (Variant.IsBoss())
-			SendSignal(Components.Chart.Boss, EntitySignalType.Hit);
-	}
-
 	public bool RelatedToBoss { get; set; }
+	public string? BossAction { get; set; }
 
 	private Color? __hitColor;
 	public Color HitColor {

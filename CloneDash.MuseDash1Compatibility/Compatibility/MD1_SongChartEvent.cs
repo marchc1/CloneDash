@@ -6,6 +6,7 @@ public class MD1_SongChartEvent
 {
 	public double Time;
 	public double Length;
+	public double Dt;
 	public EventType Type;
 	public string? BossAction;
 

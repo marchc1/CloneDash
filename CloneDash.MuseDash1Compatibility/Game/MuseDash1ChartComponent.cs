@@ -52,8 +52,6 @@ public class MuseDash1ChartComponent : IRhythmGameComponent, IRhythmGameThinker
 		this.scenes = scenes;
 		Scroll = scroll;
 		Stats = stats;
-
-		events.Listen<SceneChangedGameEvent>(RelaySceneChange);
 	}
 
 	public Boss Boss { get; private set; } = null!;
@@ -67,11 +65,6 @@ public class MuseDash1ChartComponent : IRhythmGameComponent, IRhythmGameThinker
 			else
 				Logs.Debug($"Activating {ev.ToString()}");
 		}
-	}
-
-	public void BroadcastEntitySignal(DashEnemy? entityFrom, EntitySignalType signalType, object? data = null) {
-		foreach (var enemy in EnemyManager.GetAll())
-			enemy.OnSignalReceived(entityFrom, signalType, data);
 	}
 
 	public void DeactivateEvent(DashEvent ev) {
@@ -192,6 +185,7 @@ public class MuseDash1ChartComponent : IRhythmGameComponent, IRhythmGameThinker
 		ent.HealthGiven = ChartEntity.Health;
 
 		ent.RelatedToBoss = ChartEntity.RelatedToBoss;
+		ent.BossAction = ChartEntity.BossAction;
 		ent.RendersItself = false;
 		ent.DebuggingInfo = ChartEntity.DebuggingInfo;
 
@@ -217,6 +211,7 @@ public class MuseDash1ChartComponent : IRhythmGameComponent, IRhythmGameThinker
 		ev.Fever = ChartEvent.Fever;
 		ev.Damage = ChartEvent.Damage;
 		ev.BossAction = ChartEvent.BossAction;
+		ev.Dt = ChartEvent.Dt;
 
 		Events.Add(ev);
 		ReadyToBuildEvents.Add(ev);
@@ -237,10 +232,6 @@ public class MuseDash1ChartComponent : IRhythmGameComponent, IRhythmGameThinker
 		Boss.Reset();
 		ActiveEvents.Clear();
 		HandledEvents.Clear();
-	}
-
-	public void SendEntitySignal(DashEnemy? entityFrom, DashEnemy? entityTo, EntitySignalType signalType, object? data = null) {
-		entityTo?.OnSignalReceived(entityFrom, signalType, data);
 	}
 
 	public void Think(FrameState frameState) {
@@ -307,10 +298,6 @@ public class MuseDash1ChartComponent : IRhythmGameComponent, IRhythmGameThinker
 				foreach (var other in notes)
 					if (IsAirSide(note) != IsAirSide(other))
 						note.SameTimeNotes.Add(other);
-	}
-
-	void RelaySceneChange(ref SceneChangedGameEvent ev) {
-		BroadcastEntitySignal(null, EntitySignalType.SceneChange, (ev.From, ev.To));
 	}
 
 	private bool shouldActivateEvent(DashEvent ev) => ev.TriggerType switch {

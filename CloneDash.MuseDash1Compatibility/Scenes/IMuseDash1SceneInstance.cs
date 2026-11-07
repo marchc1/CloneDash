@@ -1,6 +1,7 @@
 ﻿using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Scenes;
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
@@ -44,13 +45,7 @@ public interface IMuseDash1SceneInstance : ISceneInstance
 	MuseDash1ParticleEffect? GetPressEffect(PathwayId pathway, bool top);
 	ModelData? GetHP(out string? mountAnimation);
 	string? GetMasherHitAnimation(int speed, EntityEnterDirection dir);
-	double GetBossAnimationTime(BossAnimationType type, AnimationHandler anim);
-	double PlayBossAnimation(int channel, BossAnimationType type, AnimationHandler anim);
-	public double PlayBossAnimation(BossAnimationType type, AnimationHandler anim) => PlayBossAnimation(0, type, anim);
-	public double PlayBossAnimation(int channel, DashEnemy fired, AnimationHandler anim) =>
-		fired.Variant == EntityVariant.Boss1
-			? IsAirTarget(fired.Pathway) ? PlayBossAnimation(BossAnimationType.AttackAir1, anim) : PlayBossAnimation(BossAnimationType.AttackGround1, anim)
-			: IsAirTarget(fired.Pathway) ? PlayBossAnimation(BossAnimationType.AttackAir2, anim) : PlayBossAnimation(BossAnimationType.AttackGround2, anim);
+	MD1_SpineActionControllerData GetBossActions();
 	string? GetEnemyApproachAnimation(DashEnemy enemy, out double time);
 	ref readonly PathwayInformation GetPathwayInformation(PathwayId pathway);
 	ref readonly PathwayInformation GetCenterInformation();

@@ -17,7 +17,7 @@ public class MashComponent(GameEventManager events, PathwaysComponent pathways, 
 	/// </summary>
 	/// <param name="ent"></param>
 	public void EnterMashState(DashEnemy ent) {
-		events.Fire(new MashStartGameEvent());
+		events.Fire(new MashStartGameEvent(ent));
 		InMashState = true;
 		MashingEntity = ent;
 	}
@@ -25,18 +25,18 @@ public class MashComponent(GameEventManager events, PathwaysComponent pathways, 
 	/// <summary>
 	/// Exits the mash state.
 	/// </summary>
-	public void ExitMashState() {
-		events.Fire(new MashEndGameEvent());
+	public void ExitMashState(bool success) {
+		events.Fire(new MashEndGameEvent(MashingEntity, success));
 		InMashState = false;
 		MashingEntity = null;
 	}
 
-	public void Reset() => ExitMashState();
+	public void Reset() => ExitMashState(false);
 
 	public void SubmitMashHit() {
 		if (!InMashState || rules.IsDead())
 			return;
-		events.Fire(new MashHitGameEvent());
+		events.Fire(new MashHitGameEvent(MashingEntity));
 		MashingEntity.Hit(pathways.GroundPathway, 0);
 	}
 }
