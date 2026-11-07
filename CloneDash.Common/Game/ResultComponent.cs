@@ -11,7 +11,7 @@ public class ResultComponent : IRhythmGameComponent, IRhythmGameThinker
 	readonly RhythmGameLevel level;
 	readonly MusicComponent music;
 
-	double DeathTime = -2000000;
+	public double DeathTime { get; private set; } = -2000000;
 
 	public ResultComponent(RhythmGameLevel level, MusicComponent music, GameEventManager events) {
 		this.level = level;
@@ -49,9 +49,8 @@ public class ResultComponent : IRhythmGameComponent, IRhythmGameThinker
 
 	public bool TryClear() {
 		// A failed song can't also clear (e.g. it ends during the fail fade-in)
-		if (Cleared || IsFailed() || !LastNoteHit || !music.IsValid() || !music.IsComplete) {
+		if (Cleared || IsFailed() || !LastNoteHit || !music.IsValid() || !music.IsComplete)
 			return false;
-		}
 
 		Cleared = true;
 		events.Fire(new SongClearedGameEvent());

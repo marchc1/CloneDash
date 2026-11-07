@@ -18,11 +18,11 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 	readonly RhythmGameLevel level;
 	readonly MashComponent Mash;
 	readonly MusicComponent Music;
+	readonly ResultComponent Results;
 	readonly MuseDash1RulesComponent rules;
 	readonly MuseDash1ScenesComponent Scenes;
 	readonly ScoreComponent Score;
 	readonly StatisticsData Stats;
-	double deathTime;
 
 	public MuseDash1HudComponent(ComboComponent combo, ScreenEffectsComponent effects, GameEventManager events, FeverComponent fever, HealthComponent health, RhythmGameLevel level, MashComponent mash, MusicComponent music, ResultComponent results, MuseDash1RulesComponent rules, MuseDash1ScenesComponent scenes, ScoreComponent score, StatisticsData stats) {
 		Combo = combo;
@@ -32,6 +32,7 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 		this.level = level;
 		Mash = mash;
 		Music = music;
+		Results = results;
 		this.rules = rules;
 		Scenes = scenes;
 		Score = score;
@@ -98,7 +99,7 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 		UI?.UpdateHP(Health.Max, Health.Max);
 		UI?.UpdateFeverProgress(0, 0);
 		// undo the death fade-out
-		audiosystem.SetSoundVolume(in Music.Handle, 1);
+		Music.SetVolume(1);
 	}
 
 	public void Think(FrameState frameState) {
@@ -107,11 +108,10 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 
 		if (rules.IsDead()) {
 			// Like Muse Dash, the stage keeps scrolling while the fail screen fades in; the song fades with it and stops when the panel takes over
-			double sinceDeath = level.Curtime - deathTime;
-			audiosystem.SetSoundVolume(in Music.Handle, (float)Math.Clamp(1 - sinceDeath / 2, 0, 1));
-			if (sinceDeath >= MuseDash1FailPanel.PANEL_START) {
+			double sinceDeath = level.Curtime - Results.DeathTime;
+			Music.SetVolume((float)Math.Clamp(1 - sinceDeath / 2, 0, 1));
+			if (sinceDeath >= MuseDash1FailPanel.PANEL_START)
 				Music.Pause();
-			}
 		}
 
 		var sceneUI = UI;
@@ -165,16 +165,9 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 	}
 
 	// The fail screen's magenta fade-in (PnlFailText) plays over the death trip, so it opens right away rather than on SongFailed
-	/// <summary>
-	/// Opens the fail screen as soon as the player dies, so its fade-in plays over the death trip.
-	/// </summary>
 	void StartFailure(ref PlayerDeathGameEvent ev) {
-		if (!rules.IsDead()) {
-			return;
-		}
-
-		deathTime = level.Curtime;
-		UI?.OpenFailure();
+		if (rules.IsDead())
+			UI?.OpenFailure();
 	}
 
 	void ShowFailure(ref SongFailedGameEvent ev) {

@@ -4,10 +4,7 @@ using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
-using CloneDash.Settings;
-using Newtonsoft.Json;
 using Nucleus;
-using Nucleus.Audio;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
 using Nucleus.Types;
@@ -17,15 +14,11 @@ namespace CloneDash.Scenes;
 
 public record MuseDash1FailAssets(UnityCanvas Intro, UnityCanvas Panel, MuseDash1CanvasBehaviours Behaviours, IAudioClip? LikeSound, IAudioClip? UnlikeSound);
 
-/// <summary>
-/// Muse Dash's fail screen: the GameMain scene's PnlFailText (magenta fade + F-A-I-L letters) plays from the moment of death,
-/// then PnlFail (PnlFailIn) takes over. Both are the original prefabs/clips running through <see cref="UnityCanvas"/>.
-/// </summary>
+// Muse Dash's fail screen: the GameMain scene's PnlFailText (magenta fade + F-A-I-L letters) plays from the moment of death,
+// then PnlFail (PnlFailIn) takes over. Both are the original prefabs/clips running through UnityCanvas.
 public class MuseDash1FailPanel : Panel
 {
-	/// <summary>
-	/// PnlFailText runs 3.18s, then PnlFail comes in.
-	/// </summary>
+	// PnlFailText runs 3.18s, then PnlFail comes in
 	public const float PANEL_START = 3.2f;
 	// PnlFail's CheckUpdateToDisableBtnAndSetGray.m_FrameKeyTime
 	const float BUTTONS_ACTIVE = 2.7f;
@@ -47,9 +40,6 @@ public class MuseDash1FailPanel : Panel
 
 	float PanelTime => time - PANEL_START;
 
-	/// <summary>
-	/// Starts the fail screen: plays PnlFailText, prepares PnlFail (hidden until <see cref="PANEL_START"/>) and fills in the song name, barrage lines and character.
-	/// </summary>
 	public MuseDash1FailPanel(Element parent, RhythmGameLevel game, IMuseDash1SceneInstance scene, MuseDash1FailAssets assets) : base(parent) {
 		this.assets = assets;
 		this.game = game;
@@ -75,20 +65,18 @@ public class MuseDash1FailPanel : Panel
 		character?.Initialize(game);
 		if (character != null && assets.Panel.Find(CHARACTER) is CanvasNode point) {
 			point.CustomRender = character.Render;
-			if (assets.Panel.Find(CHARACTER_POINT) is CanvasNode characterPoint) {
+			if (assets.Panel.Find(CHARACTER_POINT) is CanvasNode characterPoint)
 				characterPoint.Active = true;
-			}
 		}
 
 		string title = game.GetSongChart().GetSong().FetchMetadata().Name.ToString();
 		foreach (var marquee in assets.Behaviours.Marquees)
 			marquee.SetText(title);
 
-		var lines = LoadBarrages((descriptor as MuseDash1CharacterDescriptor)?.ConfigIndex ?? -1);
+		var lines = LoadBarrages(descriptor is MuseDash1CharacterDescriptor md ? MuseDash1Compatibility.Characters.IndexOf(md.ConfigData) : -1);
 		for (int i = 0; i < assets.Behaviours.FailBarrageTexts.Count; i++)
-			if (assets.Behaviours.FailBarrageTexts[i].Text is CanvasText text) {
+			if (assets.Behaviours.FailBarrageTexts[i].Text is CanvasText text)
 				text.Text = i < lines.Length ? lines[i] : "";
-			}
 		foreach (var line in assets.Behaviours.FailBarrageLines)
 			line.Update(0);
 
@@ -97,118 +85,69 @@ public class MuseDash1FailPanel : Panel
 
 	class BarrageEntry
 	{
-		[JsonProperty("index")] public int Index = 0;
-		[JsonProperty("barrages")] public string[] Barrages = [];
+		public int Index = 0;
+		public string[] Barrages = [];
 	}
 
-	/// <summary>
-	/// FailBarrage fills its lines from the fail_barrage config: the character's own set, else the default (-1).
-	/// </summary>
+	// FailBarrage fills its lines from the fail_barrage config: the character's own set, else the default (-1)
 	static string[] LoadBarrages(int characterIndex) {
-		var asset = MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.TextAsset>($"fail_barrage_{MuseDash1Localization.ENGLISH}");
-		if (asset == null) {
-			return [];
-		}
-
-		var entries = JsonConvert.DeserializeObject<BarrageEntry[]>(System.Text.Encoding.UTF8.GetString(asset.m_Script).TrimStart('﻿')) ?? [];
+		var entries = MuseDash1Compatibility.ReadJSON<BarrageEntry[]>($"Assets/Static Resources/Data/Configs/english/fail_barrage_{MuseDash1Localization.ENGLISH}.json") ?? [];
 		return (entries.FirstOrDefault(e => e.Index == characterIndex) ?? entries.FirstOrDefault(e => e.Index == -1))?.Barrages ?? [];
 	}
 
-	/// <summary>
-	/// Handles a click on the Return, Restart or like button once the buttons are active.
-	/// </summary>
 	bool Click(float x, float y) {
-		if (!panelShown || PanelTime < BUTTONS_ACTIVE) {
+		if (!panelShown || PanelTime < BUTTONS_ACTIVE)
 			return true;
-		}
 
 		var canvas = assets.Panel;
-		if (canvas.Find(RETURN) is CanvasNode returnButton && canvas.HitTest(returnButton, x, y)) {
+		if (canvas.Find(RETURN) is CanvasNode returnButton && canvas.HitTest(returnButton, x, y))
 			Return();
-		}
-		else if (canvas.Find(RESTART) is CanvasNode restartButton && canvas.HitTest(restartButton, x, y)) {
+		else if (canvas.Find(RESTART) is CanvasNode restartButton && canvas.HitTest(restartButton, x, y))
 			Restart();
-		}
-		else if (assets.Behaviours.LikeButton is MuseDash1LikeButton like && canvas.HitTest(like.Button, x, y)) {
+		else if (assets.Behaviours.LikeButton is MuseDash1LikeButton like && canvas.HitTest(like.Button, x, y))
 			ToggleLike();
-		}
 		return true;
 	}
 
-	/// <summary>
-	/// Restarts the song (once).
-	/// </summary>
 	void Restart() {
-		if (finished) {
+		if (finished)
 			return;
-		}
+
 		finished = true;
 		// SeekTo(0) -> Reset() revives the player and closes this panel via the scene UI
 		game.Restart();
 	}
 
-	/// <summary>
-	/// Returns to the main menu (once).
-	/// </summary>
 	void Return() {
-		if (finished) {
+		if (finished)
 			return;
-		}
+
 		finished = true;
 		LevelTransitions.LoadMainMenu();
 	}
 
-	/// <summary>
-	/// Toggles the like button and plays its sound.
-	/// </summary>
 	void ToggleLike() {
 		liked = !liked;
-		Play(liked ? assets.LikeSound : assets.UnlikeSound);
+		MuseDash1VictoryScreen.Play(liked ? assets.LikeSound : assets.UnlikeSound);
 		UpdateLikeIcon();
 	}
 
-	/// <summary>
-	/// Shows or hides the liked icon to match the like state.
-	/// </summary>
 	void UpdateLikeIcon() {
-		if (assets.Behaviours.LikeButton?.Like is CanvasNode like) {
+		if (assets.Behaviours.LikeButton?.Like is CanvasNode like)
 			like.Active = liked;
-		}
 	}
 
-	/// <summary>
-	/// Plays a UI sound at the hit sound volume.
-	/// </summary>
-	static void Play(IAudioClip? clip) {
-		if (clip == null) {
-			return;
-		}
-
-		clip.BindVolumeToConVar(AudioSettings.snd_hitvolume);
-		audiosystem.PlaySound(clip, AudioPlaybackSettings.Unaltered);
-	}
-
-	/// <summary>
-	/// Stops the fail BGM when the fail screen closes.
-	/// </summary>
 	protected override void OnRemoval() {
 		base.OnRemoval();
 		scene.StopSound(SceneSound.Fail);
 	}
 
-	/// <summary>
-	/// Draws PnlFailText (magenta fade + F-A-I-L), called from the game's world pass so the tripping character can be drawn over it.
-	/// Stops once PnlFail's background has slid in over it.
-	/// </summary>
+	// Called from the game's world pass so the tripping character can be drawn over it; stops once PnlFail's background has slid in over it
 	public void RenderIntro(float width, float height) {
-		if (!panelShown || PanelTime < 0.5f) {
+		if (!panelShown || PanelTime < 0.5f)
 			assets.Intro.Render(width, height);
-		}
 	}
 
-	/// <summary>
-	/// Advances the fail screen: brings PnlFail in after the intro, moves the barrage and song name, and handles the Return/Restart/like keys.
-	/// </summary>
 	protected override void OnThink() {
 		base.OnThink();
 		float deltaTime = Math.Min(Level.RealtimeDeltaF, 0.1f);
@@ -224,29 +163,24 @@ public class MuseDash1FailPanel : Panel
 			scene.PlaySound(SceneSound.Fail, 0);
 			character?.PlayAudio();
 		}
-		if (!panelShown) {
+		if (!panelShown)
 			return;
-		}
 
 		foreach (var line in assets.Behaviours.FailBarrageLines)
 			line.Update(PanelTime);
 		foreach (var marquee in assets.Behaviours.Marquees)
-			marquee.Update(Math.Min(Level.RealtimeDeltaF, 0.1f));
+			marquee.Update(deltaTime);
 
-		if (PanelTime < BUTTONS_ACTIVE) {
+		if (PanelTime < BUTTONS_ACTIVE)
 			return;
-		}
 
 		// InputKeyBinding: BtnReturn is bound to Cancel and Submit, BtnRestart to Restart, BtnLike to Space
 		var keyboard = Level.FrameState.Keyboard;
-		if (keyboard.WasKeyPressed(ButtonCode.KeyEscape) || keyboard.WasKeyPressed(ButtonCode.KeyEnter)) {
+		if (keyboard.WasKeyPressed(ButtonCode.KeyEscape) || keyboard.WasKeyPressed(ButtonCode.KeyEnter))
 			Return();
-		}
-		else if (keyboard.WasKeyPressed(ButtonCode.KeyR)) {
+		else if (keyboard.WasKeyPressed(ButtonCode.KeyR))
 			Restart();
-		}
-		else if (keyboard.WasKeyPressed(ButtonCode.KeySpace)) {
+		else if (keyboard.WasKeyPressed(ButtonCode.KeySpace))
 			ToggleLike();
-		}
 	}
 }

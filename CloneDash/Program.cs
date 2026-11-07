@@ -98,9 +98,8 @@ internal class Program
 				mml.LoadChartSelector(selector, c);
 			});
 
-			if (!alreadyDownloading && customChartsSong.IsDownloading) {
+			if (!alreadyDownloading && customChartsSong.IsDownloading)
 				new MainMenuLevel.DownloadProgressBar(selector, customChartsSong);
-			}
 		}
 		else
 			EngineCore.Level.As<MainMenuLevel>().LoadChartSelector(selector, song);

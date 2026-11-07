@@ -103,9 +103,8 @@ public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, Muse
 
 		// Skipped while dead: notes still scroll by during the fail fade-in, but nothing gets collected/missed/hit
 		// (that played pickup sounds and healed a dead player).
-		if (Rules.IsDead()) {
+		if (Rules.IsDead())
 			return;
-		}
 
 		// This loop is mostly for per-tick polls that need to occur, ie. when entities have been fully missed.
 		// It is ran after input processing.

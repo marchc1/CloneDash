@@ -186,9 +186,8 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 		using var reader = new TarReader(xz);
 		while (reader.GetNextEntry() is { } entry) {
 			string name = Path.GetFileName(entry.Name);
-			if (!entry.Name.Contains("/lib/") || !name.Contains(".so", StringComparison.OrdinalIgnoreCase)) {
+			if (!entry.Name.Contains("/lib/") || !name.Contains(".so", StringComparison.OrdinalIgnoreCase))
 				continue;
-			}
 
 			progress.SubMessage = name;
 			string outPath = Path.Combine(destDir, name);
@@ -267,9 +266,8 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 				lastFrameIndex = wantIndex;
 				haveFrame = true;
 			}
-			else if (!haveFrame) {
+			else if (!haveFrame)
 				return false;
-			}
 		}
 
 		frameBuffer.AsSpan(0, frameByteCount).CopyTo(dst);

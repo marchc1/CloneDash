@@ -1,4 +1,4 @@
-﻿using AssetStudio;
+using AssetStudio;
 using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.Compatibility;
@@ -325,9 +325,8 @@ public class MuseDash1SceneDescriptor : ModDescriptor, IMuseDash1SceneDescriptor
 		if (sceneInfo == null) {
 			// Custom charts can name scenes that don't exist (mdmc.moe charts use 'scene_10'; only scene_10_miku/scene_10_rin_len do),
 			// which left the required scene slot empty
-			if (name.SequenceEqual("scene_01")) {
+			if (name.SequenceEqual("scene_01"))
 				return null;
-			}
 			Logs.Warn($"The scene '{name}' is unknown, so 'Space Station' will be selected as a fallback for this scene.");
 			return GetScene(provider, "scene_01");
 		}
@@ -952,13 +951,10 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 		}
 	}
 
-	/// <summary>
-	/// Stops every playback of a scene sound; only the fail BGM needs this.
-	/// </summary>
+	// Only the fail BGM needs stopping
 	public void StopSound(SceneSound sound) {
-		if (sound == SceneSound.Fail) {
+		if (sound == SceneSound.Fail)
 			audiosystem.StopSounds(FailBgmSound);
-		}
 	}
 
 	public MD1_SpineActionControllerData GetBossActions() => BossAnims;

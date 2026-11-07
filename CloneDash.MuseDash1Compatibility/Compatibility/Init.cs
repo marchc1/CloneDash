@@ -31,7 +31,7 @@ public static partial class MuseDash1Compatibility
 #endif
 	}
 
-	static T? ReadJSON<T>(ReadOnlySpan<char> path) => JsonSerializer.Deserialize<T>(StreamingAssets.ReadText(path)!, new JsonSerializerOptions {
+	internal static T? ReadJSON<T>(ReadOnlySpan<char> path) => JsonSerializer.Deserialize<T>(StreamingAssets.ReadText(path)!, new JsonSerializerOptions {
 		PropertyNameCaseInsensitive = true,
 		AllowTrailingCommas = true,
 		ReadCommentHandling = JsonCommentHandling.Skip,

@@ -214,7 +214,7 @@ public class MuseDash1VictoryScreen
 		};
 	}
 
-	static AudioPlaybackHandle Play(IAudioClip? clip) {
+	internal static AudioPlaybackHandle Play(IAudioClip? clip) {
 		if (clip == null)
 			return AudioPlaybackHandle.Null;
 

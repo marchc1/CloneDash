@@ -183,7 +183,7 @@ public struct MDMCChart
 			});
 		});
 	}
-	/// <param name="progress">Reports 0-100. Called from a worker thread.</param>
+	// progress reports 0-100, from a worker thread
 	public void DownloadTo(string filename, Action<bool> callback, IProgress<float>? progress = null) {
 		var id = ID;
 
@@ -295,7 +295,7 @@ public class MDMCWebAPIPromise
 /// </summary>
 public static class MDMCWebAPI
 {
-	public static async Task DownloadDataAsync(this HttpClient client, string requestUrl, Stream destination, IProgress<float> progress = null, CancellationToken cancellationToken = default) {
+	public static async Task DownloadDataAsync(this HttpClient client, string requestUrl, Stream destination, IProgress<float>? progress = null, CancellationToken cancellationToken = default) {
 		using (var response = await client.GetAsync(requestUrl, HttpCompletionOption.ResponseHeadersRead)) {
 			var contentLength = response.Content.Headers.ContentLength;
 			using (var download = await response.Content.ReadAsStreamAsync()) {

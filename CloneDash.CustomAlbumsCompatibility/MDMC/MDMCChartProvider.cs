@@ -70,13 +70,11 @@ public class MDMCChartSongSourceState : BaseSongSource, ISongSourceState
 	bool isBusy;
 	int pointer = 0;
 	readonly MDMCChartFilter? filter;
-	private MD1_CustomChartsSong AddChartSelector(in MDMCChart chart, bool addToList) {
-		if (SongCache.TryGetValue(chart.ID, out var song))
-			return song;
-		SongCache[chart.ID] = song = new MD1_CustomChartsSong(chart);
-		if (addToList)
-			Songs.Add(song);
-		return song;
+	private void AddChartSelector(in MDMCChart chart) {
+		if (SongCache.ContainsKey(chart.ID))
+			return;
+		var song = SongCache[chart.ID] = new MD1_CustomChartsSong(chart);
+		Songs.Add(song);
 	}
 
 	public int Index(ISong? song) {
@@ -110,36 +108,48 @@ public class MDMCChartSongSourceState : BaseSongSource, ISongSourceState
 
 	public bool IsBusy() => isBusy;
 
-	static readonly ChartSongSourceMoveInit NotExecuted = new() { OperationExecuted = false, ImmediatelyAvailable = false };
-	static readonly ChartSongSourceMoveInit Executed = new() { OperationExecuted = true, ImmediatelyAvailable = true };
-
-	/// <summary>
-	/// Moves the selection one chart to the left, if there is one.
-	/// </summary>
 	public ChartSongSourceMoveInit MoveLeft(ChartSongSourceMoveFinishFn? callback = null) {
 		if (IsBusy() || pointer <= 0) {
-			return NotExecuted;
+			return new ChartSongSourceMoveInit {
+				OperationExecuted = false,
+				ImmediatelyAvailable = false
+			};
 		}
 
 		pointer--;
-		callback?.Invoke(new() { OperationExecuted = true, Movement = -1 });
-		return Executed;
+		callback?.Invoke(new() {
+			OperationExecuted = true,
+			Movement = -1
+		});
+
+		return new ChartSongSourceMoveInit {
+			OperationExecuted = true,
+			ImmediatelyAvailable = true
+		};
 	}
 
 	public ChartSongSourceMoveInit MoveRight(ChartSongSourceMoveFinishFn? callback = null) {
 		if (IsBusy() || pointer + 1 >= Songs.Count) {
-			return NotExecuted;
+			return new ChartSongSourceMoveInit {
+				OperationExecuted = false,
+				ImmediatelyAvailable = false
+			};
 		}
 
 		pointer++;
-		callback?.Invoke(new() { OperationExecuted = true, Movement = 1 });
+		callback?.Invoke(new() {
+			OperationExecuted = true,
+			Movement = 1
+		});
 
 		// Prefetch the next page in the background once the right edge of the visible discs nears the end
-		if (!fetching && Songs.Count < totalSongs && pointer + SongSelector.VisibleDiscs / 2 >= Songs.Count - 1) {
+		if (!fetching && Songs.Count < totalSongs && pointer + SongSelector.VisibleDiscs / 2 >= Songs.Count - 1)
 			FetchAsync();
-		}
 
-		return Executed;
+		return new ChartSongSourceMoveInit {
+			OperationExecuted = true,
+			ImmediatelyAvailable = true
+		};
 	}
 
 	private class mdmcChartsWithCount
@@ -150,9 +160,6 @@ public class MDMCChartSongSourceState : BaseSongSource, ISongSourceState
 
 	bool fetching;
 	int nextPage = 1;
-	/// <summary>
-	/// Requests the next page of charts from mdmc.moe and appends them (skipping any already listed) when it arrives.
-	/// </summary>
 	private void FetchAsync() {
 		fetching = true;
 		MDMCWebAPI.SearchCharts(filter?.Query, filter?.Sort ?? MDMCWebAPI.Sort.Likes, filter?.SortOrder ?? MDMCWebAPI.SortOrder.Descending, nextPage++, filter?.RankedOnly ?? false)
@@ -161,7 +168,7 @@ public class MDMCChartSongSourceState : BaseSongSource, ISongSourceState
 
 				// Pages can overlap if rankings shift between requests; AddChartSelector skips charts it has already seen
 				foreach (var chart in charts.Charts)
-					AddChartSelector(chart, true);
+					AddChartSelector(chart);
 
 				// empty page = end, even if total disagrees
 				totalSongs = charts.Charts.Length == 0 ? Songs.Count : charts.Count;

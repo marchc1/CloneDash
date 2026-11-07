@@ -1,4 +1,4 @@
-﻿using CloneDash.Characters;
+using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes.MuseDash;
@@ -632,9 +632,6 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		}
 	}
 
-	/// <summary>
-	/// Imports the GameMain scene's PnlFailText and PnlFail as canvases, with their localization, fonts and behaviours.
-	/// </summary>
 	static MuseDash1FailAssets? ImportFailCanvas() {
 		var assets = MuseDash1Compatibility.StreamingAssets;
 		// PnlFail isn't an addressable prefab (the "PnlFail" key is its animator controller); it lives in the GameMain scene.
@@ -665,9 +662,6 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		try {
 			// UI_2D: CanvasScaler 1920x1080, match width
 			var settings = new UnityCanvasSettings("GameMain.unity UI_2D canvas (CanvasScaler)", false, 60, 100, new(1920, 1080), 0);
-			/// <summary>
-			/// Imports one fail screen object as a canvas, loading the GameMain dependencies it references.
-			/// </summary>
 			UnityCanvas ImportCanvas(AssetStudio.GameObject gameObject, MuseDash1CanvasBehaviours behaviours) {
 				var canvas = UnityCanvas.Import(gameObject, settings,
 					files => assets.LoadDependenciesContaining("GameMain", files, pinned),
@@ -685,9 +679,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		}
 		finally {
 			foreach (var pinnedFile in pinned)
-				if (pinnedFile != file) {
+				if (pinnedFile != file)
 					assets.Release(pinnedFile);
-				}
 			assets.Unpin(file);
 		}
 	}
@@ -783,36 +776,24 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	}
 
 	public void OpenFailure() {
-		if (IValidatable.IsValid(CurrentFailPanel)) {
+		if (IValidatable.IsValid(CurrentFailPanel))
 			return;
-		}
 
 		// Reused across deaths: each open replays the clips from 0, which resets every animated node, and re-sets the rest.
 		// Re-importing on restart meant parsing the whole scenes bundle mid-game, which froze the game.
 		failCanvas ??= ImportFailCanvas();
-		if (failCanvas != null) {
+		if (failCanvas != null)
 			CurrentFailPanel = new MuseDash1FailPanel(EngineCore.Level.RootPanel, game, scene, failCanvas);
-		}
 	}
 
-	/// <summary>
-	/// Draws the open fail screen's fade-in; see <see cref="IMuseDash1SceneUI.RenderFailureUnderlay"/>.
-	/// </summary>
 	public void RenderFailureUnderlay() {
-		if (IValidatable.IsValid(CurrentFailPanel)) {
+		if (IValidatable.IsValid(CurrentFailPanel))
 			CurrentFailPanel.RenderIntro(EngineCore.GetWindowWidth(), EngineCore.GetWindowHeight());
-		}
 	}
 
-	/// <summary>
-	/// Closes the fail screen, keeping its imported canvas for the next death.
-	/// </summary>
+	// Keeps failCanvas for the next death
 	void CloseFailure() {
-		if (CurrentFailPanel == null) {
-			return;
-		}
-
-		CurrentFailPanel.Remove();
+		CurrentFailPanel?.Remove();
 		CurrentFailPanel = null;
 	}
 

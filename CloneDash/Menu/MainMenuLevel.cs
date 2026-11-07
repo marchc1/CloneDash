@@ -301,15 +301,11 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 	LevelSelectorPanel? SelectedSong;
 
-	/// <summary>
-	/// Sits under the selected disc while a chart downloads, then removes itself.
-	/// </summary>
+	// Sits under the selected disc while a chart downloads, then removes itself
 	internal class DownloadProgressBar : Panel
 	{
 		readonly MD1_CustomChartsSong song;
-		/// <summary>
-		/// Places the bar under the selected disc's track name and author.
-		/// </summary>
+
 		public DownloadProgressBar(SongSelector selector, MD1_CustomChartsSong song) : base(selector) {
 			this.song = song;
 			var bounds = selector.GetRenderBounds();
@@ -321,19 +317,12 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			SetMouseInputEnabled(false);
 		}
 
-		/// <summary>
-		/// Removes the bar once the download has finished or failed.
-		/// </summary>
 		protected override void OnThink() {
 			base.OnThink();
-			if (!song.IsDownloading) {
+			if (!song.IsDownloading)
 				Remove();
-			}
 		}
 
-		/// <summary>
-		/// Draws the bar's background, fill and "Downloading..." label.
-		/// </summary>
 		public override void Paint(float w, float h) {
 			Graphics2D.SetDrawColor(new Color(0, 0, 0, 160));
 			Graphics2D.DrawRectangle(0, 0, w, h);

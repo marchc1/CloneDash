@@ -907,22 +907,19 @@ public class UnitySearchPathV2 : SearchPath
 			throw new Exception();
 
 		var match = FindInLoadedBundles<T>(searchAsset, name, fnLookup);
-		if (match != null) {
+		if (match != null)
 			return match;
-		}
 
 		// An addressable asset lives in its own bundle (the first of its bundle files); the rest are dependencies holding what it
-		// references. Walking those for a name loaded every dependency on a miss (GameMain: 132 bundles, 745 MB) and evicted the
-		// earlier ones as it went, so HasMoreBundles never ran out and the search never ended. Only load the asset's own bundle.
+		// references. Walking those for a name loads every dependency on a miss (GameMain: 132 bundles, 745 MB), evicting the
+		// earlier ones as it goes, so the search never ends. Only load the asset's own bundle.
 		var ownBundle = Catalog.ResolveBundleFiles(searchAsset.DependencyKey).FirstOrDefault();
-		if (ownBundle == null || UnitySearchAsset.IsBundleLoaded(Assets, ownBundle)) {
+		if (ownBundle == null || UnitySearchAsset.IsBundleLoaded(Assets, ownBundle))
 			return null;
-		}
 
 		CacheNewBundles(searchAsset.LoadBundle(_basePath, _platform, Assets, ownBundle).ToList());
-		if (fnLookup.TryGetValue(name, out var lookups) && FindTypedInCache<T>(lookups) is T cached) {
+		if (fnLookup.TryGetValue(name, out var lookups) && FindTypedInCache<T>(lookups) is T cached)
 			return cached;
-		}
 		return FindInLoadedBundles<T>(searchAsset, name, fnLookup);
 	}
 
