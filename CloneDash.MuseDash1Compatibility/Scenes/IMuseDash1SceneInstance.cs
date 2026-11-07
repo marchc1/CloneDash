@@ -17,6 +17,8 @@ public interface IMuseDash1SceneInstance : ISceneInstance
 	IMuseDash1SceneUI CreateUI();
 
 	void PlaySound(SceneSound sound, int hits);
+	/// <summary>Stops every playback of a scene sound (used to cut the fail BGM on restart/exit).</summary>
+	void StopSound(SceneSound sound);
 	void OnPressStateChange(bool wasSustaining, bool startSustaining);
 
 	void Think(double scrollSpeed);

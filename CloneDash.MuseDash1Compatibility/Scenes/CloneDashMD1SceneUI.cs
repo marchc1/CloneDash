@@ -481,6 +481,7 @@ public enum ComboGrade
 public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1SceneUI
 {
 	protected StatisticsPanel? CurrentStatisticsPanel;
+	protected FailurePanel? CurrentFailurePanel;
 
 	protected readonly List<TextImageRenderItem> BackgroundItems = [];
 	protected readonly List<TextImageRenderItem> ForegroundItems = [];
@@ -682,7 +683,15 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	}
 
 	public void OpenFailure() {
+		if (IValidatable.IsValid(CurrentFailurePanel))
+			return;
 
+		CurrentFailurePanel = new FailurePanel(EngineCore.Level.RootPanel, game, scene);
+	}
+
+	void CloseFailure() {
+		CurrentFailurePanel?.Remove();
+		CurrentFailurePanel = null;
 	}
 
 	protected virtual StatisticsPanel? LoadPanel(StatisticsData stats) {
@@ -1004,7 +1013,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	}
 
 	public bool ShowingVictoryScreen() => IValidatable.IsValid(CurrentStatisticsPanel);
-	public bool ShowingFailureScreen() => false; // todo
+	public bool ShowingFailureScreen() => IValidatable.IsValid(CurrentFailurePanel);
 
 
 	public void StartMultiHitText() {
@@ -1164,6 +1173,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		FeverRemainingTime = 0;
 		FeverTotalTime = 0;
 		CloseVictory();
+		CloseFailure();
 
 		ForceDeactivateCombo1();
 		ForceDeactivateCombo2();

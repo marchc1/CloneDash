@@ -311,7 +311,8 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 		handler.PlaySkeletonAction(new() {
 			ActionName = name,
 			CustomCompleteEvent = (a) => {
-				if (!a.IsEndLoop)
+				// Dying holds the last (fallen) frame instead of getting back up
+				if (!a.IsEndLoop && animationType != CharacterAnimationType.Die)
 					playCharacterAnimation(CharacterAnimationType.Run, handler);
 			}
 		}, false);
@@ -356,6 +357,11 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 	public ModelData GetPlayGhostModel(Level level) => PullModelDataFromGameObject(level, ConfigData.GetBattleShowGhost());
 	public ModelData GetVictoryModel(Level level) => PullModelDataFromGameObject(level, ConfigData.VictoryShow);
 	public string GetVictoryStandby() => "standby";
+	public ModelData GetFailModel(Level level) => PullModelDataFromGameObject(level, ConfigData.FailShow);
+	// The fail prefabs' SkeletonGraphic starts on a looping "standby" (there's no "in")
+	public string GetFailStandby() => "standby";
+	/// <summary>Muse Dash's character index (position in character.json), used to pick the fail screen's barrage lines.</summary>
+	public int ConfigIndex => MuseDash1Compatibility.Characters?.IndexOf(ConfigData) ?? -1;
 
 	public bool SupportsGamemode(IGamemodeDescriptor gamemodeDescriptor) {
 		return false;

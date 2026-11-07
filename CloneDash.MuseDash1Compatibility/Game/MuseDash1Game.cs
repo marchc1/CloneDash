@@ -1124,6 +1124,10 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	}
 
 	public void PlayCharacterAnimation(CharacterAnimationType type) {
+		// Nothing overrides the death trip (TriggerDeath plays it on the character directly), e.g. Damage's Hurt right after it
+		if (Dead)
+			return;
+
 		switch (type) {
 			case CharacterAnimationType.Press:
 			case CharacterAnimationType.DownPress:
@@ -1362,6 +1366,7 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 		Combo = 0;
 		Health = Quirks.MaxHP;
+		audiosystem.SetSoundVolume(in Music, 1); // undo the death fade-out
 		InFever = false;
 		WhenDidFeverStart = -1000000d;
 		LastNoteHit = false;
@@ -1631,15 +1636,22 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 	public override void Think(FrameState frameState) {
 		ResetSceneSoundsPlayedThisFrame();
 
-		if (Music.IsValid() && LastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Chart != null && SceneUI != null && !SceneUI.ShowingVictoryScreen()) {
+		if (!IsDead() && Music.IsValid() && LastNoteHit && audiosystem.IsPlaybackComplete(Music) && gameParameters.Chart != null && SceneUI != null && !SceneUI.ShowingVictoryScreen()) {
 			Stats.UploadScore(Score);
 			SceneUI?.OpenVictory(Stats);
 			audiosystem.PauseSound(Music);
 			return;
 		}
 
-		if (IsDead() && ShowDeathTrigger()) {
-			return;
+		if (IsDead()) {
+			// Like Muse Dash, the stage keeps scrolling while the fail screen fades in; the song fades with it and stops when the panel takes over
+			double sinceDeath = Curtime - DeathTime;
+			audiosystem.SetSoundVolume(in Music, (float)Math.Clamp(1 - sinceDeath / 2, 0, 1));
+			if (sinceDeath >= FailurePanel.PANEL_START)
+				audiosystem.PauseSound(in Music);
+
+			if (ShowDeathTrigger())
+				return;
 		}
 
 		if (ShouldExitFever && InFever)
@@ -2282,10 +2294,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 
 	bool ShowDeathTrigger() {
 		if ((Curtime - DeathTime) > 5) {
-			if (SceneUI != null && !SceneUI.ShowingFailureScreen())
-				SceneUI.OpenFailure();
-			// Input is off while dead (including pause), so this menu is the only way out
-			if (!IValidatable.IsValid(PauseWindow)) {
+			// Input is off while dead (including pause); without a scene UI there's no fail screen, so this menu is the only way out
+			if (SceneUI == null && !IValidatable.IsValid(PauseWindow)) {
 				var flex = OpenMenuWindow(200);
 				AddRestartButton(flex);
 				AddExitButton(flex);
@@ -2371,8 +2381,8 @@ public partial class MuseDash1Game(DashGameParams gameParameters) : Level, IGame
 		if (Health <= 0) {
 			Dead = true;
 			DeathTime = Curtime;
-			audiosystem.PauseSound(in Music); // the song stops when you die
 			Character.GetPrimary().PlayAnimation(CharacterAnimationType.Die);
+			SceneUI?.OpenFailure(); // its magenta fade-in plays over the death animation, like Muse Dash's PnlFailText
 		}
 	}
 

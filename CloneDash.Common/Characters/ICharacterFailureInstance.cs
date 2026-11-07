@@ -10,8 +10,10 @@ public interface ICharacterFailureInstance
 	/// Plays the audio track this character says.
 	/// </summary>
 	void PlayAudio();
+	void Initialize(CloneDash.Common.Game.IGame game);
 	/// <summary>
 	/// Renders the model.
 	/// </summary>
 	void Render();
+	void Think();
 }

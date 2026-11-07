@@ -164,6 +164,8 @@ public class GameDLL : IGameDLL
 			NucleusRegisterMDFont("Infinity Font", "InfinityFont_midiam_dot");
 			NucleusRegisterMDFont("Luckiest Guy", "LuckiestGuy-Regular");
 			NucleusRegisterMDFont("Snaps Taste", "Snaps Taste");
+			NucleusRegisterMDFont("Source Han Sans Heavy", "SourceHanSansCN-Heavy"); // Muse Dash's main UI font (fail screen song name)
+			NucleusRegisterMDFont("Teko", "Teko-Bold"); // what Muse Dash swaps its UI text to in English
 		}
 
 		Interlude.Spin();
