@@ -301,6 +301,39 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 	LevelSelectorPanel? SelectedSong;
 
+	/// <summary>
+	/// Sits under the selected disc while a chart downloads, then removes itself.
+	/// </summary>
+	internal class DownloadProgressBar : Panel
+	{
+		readonly MD1_CustomChartsSong song;
+		public DownloadProgressBar(SongSelector selector, MD1_CustomChartsSong song) : base(selector) {
+			this.song = song;
+			var bounds = selector.GetRenderBounds();
+			Anchor = Anchor.Center;
+			Origin = Anchor.Center;
+			Size = new(bounds.W / 4, 32);
+			Position = new(0, bounds.H / 2 / 1.8f + 120); // below the track name/author labels
+			SetMouseInputEnabled(false);
+		}
+
+		protected override void OnThink() {
+			base.OnThink();
+			if (!song.IsDownloading)
+				Remove();
+		}
+
+		public override void Paint(float w, float h) {
+			Graphics2D.SetDrawColor(new Color(0, 0, 0, 160));
+			Graphics2D.DrawRectangle(0, 0, w, h);
+			Graphics2D.SetDrawColor(new Color(255, 255, 255, 200));
+			Graphics2D.DrawRectangle(0, 0, w * Math.Clamp(song.DownloadProgress / 100f, 0, 1), h);
+			Graphics2D.DrawRectangleOutline(0, 0, w, h, 2);
+			Graphics2D.SetDrawColor(new Color(255, 255, 255, 255));
+			Graphics2D.DrawText(new(w / 2, -h / 2 - 4), $"Downloading... {(int)song.DownloadProgress}%", CloneDashUI.FontBold, 24, Anchor.Center);
+		}
+	}
+
 	class LevelSelectorPanel(Element parent, SongSelector selector) : Panel(parent)
 	{
 		const int BUFFER_CAPACITY = 240;

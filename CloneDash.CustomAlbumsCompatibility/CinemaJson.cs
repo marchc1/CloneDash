@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 using Nucleus;
 using Nucleus.Common.Graphics;
 using SharpCompress.Compressors.Xz;
-using SharpCompress.Readers.Tar;
+using System.Formats.Tar;
 using System;
 using System.Collections.Generic;
 using System.IO.Compression;
@@ -84,6 +84,8 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 			}
 			catch (Exception ex) {
 				progress.Error = ex;
+				// A half-extracted cache would pass HasAvcodec next launch, so start clean
+				try { Directory.Delete(cache, true); } catch { }
 			}
 			finally {
 				progress.Done = true;
@@ -180,17 +182,23 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 	static void ExtractSharedLibsFromTarXz(string tarXzPath, string destDir, LoadProgress progress) {
 		using FileStream fs = File.OpenRead(tarXzPath);
 		using var xz = new XZStream(fs);
-		using var reader = TarReader.OpenReader(xz);
-		while (reader.MoveToNextEntry()) {
-			var entry = reader.Entry;
-			if (entry.IsDirectory) continue;
-			string name = Path.GetFileName(entry.Key ?? "");
-			if ((entry.Key?.Contains("/lib/") ?? false) &&
-				name.Contains(".so", StringComparison.OrdinalIgnoreCase)) {
-				progress.SubMessage = name;
-				string outPath = Path.Combine(destDir, name);
+		// System.Formats.Tar, not SharpCompress's TarReader: that one throws on non-seekable streams like XZStream
+		using var reader = new TarReader(xz);
+		while (reader.GetNextEntry() is { } entry) {
+			string name = Path.GetFileName(entry.Name);
+			if (!entry.Name.Contains("/lib/") || !name.Contains(".so", StringComparison.OrdinalIgnoreCase))
+				continue;
+
+			progress.SubMessage = name;
+			string outPath = Path.Combine(destDir, name);
+			// libavcodec.so.61 etc. are symlinks to the real versioned file
+			if (entry.EntryType == TarEntryType.SymbolicLink) {
+				File.Delete(outPath);
+				File.CreateSymbolicLink(outPath, entry.LinkName);
+			}
+			else if (entry.DataStream != null) {
 				using FileStream outFs = File.Create(outPath);
-				reader.WriteEntryTo(outFs);
+				entry.DataStream.CopyTo(outFs);
 			}
 		}
 	}
@@ -208,7 +216,11 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 	readonly bool disposeStream;
 	bool disposed;
 
-	readonly byte[] lastFrame;
+	// sws_scale's SIMD writes past the end of the last row (24 bytes seen on a 426px-wide video), so frames are
+	// decoded into this padded buffer and copied out, never straight into the texture's pixels (that corrupted the native heap).
+	// ponytail: fixed slack, raise it if a wider SIMD path ever overshoots more
+	const int FramePadding = 256;
+	readonly byte[] frameBuffer;
 
 	public CinemaBackgroundGenerator(Stream stream, bool disposeStream = true) {
 		EnsureLoaded();
@@ -225,7 +237,7 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 		frameWidth = size.Width;
 		frameHeight = size.Height;
 		frameByteCount = frameWidth * frameHeight * 4;
-		lastFrame = new byte[frameByteCount];
+		frameBuffer = new byte[frameByteCount + FramePadding];
 
 		double rate = media.Video.Info.AvgFrameRate;
 		FrameDuration = rate > 0 ? 1.0 / rate : 1.0 / 30.0;
@@ -243,28 +255,24 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 	bool haveFrame;
 
 	public bool GetFrame(TimeSpan timestamp, Span<byte> dst) {
-		int valid = frameByteCount;
 		long wantIndex = (long)(timestamp.TotalSeconds / FrameDuration);
 
-		if (haveFrame && wantIndex == lastFrameIndex) {
-			lastFrame.AsSpan(0, valid).CopyTo(dst);
-			return true;
+		if (!haveFrame || wantIndex != lastFrameIndex) {
+			bool forward = haveFrame && wantIndex == lastFrameIndex + 1;
+			bool ok = forward
+				? media.Video.TryGetNextFrame(frameBuffer)
+				: media.Video.TryGetFrame(timestamp, frameBuffer);
+
+			if (ok) {
+				lastFrameIndex = wantIndex;
+				haveFrame = true;
+			}
+			else if (!haveFrame)
+				return false;
 		}
 
-		bool forward = haveFrame && wantIndex == lastFrameIndex + 1;
-		bool ok = forward
-			? media.Video.TryGetNextFrame(dst)
-			: media.Video.TryGetFrame(timestamp, dst);
-
-		if (ok) {
-			dst.Slice(0, valid).CopyTo(lastFrame);
-			lastFrameIndex = wantIndex;
-			haveFrame = true;
-			return true;
-		}
-
-		if (haveFrame) { lastFrame.AsSpan(0, valid).CopyTo(dst); return true; }
-		return false;
+		frameBuffer.AsSpan(0, frameByteCount).CopyTo(dst);
+		return true;
 	}
 
 	readonly double FrameDuration;

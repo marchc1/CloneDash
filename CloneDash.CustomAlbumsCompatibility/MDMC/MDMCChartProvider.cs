@@ -61,7 +61,7 @@ public class MDMCChartSongSourceState : BaseSongSource, ISongSourceState
 		Root = this;
 		this.filter = filter;
 		isBusy = true;
-		FetchAsync(1, null);
+		FetchAsync();
 	}
 
 	readonly Dictionary<string, MD1_CustomChartsSong> SongCache = [];
@@ -110,82 +110,31 @@ public class MDMCChartSongSourceState : BaseSongSource, ISongSourceState
 
 	public bool IsBusy() => isBusy;
 
+	static readonly ChartSongSourceMoveInit NotExecuted = new() { OperationExecuted = false, ImmediatelyAvailable = false };
+	static readonly ChartSongSourceMoveInit Executed = new() { OperationExecuted = true, ImmediatelyAvailable = true };
+
 	public ChartSongSourceMoveInit MoveLeft(ChartSongSourceMoveFinishFn? callback = null) {
-		if (IsBusy()) {
-			return new ChartSongSourceMoveInit {
-				OperationExecuted = false,
-				ImmediatelyAvailable = false
-			};
-		}
+		if (IsBusy() || pointer <= 0)
+			return NotExecuted;
 
-		if (pointer <= 0) {
-			return new ChartSongSourceMoveInit {
-				OperationExecuted = false,
-				ImmediatelyAvailable = false
-			};
-		}
-
-		isBusy = true;
-		{
-			// Inquire if the chart is null, if it is, requery async
-			if (Songs[pointer - 1] == null) {
-				if (noMoreSongsLeft)
-					return new ChartSongSourceMoveInit { ImmediatelyAvailable = false, OperationExecuted = false };
-				return FetchAsync(MDMCWebAPI.ChartIdxToPageIdx(pointer - 1), callback);
-			}
-			else {
-				pointer--;
-				callback?.Invoke(new() {
-					OperationExecuted = true,
-					Movement = -1
-				});
-			}
-		}
-		isBusy = false;
-
-		ChartSongSourceMoveInit res = new ChartSongSourceMoveInit();
-		res.OperationExecuted = true;
-		res.ImmediatelyAvailable = true;
-		return res;
+		pointer--;
+		callback?.Invoke(new() { OperationExecuted = true, Movement = -1 });
+		return Executed;
 	}
 
 	public ChartSongSourceMoveInit MoveRight(ChartSongSourceMoveFinishFn? callback = null) {
-		if (IsBusy()) {
-			return new ChartSongSourceMoveInit {
-				OperationExecuted = false,
-				ImmediatelyAvailable = false
-			};
-		}
+		if (IsBusy() || pointer + 1 >= Songs.Count)
+			return NotExecuted;
 
-		isBusy = true;
-		{
-			// Inquire if the chart is null, if it is, requery async.
-			// NOTE: We check halfway to ensure that the user will never see an empty disc
-			var halfway = SongSelector.VisibleDiscs / 2;
-			var hypotheticalMaxDisc = pointer + halfway;
+		pointer++;
+		callback?.Invoke(new() { OperationExecuted = true, Movement = 1 });
 
-			if (hypotheticalMaxDisc >= Songs.Count - 1 || Songs[hypotheticalMaxDisc] == null) {
-				if (noMoreSongsLeft)
-					return new ChartSongSourceMoveInit { ImmediatelyAvailable = false, OperationExecuted = false };
-				return FetchAsync(MDMCWebAPI.ChartIdxToPageIdx(hypotheticalMaxDisc + 1), callback);
-			}
-			else {
-				pointer++;
-				callback?.Invoke(new() {
-					OperationExecuted = true,
-					Movement = 1
-				});
-			}
-		}
-		isBusy = false;
+		// Prefetch the next page in the background once the right edge of the visible discs nears the end
+		if (!fetching && Songs.Count < totalSongs && pointer + SongSelector.VisibleDiscs / 2 >= Songs.Count - 1)
+			FetchAsync();
 
-		ChartSongSourceMoveInit res = new ChartSongSourceMoveInit();
-		res.OperationExecuted = true;
-		res.ImmediatelyAvailable = true;
-		return res;
+		return Executed;
 	}
-
-
 
 	private class mdmcChartsWithCount
 	{
@@ -193,41 +142,22 @@ public class MDMCChartSongSourceState : BaseSongSource, ISongSourceState
 		[JsonProperty("total")] public int Count;
 	}
 
-	private ChartSongSourceMoveInit FetchAsync(int pageIdx, ChartSongSourceMoveFinishFn? callback) {
-		MDMCWebAPI.SearchCharts(filter?.Query, filter?.Sort ?? MDMCWebAPI.Sort.Likes, filter?.SortOrder ?? MDMCWebAPI.SortOrder.Descending, pageIdx, filter?.RankedOnly ?? false)
+	bool fetching;
+	int nextPage = 1;
+	private void FetchAsync() {
+		fetching = true;
+		MDMCWebAPI.SearchCharts(filter?.Query, filter?.Sort ?? MDMCWebAPI.Sort.Likes, filter?.SortOrder ?? MDMCWebAPI.SortOrder.Descending, nextPage++, filter?.RankedOnly ?? false)
 			.Then(resp => {
-				MainThread.RunASAP(() => {
-					mdmcChartsWithCount charts = resp.FromJSON<mdmcChartsWithCount>() ?? throw new Exception("Parsing failure");
+				mdmcChartsWithCount charts = resp.FromJSON<mdmcChartsWithCount>() ?? throw new Exception("Parsing failure");
 
-					if (charts.Count == 0) {
-						MarkNoMoreSongsLeft();
-						return;
-					}
+				// Pages can overlap if rankings shift between requests; AddChartSelector skips charts it has already seen
+				foreach (var chart in charts.Charts)
+					AddChartSelector(chart, true);
 
-					var start = MDMCWebAPI.PageIdxToChartIdxStart(pageIdx);
-					for (int i = start; i < Math.Min(charts.Charts.Length, start + MDMCWebAPI.MAX_CHARTS_PER_PAGE); i++) {
-						ref readonly MDMCChart chart = ref charts.Charts[i - start];
-						if (Songs.Count <= i)
-							AddChartSelector(chart, true);
-						else if (Songs[i] == null)
-							Songs[i] = AddChartSelector(chart, false);
-					}
-
-					totalSongs = charts.Count;
-					isBusy = false;
-				});
+				totalSongs = charts.Charts.Length == 0 ? Songs.Count : charts.Count; // empty page = end, even if total disagrees
+				fetching = false;
+				isBusy = false;
 			});
-
-		return new ChartSongSourceMoveInit {
-			ImmediatelyAvailable = false,
-			OperationExecuted = true
-		};
-	}
-
-	bool noMoreSongsLeft = false;
-	private void MarkNoMoreSongsLeft() {
-		noMoreSongsLeft = true;
-		isBusy = false;
 	}
 
 	public IChartSongFilter NewFilter() {
