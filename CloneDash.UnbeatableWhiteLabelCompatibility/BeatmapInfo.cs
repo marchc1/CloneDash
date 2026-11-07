@@ -136,7 +136,7 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 
 	public ISong GetSong() => song;
 
-	public IAudioClip GetAudioTrack() => AudioClip;
+	public IAudioClip GetAudioTrack() => UnbeatableWhiteLabelCompatibility.GetMasterClip(AudioClipName)!;
 	public ChartTiming GetTiming() {
 		List<TempoChange> tempoChanges = [];
 		double beat = 0, lastTime = 0, lastBPM = 0;
@@ -160,7 +160,7 @@ public class BeatmapInfo(BeatmapIndexSong song) : ISongChart
 		return new(tempoChanges, []);
 	}
 
-	public IAudioClip AudioClip = null!;
+	public string AudioClipName = null!;
 
 	public int GetRatingNumber() => 5; // todo
 }

@@ -13,7 +13,7 @@ public class BeatmapIndexSong : ModDescriptor, ISong
 	[JsonPropertyName("stageScene")] public string StageScene { get; set; } = null!;
 	[JsonPropertyName("beatmaps")] public BeatmapInfo[] Beatmaps { get; set; } = null!;
 
-	public IAudioClip? PreviewClip;
+	public string PreviewClipName = null!;
 
 	public SongMetadata FetchMetadata() {
 		return new() {
@@ -33,7 +33,7 @@ public class BeatmapIndexSong : ModDescriptor, ISong
 	}
 
 	public IAudioClip? GetDemoAudio() {
-		return PreviewClip;
+		return UnbeatableWhiteLabelCompatibility.GetBgmClip(PreviewClipName);
 	}
 
 	public override string GetName() => Name;

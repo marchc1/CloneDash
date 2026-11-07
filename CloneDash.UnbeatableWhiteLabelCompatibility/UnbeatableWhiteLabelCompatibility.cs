@@ -14,6 +14,7 @@ using Nucleus.Common.Audio;
 using Nucleus.Core;
 using Nucleus.Util;
 using OdinSerializer;
+using System.Buffers.Binary;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
@@ -28,13 +29,11 @@ public static partial class UnbeatableWhiteLabelCompatibility
 	public static BeatmapIndex BeatmapIndex;
 	static AssetsManager Assets;
 	static string InstallDir;
-	static FmodSoundBank[] Bgm;
-	static FmodSoundBank[] Master;
-	static FmodSoundBank[] Sfx;
 
 	static readonly Dictionary<string, IAudioClip> BgmClips = [];
 	static readonly Dictionary<string, IAudioClip> MasterClips = [];
 	static readonly Dictionary<string, IAudioClip> SfxClips = [];
+	static bool BgmLoaded, MasterLoaded, SfxLoaded;
 
 	static AssemblyLoader Assemblies;
 	[MemberNotNull(nameof(Assets))]
@@ -71,13 +70,6 @@ public static partial class UnbeatableWhiteLabelCompatibility
 			}
 		}
 
-		Bgm = LoadFsbMagically(System.IO.File.ReadAllBytes(System.IO.Path.Combine(InstallDir, "UNBEATABLE [white label]_Data", "StreamingAssets", "BGM.bank")));
-		Master = LoadFsbMagically(System.IO.File.ReadAllBytes(System.IO.Path.Combine(InstallDir, "UNBEATABLE [white label]_Data", "StreamingAssets", "Master.bank")));
-		Sfx = LoadFsbMagically(System.IO.File.ReadAllBytes(System.IO.Path.Combine(InstallDir, "UNBEATABLE [white label]_Data", "StreamingAssets", "SFX.bank")));
-		BuildNucleusClips(Bgm, BgmClips);
-		BuildNucleusClips(Master, MasterClips);
-		BuildNucleusClips(Sfx, SfxClips);
-
 		MonoBehaviour mb_beatmapIndex = GetObjectByName<MonoBehaviour>("BeatmapIndex")!;
 		var data = mb_beatmapIndex.ToType(mb_beatmapIndex.ConvertToTypeTree(Assemblies));
 
@@ -101,7 +93,7 @@ public static partial class UnbeatableWhiteLabelCompatibility
 			object[] beatmaps = (object[])songDict["beatmaps"]!;
 			song.Beatmaps = new BeatmapInfo[beatmaps.Length];
 
-			BgmClips.TryGetValue(musicName.SongPreview, out song.PreviewClip);
+			song.PreviewClipName = musicName.SongPreview;
 
 			int j = 0;
 			foreach (var beatmapObj in beatmaps) {
@@ -112,7 +104,7 @@ public static partial class UnbeatableWhiteLabelCompatibility
 				OrderedDictionary textAssetPtrRaw = (OrderedDictionary)beatmapDict["textAsset"]!;
 				beatmap.TextAsset = new PPtr<TextAsset>((int)textAssetPtrRaw["m_FileID"]!, (long)textAssetPtrRaw["m_PathID"]!, mb_beatmapIndex.assetsFile);
 				j++;
-				MasterClips.TryGetValue(musicName.SongAudio, out beatmap.AudioClip!);
+				beatmap.AudioClipName = musicName.SongAudio;
 			}
 			i++;
 		}
@@ -149,6 +141,12 @@ public static partial class UnbeatableWhiteLabelCompatibility
 			}
 
 			ReadOnlySpan<byte> fsbSpan = currentSpan[index..];
+			if (fsbSpan.Length >= 0x18) {
+				uint headerSize = BinaryPrimitives.ReadUInt32LittleEndian(fsbSpan[0x04..]) == 0 ? 0x40u : 0x3Cu;
+				long fsbSize = headerSize + (long)BinaryPrimitives.ReadUInt32LittleEndian(fsbSpan[0x0C..]) + BinaryPrimitives.ReadUInt32LittleEndian(fsbSpan[0x10..]) + BinaryPrimitives.ReadUInt32LittleEndian(fsbSpan[0x14..]);
+				if (fsbSize < fsbSpan.Length)
+					fsbSpan = fsbSpan[..(int)fsbSize];
+			}
 			soundBanks.Add(FsbLoader.LoadFsbFromByteArray(fsbSpan.ToArray()));
 			currentSpan = currentSpan[(index + fsb5Magic.Length)..];
 		}
@@ -187,7 +185,19 @@ public static partial class UnbeatableWhiteLabelCompatibility
 		return entry.Object is T t ? t : null;
 	}
 
-	public static IAudioClip? GetMasterClip(string name) => MasterClips.TryGetValue(name, out var clip) ? clip : null;
+	static Dictionary<string, IAudioClip> LoadClips(string bankFile, Dictionary<string, IAudioClip> clips, ref bool loaded) {
+		if (!loaded && InstallDir != null) {
+			loaded = true;
+			BuildNucleusClips(LoadFsbMagically(System.IO.File.ReadAllBytes(System.IO.Path.Combine(InstallDir, "UNBEATABLE [white label]_Data", "StreamingAssets", bankFile))), clips);
+		}
+		return clips;
+	}
+
+	public static IAudioClip? GetBgmClip(string name) => LoadClips("BGM.bank", BgmClips, ref BgmLoaded).TryGetValue(name, out var clip) ? clip : null;
+
+	public static IAudioClip? GetMasterClip(string name) => LoadClips("Master.bank", MasterClips, ref MasterLoaded).TryGetValue(name, out var clip) ? clip : null;
+
+	public static IAudioClip? GetSfxClip(string name) => LoadClips("SFX.bank", SfxClips, ref SfxLoaded).TryGetValue(name, out var clip) ? clip : null;
 
 	public static T? GetObjectByPathID<T>(long pathID) where T : AssetStudio.Object {
 		if (!PathIDLUT.TryGetValue(pathID, out lookupEntry? entry))
