@@ -1059,6 +1059,24 @@ public class UnitySearchPathV2 : SearchPath
 		}
 	}
 
+	/// <summary>
+	/// Loads (and pins) only the bundle holding <paramref name="name"/> itself, not its dependency bundles. FindAssetByName would
+	/// load every dependency while looking for an object of that name, which for a scene like GameMain (132 bundles) never fits
+	/// in <see cref="MaxResidentBytes"/> and thrashes evict/reload forever.
+	/// </summary>
+	public bool LoadOwnBundle(ReadOnlySpan<char> name, ISet<SerializedFile> pinned) {
+		lock (sync)
+			foreach (var entry in Catalog.SearchAll(name)) {
+				if (entry is not UnitySearchAsset searchAsset)
+					continue;
+
+				var bundleFiles = Catalog.ResolveBundleFiles(searchAsset.DependencyKey);
+				if (bundleFiles.Count > 0) // Addressables lists the entry's own bundle first
+					return LoadDependenciesContaining(name, GetBundleDirectory(bundleFiles[0]).ToHashSet(), pinned);
+			}
+		return false;
+	}
+
 	public bool LoadDependenciesContaining(ReadOnlySpan<char> name, IReadOnlySet<string> fileNames, ISet<SerializedFile> pinned) {
 		bool loaded = false;
 		lock (sync)

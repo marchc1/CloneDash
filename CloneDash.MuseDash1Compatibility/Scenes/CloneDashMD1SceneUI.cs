@@ -635,13 +635,15 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	static MuseDash1FailAssets? ImportFailCanvas() {
 		var assets = MuseDash1Compatibility.StreamingAssets;
 		// PnlFail isn't an addressable prefab (the "PnlFail" key is its animator controller); it lives in the GameMain scene.
-		// Looking the scene up loads its bundle and indexes its objects by name.
-		var failText = assets.FindAssetByName<AssetStudio.GameObject>("PnlFailText");
+		// Load just the scene's own bundle; the canvas import pulls in only the dependencies PnlFail uses.
+		HashSet<AssetStudio.SerializedFile> pinned = [];
+		assets.LoadOwnBundle("GameMain", pinned);
+		// Already-loaded bundles (an earlier song) aren't reloaded into `pinned`, but their objects are in the name cache
+		var failText = pinned.SelectMany(f => f.Objects).OfType<AssetStudio.GameObject>().FirstOrDefault(g => g.m_Name == "PnlFailText")
+			?? assets.FindAssetByName<AssetStudio.GameObject>("PnlFailText");
 		if (failText == null) {
-			assets.FindAssetByName<AssetStudio.GameObject>("GameMain");
-			failText = assets.FindAssetByName<AssetStudio.GameObject>("PnlFailText");
-		}
-		if (failText == null) {
+			foreach (var pinnedFile in pinned)
+				assets.Release(pinnedFile);
 			Logs.Warn("[MD1SceneUI] Couldn't find PnlFailText in the GameMain scene; no fail screen.");
 			return null;
 		}
@@ -656,7 +658,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 			return null;
 		}
 
-		HashSet<AssetStudio.SerializedFile> pinned = [file];
+		pinned.Add(file);
 		assets.Pin(file);
 		try {
 			// UI_2D: CanvasScaler 1920x1080, match width
