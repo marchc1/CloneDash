@@ -9,6 +9,7 @@ using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.Util;
 using Raylib_cs;
+using System.Buffers;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -185,38 +186,65 @@ namespace Nucleus.Core
 			}
 		}
 
-		public struct TextChunk
+		public readonly ref struct TextChunk
 		{
-			private const int MaxReusedStrings = 4096;
-			private static readonly HashSet<string> s_reusedStrings = [];
-			private static readonly HashSet<string>.AlternateLookup<ReadOnlySpan<char>> s_reusedStringsLookup = s_reusedStrings.GetAlternateLookup<ReadOnlySpan<char>>();
-
-			public string Text;
-			public string Font;
+			public readonly ReadOnlySpan<char> Text;
+			public readonly ReadOnlySpan<char> Font;
 			public TextChunk(ReadOnlySpan<char> text, ReadOnlySpan<char> font) {
-				Text = Reuse(text);
-				Font = Reuse(font);
+				Text = text;
+				Font = font;
+			}
+		}
+
+		public readonly ref struct TextChunks
+		{
+			private readonly ReadOnlySpan<char> data;
+			private readonly ReadOnlySpan<int> markers;
+
+			public TextChunks(ReadOnlySpan<char> data, ReadOnlySpan<int> markers) {
+				this.data = data;
+				this.markers = markers;
 			}
 
-			private static string Reuse(ReadOnlySpan<char> str) {
-				lock (s_reusedStrings) {
-					if (s_reusedStringsLookup.TryGetValue(str, out string? existing))
-						return existing;
+			public int Length => markers.Length / 2;
 
-					if (s_reusedStrings.Count >= MaxReusedStrings)
-						s_reusedStrings.Clear();
-
-					string created = new(str);
-					s_reusedStrings.Add(created);
-					return created;
+			public TextChunk this[int index] {
+				get {
+					int start = index == 0 ? 0 : markers[index * 2 - 1];
+					int textEnd = markers[index * 2];
+					return new(data[start..textEnd], data[textEnd..markers[index * 2 + 1]]);
 				}
 			}
 		}
 
+		public ref struct TextChunksWriter
+		{
+			private readonly Span<char> data;
+			private readonly Span<int> markers;
+			private int length;
+			private int markerCount;
+
+			public TextChunksWriter(Span<char> data, Span<int> markers) {
+				this.data = data;
+				this.markers = markers;
+			}
+
+			public void Add(ReadOnlySpan<char> text, ReadOnlySpan<char> font) {
+				text.CopyTo(data[length..]);
+				length += text.Length;
+				markers[markerCount++] = length;
+
+				font.CopyTo(data[length..]);
+				length += font.Length;
+				markers[markerCount++] = length;
+			}
+
+			public readonly TextChunks ToChunks() => new(data[..length], markers[..markerCount]);
+		}
+
 		public struct MappedText
 		{
-			public string Text;
-			public string Font;
+			public int Chunk;
 			public Vector2F RelativePos;
 		}
 
@@ -226,10 +254,21 @@ namespace Nucleus.Core
 			int size = QuantizeFontSize(fontSize);
 			Raylib.DrawTextEx(FontManager[message, font, size].GetFont(), message, SnapToPixel(x, y), size, 0, __drawColor);
 		}
-		public static Vector2F DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical)
-			=> DrawText(x, y, [new(message, font)], 1, fontSize, horizontal, vertical);
+		public static Vector2F DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
+			int length = message.Length + font.Length;
+			char[]? rented = null;
+			Span<char> data = length <= 512 ? stackalloc char[512] : (rented = ArrayPool<char>.Shared.Rent(length));
+			TextChunksWriter writer = new(data, stackalloc int[2]);
+			writer.Add(message, font);
+
+			Vector2F combinedSize = DrawText(x, y, writer.ToChunks(), 1, fontSize, horizontal, vertical);
+
+			if (rented != null)
+				ArrayPool<char>.Shared.Return(rented);
+			return combinedSize;
+		}
 		public static Vector2F DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment)
-			=> DrawText(x, y, [new(message, font)], 1, fontSize, alignment.Horizontal, alignment.Vertical);
+			=> DrawText(x, y, message, font, fontSize, alignment.Horizontal, alignment.Vertical);
 		public static Vector2F DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical)
 			=> DrawText(pos.x, pos.y, message, font, fontSize, horizontal, vertical);
 		public static Vector2F DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment)
@@ -238,17 +277,17 @@ namespace Nucleus.Core
 			=> DrawText(x, y, message, font, fontSize, drawingAnchor.ToTextAlignment());
 		public static Vector2F DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor)
 			=> DrawText(pos.x, pos.y, message, font, fontSize, drawingAnchor);
-		public static Vector2F DrawText(Vector2F pos, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor)
+		public static Vector2F DrawText(Vector2F pos, TextChunks textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor)
 			=> DrawText(pos.x, pos.y, textsFontsMap, chunkCount, fontSize, drawAnchor.ToTextAlignment());
-		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, TextAlignment horizontal, TextAlignment vertical)
+		public static Vector2F DrawText(float x, float y, TextChunks textsFontsMap, int chunkCount, float fontSize, TextAlignment horizontal, TextAlignment vertical)
 			=> DrawText(x, y, textsFontsMap, chunkCount, 0, 0, fontSize, horizontal, vertical);
-		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, TextAlignment2D alignment)
+		public static Vector2F DrawText(float x, float y, TextChunks textsFontsMap, int chunkCount, float fontSize, TextAlignment2D alignment)
 			=> DrawText(x, y, textsFontsMap, chunkCount, 0, 0, fontSize, alignment.Horizontal, alignment.Vertical);
 
 
 		static readonly NeverShrinkingList<MappedText> mappedTextsCache = [];
 
-		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, int fontSpacing, int lineSpacing, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
+		public static Vector2F DrawText(float x, float y, TextChunks textsFontsMap, int chunkCount, int fontSpacing, int lineSpacing, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
 			int size = QuantizeFontSize(fontSize);
 			Vector2F combinedSize = new();
 			mappedTextsCache.Clear();
@@ -256,20 +295,19 @@ namespace Nucleus.Core
 			int lineCount = 0;
 
 			for (int i = 0; i < textsFontsMap.Length; i += chunkCount) {
-				Span<TextChunk> line = textsFontsMap[i..Math.Min(i + chunkCount, textsFontsMap.Length)];
+				int lineEnd = Math.Min(i + chunkCount, textsFontsMap.Length);
 				float lineX = 0, lineH = 0;
 
-				for (int j = 0; j < line.Length; j++) {
-					ref TextChunk piece = ref line[j];
+				for (int j = i; j < lineEnd; j++) {
+					TextChunk piece = textsFontsMap[j];
 					ref Font font = ref FontManager[piece.Text, piece.Font, size].GetFont();
 					Vector2F measuredSize = Raylib.MeasureTextEx(font, piece.Text, size, fontSpacing).ToNucleus();
 
 					ref MappedText textPiece = ref mappedTextsCache.Add();
-					textPiece.Text = piece.Text;
-					textPiece.Font = piece.Font;
+					textPiece.Chunk = j;
 					textPiece.RelativePos = new(lineX, lineY);
 
-					lineX += measuredSize.X + (j < line.Length - 1 ? fontSpacing : 0);
+					lineX += measuredSize.X + (j < lineEnd - 1 ? fontSpacing : 0);
 					lineH = Math.Max(lineH, measuredSize.Y);
 				}
 
@@ -305,7 +343,8 @@ namespace Nucleus.Core
 			for (int i = 0; i < mappedTextsCache.Count; i++) {
 				ref MappedText mappedText = ref mappedTextsCache[i];
 				Vector2F relativePos = mappedText.RelativePos;
-				DrawText(x + relativePos.X, y + relativePos.Y, mappedText.Text, mappedText.Font, fontSize);
+				TextChunk piece = textsFontsMap[mappedText.Chunk];
+				DrawText(x + relativePos.X, y + relativePos.Y, piece.Text, piece.Font, fontSize);
 			}
 
 			return combinedSize;

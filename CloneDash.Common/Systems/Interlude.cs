@@ -165,11 +165,16 @@ public static class Interlude
 	private static void DrawLoadMsg(Vector2F position, string loadMsg, float fontSize, Anchor fontAnchor) {
 		Match boldRegexMatch = Util.BoldRegex.Match(loadMsg);
 		if (boldRegexMatch.Success) {
-			Graphics2D.DrawText(position, [
-									new(boldRegexMatch.Groups[1].Value, Graphics2D.UI_CN_JP_FONT_NAME),
-									new(boldRegexMatch.Groups[2].Value, Graphics2D.UI_MONO_BOLD_FONT_NAME),
-									new(boldRegexMatch.Groups[3].Value, Graphics2D.UI_CN_JP_FONT_NAME)
-								], 3, fontSize, fontAnchor);
+			ReadOnlySpan<char> before = boldRegexMatch.Groups[1].ValueSpan;
+			ReadOnlySpan<char> bold = boldRegexMatch.Groups[2].ValueSpan;
+			ReadOnlySpan<char> after = boldRegexMatch.Groups[3].ValueSpan;
+			int length = before.Length + bold.Length + after.Length + Graphics2D.UI_CN_JP_FONT_NAME.Length * 2 + Graphics2D.UI_MONO_BOLD_FONT_NAME.Length;
+
+			Graphics2D.TextChunksWriter writer = new(length <= 512 ? stackalloc char[512] : new char[length], stackalloc int[6]);
+			writer.Add(before, Graphics2D.UI_CN_JP_FONT_NAME);
+			writer.Add(bold, Graphics2D.UI_MONO_BOLD_FONT_NAME);
+			writer.Add(after, Graphics2D.UI_CN_JP_FONT_NAME);
+			Graphics2D.DrawText(position, writer.ToChunks(), 3, fontSize, fontAnchor);
 		}
 		else
 			Graphics2D.DrawText(position, loadMsg, Graphics2D.UI_CN_JP_FONT_NAME, fontSize, fontAnchor);
