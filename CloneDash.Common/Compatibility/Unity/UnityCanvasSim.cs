@@ -247,15 +247,21 @@ public class UnityCanvas
 		return canvas;
 	}
 
+	/// <summary>
+	/// Applies each imported Selectable's ColorTint normal color to its target graphic, once the whole tree (and so the target) has been imported.
+	/// </summary>
 	void ApplyButtonTints() {
 		foreach (var (button, target, tint) in buttonTints) {
-			if (!TryResolve<AssetStudio.Object>(button, target, out var graphic) || FindNode(graphic) is not CanvasNode node)
+			if (!TryResolve<AssetStudio.Object>(button, target, out var graphic) || FindNode(graphic) is not CanvasNode node) {
 				continue;
+			}
 			var color = Vector4.Clamp(tint, Vector4.Zero, Vector4.One);
-			if (node.Text != null)
+			if (node.Text != null) {
 				node.Text.Color *= color;
-			if (node.Image != null)
+			}
+			if (node.Image != null) {
 				node.Image.Color *= color;
+			}
 		}
 	}
 
@@ -1037,8 +1043,9 @@ public class UnityCanvas
 				node.Button = true;
 				// Selectable ColorTint transition: Unity multiplies the target graphic by the normal color (e.g. white button text
 				// becomes the button's blue). Applied once the whole tree is imported, since the target is usually a child.
-				if (GetInt(data, "m_Transition") == 1 && data["m_Colors"] is OrderedDictionary colors && data["m_TargetGraphic"] is OrderedDictionary target)
+				if (GetInt(data, "m_Transition") == 1 && data["m_Colors"] is OrderedDictionary colors && data["m_TargetGraphic"] is OrderedDictionary target) {
 					buttonTints.Add((component, target, GetColor(colors, "m_NormalColor") * GetFloat(colors, "m_ColorMultiplier", 1)));
+				}
 				break;
 			case "Animator":
 				ImportAnimator(node, component, data);

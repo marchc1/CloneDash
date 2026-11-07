@@ -186,8 +186,9 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 		using var reader = new TarReader(xz);
 		while (reader.GetNextEntry() is { } entry) {
 			string name = Path.GetFileName(entry.Name);
-			if (!entry.Name.Contains("/lib/") || !name.Contains(".so", StringComparison.OrdinalIgnoreCase))
+			if (!entry.Name.Contains("/lib/") || !name.Contains(".so", StringComparison.OrdinalIgnoreCase)) {
 				continue;
+			}
 
 			progress.SubMessage = name;
 			string outPath = Path.Combine(destDir, name);
@@ -218,7 +219,6 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 
 	// sws_scale's SIMD writes past the end of the last row (24 bytes seen on a 426px-wide video), so frames are
 	// decoded into this padded buffer and copied out, never straight into the texture's pixels (that corrupted the native heap).
-	// ponytail: fixed slack, raise it if a wider SIMD path ever overshoots more
 	const int FramePadding = 256;
 	readonly byte[] frameBuffer;
 
@@ -267,8 +267,9 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 				lastFrameIndex = wantIndex;
 				haveFrame = true;
 			}
-			else if (!haveFrame)
+			else if (!haveFrame) {
 				return false;
+			}
 		}
 
 		frameBuffer.AsSpan(0, frameByteCount).CopyTo(dst);
@@ -280,7 +281,8 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 
 	public void Regenerate(ITextureCanvas canvas) {
 		// The first frame is generated while the RhythmGameLevel is still being constructed (EngineCore.Level is the main menu), so show frame 0 until it's active
-		IConductor? conductor = (EngineCore.Level as RhythmGameLevel)?.Component<IConductor>(); // TODO: better modding api
+		// TODO: better modding api
+		IConductor? conductor = (EngineCore.Level as RhythmGameLevel)?.Component<IConductor>();
 		GetFrame(TimeSpan.FromSeconds(Math.Max(conductor?.GetTime() ?? 0d, 0d)), canvas.Pixels);
 	}
 }

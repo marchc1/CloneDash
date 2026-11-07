@@ -432,7 +432,8 @@ public class SongSelector : Panel, IMainMenuPanel
 
 			disc.
 			Text = "";
-			disc.SetImage(cover.Texture); // null while the cover is still loading, so don't keep showing the previous song's cover
+			// null while the cover is still loading, so don't keep showing the previous song's cover
+			disc.SetImage(cover.Texture);
 			if (cover.Texture != null) {
 				disc.SetImageOrientation(ImageOrientation.Stretch);
 				disc.SetImagePadding(new Vector2F(32));

@@ -61,6 +61,9 @@ public class MD1_SongChart : ISongChart
 			)!;
 	}
 	ChartTiming? timing;
+	/// <summary>
+	/// Produces this chart's gamemode data, and remembers its timing so <see cref="GetTiming"/> doesn't produce it again.
+	/// </summary>
 	public object GetGamemodeData() {
 		var data = (GamemodeData ?? Song.ProduceGamemodeData(this, (int)Difficulty))
 									?? throw new Exception("uninitialized gamemode data");

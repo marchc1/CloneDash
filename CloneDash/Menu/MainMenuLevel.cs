@@ -307,22 +307,33 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	internal class DownloadProgressBar : Panel
 	{
 		readonly MD1_CustomChartsSong song;
+		/// <summary>
+		/// Places the bar under the selected disc's track name and author.
+		/// </summary>
 		public DownloadProgressBar(SongSelector selector, MD1_CustomChartsSong song) : base(selector) {
 			this.song = song;
 			var bounds = selector.GetRenderBounds();
 			Anchor = Anchor.Center;
 			Origin = Anchor.Center;
 			Size = new(bounds.W / 4, 32);
-			Position = new(0, bounds.H / 2 / 1.8f + 120); // below the track name/author labels
+			// below the track name/author labels
+			Position = new(0, bounds.H / 2 / 1.8f + 120);
 			SetMouseInputEnabled(false);
 		}
 
+		/// <summary>
+		/// Removes the bar once the download has finished or failed.
+		/// </summary>
 		protected override void OnThink() {
 			base.OnThink();
-			if (!song.IsDownloading)
+			if (!song.IsDownloading) {
 				Remove();
+			}
 		}
 
+		/// <summary>
+		/// Draws the bar's background, fill and "Downloading..." label.
+		/// </summary>
 		public override void Paint(float w, float h) {
 			Graphics2D.SetDrawColor(new Color(0, 0, 0, 160));
 			Graphics2D.DrawRectangle(0, 0, w, h);

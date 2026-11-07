@@ -241,7 +241,9 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 
 			private bool __downloading = false;
 			public bool IsDownloading => __downloading;
-			/// <summary>0-100, written from the download thread.</summary>
+			/// <summary>
+			/// 0-100, written from the download thread.
+			/// </summary>
 			public float DownloadProgress { get; private set; }
 
 			public static string GetDownloadCachePath(string localPath) {

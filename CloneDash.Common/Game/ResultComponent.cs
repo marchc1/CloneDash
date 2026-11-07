@@ -49,8 +49,9 @@ public class ResultComponent : IRhythmGameComponent, IRhythmGameThinker
 
 	public bool TryClear() {
 		// A failed song can't also clear (e.g. it ends during the fail fade-in)
-		if (Cleared || IsFailed() || !LastNoteHit || !music.IsValid() || !music.IsComplete)
+		if (Cleared || IsFailed() || !LastNoteHit || !music.IsValid() || !music.IsComplete) {
 			return false;
+		}
 
 		Cleared = true;
 		events.Fire(new SongClearedGameEvent());

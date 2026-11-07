@@ -20,7 +20,9 @@ public class MuseDash1SongNameMarquee
 	public int LongBound;
 	public CanvasNode Mask = null!;
 	public CanvasNode? Middle;
-	/// <summary>LongSongNameController.normalFont (Source Han Sans): covers CJK, unlike the language's global UI font (Teko in English).</summary>
+	/// <summary>
+	/// LongSongNameController.normalFont (Source Han Sans): covers CJK, unlike the language's global UI font (Teko in English).
+	/// </summary>
 	public AssetStudio.Font? NormalFont;
 	public CanvasNode? RightMask;
 	public CanvasNode? Simple;
@@ -33,8 +35,9 @@ public class MuseDash1SongNameMarquee
 		foreach (var node in new[] { Middle, Simple, Backup })
 			if (node?.Text != null) {
 				node.Text.Text = text;
-				if (needsNormalFont)
+				if (needsNormalFont) {
 					UnityCanvas.SetFont(node.Text, NormalFont!);
+				}
 			}
 
 		width = Middle?.Text != null ? UnityCanvas.MeasureTextWidth(Middle.Text) : 0;
@@ -95,6 +98,9 @@ public class MuseDash1FailBarrageLine
 	public Vector2 Start;
 	public float TargetX;
 
+	/// <summary>
+	/// Places the line for the given time since the fail panel appeared.
+	/// </summary>
 	public void Update(float time) {
 		float t = Duration > 0 ? Math.Clamp((time - Delay) / Duration, 0, 1) : 1;
 		Node.AnchoredPosition = new(Start.X + (TargetX - Start.X) * t, Start.Y);
@@ -108,7 +114,9 @@ public class MuseDash1CanvasBehaviours
 	public List<CanvasNode> GradeObjects { get; } = [];
 	public MuseDash1LikeButton? LikeButton { get; private set; }
 	public List<MuseDash1SongNameMarquee> Marquees { get; } = [];
-	/// <summary>FailBarrage.barrages, in the order the fail_barrage config fills them.</summary>
+	/// <summary>
+	/// FailBarrage.barrages, in the order the fail_barrage config fills them.
+	/// </summary>
 	public List<CanvasNode> FailBarrageTexts { get; } = [];
 	public List<MuseDash1FailBarrageLine> FailBarrageLines { get; } = [];
 
@@ -134,10 +142,12 @@ public class MuseDash1CanvasBehaviours
 				node.Notes.Add($"like button: like={LikeButton.Like?.Path} hide={LikeButton.Hide?.Path} button={LikeButton.ButtonName} holdTime={LikeButton.HoldTime}");
 				return true;
 			case "FailBarrage":
-				if (data["barrages"] is IList texts)
+				if (data["barrages"] is IList texts) {
 					foreach (OrderedDictionary pointer in texts)
-						if (Resolve(canvas, behaviour, pointer) is CanvasNode text)
+						if (Resolve(canvas, behaviour, pointer) is CanvasNode text) {
 							FailBarrageTexts.Add(text);
+						}
+				}
 				node.Notes.Add($"fail barrage: {string.Join(", ", FailBarrageTexts.Select(text => text.Name))}");
 				return true;
 			case "FailTxtBarrageAnimation":

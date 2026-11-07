@@ -97,7 +97,8 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 		UI?.UpdateCombo(0);
 		UI?.UpdateHP(Health.Max, Health.Max);
 		UI?.UpdateFeverProgress(0, 0);
-		audiosystem.SetSoundVolume(in Music.Handle, 1); // undo the death fade-out
+		// undo the death fade-out
+		audiosystem.SetSoundVolume(in Music.Handle, 1);
 	}
 
 	public void Think(FrameState frameState) {
@@ -108,8 +109,9 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 			// Like Muse Dash, the stage keeps scrolling while the fail screen fades in; the song fades with it and stops when the panel takes over
 			double sinceDeath = level.Curtime - deathTime;
 			audiosystem.SetSoundVolume(in Music.Handle, (float)Math.Clamp(1 - sinceDeath / 2, 0, 1));
-			if (sinceDeath >= MuseDash1FailPanel.PANEL_START)
+			if (sinceDeath >= MuseDash1FailPanel.PANEL_START) {
 				Music.Pause();
+			}
 		}
 
 		var sceneUI = UI;
@@ -163,9 +165,13 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 	}
 
 	// The fail screen's magenta fade-in (PnlFailText) plays over the death trip, so it opens right away rather than on SongFailed
+	/// <summary>
+	/// Opens the fail screen as soon as the player dies, so its fade-in plays over the death trip.
+	/// </summary>
 	void StartFailure(ref PlayerDeathGameEvent ev) {
-		if (!rules.IsDead())
+		if (!rules.IsDead()) {
 			return;
+		}
 
 		deathTime = level.Curtime;
 		UI?.OpenFailure();

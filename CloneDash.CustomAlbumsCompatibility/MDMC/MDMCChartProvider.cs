@@ -113,9 +113,13 @@ public class MDMCChartSongSourceState : BaseSongSource, ISongSourceState
 	static readonly ChartSongSourceMoveInit NotExecuted = new() { OperationExecuted = false, ImmediatelyAvailable = false };
 	static readonly ChartSongSourceMoveInit Executed = new() { OperationExecuted = true, ImmediatelyAvailable = true };
 
+	/// <summary>
+	/// Moves the selection one chart to the left, if there is one.
+	/// </summary>
 	public ChartSongSourceMoveInit MoveLeft(ChartSongSourceMoveFinishFn? callback = null) {
-		if (IsBusy() || pointer <= 0)
+		if (IsBusy() || pointer <= 0) {
 			return NotExecuted;
+		}
 
 		pointer--;
 		callback?.Invoke(new() { OperationExecuted = true, Movement = -1 });
@@ -123,15 +127,17 @@ public class MDMCChartSongSourceState : BaseSongSource, ISongSourceState
 	}
 
 	public ChartSongSourceMoveInit MoveRight(ChartSongSourceMoveFinishFn? callback = null) {
-		if (IsBusy() || pointer + 1 >= Songs.Count)
+		if (IsBusy() || pointer + 1 >= Songs.Count) {
 			return NotExecuted;
+		}
 
 		pointer++;
 		callback?.Invoke(new() { OperationExecuted = true, Movement = 1 });
 
 		// Prefetch the next page in the background once the right edge of the visible discs nears the end
-		if (!fetching && Songs.Count < totalSongs && pointer + SongSelector.VisibleDiscs / 2 >= Songs.Count - 1)
+		if (!fetching && Songs.Count < totalSongs && pointer + SongSelector.VisibleDiscs / 2 >= Songs.Count - 1) {
 			FetchAsync();
+		}
 
 		return Executed;
 	}
@@ -144,6 +150,9 @@ public class MDMCChartSongSourceState : BaseSongSource, ISongSourceState
 
 	bool fetching;
 	int nextPage = 1;
+	/// <summary>
+	/// Requests the next page of charts from mdmc.moe and appends them (skipping any already listed) when it arrives.
+	/// </summary>
 	private void FetchAsync() {
 		fetching = true;
 		MDMCWebAPI.SearchCharts(filter?.Query, filter?.Sort ?? MDMCWebAPI.Sort.Likes, filter?.SortOrder ?? MDMCWebAPI.SortOrder.Descending, nextPage++, filter?.RankedOnly ?? false)
@@ -154,7 +163,8 @@ public class MDMCChartSongSourceState : BaseSongSource, ISongSourceState
 				foreach (var chart in charts.Charts)
 					AddChartSelector(chart, true);
 
-				totalSongs = charts.Charts.Length == 0 ? Songs.Count : charts.Count; // empty page = end, even if total disagrees
+				// empty page = end, even if total disagrees
+				totalSongs = charts.Charts.Length == 0 ? Songs.Count : charts.Count;
 				fetching = false;
 				isBusy = false;
 			});
