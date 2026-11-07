@@ -1,4 +1,5 @@
-﻿using CloneDash.Common.Game;
+﻿using CloneDash.Characters;
+using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Common.Systems;
@@ -321,6 +322,12 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 		Character.GetSecondary().SetScale(new(PlayerScale));
 
 		Character.Think();
+	}
+
+	/// <summary>Draws the player model again, e.g. over the fail screen's fade-in.</summary>
+	public void RenderPlayerAgain() {
+		if (Character.GetPrimary() is MuseDash1CharacterIndividual primary)
+			primary.Player.Render();
 	}
 
 	void PlayHurtAnimation(ref PlayerDamagedGameEvent ev) {

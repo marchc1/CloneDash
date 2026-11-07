@@ -1,4 +1,4 @@
-using CloneDash.Characters;
+﻿using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
@@ -46,13 +46,15 @@ public class MuseDash1FailPanel : Panel
 		this.assets = assets;
 		this.game = game;
 		this.scene = scene;
-		Dock = Dock.Fill;
+		// Not Dock.Fill: that only takes what's left after the top-docked song progress bar, which would stay visible above us
+		Size = new(1, 1);
+		DynamicallySized = true;
 		BorderSize = 0;
 		SetPaintBackgroundEnabled(false);
 
-		var canvasPanel = new UnityCanvasPanel(this, assets.Intro);
+		// PnlFailText (the intro) isn't drawn here: the game draws it under the character via RenderIntro
+		var canvasPanel = new UnityCanvasPanel(this, assets.Panel);
 		canvasPanel.Dock = Dock.Fill;
-		canvasPanel.Overlays.Add(assets.Panel);
 		canvasPanel.Clicked = Click;
 
 		assets.Intro.Play("", "PnlFailText");
@@ -147,9 +149,20 @@ public class MuseDash1FailPanel : Panel
 		scene.StopSound(SceneSound.Fail);
 	}
 
+	/// <summary>
+	/// Draws PnlFailText (magenta fade + F-A-I-L), called from the game's world pass so the tripping character can be drawn over it.
+	/// Stops once PnlFail's background has slid in over it.
+	/// </summary>
+	public void RenderIntro(float width, float height) {
+		if (!panelShown || PanelTime < 0.5f)
+			assets.Intro.Render(width, height);
+	}
+
 	protected override void OnThink() {
 		base.OnThink();
-		time += Math.Min(Level.RealtimeDeltaF, 0.1f);
+		float deltaTime = Math.Min(Level.RealtimeDeltaF, 0.1f);
+		time += deltaTime;
+		assets.Intro.Update(deltaTime);
 		character?.Think();
 
 		if (!panelShown && time >= PANEL_START) {

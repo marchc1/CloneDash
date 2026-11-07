@@ -10,6 +10,8 @@ public interface IMuseDash1SceneUI : IDisposable
 	void Think(double dt);
 	void OpenVictory(StatisticsData stats);
 	void OpenFailure();
+	/// <summary>Draws the fail screen's fade-in (if open) in the world pass, so the character can be drawn over it.</summary>
+	void RenderFailureUnderlay();
 	bool ShowingVictoryScreen();
 	bool ShowingFailureScreen();
 	void PreRenderWorldspace();

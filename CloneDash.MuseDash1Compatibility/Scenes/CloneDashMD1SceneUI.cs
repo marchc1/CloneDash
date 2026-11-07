@@ -786,6 +786,11 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 			CurrentFailPanel = new MuseDash1FailPanel(EngineCore.Level.RootPanel, game, scene, assets);
 	}
 
+	public void RenderFailureUnderlay() {
+		if (IValidatable.IsValid(CurrentFailPanel))
+			CurrentFailPanel.RenderIntro(EngineCore.GetWindowWidth(), EngineCore.GetWindowHeight());
+	}
+
 	void CloseFailure() {
 		if (CurrentFailPanel == null)
 			return;
