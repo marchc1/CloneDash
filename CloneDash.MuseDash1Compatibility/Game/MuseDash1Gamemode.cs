@@ -59,7 +59,9 @@ public partial class MuseDash1Gamemode(ICloneDashModProvider provider) : RhythmG
 	public override string GetID() => "standard";
 
 	protected override void Compose(RhythmGameLevel level, ServiceCollection parts, ISongChart chart) {
+		MuseDash1SceneRuntime.Preload(chart);
 		var data = (MD1_GamemodeData)chart.GetGamemodeData();
+		MD1SceneUI.PreloadAssets();
 
 		parts.AddStandardParts(level, MuseDashActions.Binds);
 		AddQuirks(parts);

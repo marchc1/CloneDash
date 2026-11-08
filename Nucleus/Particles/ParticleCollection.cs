@@ -374,6 +374,7 @@ public sealed class ParticleCollection
 				case ParticleAttribute.Radius: GetFloat(attribute).Slice(first, count).Fill(definition.ConstantRadius); break;
 				case ParticleAttribute.Rotation: GetFloat(attribute).Slice(first, count).Fill(definition.ConstantRotation); break;
 				case ParticleAttribute.Sequence: GetFloat(attribute).Slice(first, count).Fill(definition.ConstantSequence); break;
+				case ParticleAttribute.AnimatedVelocity: FillVector(attribute, first, count, Vector3.Zero); break;
 			}
 		}
 	}

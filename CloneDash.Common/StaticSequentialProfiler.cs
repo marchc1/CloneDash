@@ -61,14 +61,14 @@ public class ProfilerAccumulator : IDisposable
 /// </summary>
 public static class StaticSequentialProfiler
 {
-	private static ProfilerResult? currentStackFrame;
+	[ThreadStatic] private static ProfilerResult? currentStackFrame;
 	public static ProfilerResult CurrentStackFrame => currentStackFrame ?? throw new Exception("Please start the sequential profiler");
 
-	private static Dictionary<string, ProfilerAccumulator> accumulators = [];
+	[ThreadStatic] private static Dictionary<string, ProfilerAccumulator>? accumulators;
 
 	public static void Start() {
 		Debug.Assert(currentStackFrame == null);
-		accumulators.Clear();
+		(accumulators ??= []).Clear();
 		currentStackFrame = new();
 		currentStackFrame.Identifier = "Root";
 	}
@@ -81,10 +81,11 @@ public static class StaticSequentialProfiler
 		currentStackFrame = null;
 
 		stack = r;
-		accumulators = StaticSequentialProfiler.accumulators.ToList();
+		accumulators = StaticSequentialProfiler.accumulators?.ToList() ?? [];
 	}
 
 	public static ProfilerAccumulator AccumulateTime(string key) {
+		accumulators ??= [];
 		if (!accumulators.TryGetValue(key, out var accumulator)) {
 			accumulator = new();
 			accumulators[key] = accumulator;

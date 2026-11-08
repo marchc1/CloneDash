@@ -393,18 +393,29 @@ public class MD1_Song : ModDescriptor, ISong, IHasLowToHighDifficulties
 	/// Called from charts only!!!
 	/// </summary>
 	public virtual MD1_GamemodeData? ProduceGamemodeData(MD1_SongChart chart, int mapID) {
+		var rr = MuseDash1Compatibility.InitializeCompatibilityLayer(); Interlude.Spin(submessage: "Reading Muse Dash chart...");
+
+		if (rr != AppStatus.OK)
+			throw new FileLoadException("InitializeCompatibilityLayer did not succeed!");
+
+		StageInfo? stage = ReadStageInfo(mapID);
+		if (stage == null)
+			return null;
+
+		MuseDash1Compatibility.FillInTheBlankNotes(this, stage); Interlude.Spin(submessage: "Reading Muse Dash chart...");
+		return MuseDash1Compatibility.ConvertStageInfoToMD1GamemodeData(this, stage);
+	}
+
+	internal StageInfo? ReadStageInfo(int mapID) {
 		//MonoBehaviour map = (MonoBehaviour)AssetsFile.assetsFileList[0].Objects.First(x => x is MonoBehaviour mB && mB.m_Name.EndsWith($"_map{mapID}"));
 		MonoBehaviour? map = MuseDash1Compatibility.StreamingAssets.LoadAsset<MonoBehaviour>($"Assets/Static Resources/Data/Configs/StageInfos/{__jsonInfo.NoteJSON}{mapID}.asset").GetResult();
 		if (map == null)
 			return null;
 
 		var obj = map.ToType();
+		byte[]? serializedBytes = TakeSerializedBytes(obj);
+		var musicDatas = serializedBytes == null ? null : Task.Run(() => OdinSerializer.SerializationUtility.DeserializeValue<List<MusicData>>(serializedBytes, DataFormat.Binary));
 		var rawData = JsonConvert.SerializeObject(obj, Formatting.Indented); Interlude.Spin(submessage: "Reading Muse Dash chart...");
-
-		var rr = MuseDash1Compatibility.InitializeCompatibilityLayer(); Interlude.Spin(submessage: "Reading Muse Dash chart...");
-
-		if (rr != AppStatus.OK)
-			throw new FileLoadException("InitializeCompatibilityLayer did not succeed!");
 
 		StageInfo? stage = JsonConvert.DeserializeObject<StageInfo>(rawData);
 		Interlude.Spin(submessage: "Reading Muse Dash chart...");
@@ -412,10 +423,25 @@ public class MD1_Song : ModDescriptor, ISong, IHasLowToHighDifficulties
 			Logs.Warn("Failed to parse JSON into a StageInfo!");
 			return null;
 		}
+		if (serializedBytes != null)
+			stage.serializationData.SerializedBytes = serializedBytes;
 
-		stage.musicDatas = OdinSerializer.SerializationUtility.DeserializeValue<List<MusicData>>(stage.serializationData.SerializedBytes, DataFormat.Binary); Interlude.Spin(submessage: "Reading Muse Dash chart...");
-		MuseDash1Compatibility.FillInTheBlankNotes(this, stage); Interlude.Spin(submessage: "Reading Muse Dash chart...");
-		return MuseDash1Compatibility.ConvertStageInfoToMD1GamemodeData(this, stage);
+		stage.musicDatas = musicDatas != null
+			? musicDatas.GetAwaiter().GetResult()
+			: OdinSerializer.SerializationUtility.DeserializeValue<List<MusicData>>(stage.serializationData.SerializedBytes, DataFormat.Binary);
+		Interlude.Spin(submessage: "Reading Muse Dash chart...");
+		return stage;
+	}
+
+	static byte[]? TakeSerializedBytes(System.Collections.Specialized.OrderedDictionary obj) {
+		if (obj["serializationData"] is not System.Collections.Specialized.OrderedDictionary serializationData || serializationData["SerializedBytes"] is not object[] boxed)
+			return null;
+
+		var bytes = new byte[boxed.Length];
+		for (int i = 0; i < boxed.Length; i++)
+			bytes[i] = Convert.ToByte(boxed[i]);
+		serializationData["SerializedBytes"] = Array.Empty<object>();
+		return bytes;
 	}
 
 	protected virtual MD1_SongInfo? ProduceInfo() {

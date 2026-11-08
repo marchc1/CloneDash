@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -269,14 +270,14 @@ namespace AssetStudio
 
             if (m_EnableTypeTree)
             {
-                type.m_Type = new TypeTree();
-                type.m_Type.m_Nodes = new List<TypeTreeNode>();
                 if (header.m_Version >= SerializedFileFormatVersion.Unknown_12 || header.m_Version == SerializedFileFormatVersion.Unknown_10)
                 {
-                    TypeTreeBlobRead(type.m_Type);
+                    type.m_Type = TypeTreeBlobRead();
                 }
                 else
                 {
+                    type.m_Type = new TypeTree();
+                    type.m_Type.m_Nodes = new List<TypeTreeNode>();
                     ReadTypeTree(type.m_Type);
                 }
                 if (header.m_Version >= SerializedFileFormatVersion.StoresTypeDependencies)
@@ -327,28 +328,44 @@ namespace AssetStudio
             }
         }
 
-        private void TypeTreeBlobRead(TypeTree m_Type)
+        private static readonly ConcurrentDictionary<TypeTreeBlob, TypeTree> typeTreeCache = new();
+
+        private TypeTree TypeTreeBlobRead()
         {
             int numberOfNodes = reader.ReadInt32();
             int stringBufferSize = reader.ReadInt32();
-            for (var i = 0; i < numberOfNodes; i++)
+            var withRefTypeHash = header.m_Version >= SerializedFileFormatVersion.TypeTreeNodeWithTypeFlags;
+            var nodesSize = numberOfNodes * (withRefTypeHash ? 32 : 24);
+            var data = reader.ReadBytes(nodesSize + stringBufferSize);
+            if (data.Length != nodesSize + stringBufferSize)
+                throw new EndOfStreamException();
+            var blob = new TypeTreeBlob(data, reader.Endian, withRefTypeHash);
+            if (typeTreeCache.TryGetValue(blob, out var cached))
+                return cached;
+
+            var m_Type = new TypeTree();
+            m_Type.m_Nodes = new List<TypeTreeNode>(numberOfNodes);
+            using (var nodeReader = new EndianBinaryReader(new MemoryStream(data, 0, nodesSize, false), reader.Endian))
             {
-                var typeTreeNode = new TypeTreeNode();
-                m_Type.m_Nodes.Add(typeTreeNode);
-                typeTreeNode.m_Version = reader.ReadUInt16();
-                typeTreeNode.m_Level = reader.ReadByte();
-                typeTreeNode.m_TypeFlags = reader.ReadByte();
-                typeTreeNode.m_TypeStrOffset = reader.ReadUInt32();
-                typeTreeNode.m_NameStrOffset = reader.ReadUInt32();
-                typeTreeNode.m_ByteSize = reader.ReadInt32();
-                typeTreeNode.m_Index = reader.ReadInt32();
-                typeTreeNode.m_MetaFlag = reader.ReadInt32();
-                if (header.m_Version >= SerializedFileFormatVersion.TypeTreeNodeWithTypeFlags)
+                for (var i = 0; i < numberOfNodes; i++)
                 {
-                    typeTreeNode.m_RefTypeHash = reader.ReadUInt64();
+                    var typeTreeNode = new TypeTreeNode();
+                    m_Type.m_Nodes.Add(typeTreeNode);
+                    typeTreeNode.m_Version = nodeReader.ReadUInt16();
+                    typeTreeNode.m_Level = nodeReader.ReadByte();
+                    typeTreeNode.m_TypeFlags = nodeReader.ReadByte();
+                    typeTreeNode.m_TypeStrOffset = nodeReader.ReadUInt32();
+                    typeTreeNode.m_NameStrOffset = nodeReader.ReadUInt32();
+                    typeTreeNode.m_ByteSize = nodeReader.ReadInt32();
+                    typeTreeNode.m_Index = nodeReader.ReadInt32();
+                    typeTreeNode.m_MetaFlag = nodeReader.ReadInt32();
+                    if (withRefTypeHash)
+                    {
+                        typeTreeNode.m_RefTypeHash = nodeReader.ReadUInt64();
+                    }
                 }
             }
-            m_Type.m_StringBuffer = reader.ReadBytes(stringBufferSize);
+            m_Type.m_StringBuffer = data[nodesSize..];
 
             using (var stringBufferReader = new BinaryReader(new MemoryStream(m_Type.m_StringBuffer)))
             {
@@ -359,6 +376,7 @@ namespace AssetStudio
                     m_Node.m_Name = ReadString(stringBufferReader, m_Node.m_NameStrOffset);
                 }
             }
+            return typeTreeCache.GetOrAdd(blob, m_Type);
 
             string ReadString(BinaryReader stringBufferReader, uint value)
             {
@@ -375,6 +393,32 @@ namespace AssetStudio
                 }
                 return offset.ToString();
             }
+        }
+
+        private readonly struct TypeTreeBlob : IEquatable<TypeTreeBlob>
+        {
+            private readonly byte[] data;
+            private readonly EndianType endian;
+            private readonly bool withRefTypeHash;
+            private readonly int hash;
+
+            public TypeTreeBlob(byte[] data, EndianType endian, bool withRefTypeHash)
+            {
+                this.data = data;
+                this.endian = endian;
+                this.withRefTypeHash = withRefTypeHash;
+                var hashCode = new HashCode();
+                hashCode.AddBytes(data);
+                hashCode.Add(endian);
+                hashCode.Add(withRefTypeHash);
+                hash = hashCode.ToHashCode();
+            }
+
+            public bool Equals(TypeTreeBlob other) => hash == other.hash && endian == other.endian && withRefTypeHash == other.withRefTypeHash && data.AsSpan().SequenceEqual(other.data);
+
+            public override bool Equals(object obj) => obj is TypeTreeBlob other && Equals(other);
+
+            public override int GetHashCode() => hash;
         }
 
         public void AddObject(Object obj)

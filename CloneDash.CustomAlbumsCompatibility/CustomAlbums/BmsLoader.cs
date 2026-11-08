@@ -6,6 +6,7 @@ using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 using Nucleus;
 
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
 
@@ -15,9 +16,10 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 	{
 		public static Bms Load(Stream stream, string bmsName, out List<TempoChange> bpmChanges) {
 			var bpmDict = new Dictionary<string, float>();
-			var notePercents = new Dictionary<int, JsonObject>();
-			var dataList = new List<JsonObject>();
-			var notesArray = new JsonArray();
+			var notePercents = new Dictionary<int, float>();
+			var dataList = new List<(float tick, float freq)>();
+			var data = new List<(float tick, float freq)>();
+			var notes = new List<Bms.Note>();
 			var info = new JsonObject();
 			bpmChanges = [];
 
@@ -44,12 +46,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 					if (bpmKey != "00") continue;
 
 					var freq = 60f / CustomAlbumsFormat.ParseAsFloat(value) * 4f;
-					var obj = new JsonObject
-					{
-						{ "tick", 0f },
-						{ "freq", freq }
-					};
-					dataList.Add(obj);
+					dataList.Add((0f, freq));
 				}
 				else if (line.Contains(':')) {
 					// Parse data field
@@ -63,12 +60,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 					if (!Bms.Channels.TryGetValue(typeCode, out var type)) continue;
 
 					if (type is Bms.ChannelType.SpTimesig) {
-						var obj = new JsonObject
-						{
-							{ "beat", beat },
-							{ "percent", CustomAlbumsFormat.ParseAsFloat(value) }
-						};
-						notePercents.Add(beat, obj);
+						notePercents.Add(beat, CustomAlbumsFormat.ParseAsFloat(value));
 					}
 					else {
 						var objLength = value.Length / 2;
@@ -86,18 +78,8 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 									: Convert.ToInt32(note, 16);
 								var freq = 60f / freqDivide * 4f;
 
-								var obj = new JsonObject
-								{
-									{ "tick", tick },
-									{ "freq", freq }
-								};
-								dataList.Add(obj);
-								dataList.Sort((l, r) => {
-									var tickL = l["tick"].GetValue<float>();
-									var tickR = r["tick"].GetValue<float>();
-
-									return tickR.CompareTo(tickL);
-								});
+								dataList.Add((tick, freq));
+								dataList.Sort((l, r) => r.tick.CompareTo(l.tick));
 								bpmChanges.Add(new(tick, beat, freqDivide));
 							}
 							else {
@@ -105,18 +87,21 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 								var time = 0f; // num3
 								var totalOffset = 0f; // num4
 
-								var data = dataList.FindAll(d => d["tick"].GetValue<float>() < tick);
+								data.Clear();
+								foreach (var d in dataList)
+									if (d.tick < tick)
+										data.Add(d);
 								for (var j = data.Count - 1; j >= 0; j--) {
 									var obj = data[j];
 									var offset = 0f; // num5
-									var freq = obj["freq"].GetValue<float>(); // num6
+									var freq = obj.freq; // num6
 
 									if (j - 1 >= 0) {
 										var prevObj = data[j - 1];
-										offset = prevObj["tick"].GetValue<float>() - obj["tick"].GetValue<float>();
+										offset = prevObj.tick - obj.tick;
 									}
 
-									if (j == 0) offset = tick - obj["tick"].GetValue<float>();
+									if (j == 0) offset = tick - obj.tick;
 
 									var localOffset = totalOffset; // num7
 									totalOffset += offset;
@@ -133,47 +118,31 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 										if (ceilOffset == floorOffset + 1)
 											off = totalOffset - localOffset;
 
-										notePercents.TryGetValue(k, out var node);
-										var percent = node?["percent"].GetValue<float>() ?? 1f;
+										var percent = notePercents.TryGetValue(k, out var notePercent) ? notePercent : 1f;
 										time += NMath.RoundToInt(off * percent * freq / 1E-06f) * 1E-06F;
 									}
 								}
 
-								var noteObj = new JsonObject
-								{
-									{ "time", time },
-									{ "value", note },
-									{ "tone", typeCode }
-								};
-								notesArray.Add(noteObj);
+								notes.Add(new Bms.Note(time, note, typeCode));
 							}
 						}
 					}
 				}
 			}
 
-			var list = notesArray.ToList();
-			list.Sort((l, r) => {
-				var lTime = l["time"]!.GetValue<float>();
-				var rTime = r["time"]!.GetValue<float>();
-				var lTone = l["tone"]!.GetValue<string>();
-				var rTone = r["tone"]!.GetValue<string>();
-
-				// Accurate for note sorting up to 6 decimal places
-				var lScore = (long)(lTime * 1000000) * 10 + (lTone == "15" ? 0 : 1);
-				var rScore = (long)(rTime * 1000000) * 10 + (rTone == "15" ? 0 : 1);
-
-				return Math.Sign(lScore - rScore);
-			});
-
-			notesArray.Clear();
-			list.ForEach(notesArray.Add);
+			// Accurate for note sorting up to 6 decimal places
+			notes.Sort((l, r) => Math.Sign(l.SortKey - r.SortKey));
 
 			var percentsArray = new JsonArray();
-			notePercents.Values.ToList().ForEach(percentsArray.Add);
+			foreach (var (beat, percent) in notePercents)
+				percentsArray.Add(new JsonObject
+				{
+					{ "beat", beat },
+					{ "percent", percent }
+				});
 			var bms = new Bms {
 				Info = info,
-				Notes = notesArray,
+				Notes = notes,
 				NotesPercent = percentsArray,
 				Md5 = Convert.ToHexString(MD5.HashData(stream))
 			};
@@ -401,49 +370,70 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 		};
 		public static bool IsBossNote(this MusicData mData) => !string.IsNullOrEmpty(mData.noteData?.boss_action) && mData.noteData?.boss_action != "0";
 
-		static readonly Dictionary<string, Decimal> delayCache = [];
+		static readonly ConcurrentDictionary<string, Decimal> delayCache = [];
+
+		static string? GetDelayPrefabName(NoteConfigData? noteData, ref int sceneIndex) {
+			if (string.IsNullOrEmpty(noteData?.ibms_id)) // This shouldnt be null... wtf
+				return null;
+
+			var type = noteData.GetNoteType();
+			if (type == NoteType.SceneChange)
+				sceneIndex = MuseDash1Compatibility.GetSceneIndexFromIBMSString(noteData.ibms_id);
+
+			var prefabName = noteData.prefab_name;
+			if (string.IsNullOrEmpty(prefabName))
+				return null;
+
+			// If not a pickup type, convert to most recent scene
+			if (type != NoteType.Hp && type != NoteType.Music) {
+				var prefix = prefabName[..2];
+				switch (prefix) {
+					case "00":
+					case "em":
+					case "bo":
+						prefabName = prefabName.Remove(0, 2).Insert(0, $"{sceneIndex:D2}");
+						break;
+				}
+			}
+
+			return prefabName;
+		}
+
+		static void LoadDelay(string prefabName) {
+			GameObject? gameObject = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(prefabName);
+
+			if (gameObject != null) {
+				var actionController = gameObject!.GetMonoBehaviorByScriptName("SpineActionController")!;
+				MonoBehaviourReader reader = new MonoBehaviourReader(actionController);
+				delayCache[prefabName] = (Decimal)reader.GetAny<float>("startDelay");
+			}
+		}
 
 		internal static void ProcessDelay(string scene) {
 			var sceneIndex = int.TryParse(scene.Split('_')[1], out int i1) ? i1 : 0;
+
+			HashSet<string> uncached = [];
+			var lookupSceneIndex = sceneIndex;
+			foreach (var mData in MusicDataManager.Data) {
+				var prefabName = GetDelayPrefabName(mData.noteData, ref lookupSceneIndex);
+				if (prefabName != null && !delayCache.ContainsKey(prefabName))
+					uncached.Add(prefabName);
+			}
+
+			if (uncached.Count > 0) {
+				var lookups = Task.Run(() => Parallel.ForEach(uncached, LoadDelay));
+				Interlude.SpinUntilComplete(lookups);
+				lookups.GetAwaiter().GetResult();
+			}
 
 			for (var i = 0; i < MusicDataManager.Data.Count; i++) {
 				Interlude.Spin(submessage: "Reading Custom Albums chart... processing delay");
 
 				var mData = MusicDataManager.Data[i];
-				if (!string.IsNullOrEmpty(mData.noteData?.ibms_id)) { // This shouldnt be null... wtf
-					var type = mData.noteData.GetNoteType();
-					if (type == NoteType.SceneChange)
-						sceneIndex = MuseDash1Compatibility.GetSceneIndexFromIBMSString(mData.noteData.ibms_id);
-
-					var prefabName = mData.noteData.prefab_name;
-					if (!string.IsNullOrEmpty(prefabName)) {
-						// If not a pickup type, convert to most recent scene
-						if (type != NoteType.Hp && type != NoteType.Music) {
-							var prefix = prefabName[..2];
-							switch (prefix) {
-								case "00":
-								case "em":
-								case "bo":
-									prefabName = prefabName.Remove(0, 2).Insert(0, $"{sceneIndex:D2}");
-									break;
-							}
-						}
-
-						if (!delayCache.ContainsKey(prefabName)) {
-							GameObject? gameObject = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(prefabName);
-
-							if (gameObject != null) {
-								var actionController = gameObject!.GetMonoBehaviorByScriptName("SpineActionController")!;
-								MonoBehaviourReader reader = new MonoBehaviourReader(actionController);
-								delayCache[prefabName] = (Decimal)reader.GetAny<float>("startDelay");
-							}
-						}
-
-						if (delayCache.TryGetValue(prefabName, out var delay)) {
-							mData.dt = delay;
-							MusicDataManager.Set(i, mData);
-						}
-					}
+				var prefabName = GetDelayPrefabName(mData.noteData, ref sceneIndex);
+				if (prefabName != null && delayCache.TryGetValue(prefabName, out var delay)) {
+					mData.dt = delay;
+					MusicDataManager.Set(i, mData);
 				}
 
 				var showTick = mData.tick - mData.dt;

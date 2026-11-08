@@ -259,10 +259,11 @@ public sealed class VelocityOverLifetimeOperator : ParticleOperator
 	public bool WorldSpace;
 
 	public override ParticleAttributeMask ReadAttributes => ParticleAttributeMask.Position | ParticleAttributeMask.Lifetime | ParticleAttributeMask.CreationTime;
-	public override ParticleAttributeMask WrittenAttributes => ParticleAttributeMask.Position;
+	public override ParticleAttributeMask WrittenAttributes => ParticleAttributeMask.Position | ParticleAttributeMask.AnimatedVelocity;
 
 	public override void Operate(ParticleCollection particles, object? context) {
 		particles.GetVector(ParticleAttribute.Position, out var px, out var py, out var pz);
+		particles.GetVector(ParticleAttribute.AnimatedVelocity, out var ax, out var ay, out var az);
 		ref readonly var origin = ref particles.GetControlPoint(0);
 		float dt = particles.Dt;
 		for (int i = 0; i < particles.ActiveCount; i++) {
@@ -270,6 +271,9 @@ public sealed class VelocityOverLifetimeOperator : ParticleOperator
 			var velocity = new Vector3(X.Evaluate(age, particles.RandomFloat(i, 141)), Y.Evaluate(age, particles.RandomFloat(i, 142)), Z.Evaluate(age, particles.RandomFloat(i, 143)));
 			if (!WorldSpace)
 				velocity = Vector3.TransformNormal(velocity, origin);
+			ax[i] = velocity.X;
+			ay[i] = velocity.Y;
+			az[i] = velocity.Z;
 			px[i] += velocity.X * dt;
 			py[i] += velocity.Y * dt;
 			pz[i] += velocity.Z * dt;

@@ -712,25 +712,51 @@ namespace CloneDash.Compatibility.MuseDash
 			public string author;
 		}
 
+		private struct __musedashAlbumJSON
+		{
+			public List<MuseDashSongInfoJSON> songs;
+			public __musedashSong[]? songsEN, songsCN_S, songsCN_T, songsJP, songsKO;
+		}
+
+		static __musedashAlbumJSON[] albumJSONs = [];
+
+		public static void ReadDashStructures() {
+			Albums = ReadJSON<List<MuseDash1Album>>("Assets/Static Resources/Data/Configs/others/albums.json")!;
+			Albums.RemoveAll(x => x.JsonName == "");
+
+			var workAlbumJSONs = new __musedashAlbumJSON[Albums.Count];
+			using (StaticSequentialProfiler.StartStackFrame("Parallel Process Dash Structures"))
+				Parallel.For(0, Albums.Count, (i) => {
+					var album = Albums[i];
+					// var songs_raw = filesystem.ReadAllText($"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
+					// var songsEN_raw = filesystem.ReadAllText($"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
+					workAlbumJSONs[i] = new() {
+						songs = ReadJSON<List<MuseDashSongInfoJSON>>($"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json")!,
+						songsEN = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json"),
+						songsCN_S = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/chineses/{album.JsonName}_ChineseS.json"),
+						songsCN_T = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/chineset/{album.JsonName}_ChineseT.json"),
+						songsJP = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/japanese/{album.JsonName}_Japanese.json"),
+						songsKO = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/korean/{album.JsonName}_Korean.json")
+					};
+				});
+
+			albumJSONs = workAlbumJSONs;
+		}
+
 		public static void BuildDashStructures() {
 			Stopwatch s = new Stopwatch();
 			s.Start();
 
-			Albums = ReadJSON<List<MuseDash1Album>>("Assets/Static Resources/Data/Configs/others/albums.json")!;
-			Albums.RemoveAll(x => x.JsonName == "");
-
 			ConcurrentBag<MD1_Song> workSongs = [];
 			ConcurrentBag<HashSet<char>> workCharCodepoints = [];
 			using (StaticSequentialProfiler.StartStackFrame("Parallel Process Dash Structures"))
-				Parallel.ForEach(Albums, (album) => {
-					// var songs_raw = filesystem.ReadAllText($"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
-					// var songsEN_raw = filesystem.ReadAllText($"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
-					var songs = ReadJSON<List<MuseDashSongInfoJSON>>($"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
-					var songsEN = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
-					var songsCN_S = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/chineses/{album.JsonName}_ChineseS.json");
-					var songsCN_T = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/chineset/{album.JsonName}_ChineseT.json");
-					var songsJP = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/japanese/{album.JsonName}_Japanese.json");
-					var songsKO = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/korean/{album.JsonName}_Korean.json");
+				Parallel.ForEach(albumJSONs, (albumJSON) => {
+					var songs = albumJSON.songs;
+					var songsEN = albumJSON.songsEN;
+					var songsCN_S = albumJSON.songsCN_S;
+					var songsCN_T = albumJSON.songsCN_T;
+					var songsJP = albumJSON.songsJP;
+					var songsKO = albumJSON.songsKO;
 
 					var songsFinal = new MD1_Song[songs.Count];
 
@@ -754,6 +780,7 @@ namespace CloneDash.Compatibility.MuseDash
 					}
 				});
 
+			albumJSONs = [];
 			Songs = [.. workSongs];
 			Songs.Sort((x, y) => x.FetchMetadata().Name.CompareTo(y.FetchMetadata().Name, StringComparison.InvariantCulture));
 #if I_AM_LAZY_I_WANT_TO_KNOW_THIS_NUMBER
@@ -861,7 +888,7 @@ namespace CloneDash.Compatibility.MuseDash
 			return audiosystem.CreateStreamAudioClip(ms, $"UnityAudioClip:{clip.m_PathID}/{clip.m_Name}");
 		}
 
-		public static MDAtlas PopulateModelDataTextures(ModelData modelData, TextAsset? atlasAsset, Texture2D[] images, Material[] materials) {
+		public static MDAtlas PopulateModelDataTextures(ModelData modelData, TextAsset? atlasAsset, Texture2D[] images, Material[] materials, bool uploadTextures = true) {
 			using var ms = new MemoryStream(atlasAsset?.m_Script ?? []);
 			using var sr = new StreamReader(ms);
 
@@ -930,16 +957,31 @@ namespace CloneDash.Compatibility.MuseDash
 						Color.Blank));
 				}
 				page.CheckSizing();
+			}
+
+			if (uploadTextures)
+				UploadAtlasTextures(atlas);
+
+			modelData.TextureAtlas = atlas;
+			modelData.SetupAttachments();
+			return atlas;
+		}
+
+		public static void UploadModelDataTextures(ModelData modelData) {
+			if (modelData.TextureAtlas is MDAtlas atlas)
+				UploadAtlasTextures(atlas);
+		}
+
+		static void UploadAtlasTextures(MDAtlas atlas) {
+			foreach (var page in atlas.Pages.Values) {
+				if (page.GpuTexture != null)
+					continue;
 
 				page.GpuTexture = textures.CreateTexture(page.Texture);
 				page.GpuTexture.SetFilter(TextureFilter.Bilinear);
 				page.GpuTexture.SetWrap(TextureWrap.Clamp);
 				page.GpuTexture.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
 			}
-
-			modelData.TextureAtlas = atlas;
-			modelData.SetupAttachments();
-			return atlas;
 		}
 
 		public static IAudioClip? LoadSoundFromName(Level level, string audioName) {
@@ -966,6 +1008,29 @@ namespace CloneDash.Compatibility.MuseDash
 			}
 
 			throw new NotImplementedException();
+		}
+
+		public static byte[]? RebuildSoundFromName(string audioName, out string clipName) {
+			var audioclip = StreamingAssets.FindAssetByName<AudioClip>(audioName);
+			if (audioclip == null) throw new FileNotFoundException();
+
+			clipName = audioclip.m_Name;
+			var audiodata = audioclip.m_AudioData.GetData();
+			if (audioclip.m_Type == FMODSoundType.UNKNOWN) {
+				FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
+				bank.Samples[0].RebuildAsStandardFileFormat(out var at, out _);
+				return at;
+			}
+
+			throw new NotImplementedException();
+		}
+
+		public static IAudioClip? CreateSound(byte[]? rebuilt, string clipName) {
+			if (rebuilt == null)
+				return null;
+
+			using var into = new MemoryStream(rebuilt);
+			return audiosystem.CreateStreamAudioClip(into, $"MDAsset:{clipName}");
 		}
 
 		public static IAudioClip? LoadMusicFromName(Level level, string? audioName) {
@@ -2121,7 +2186,7 @@ public static class MuseDash1ModelConverter
 	// EVERYTHING in Clone Dash should probably go through these methods, or at least those that use in-game/menu assets.
 	// This lets musedash overrides work
 
-	public static ModelData MD_GetModelData(this Level level, MonoBehaviour skeletonData) {
+	public static ModelData MD_GetModelData(this Level level, MonoBehaviour skeletonData, bool uploadTextures = true) {
 		MonoBehaviourReader reader = new(skeletonData);
 		TextAsset skeletonJSON = reader.Get<TextAsset>("skeletonJSON")!;
 		// Placeholder skeletons can come without an atlas or texture.
@@ -2135,17 +2200,17 @@ public static class MuseDash1ModelConverter
 			var mat = materials[i];
 			texturePaths[i] = mat.m_SavedProperties.m_TexEnvs.FirstOrDefault().Value?.m_Texture.m_PathID ?? 0;
 		}
-		return MD_GetModelData(level, skeletonJSON, atlasFile, texturePaths, materials.ToArray());
+		return MD_GetModelData(level, skeletonJSON, atlasFile, texturePaths, materials.ToArray(), uploadTextures);
 	}
 
-	public static ModelData MD_GetModelData(this Level level, long skeletonPath, long atlasPath, long[] texturePaths, Material[] materialsIn) {
+	public static ModelData MD_GetModelData(this Level level, long skeletonPath, long atlasPath, long[] texturePaths, Material[] materialsIn, bool uploadTextures = true) {
 		var skeleton = MuseDash1Compatibility.StreamingAssets.FindAssetByPathID<TextAsset>(skeletonPath)!;
 		var atlas = MuseDash1Compatibility.StreamingAssets.FindAssetByPathID<TextAsset>(atlasPath)!;
 
-		return MD_GetModelData(level, skeleton, atlas, texturePaths, materialsIn);
+		return MD_GetModelData(level, skeleton, atlas, texturePaths, materialsIn, uploadTextures);
 	}
 
-	public static ModelData MD_GetModelData(this Level level, TextAsset skeleton, TextAsset? atlas, long[] texturePaths, Material[] materialsIn) {
+	public static ModelData MD_GetModelData(this Level level, TextAsset skeleton, TextAsset? atlas, long[] texturePaths, Material[] materialsIn, bool uploadTextures = true) {
 		ModelData md_data = new ModelData();
 		// Only this shader draws dark colors, other models carry them unused.
 		md_data.RenderTintBlack = materialsIn.Any(m => MuseDash1Compatibility.StreamingAssets
@@ -2159,7 +2224,7 @@ public static class MuseDash1ModelConverter
 		ConvertMuseDashModelData(
 			md_data,
 			skeleton,
-			MuseDash1Compatibility.PopulateModelDataTextures(md_data, atlas, textures, materialsIn)
+			MuseDash1Compatibility.PopulateModelDataTextures(md_data, atlas, textures, materialsIn, uploadTextures)
 		);
 
 		var defaultSkin = md_data.DefaultSkin;

@@ -29,6 +29,7 @@ public class UnbeatableWhiteLabelCharacterProvider() : ModProvider<ICharacterDes
 public class UnbeatableWhiteLabelCharacterDescriptor(ICloneDashModProvider provider) : ModDescriptor, ICharacterDescriptor
 {
 	const string THUMBNAIL = "beatattack1";
+	const string THUMBNAIL_ASSETS = "sharedassets2.assets";
 
 	public override string GetID() => UnbeatableWhiteLabelCharacterProvider.BEAT;
 	public override string GetName() => "Beat";
@@ -41,8 +42,8 @@ public class UnbeatableWhiteLabelCharacterDescriptor(ICloneDashModProvider provi
 	public ReadOnlySpan<char> GetPerk() => "";
 
 	public ITexture? GetThumbnailTexture() {
-		var texture = UnbeatableWhiteLabelCompatibility.GetObjectByName<AssetStudio.Texture2D>(THUMBNAIL)
-			?? UnbeatableWhiteLabelCompatibility.GetObjectByName<AssetStudio.Sprite>(THUMBNAIL)?.m_RD.GetTexture();
+		var texture = UnbeatableWhiteLabelCompatibility.GetObjectByName<AssetStudio.Texture2D>(THUMBNAIL_ASSETS, THUMBNAIL)
+			?? UnbeatableWhiteLabelCompatibility.GetObjectByName<AssetStudio.Sprite>(THUMBNAIL_ASSETS, THUMBNAIL)?.m_RD.GetTexture();
 		return texture == null ? null : UnityAssetUtils.ConvertTexture(EngineCore.Level, texture);
 	}
 

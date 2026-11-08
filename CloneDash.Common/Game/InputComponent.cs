@@ -20,7 +20,6 @@ public class InputComponent(Level level) : IRhythmGameThinker
 
 	public void Initialize() {
 		Receivers.Add(new BindInput(this));
-		Receivers.AddRange(ICloneDashInputSystem.InstantiateAllInputSystems());
 	}
 
 	public void Poll(FrameState frameState) {

@@ -49,10 +49,37 @@ public static partial class MuseDash1Compatibility
 		}
 	}
 
+	static Task<AppStatus>? initializeTask;
+
+	public static void BeginInitializeCompatibilityLayer() => initializeTask ??= Task.Run(InitializeCompatibilityData);
+
 	public static AppStatus InitializeCompatibilityLayer() {
 		if (Initialized)
 			return AppStatus.OK;
 
+		Task<AppStatus> task = initializeTask ??= Task.FromResult(InitializeCompatibilityData());
+		Interlude.SpinUntilComplete(task);
+
+		initializeTask = null;
+		AppStatus result = task.GetAwaiter().GetResult();
+		if (result != AppStatus.OK)
+			return result;
+
+		// At this point, Interlude can use Muse Dash assets, since StreamingAssets are ready
+		Interlude.ShouldSelectInterludeTexture = true;
+		Interlude.Spin(submessage: "Muse Dash Compat: Platform initialized...");
+
+		filesystem.AddSearchPath("musedash", StreamingAssets);
+
+		BuildDashStructures();
+		Interlude.Spin(submessage: "Muse Dash Compat: Structures ready!");
+
+		Initialized = true;
+
+		return result;
+	}
+
+	static AppStatus InitializeCompatibilityData() {
 		StaticSequentialProfiler.Start();
 
 		AppStatus result;
@@ -65,12 +92,8 @@ public static partial class MuseDash1Compatibility
 			return result;
 		}
 
-		// At this point, Interlude can use Muse Dash assets, since StreamingAssets are ready
-		Interlude.ShouldSelectInterludeTexture = true;
-		Interlude.Spin(submessage: "Muse Dash Compat: Platform initialized...");
-
-		using (StaticSequentialProfiler.StartStackFrame("Mount to Filesystem")) {
-			StreamingAssets = filesystem.AddSearchPath("musedash", new UnitySearchPathV2(Path.Combine(WhereIsMuseDashDataFolder!, $"StreamingAssets/aa"), StandalonePlatform));
+		using (StaticSequentialProfiler.StartStackFrame("Read Addressables Catalog")) {
+			StreamingAssets = new UnitySearchPathV2(Path.Combine(WhereIsMuseDashDataFolder!, $"StreamingAssets/aa"), StandalonePlatform);
 		}
 
 		using (StaticSequentialProfiler.StartStackFrame("Parallel Process Critical JSON Files"))
@@ -102,8 +125,6 @@ public static partial class MuseDash1Compatibility
 				ch.AddLocalization(ILocalize.Korean, CharactersKO[i]);
 			});
 
-		Interlude.Spin(submessage: "Muse Dash Compat: Deserialized note config...");
-
 		using (StaticSequentialProfiler.StartStackFrame("Parallel Process NoteDataManager")) {
 			// parallel process the dictionaries
 			ConcurrentDictionary<string, List<string>> concurrentIBMSToDesc = [];
@@ -125,11 +146,8 @@ public static partial class MuseDash1Compatibility
 			UIDToNote = concurrentUIDToNote.ToFrozenDictionary();
 		}
 
-		using (StaticSequentialProfiler.StartStackFrame("BuildDashStructures"))
-			BuildDashStructures();
-		Interlude.Spin(submessage: "Muse Dash Compat: Structures ready!");
-
-		Initialized = true;
+		using (StaticSequentialProfiler.StartStackFrame("ReadDashStructures"))
+			ReadDashStructures();
 
 		StaticSequentialProfiler.End(out var stack, out var accumulators);
 

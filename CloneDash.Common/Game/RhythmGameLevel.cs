@@ -176,6 +176,20 @@ public class RhythmGameLevel : Level, IServiceProvider
 		renderers = [.. Services.GetServices<IRhythmGameRenderer>()];
 		thinkers = [.. Services.GetServices<IRhythmGameThinker>().OrderBy(thinker => thinker.Phase)];
 
+		Task prepare = Task.WhenAll(components.Select(part => Task.Run(() => {
+			var thread = Thread.CurrentThread;
+			var priority = thread.Priority;
+			thread.Priority = ThreadPriority.Highest;
+			try {
+				part.Prepare();
+			}
+			finally {
+				thread.Priority = priority;
+			}
+		})));
+		Interlude.SpinUntilComplete(prepare);
+		prepare.GetAwaiter().GetResult();
+
 		foreach (var part in components)
 			part.Load();
 

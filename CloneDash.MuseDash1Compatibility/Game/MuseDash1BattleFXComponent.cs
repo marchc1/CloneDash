@@ -10,6 +10,7 @@ using CloneDash.Scenes;
 using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Common.Graphics;
+using Nucleus.Common.Images;
 using Nucleus.Particles;
 using Nucleus.Types;
 using System.Numerics;
@@ -46,7 +47,9 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 	readonly Dictionary<DashEnemy, ParticleCollection> hearts = [];
 	readonly ParticleSystemManager Particles = new();
 	readonly PathwaysComponent Pathways;
+	readonly List<(ParticleMaterial Material, AssetStudio.Texture2D Texture)> pendingTextures = [];
 	readonly HashSet<AssetStudio.SerializedFile> pinnedFiles = [];
+	readonly Dictionary<AssetStudio.Texture2D, Image> preparedImages = [];
 	readonly ParticleCollection?[] presses = new ParticleCollection?[PathwayLayout.MAX_PATHWAYS];
 	readonly MuseDash1ScenesComponent Scenes;
 	readonly RhythmGameLevel level;
@@ -79,16 +82,9 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 	public RhythmGameThinkPhase Phase => RhythmGameThinkPhase.Present;
 
 	public void Load() {
-		attackCrit = LoadEffect("girl_fx_atk_c");
-		attackGreat = LoadEffect("girl_fx_atk_g");
-		attackPerfect = LoadEffect("girl_fx_atk_p");
-		heartOnNote = LoadEffect("hp_on_note");
-		hpPickup = LoadEffect("fx_hp_ground");
-		scorePickup = LoadEffect("fx_score_ground");
-
-		var character = CharacterMod.Instance.GetActive()?.GetID();
-		if (character != null && SkillEffects.TryGetValue(character, out var skillEffect))
-			skill = LoadEffect(skillEffect);
+		foreach (var (material, texture) in pendingTextures)
+			material.Texture = LoadTexture(texture);
+		pendingTextures.Clear();
 
 		foreach (var scene in Scenes.GetAllScenes())
 			for (int i = 0; i < Pathways.Layout.Count; i++) {
@@ -109,6 +105,24 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 		Particles.Render(UnityToWorld, CHARACTER_SORTING_ORDER, beginCollection: BeginHueShift, endCollection: Scenes.EndPathwayHueShift);
 	}
 
+	public void Prepare() {
+		var character = CharacterMod.Instance.GetActive()?.GetID();
+		string? skillEffect = character != null && SkillEffects.TryGetValue(character, out var name) ? name : null;
+
+		Parallel.Invoke(
+			() => attackCrit = LoadEffect("girl_fx_atk_c"),
+			() => attackGreat = LoadEffect("girl_fx_atk_g"),
+			() => attackPerfect = LoadEffect("girl_fx_atk_p"),
+			() => heartOnNote = LoadEffect("hp_on_note"),
+			() => hpPickup = LoadEffect("fx_hp_ground"),
+			() => scorePickup = LoadEffect("fx_score_ground"),
+			() => skill = skillEffect == null ? null : LoadEffect(skillEffect),
+			() => {
+				foreach (var scene in Scenes.GetAllScenes())
+					scene.PrepareParticleEffects(Pathways.Layout);
+			});
+	}
+
 	public void RenderBelowEntities() => Particles.Render(UnityToWorld, maxSortOrder: CHARACTER_SORTING_ORDER - 1, beginCollection: BeginHueShift, endCollection: Scenes.EndPathwayHueShift);
 
 	public void Reset() {
@@ -126,14 +140,33 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 
 	bool BeginHueShift(ParticleCollection particles) => particles.Tag is PathwayId pathway && Scenes.BeginPathwayHueShift(pathway);
 
-	MuseDash1ParticleEffect? LoadEffect(string name)
-		=> MuseDash1ParticleEffect.Load(MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.GameObject>(name), LoadTexture,
-			fileName => MuseDash1Compatibility.StreamingAssets.LoadDependenciesContaining(name, new HashSet<string> { fileName }, pinnedFiles));
+	MuseDash1ParticleEffect? LoadEffect(string name) {
+		HashSet<AssetStudio.SerializedFile> pinned = [];
+		var effect = MuseDash1ParticleEffect.Load(MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.GameObject>(name), PrepareTexture,
+			fileName => MuseDash1Compatibility.StreamingAssets.LoadDependenciesContaining(name, new HashSet<string> { fileName }, pinned));
+		lock (pinnedFiles)
+			pinnedFiles.UnionWith(pinned);
+		return effect;
+	}
 
 	ITexture LoadTexture(AssetStudio.Texture2D texture) {
 		if (!textures.TryGetValue(texture, out var result))
-			textures[texture] = result = UnityAssetUtils.ConvertTexture(EngineCore.Level, texture);
+			textures[texture] = result = preparedImages.Remove(texture, out var image) ? UnityAssetUtils.UploadTexture(image) : UnityAssetUtils.ConvertTexture(EngineCore.Level, texture);
 		return result;
+	}
+
+	void PrepareTexture(ParticleMaterial material, AssetStudio.Texture2D texture) {
+		bool decode;
+		lock (pendingTextures) {
+			pendingTextures.Add((material, texture));
+			decode = preparedImages.TryAdd(texture, default);
+		}
+		if (!decode)
+			return;
+
+		var image = texture.ToRaylib();
+		lock (pendingTextures)
+			preparedImages[texture] = image;
 	}
 
 	float PathwayY(PathwayId pathway, float roadY, float airY) => PathwayLayout.LerpY(Pathways.Layout[pathway].NormalizedY, roadY, airY);

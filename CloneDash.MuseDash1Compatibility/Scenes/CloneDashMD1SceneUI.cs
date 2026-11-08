@@ -497,7 +497,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	protected ITexture? score_English;
 	protected ModelData? fx_combo_1;
 	protected ModelData? fx_combo_2;
-	MuseDash1VictoryAssets? victoryCanvas;
+	Task<MuseDash1VictoryAssets?>? victoryImport;
 
 	public virtual void Dispose() {
 		foreach (var item in BackgroundItems) item.Dispose();
@@ -542,6 +542,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	public static float MinorTextScale => 0.65f;
 	public static float TextScale => 0.85f;
 
+	internal static void PreloadAssets() => Task.Run(() => MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("score_English"));
 	protected ITexture? LoadTextureByName(ReadOnlySpan<char> name) => UnityAssetUtils.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(name)!);
 	public void SetSeeking(bool seeking) => Seeking = seeking;
 	public virtual void Initialize() {
@@ -558,7 +559,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		LoadMultiHitAssets();
 		LoadHealthBarAssets();
 		LoadComboModels();
-		victoryCanvas = ImportVictoryCanvas();
+		victoryImport = Task.Run(ImportVictoryCanvasInBackground);
 
 		ForceDeactivateCombo1();
 		ForceDeactivateCombo2();
@@ -567,8 +568,19 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	static AssetStudio.Transform? FindChild(AssetStudio.Transform? transform, string name)
 		=> transform?.GetChildren().FirstOrDefault(child => child.GetGameObject()?.m_Name == name);
 
-	internal static MuseDash1VictoryAssets? ImportVictoryCanvas() {
-		var assets = MuseDash1Compatibility.StreamingAssets;
+	static MuseDash1VictoryAssets? ImportVictoryCanvasInBackground() {
+		UnitySearchPathV2 assets = new(MuseDash1Compatibility.StreamingAssets);
+		try {
+			return ImportVictoryCanvas(assets);
+		}
+		finally {
+			assets.UnloadAll();
+		}
+	}
+
+	internal static MuseDash1VictoryAssets? ImportVictoryCanvas() => ImportVictoryCanvas(MuseDash1Compatibility.StreamingAssets);
+
+	internal static MuseDash1VictoryAssets? ImportVictoryCanvas(UnitySearchPathV2 assets) {
 		var found = assets.FindAssetByName<AssetStudio.GameObject>("PnlVictory");
 		if (found == null)
 			return null;
@@ -617,11 +629,11 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 				var pptr = new AssetStudio.PPtr<AssetStudio.AudioClip>(Convert.ToInt32(pointer["m_FileID"]), Convert.ToInt64(pointer["m_PathID"]), script.assetsFile);
 				if (!pptr.TryGet(out var clip) && pptr.m_FileID > 0 && pptr.m_FileID <= script.assetsFile.m_Externals.Count)
 					assets.LoadDependenciesContaining("PnlVictory", new HashSet<string> { Path.GetFileName(script.assetsFile.m_Externals[pptr.m_FileID - 1].fileName) }, pinned);
-				return pptr.TryGet(out clip) ? MuseDash1Compatibility.LoadSound(clip) : null;
+				return pptr.TryGet(out clip) ? MainThread.Invoke(() => MuseDash1Compatibility.LoadSound(clip)) : null;
 			}
 
 			return new MuseDash1VictoryAssets(canvas, behaviours, likeCanvas, likeBehaviours.LikeButton, LoadClip("victoryBgm"), LoadClip("sfxClip"),
-				MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1VictoryScreen.LIKE_SOUND), MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1VictoryScreen.UNLIKE_SOUND));
+				MainThread.Invoke(() => MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1VictoryScreen.LIKE_SOUND)), MainThread.Invoke(() => MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1VictoryScreen.UNLIKE_SOUND)));
 		}
 		finally {
 			foreach (var file in pinned)
@@ -659,6 +671,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		power_slider_white = LoadTextureByName("power_slider_white");
 		Fever = LoadTextureByName("Fever");
 		bubble = LoadTextureByName("bubble");
+		bubble?.SetWrap(TextureWrap.Repeat);
 	}
 
 	public virtual void LoadComboModels() {
@@ -730,8 +743,13 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	}
 
 	protected virtual StatisticsPanel? LoadPanel(StatisticsData stats) {
-		var canvas = victoryCanvas ?? ImportVictoryCanvas();
-		victoryCanvas = null;
+		MuseDash1VictoryAssets? canvas = null;
+		if (victoryImport != null) {
+			MainThread.WaitFor(victoryImport);
+			canvas = victoryImport.GetAwaiter().GetResult();
+		}
+		canvas ??= ImportVictoryCanvas();
+		victoryImport = null;
 		var panel = new StatisticsPanel(EngineCore.Level.RootPanel, game, stats, canvas);
 		return panel;
 	}

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using Nucleus.Common.Engine;
 using System.Reflection;
 
 namespace Nucleus.Util;
@@ -40,6 +41,7 @@ public static class ReflectionTools
 
 	public static T[] InstantiateAllInheritorsOfInterface<T>() => AppDomain.CurrentDomain
 					.GetAssemblies()
+			.Where(a => a.IsDefined(typeof(NucleusAssemblyAttribute)))
 			.SelectMany(a => a.GetTypes())
 			.Where(t => typeof(T).IsAssignableFrom(t) && t.IsClass && !t.IsAbstract)
 			.Where(t => t.GetConstructor(Type.EmptyTypes) != null)

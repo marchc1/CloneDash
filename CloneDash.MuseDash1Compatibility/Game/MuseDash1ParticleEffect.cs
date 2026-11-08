@@ -9,12 +9,15 @@ namespace CloneDash.Game;
 
 public sealed record MuseDash1ParticleEffect(ParticleSystemDefinition Definition, Matrix4x4 Transform)
 {
-	public static MuseDash1ParticleEffect? Load(GameObject? gameObject, Func<Texture2D, ITexture> loadTexture, Func<string, bool>? loadMissingFile = null) {
+	public static MuseDash1ParticleEffect? Load(GameObject? gameObject, Func<Texture2D, ITexture> loadTexture, Func<string, bool>? loadMissingFile = null)
+		=> Load(gameObject, (material, texture) => material.Texture = loadTexture(texture), loadMissingFile);
+
+	public static MuseDash1ParticleEffect? Load(GameObject? gameObject, Action<ParticleMaterial, Texture2D> setTexture, Func<string, bool>? loadMissingFile = null) {
 		if (gameObject == null)
 			return null;
 
 		var transform = gameObject.GetFirstComponent<Transform>();
-		return new(UnityParticleConverter.Convert(gameObject, loadTexture, loadMissingFile), transform == null ? Matrix4x4.Identity : UnityParticleConverter.GetLocalTransform(transform));
+		return new(UnityParticleConverter.Convert(gameObject, setTexture, loadMissingFile), transform == null ? Matrix4x4.Identity : UnityParticleConverter.GetLocalTransform(transform));
 	}
 
 	public Matrix4x4 At(float y) {

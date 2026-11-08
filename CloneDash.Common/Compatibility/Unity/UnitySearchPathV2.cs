@@ -94,7 +94,7 @@ public class AddressablesCatalog
 		if (!HashedAssetLookup.TryGetAlternateLookup<ReadOnlySpan<char>>(out var lookup))
 			return;
 		if (!lookup.TryGetValue(hashedKey, out var list))
-			list = lookup[hashedKey] = new(64);
+			list = lookup[hashedKey] = new(1);
 
 		list.Add(searchBase);
 	}
@@ -220,7 +220,7 @@ public class AddressablesCatalog
 		// foreach (var entry in AllEntries)
 		// 	AddInternalIDRef(entry.InternalId);
 		{
-			ConcurrentDictionary<object, ConcurrentQueue<UtlSymbol>> dictBuild = [];
+			ConcurrentDictionary<object, List<UtlSymbol>> dictBuild = [];
 			Parallel.ForEach(locations, kvp => {
 				Span<char> internalIdWrite = stackalloc char[4096];
 				foreach (var loc in kvp.Value) {
@@ -233,7 +233,7 @@ public class AddressablesCatalog
 						var list = dictBuild.GetOrAdd(kvp.Key, _ => new());
 						UtlSymbol bundleFileSymbol = new(bundleFileName);
 						if (!list.Contains(bundleFileSymbol))
-							list.Enqueue(bundleFileSymbol);
+							list.Add(bundleFileSymbol);
 					}
 				}
 			});
@@ -251,7 +251,7 @@ public class AddressablesCatalog
 					var list = dictBuild.GetOrAdd(entry.PrimaryKey, _ => new());
 					UtlSymbol bundleFileSymbol = new(bundleFileName);
 					if (!list.Contains(bundleFileSymbol))
-						list.Enqueue(bundleFileSymbol);
+						list.Add(bundleFileSymbol);
 				}
 			}
 
@@ -452,7 +452,7 @@ public class AddressablesCatalog
 
 			List<EntryAccessor> entryList;
 			if (locations.TryGetValue(key, out entryList))
-				entryList.EnsureCapacity(entryList.Count + entries.Length);
+				entryList.EnsureCapacity(entryList.Count + entryIndices.Length);
 			else
 				entryList = locations[key] = new(entryIndices.Length);
 
@@ -512,7 +512,7 @@ public class UnitySearchAsset : UnitySearchBase
 	}
 
 	private static bool BundleMatches(SerializedFile file, string bundleFile) =>
-		Path.GetFileName((ReadOnlySpan<char>)file.originalPath).Equals(bundleFile, StringComparison.InvariantCulture);
+		Path.GetFileName((ReadOnlySpan<char>)file.originalPath).Equals(bundleFile, StringComparison.Ordinal);
 
 	public static bool IsBundleLoaded(AssetsManager assets, string bundleFile) {
 		foreach (var f in assets.AssetsFileList)
@@ -521,17 +521,16 @@ public class UnitySearchAsset : UnitySearchBase
 		return false;
 	}
 
+	public string? NextBundleFile(AssetsManager assets) {
+		foreach (var candidate in Catalog.ResolveBundleFiles(DependencyKey))
+			if (!IsBundleLoaded(assets, candidate))
+				return candidate;
+		return null;
+	}
+
 	public IEnumerable<SerializedFile> LoadNextBundle(string baseFolder, string platform, AssetsManager assets) {
 		lock (sync) {
-			var bundleFiles = Catalog.ResolveBundleFiles(DependencyKey);
-
-			string? bundleFile = null;
-			foreach (var candidate in bundleFiles) {
-				if (!IsBundleLoaded(assets, candidate)) {
-					bundleFile = candidate;
-					break;
-				}
-			}
+			string? bundleFile = NextBundleFile(assets);
 			if (bundleFile == null)
 				yield break;
 
@@ -542,11 +541,11 @@ public class UnitySearchAsset : UnitySearchBase
 
 	public IEnumerable<SerializedFile> LoadBundle(string baseFolder, string platform, AssetsManager assets, string bundleFile) {
 		lock (sync) {
-			HashSet<SerializedFile> previousState = assets.AssetsFileList.ToHashSet();
+			int previousCount = assets.AssetsFileList.Count;
 			assets.LoadFile(Path.Combine(baseFolder, platform, bundleFile));
-			HashSet<SerializedFile> currentState = assets.AssetsFileList.ToHashSet();
 
-			foreach (var bundle in currentState.Except(previousState)) {
+			for (int i = previousCount; i < assets.AssetsFileList.Count; i++) {
+				var bundle = assets.AssetsFileList[i];
 				bundle.ReadAssets();
 				yield return bundle;
 			}
@@ -777,6 +776,16 @@ public class UnitySearchPathV2 : SearchPath
 		Catalog.Decode();
 	}
 
+	/// <summary>
+	/// A separate set of loaded bundles that shares <paramref name="catalogSource"/>'s catalog. Safe to use off the main thread.
+	/// </summary>
+	public UnitySearchPathV2(UnitySearchPathV2 catalogSource) {
+		Catalog = catalogSource.Catalog;
+		_basePath = catalogSource._basePath;
+		_platform = catalogSource._platform;
+		MaxResidentBytes = long.MaxValue;
+	}
+
 	public record struct CachedObjectLookup_t(SerializedFile File, long PathID)
 	{
 		public AssetStudio.Object Get() => File.ObjectsDic[PathID];
@@ -918,6 +927,8 @@ public class UnitySearchPathV2 : SearchPath
 		return null;
 	}
 
+	bool IsIndexed(SerializedFile bundle) => SerializedFiles.TryGetValue(bundle.fileName, out var indexed) && indexed == bundle;
+
 	private static AssetStudio.Object? FindInBundle<T>(SerializedFile bundle, ReadOnlySpan<char> name) where T : AssetStudio.Object {
 		for (int i = 0, c = bundle.Objects.Count; i < c; i++) {
 			AssetStudio.Object? o = bundle.Objects[i];
@@ -927,11 +938,48 @@ public class UnitySearchPathV2 : SearchPath
 		return null;
 	}
 
+	private List<SerializedFile> LoadNextBundleOutsideLock(UnitySearchAsset searchAsset) {
+		string? bundleFile = searchAsset.NextBundleFile(Assets);
+		return bundleFile == null ? [] : LoadBundleOutsideLock(searchAsset, bundleFile);
+	}
+
+	private readonly HashSet<string> preparingBundles = [];
+
+	private List<SerializedFile> LoadBundleOutsideLock(UnitySearchAsset searchAsset, string bundleFile) {
+		if (!preparingBundles.Add(bundleFile)) {
+			while (preparingBundles.Contains(bundleFile))
+				Monitor.Wait(sync);
+			return [];
+		}
+
+		PreparedBundle? prepared;
+		Monitor.Exit(sync);
+		try {
+			prepared = Assets.PrepareBundleFile(Path.Combine(_basePath, _platform, bundleFile));
+		}
+		finally {
+			Monitor.Enter(sync);
+			preparingBundles.Remove(bundleFile);
+			Monitor.PulseAll(sync);
+		}
+
+		if (prepared == null)
+			return [.. searchAsset.LoadBundle(_basePath, _platform, Assets, bundleFile)];
+		return Assets.AttachPreparedBundle(prepared);
+	}
+
 	private T? SearchAssetInBundles<T>(UnitySearchAsset searchAsset, ReadOnlySpan<char> name) where T : AssetStudio.Object {
 		if (!CachedObjectFileNameLookup.TryGetAlternateLookup<ReadOnlySpan<char>>(out var fnLookup))
 			throw new Exception();
 
+		if (fnLookup.TryGetValue(name, out var known) && FindTypedInCache<T>(known) is T knownMatch) {
+			Touch(known.First(l => l.Get() is T).File);
+			return knownMatch;
+		}
+
 		foreach (var bundle in searchAsset.FindLoadedBundles(Assets)) {
+			if (IsIndexed(bundle))
+				continue;
 			var match = FindInBundle<T>(bundle, name);
 			if (match != null) {
 				// Cache it
@@ -944,7 +992,7 @@ public class UnitySearchPathV2 : SearchPath
 		}
 
 		while (searchAsset.HasMoreBundles(Assets)) {
-			var newBundles = searchAsset.LoadNextBundle(_basePath, _platform, Assets);
+			var newBundles = LoadNextBundleOutsideLock(searchAsset);
 			CacheNewBundles(newBundles);
 
 			if (fnLookup.TryGetValue(name, out var lookups)) {
@@ -954,6 +1002,8 @@ public class UnitySearchPathV2 : SearchPath
 			}
 
 			foreach (var bundle in searchAsset.FindLoadedBundles(Assets)) {
+				if (IsIndexed(bundle))
+					continue;
 				var match = FindInBundle<T>(bundle, name);
 				if (match != null) {
 					if (!fnLookup.TryGetValue(name, out var cacheList))
@@ -1068,7 +1118,7 @@ public class UnitySearchPathV2 : SearchPath
 					if (UnitySearchAsset.IsBundleLoaded(Assets, bundleFile) || !GetBundleDirectory(bundleFile).Any(fileNames.Contains))
 						continue;
 
-					var bundles = searchAsset.LoadBundle(_basePath, _platform, Assets, bundleFile).ToList();
+					var bundles = LoadBundleOutsideLock(searchAsset, bundleFile);
 					foreach (var bundle in bundles) {
 						pinnedBundles.Add(bundle);
 						pinned.Add(bundle);
@@ -1110,7 +1160,49 @@ public class UnitySearchPathV2 : SearchPath
 		throw new NotImplementedException();
 	}
 
+	private bool TryReadUncachedTextAsset(ReadOnlySpan<char> path, [NotNullWhen(true)] out byte[]? script) {
+		script = null;
+
+		UnitySearchBase? found = Catalog.Search(path);
+		ReadOnlySpan<char> objectName = Path.GetFileName(path);
+		if (found is UnitySearchDirectory dir) {
+			ReadOnlySpan<char> filenameNoExt = Path.GetFileNameWithoutExtension(dir.FullyQualifiedPath.AsSpan()[..^1]);
+			Span<char> mergePath = stackalloc char[dir.FullyQualifiedPath.Length + filenameNoExt.Length];
+			dir.FullyQualifiedPath.CopyTo(mergePath);
+			filenameNoExt.CopyTo(mergePath[dir.FullyQualifiedPath.Length..]);
+			found = Catalog.Search(mergePath);
+			objectName = filenameNoExt;
+		}
+
+		if (found is not UnitySearchAsset searchAsset || searchAsset.Type?.m_ClassName != "UnityEngine.TextAsset")
+			return false;
+
+		var bundleFiles = Catalog.ResolveBundleFiles(searchAsset.DependencyKey);
+		if (bundleFiles.Count != 1)
+			return false;
+
+		AssetsManager assets = new();
+		try {
+			assets.LoadFile(Path.Combine(_basePath, _platform, bundleFiles[0]));
+			foreach (var file in assets.AssetsFileList) {
+				file.ReadAssets();
+				foreach (var obj in file.Objects)
+					if (obj is TextAsset textAsset && objectName.SequenceEqual(textAsset.m_Name)) {
+						script = textAsset.m_Script;
+						return true;
+					}
+			}
+			return false;
+		}
+		finally {
+			assets.Clear();
+		}
+	}
+
 	protected override Stream? OnOpen(ReadOnlySpan<char> path, FileAccess access, FileMode open) {
+		if (TryReadUncachedTextAsset(path, out byte[]? script))
+			return new MemoryStream(script);
+
 		lock (sync) {
 			AssetStudio.Object? asset = LoadAsset<AssetStudio.Object>(path).GetResult();
 			switch (asset) {

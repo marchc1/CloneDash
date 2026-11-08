@@ -16,15 +16,36 @@ public static class UnityParticleConverter
 {
 	const float UNITY_GRAVITY = -9.81f;
 
-	public static ParticleSystemDefinition Convert(GameObject root, Func<Texture2D, ITexture> loadTexture, Func<string, bool>? loadMissingFile = null) {
-		var definition = CreateDefinition(root, loadTexture, loadMissingFile);
+	public static ParticleSystemDefinition Convert(GameObject root, Func<Texture2D, ITexture> loadTexture, Func<string, bool>? loadMissingFile = null)
+		=> Convert(root, (material, texture) => material.Texture = loadTexture(texture), loadMissingFile);
+
+	public static ParticleSystemDefinition Convert(GameObject root, Action<ParticleMaterial, Texture2D> setTexture, Func<string, bool>? loadMissingFile = null) {
+		var definition = CreateDefinition(root, setTexture, loadMissingFile);
 		var transform = root.GetFirstComponent<Transform>();
 		if (transform != null)
-			AddChildren(definition, transform, Matrix4x4.Identity, loadTexture, loadMissingFile);
+			AddChildren(definition, transform, Matrix4x4.Identity, setTexture, loadMissingFile);
 		return definition;
 	}
 
-	public static ParticleSystemDefinition ConvertSystem(GameObject gameObject, Func<Texture2D, ITexture> loadTexture, Func<string, bool>? loadMissingFile = null) => CreateDefinition(gameObject, loadTexture, loadMissingFile);
+	public static ParticleSystemDefinition ConvertSystem(GameObject gameObject, Func<Texture2D, ITexture> loadTexture, Func<string, bool>? loadMissingFile = null) => CreateDefinition(gameObject, (material, texture) => material.Texture = loadTexture(texture), loadMissingFile);
+
+	public static void PreloadMaterials(GameObject root, Func<string, bool> loadMissingFile) {
+		var renderer = root.GetFirstComponent<ParticleSystemRenderer>();
+		if (renderer != null && renderer.m_Enabled && renderer.m_Materials.Count > 0 && TryResolve(renderer, renderer.m_Materials[0], loadMissingFile, out var material)) {
+			TryResolve(material, material.m_Shader, loadMissingFile, out _);
+			foreach (var (key, environment) in material.m_SavedProperties.m_TexEnvs)
+				if (key == "_MainTex" && TryResolve(material, environment.m_Texture, loadMissingFile, out var texture) && texture is Texture2D texture2D)
+					texture2D.image_data?.GetData();
+		}
+
+		var transform = root.GetFirstComponent<Transform>();
+		if (transform == null)
+			return;
+
+		foreach (var childTransform in transform.GetChildren())
+			if (childTransform.GetGameObject() is GameObject child)
+				PreloadMaterials(child, loadMissingFile);
+	}
 
 	public static Matrix4x4 GetLocalTransform(Transform transform) {
 		var position = transform.m_LocalPosition;
@@ -35,7 +56,7 @@ public static class UnityParticleConverter
 			* Matrix4x4.CreateTranslation(position.X, position.Y, position.Z);
 	}
 
-	static void AddChildren(ParticleSystemDefinition parent, Transform transform, in Matrix4x4 offset, Func<Texture2D, ITexture> loadTexture, Func<string, bool>? loadMissingFile) {
+	static void AddChildren(ParticleSystemDefinition parent, Transform transform, in Matrix4x4 offset, Action<ParticleMaterial, Texture2D> setTexture, Func<string, bool>? loadMissingFile) {
 		foreach (var childTransform in transform.GetChildren()) {
 			var child = childTransform.GetGameObject();
 			if (child == null || !child.m_IsActive)
@@ -44,18 +65,18 @@ public static class UnityParticleConverter
 			var local = GetLocalTransform(childTransform) * offset;
 			var system = child.GetFirstComponent<AssetStudio.ParticleSystem>();
 			if (system == null) {
-				AddChildren(parent, childTransform, local, loadTexture, loadMissingFile);
+				AddChildren(parent, childTransform, local, setTexture, loadMissingFile);
 				continue;
 			}
 
-			var definition = CreateDefinition(child, loadTexture, loadMissingFile);
-			AddChildren(definition, childTransform, Matrix4x4.Identity, loadTexture, loadMissingFile);
+			var definition = CreateDefinition(child, setTexture, loadMissingFile);
+			AddChildren(definition, childTransform, Matrix4x4.Identity, setTexture, loadMissingFile);
 			var data = system.ToType();
 			parent.Children.Add(new(definition, ReadRange(Dict(data, "startDelay")).Evaluate(0, 0.5f), local));
 		}
 	}
 
-	static ParticleSystemDefinition CreateDefinition(GameObject gameObject, Func<Texture2D, ITexture> loadTexture, Func<string, bool>? loadMissingFile) {
+	static ParticleSystemDefinition CreateDefinition(GameObject gameObject, Action<ParticleMaterial, Texture2D> setTexture, Func<string, bool>? loadMissingFile) {
 		var definition = new ParticleSystemDefinition(gameObject.m_Name ?? "");
 		var system = gameObject.GetFirstComponent<AssetStudio.ParticleSystem>();
 		if (system == null)
@@ -166,7 +187,7 @@ public static class UnityParticleConverter
 			};
 			if (particleRenderer != null) {
 				particleRenderer.SortOrder = renderer.m_SortingOrder;
-				particleRenderer.Material = CreateMaterial(renderer, loadTexture, loadMissingFile);
+				particleRenderer.Material = CreateMaterial(renderer, setTexture, loadMissingFile);
 				particleRenderer.Material.SheetColumns = columns;
 				particleRenderer.Material.SheetRows = rows;
 				definition.Renderers.Add(particleRenderer);
@@ -200,7 +221,7 @@ public static class UnityParticleConverter
 		}
 	}
 
-	static ParticleMaterial CreateMaterial(ParticleSystemRenderer renderer, Func<Texture2D, ITexture> loadTexture, Func<string, bool>? loadMissingFile) {
+	static ParticleMaterial CreateMaterial(ParticleSystemRenderer renderer, Action<ParticleMaterial, Texture2D> setTexture, Func<string, bool>? loadMissingFile) {
 		var result = new ParticleMaterial();
 		if (renderer.m_Materials.Count == 0 || !TryResolve(renderer, renderer.m_Materials[0], loadMissingFile, out var material))
 			return result;
@@ -243,7 +264,7 @@ public static class UnityParticleConverter
 			if (key != "_MainTex" || !TryResolve(material, environment.m_Texture, loadMissingFile, out var texture) || texture is not Texture2D texture2D)
 				continue;
 
-			result.Texture = loadTexture(texture2D);
+			setTexture(result, texture2D);
 			result.TextureScale = new(environment.m_Scale.X, environment.m_Scale.Y);
 			result.TextureOffset = new(environment.m_Offset.X, 1 - environment.m_Scale.Y - environment.m_Offset.Y);
 		}

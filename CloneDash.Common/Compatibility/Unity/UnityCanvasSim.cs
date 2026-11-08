@@ -556,7 +556,9 @@ public class UnityCanvas
 		return unitsPerEm > 0 && ascent - descent > 0 ? (float)(ascent - descent) / unitsPerEm : 1;
 	}
 
-	static string RegisterFont(AssetStudio.Font font) {
+	static string RegisterFont(AssetStudio.Font font) => MainThread.Invoke(() => RegisterFontOnGameThread(font));
+
+	static string RegisterFontOnGameThread(AssetStudio.Font font) {
 		if (!fontEmScales.ContainsKey(font.m_Name) && font.m_FontData != null)
 			fontEmScales[font.m_Name] = ReadEmScale(font.m_FontData);
 
@@ -1140,7 +1142,7 @@ public class UnityCanvas
 
 	ITexture LoadTexture(Texture2D texture) {
 		if (!textures.TryGetValue(texture.m_PathID, out var converted))
-			textures[texture.m_PathID] = converted = UnityAssetUtils.ConvertTexture(EngineCore.Level, texture);
+			textures[texture.m_PathID] = converted = MainThread.Invoke(() => UnityAssetUtils.ConvertTexture(EngineCore.Level, texture));
 		return converted;
 	}
 

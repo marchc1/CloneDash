@@ -1,5 +1,6 @@
 ﻿using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Scenes;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
@@ -12,6 +13,7 @@ namespace CloneDash.Scenes;
 
 public interface IMuseDash1SceneInstance : ISceneInstance
 {
+	void Prepare(MD1_GamemodeData data) { }
 	void Initialize();
 	void Refresh();
 
@@ -43,6 +45,7 @@ public interface IMuseDash1SceneInstance : ISceneInstance
 	ModelData? GetEnemyModel(DashEnemy enemy);
 	MuseDash1ParticleEffect? GetEnemyHitEffect(EntityVariant variant, PathwayId pathway);
 	MuseDash1ParticleEffect? GetPressEffect(PathwayId pathway, bool top);
+	void PrepareParticleEffects(PathwayLayout layout) { }
 	ModelData? GetHP(out string? mountAnimation);
 	string? GetMasherHitAnimation(int speed, EntityEnterDirection dir);
 	MD1_SpineActionControllerData GetBossActions();

@@ -60,7 +60,7 @@ public class MD1_SongChart : ISongChart
 				: "gamemode/musedash1/standard"
 			)!;
 	}
-	public object GetGamemodeData() => (GamemodeData ?? Song.ProduceGamemodeData(this, (int)Difficulty))
+	public object GetGamemodeData() => (GamemodeData ??= Song.ProduceGamemodeData(this, (int)Difficulty)!)
 									?? throw new Exception("uninitialized gamemode data");
 
 	public SongChartMetadata FetchMetadata() {

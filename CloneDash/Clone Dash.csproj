@@ -8,6 +8,7 @@
 		<AssemblyName>Clone Dash</AssemblyName>
 		<RootNamespace>CloneDash</RootNamespace>
 		<ApplicationIcon>cdicon.ico</ApplicationIcon>
+		<ServerGarbageCollection>true</ServerGarbageCollection>
 	</PropertyGroup>
 
 	<PropertyGroup>

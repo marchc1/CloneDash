@@ -10,6 +10,7 @@ using CloneDash.Common.Systems.Discord;
 using CloneDash.Common.UI.Searching;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.UnbeatableWhiteLabel;
+using CloneDash.Compatibility.Unity;
 using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
 using CloneDash.MuseDashCustomPlayCompatibility;
 using CloneDash.Game;
@@ -29,6 +30,7 @@ using Nucleus.UI;
 using Nucleus.Util;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 using Velopack;
 using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 
@@ -70,6 +72,8 @@ internal class Program
 			.WithStandardComponents()
 			.Build();
 
+		MuseDash1Compatibility.BeginInitializeCompatibilityLayer();
+
 		engineAPI.SetStartupInfo(new() {
 			AppName = "Clone Dash",
 			AppVersion = GameVersion.Current.ToString(),
@@ -104,16 +108,35 @@ internal class Program
 public class GameDLL : IGameDLL
 {
 	MemorySearchPath? fontSearchpath;
+	DiskSearchPath? fontCache;
 	void NucleusRegisterMDFont(ReadOnlySpan<char> fontName, ReadOnlySpan<char> fontAsset) {
 		if (fontSearchpath == null) {
 			fontSearchpath = new MemorySearchPath();
 			filesystem.AddSearchPath("fonts", fontSearchpath);
 		}
-		AssetStudio.Font font = MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Font>(fontAsset);
+		byte[] fontData = ReadMDFontData(fontAsset);
 		Graphics2D.FontManager.FontNameToFilepath[fontName.Hash(invariant: false)] = new(new(fontAsset), "fonts");
 
 		using (var writer = fontSearchpath.Open(fontAsset, FileAccess.Write, FileMode.Create))
-			writer!.Write(font.m_FontData);
+			writer!.Write(fontData);
+	}
+	byte[] ReadMDFontData(ReadOnlySpan<char> fontAsset) {
+		AddressablesCatalog catalog = MuseDash1Compatibility.StreamingAssets.Catalog;
+		StringBuilder bundleFiles = new();
+		foreach (var entry in catalog.SearchAll(fontAsset))
+			if (entry is UnitySearchAsset searchAsset)
+				foreach (var bundleFile in catalog.ResolveBundleFiles(searchAsset.DependencyKey))
+					bundleFiles.Append(bundleFile).Append('/');
+
+		fontCache ??= DiskSearchPath.Combine(filesystem.GetSearchPathID("appcache").First(), "fonts");
+		string cachePath = fontCache.ResolveToAbsolute($"{fontAsset}_{bundleFiles.ToString().AsSpan().Hash(invariant: false):x16}");
+		if (File.Exists(cachePath))
+			return File.ReadAllBytes(cachePath);
+
+		byte[] fontData = MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Font>(fontAsset)!.m_FontData;
+		File.WriteAllBytes(cachePath + ".tmp", fontData);
+		File.Move(cachePath + ".tmp", cachePath, overwrite: true);
+		return fontData;
 	}
 	public void PreStaticInitialize() {
 		// stupid hack to fix dependency-loading issues...
@@ -135,6 +158,10 @@ public class GameDLL : IGameDLL
 			.WithButton("Print 'No!'", () => Logs.Print("No!"))
 			.Show();*/
 
+		// Initialize UNBEATABLE compat
+		if (UnbeatableWhiteLabelCompatibility.IsEnabled())
+			UnbeatableWhiteLabelCompatibility.BeginInitializeCompatibilityLayer();
+
 		RichPresenceSystem.Initialize();
 		NucleusSingleton.Request("Clone Dash");
 		InputSettings.Initialize();
@@ -153,12 +180,6 @@ public class GameDLL : IGameDLL
 					_ => res.ToString()
 				}}");
 			}
-		}
-
-		// Initialize UNBEATABLE compat
-		if (UnbeatableWhiteLabelCompatibility.IsEnabled()) {
-			Interlude.Spin(submessage: "Initializing the UNBEATABLE [white label] compatibility layer...");
-			UnbeatableWhiteLabelCompatibility.InitializeCompatibilityLayer();
 		}
 
 		// Load muse dash fonts

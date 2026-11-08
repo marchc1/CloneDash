@@ -11,6 +11,7 @@ public enum ParticleAttribute
 	Tint,
 	Alpha,
 	Sequence,
+	AnimatedVelocity,
 
 	Count
 }
@@ -28,8 +29,9 @@ public enum ParticleAttributeMask : uint
 	Tint = 1u << (int)ParticleAttribute.Tint,
 	Alpha = 1u << (int)ParticleAttribute.Alpha,
 	Sequence = 1u << (int)ParticleAttribute.Sequence,
+	AnimatedVelocity = 1u << (int)ParticleAttribute.AnimatedVelocity,
 
-	Vectors = Position | Velocity | Tint,
+	Vectors = Position | Velocity | Tint | AnimatedVelocity,
 	Required = Position | Lifetime | CreationTime
 }
 

@@ -28,6 +28,7 @@ public interface IMuseDash1CharacterInstance : ICharacterInGameInstance
 {
 	IMuseDash1CharacterIndividual GetPrimary();
 	IMuseDash1CharacterIndividual GetSecondary();
+	void Prepare() { }
 	void Initialize();
 	void Think();
 	void Reset();

@@ -7,6 +7,7 @@ using CloneDash.Game.Logic;
 using Nucleus;
 using Nucleus.Entities;
 using Nucleus.ManagedMemory;
+using Nucleus.Models.Runtime;
 using Nucleus.Types;
 using System.Numerics;
 
@@ -119,6 +120,23 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 	public IMuseDash1CharacterIndividual GetSecondary() => swapped ? Player : HologramPlayer;
 
 	IShader hologramShader = null!;
+	ModelData? preparedGhostModel;
+	ModelData? preparedModel;
+
+	public void Prepare() {
+		preparedGhostModel = descriptor.GetPlayGhostModel(game, uploadTextures: false);
+		preparedModel = descriptor.GetPlayModel(game, uploadTextures: false);
+		descriptor.GetPlayGhostMaterial();
+		descriptor.GetPlayAnimationData();
+	}
+
+	static ModelData? takePrepared(ref ModelData? prepared) {
+		var model = prepared;
+		prepared = null;
+		if (model != null)
+			MuseDash1Compatibility.UploadModelDataTextures(model);
+		return model;
+	}
 
 	public void Initialize() {
 		var level = game;
@@ -126,8 +144,8 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 		hologramShader = level.Shaders.LoadFragmentShaderFromFile("shaders", "hologram.fs");
 
 		// set up hologram player before player so it has correct renderorder
-		HologramPlayer.Player = level.Add(ModelEntity.Create(descriptor.GetPlayGhostModel(level)));
-		Player.Player = level.Add(ModelEntity.Create(descriptor.GetPlayModel(level)));
+		HologramPlayer.Player = level.Add(ModelEntity.Create(takePrepared(ref preparedGhostModel) ?? descriptor.GetPlayGhostModel(level)));
+		Player.Player = level.Add(ModelEntity.Create(takePrepared(ref preparedModel) ?? descriptor.GetPlayModel(level)));
 		// set hologram shader (todo: we really need models to have materials here instead...)
 		if (!hasSupport) {
 			var material = descriptor.GetPlayGhostMaterial();

@@ -444,7 +444,7 @@ public static class EngineCore
 
 		s.Stop();
 
-		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Aggressive, true);
+		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
 		GC.WaitForPendingFinalizers();
 
 		Logs.Info($"{level.GetType().Name} loaded in {s.Elapsed.TotalSeconds:0.####} seconds");
@@ -480,7 +480,7 @@ public static class EngineCore
 
 		ConsoleSystem.ClearScreenBlockers();
 
-		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Aggressive, true);
+		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
 
 		LoadingLevel = false;
 	}

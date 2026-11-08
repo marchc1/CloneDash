@@ -218,8 +218,10 @@ public static class UnityAssetUtils
 		return img;
 	}
 
-	public static ITexture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
-		using Raylib_cs.Raylib.ImageRef img = new Raylib_cs.Raylib.ImageRef(tex.ToRaylib());
+	public static ITexture ConvertTexture(Level level, AssetStudio.Texture2D tex) => UploadTexture(tex.ToRaylib());
+
+	public static ITexture UploadTexture(Image image) {
+		using Raylib_cs.Raylib.ImageRef img = new Raylib_cs.Raylib.ImageRef(image);
 		ITexture ntex = textures.CreateTexture((Image)img);
 		ntex.SetFilter(TextureFilter.Bilinear);
 		ntex.SetWrap(TextureWrap.Clamp);

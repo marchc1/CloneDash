@@ -265,6 +265,8 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 		}
 	}
 
+	public void Prepare() => Character.Prepare();
+
 	public void Reset() {
 		if (Sustains.IsSustaining() && Scenes.HasActiveScene(out var scene))
 			scene.OnPressStateChange(false, true);

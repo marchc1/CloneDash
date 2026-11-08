@@ -90,6 +90,9 @@ public static unsafe class OS
 
 		SetupMetadata(in gameInfo);
 
+		// If controller input doesnt work in the future, revisit this
+		SDL3.SDL_SetHint("SDL_JOYSTICK_DIRECTINPUT", "0");
+
 		if (!SDL3.SDL_Init(
 			SDL_InitFlags.SDL_INIT_AUDIO |
 			//SDL_InitFlags.SDL_INIT_CAMERA |

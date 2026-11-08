@@ -41,6 +41,10 @@ public sealed class ParticleStretchedRenderer : ParticleRenderer
 	public override void Render(ParticleCollection particles, in Matrix4x4 transform, object? context) {
 		particles.GetVector(ParticleAttribute.Position, out var px, out var py, out _);
 		particles.GetVector(ParticleAttribute.Velocity, out var vx, out var vy, out _);
+		bool animated = particles.HasAttribute(ParticleAttribute.AnimatedVelocity);
+		Span<float> ax = default, ay = default;
+		if (animated)
+			particles.GetVector(ParticleAttribute.AnimatedVelocity, out ax, out ay, out _);
 		var radius = particles.GetFloat(ParticleAttribute.Radius);
 		var sequence = particles.GetFloat(ParticleAttribute.Sequence);
 
@@ -51,6 +55,8 @@ public sealed class ParticleStretchedRenderer : ParticleRenderer
 				continue;
 
 			var velocity = new Vector2(vx[i], vy[i]);
+			if (animated)
+				velocity += new Vector2(ax[i], ay[i]);
 			float speed = velocity.Length();
 			var forward = speed > 0.0001f ? velocity / speed : Vector2.UnitY;
 			var side = new Vector2(forward.Y, -forward.X) * r;

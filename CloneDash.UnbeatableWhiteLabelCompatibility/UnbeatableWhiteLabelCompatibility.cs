@@ -26,7 +26,13 @@ namespace CloneDash.Compatibility.UnbeatableWhiteLabel;
 [MarkForStaticConstruction]
 public static partial class UnbeatableWhiteLabelCompatibility
 {
-	public static BeatmapIndex BeatmapIndex;
+	static BeatmapIndex beatmapIndex;
+	public static BeatmapIndex BeatmapIndex {
+		get {
+			WaitForInitialization();
+			return beatmapIndex;
+		}
+	}
 	static AssetsManager Assets;
 	static string InstallDir;
 
@@ -53,7 +59,13 @@ public static partial class UnbeatableWhiteLabelCompatibility
 		public required AssetStudio.Object Object;
 	}
 	static readonly Dictionary<long, lookupEntry> PathIDLUT = [];
-	static readonly Dictionary<ulong, lookupEntry> NameLUT = [];
+	static readonly HashSet<SerializedFile> ReadAssetsFiles = [];
+
+	static Task<AppStatus>? initializeTask;
+
+	public static void BeginInitializeCompatibilityLayer() => initializeTask ??= Task.Run(InitializeCompatibilityLayer);
+
+	static void WaitForInitialization() => initializeTask?.GetAwaiter().GetResult();
 
 	public static AppStatus InitializeCompatibilityLayer() {
 		AppStatus result;
@@ -61,23 +73,14 @@ public static partial class UnbeatableWhiteLabelCompatibility
 			return result; // unbeatable is optional
 		}
 
-		// Build the LUT
-		foreach (var serializedFile in Assets!.AssetsFileList) {
-			foreach (var obj in serializedFile.Objects) {
-				lookupEntry entry = new() { SerializedFile = serializedFile, Object = obj };
-				PathIDLUT[obj.m_PathID] = entry;
-				NameLUT[obj.GetUnityName().Hash(false)] = entry;
-			}
-		}
-
-		MonoBehaviour mb_beatmapIndex = GetObjectByName<MonoBehaviour>("BeatmapIndex")!;
+		MonoBehaviour mb_beatmapIndex = FindResource<MonoBehaviour>("beatmapindex")!;
 		var data = mb_beatmapIndex.ToType(mb_beatmapIndex.ConvertToTypeTree(Assemblies));
 
-		BeatmapIndex = new();
-		BeatmapIndex.Name = (string)data["m_Name"]!;
+		beatmapIndex = new();
+		beatmapIndex.Name = (string)data["m_Name"]!;
 
 		object[] songs = (object[])data["songs"]!;
-		BeatmapIndex.Songs = new BeatmapIndexSong[songs.Length];
+		beatmapIndex.Songs = new BeatmapIndexSong[songs.Length];
 		int i = 0;
 		foreach (var songObj in songs) {
 			OrderedDictionary songDict = (OrderedDictionary)songObj;
@@ -85,9 +88,9 @@ public static partial class UnbeatableWhiteLabelCompatibility
 			if (songName == null || !Songs.TryGetValue(songName, out var musicName))
 				continue;
 
-			BeatmapIndexSong song = BeatmapIndex.Songs[i] = new BeatmapIndexSong();
+			BeatmapIndexSong song = beatmapIndex.Songs[i] = new BeatmapIndexSong();
 			song.Name = songName;
-			BeatmapIndex.SongDict[song.Name] = song;
+			beatmapIndex.SongDict[song.Name] = song;
 			song.StageScene = (string)songDict["stageScene"]!;
 
 			object[] beatmaps = (object[])songDict["beatmaps"]!;
@@ -108,7 +111,7 @@ public static partial class UnbeatableWhiteLabelCompatibility
 			}
 			i++;
 		}
-		BeatmapIndex.Songs = BeatmapIndex.Songs.Where(x => x != null).ToArray();
+		beatmapIndex.Songs = beatmapIndex.Songs.Where(x => x != null).ToArray();
 		return AppStatus.OK;
 	}
 
@@ -179,13 +182,78 @@ public static partial class UnbeatableWhiteLabelCompatibility
 		}
 	}
 
-	public static T? GetObjectByName<T>(ReadOnlySpan<char> name) where T : AssetStudio.Object {
-		if (!NameLUT.TryGetValue(name.Hash(false), out lookupEntry? entry))
+	static SerializedFile? FindAssetsFile(string fileName) {
+		foreach (var file in Assets.AssetsFileList)
+			if (file.fileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
+				return file;
+		return null;
+	}
+
+	static SerializedFile? ReadAssetsFile(string fileName) {
+		lock (ReadAssetsFiles) {
+			SerializedFile? root = FindAssetsFile(fileName);
+			if (root == null || ReadAssetsFiles.Contains(root))
+				return root;
+
+			List<SerializedFile> toRead = [];
+			Stack<SerializedFile> pending = [];
+			pending.Push(root);
+			while (pending.TryPop(out var file)) {
+				if (!ReadAssetsFiles.Add(file))
+					continue;
+
+				toRead.Add(file);
+				foreach (var external in file.m_Externals)
+					if (FindAssetsFile(external.fileName) is SerializedFile dependency)
+						pending.Push(dependency);
+			}
+
+			Assets.ReadFiles(toRead);
+			foreach (var file in toRead)
+				foreach (var obj in file.Objects)
+					PathIDLUT[obj.m_PathID] = new() { SerializedFile = file, Object = obj };
+
+			return root;
+		}
+	}
+
+	static T? FindResource<T>(string resourcePath) where T : AssetStudio.Object {
+		SerializedFile? globalGameManagers = FindAssetsFile("globalgamemanagers");
+		if (globalGameManagers == null)
 			return null;
-		return entry.Object is T t ? t : null;
+
+		foreach (var objectInfo in globalGameManagers.m_Objects) {
+			if (objectInfo.classID != (int)ClassIDType.ResourceManager)
+				continue;
+
+			ResourceManager resourceManager = new(new ObjectReader(globalGameManagers.reader, globalGameManagers, objectInfo));
+			foreach (var (path, pptr) in resourceManager.m_Container) {
+				if (!path.Equals(resourcePath, StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				ReadAssetsFile(pptr.m_FileID == 0 ? globalGameManagers.fileName : globalGameManagers.m_Externals[pptr.m_FileID - 1].fileName);
+				if (pptr.TryGet(out T? resource))
+					return resource;
+			}
+		}
+
+		return null;
+	}
+
+	public static T? GetObjectByName<T>(string fileName, ReadOnlySpan<char> name) where T : AssetStudio.Object {
+		WaitForInitialization();
+		SerializedFile? file = ReadAssetsFile(fileName);
+		if (file == null)
+			return null;
+
+		foreach (var obj in file.Objects)
+			if (obj is T t && name.SequenceEqual(obj.GetUnityName()))
+				return t;
+		return null;
 	}
 
 	static Dictionary<string, IAudioClip> LoadClips(string bankFile, Dictionary<string, IAudioClip> clips, ref bool loaded) {
+		WaitForInitialization();
 		if (!loaded && InstallDir != null) {
 			loaded = true;
 			BuildNucleusClips(LoadFsbMagically(System.IO.File.ReadAllBytes(System.IO.Path.Combine(InstallDir, "UNBEATABLE [white label]_Data", "StreamingAssets", bankFile))), clips);
@@ -200,6 +268,7 @@ public static partial class UnbeatableWhiteLabelCompatibility
 	public static IAudioClip? GetSfxClip(string name) => LoadClips("SFX.bank", SfxClips, ref SfxLoaded).TryGetValue(name, out var clip) ? clip : null;
 
 	public static T? GetObjectByPathID<T>(long pathID) where T : AssetStudio.Object {
+		WaitForInitialization();
 		if (!PathIDLUT.TryGetValue(pathID, out lookupEntry? entry))
 			return null;
 		return entry.Object is T t ? t : null;

@@ -2108,6 +2108,7 @@ public class ActiveAttachmentTimeline() : CurveTimeline<string?>(1), ISlotTimeli
 		if (BeforeFirstFrame(time))
 			switch (blend) {
 				case MixBlendMode.Setup:
+				case MixBlendMode.First:
 					Set(slot, GetSetup(slot));
 					return;
 

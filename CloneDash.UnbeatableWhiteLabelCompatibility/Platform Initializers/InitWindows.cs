@@ -18,7 +18,7 @@ public static partial class UnbeatableWhiteLabelCompatibility
 
 		InstallDir = installdir;
 		Assets = new AssetsManager();
-		Assets.LoadFolder(System.IO.Path.Combine(installdir, "UNBEATABLE [white label]_Data"));
+		Assets.LoadFolderHeaders(System.IO.Path.Combine(installdir, "UNBEATABLE [white label]_Data"));
 
 		Assemblies = new AssemblyLoader();
 		Assemblies.Load(installdir);

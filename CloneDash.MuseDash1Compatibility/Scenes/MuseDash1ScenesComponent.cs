@@ -98,6 +98,11 @@ public class MuseDash1ScenesComponent : IRhythmGameComponent
 			scene.Initialize();
 	}
 
+	public void Prepare() {
+		foreach (var scene in GetAllScenes())
+			scene.Prepare(data);
+	}
+
 	public void Reset() => SetScene(FirstScene);
 
 	public bool SetScene(IMuseDash1SceneInstance? scene) {

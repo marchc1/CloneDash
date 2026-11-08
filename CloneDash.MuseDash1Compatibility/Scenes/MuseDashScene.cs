@@ -26,6 +26,7 @@ using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
+using Nucleus.Particles;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.Util;
@@ -34,6 +35,7 @@ using Raylib_cs;
 using SevenZip.CommandLineParser;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -360,8 +362,15 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 	PathwayInformation airAnchor, roadAnchor;
 	readonly Conductor conductor;
 	readonly PathwaysComponent pathways;
-	protected readonly Dictionary<long, ModelData> loadedModels = [];
+	protected readonly ConcurrentDictionary<long, Lazy<ModelData>> loadedModels = [];
+	readonly ConcurrentQueue<ModelData> preparedModels = [];
+	readonly ConcurrentDictionary<string, (byte[]? Rebuilt, string ClipName)> preparedSounds = [];
+	bool enemyTablesReady;
+	bool preparing;
 	readonly Dictionary<string, MuseDash1ParticleEffect?> particleEffects = [];
+	readonly List<(ParticleMaterial Material, Texture2D Texture)> pendingEffectTextures = [];
+	readonly Dictionary<long, Nucleus.Common.Images.Image> preparedEffectImages = [];
+	bool preparingParticleEffects;
 	readonly HashSet<SerializedFile> pinnedFiles = [];
 
 	static readonly string[] providedAssetSets = [PathwayLayout.ASSETS_AIR, PathwayLayout.ASSETS_ROAD];
@@ -370,11 +379,45 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 	public MuseDash1SceneInfo SceneInfo => Descriptor.SceneInfo;
 
 
+	static Task<HashSet<SerializedFile>>? preload;
+
+	internal static void Preload(ISongChart chart) {
+		var descriptor = SceneMod.Instance.GetActive() as MuseDash1SceneDescriptor
+			?? (chart is MD1_SongChart songChart ? SceneMod.Instance.GetDescriptorByUID($"scene/musedash1/{songChart.Song.GetInfo()?.Scene}") as MuseDash1SceneDescriptor : null);
+		if (descriptor == null || preload != null)
+			return;
+
+		var mapName = descriptor.SceneInfo.MapName;
+		preload = Task.Run(() => {
+			var assets = MuseDash1Compatibility.StreamingAssets;
+			HashSet<SerializedFile> pinned = [];
+			try {
+				if (assets.FindAssetByName<GameObject>(mapName) is GameObject scene)
+					UnityParticleConverter.PreloadMaterials(scene, fileName => assets.LoadDependenciesContaining(mapName, new HashSet<string> { fileName }, pinned));
+			}
+			catch (Exception ex) {
+				Logs.Warn($"Scene preload for {mapName} failed: {ex.Message}");
+			}
+			return pinned;
+		});
+	}
+
+	static HashSet<SerializedFile> TakePreload() {
+		var task = preload;
+		preload = null;
+		if (task == null)
+			return [];
+
+		Interlude.SpinUntilComplete(task);
+		return task.Result;
+	}
+
 	public MuseDash1SceneRuntime(MuseDash1SceneDescriptor descriptor, RhythmGameLevel game, Conductor conductor, PathwaysComponent pathways) {
 		Descriptor = descriptor;
 		Game = game;
 		this.conductor = conductor;
 		this.pathways = pathways;
+		var preloaded = TakePreload();
 
 		var sceneGameObject = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(SceneInfo.MapName)!;
 		var sceneSubControl = new MonoBehaviourReader(
@@ -443,6 +486,8 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 			Color = PathwayLayout.CENTER_COLOR
 		};
 		ReleasePinnedFiles();
+		foreach (var file in preloaded)
+			MuseDash1Compatibility.StreamingAssets.Unpin(file);
 	}
 
 	string GetBossPrefab() {
@@ -468,11 +513,18 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 		return dataAsset.TryGet(out var asset) ? LoadModel(asset) : null;
 	}
 
-	internal ModelData LoadModel(MonoBehaviour? skeletonAnimation) {
-		if (loadedModels.TryGetValue(skeletonAnimation!.m_PathID, out var mdl)) return mdl;
+	internal ModelData LoadModel(MonoBehaviour? skeletonAnimation) => loadedModels.GetOrAdd(skeletonAnimation!.m_PathID, _ => new(() => {
+		var model = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, skeletonAnimation, uploadTextures: !preparing);
+		if (preparing)
+			preparedModels.Enqueue(model);
+		return model;
+	})).Value;
 
-		loadedModels[skeletonAnimation.m_PathID] = mdl = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, skeletonAnimation!);
-		return mdl;
+	void UploadPreparedModels() {
+		if (preparing)
+			return;
+		while (preparedModels.TryDequeue(out var model))
+			MuseDash1Compatibility.UploadModelDataTextures(model);
 	}
 
 	static void ResolvePathwayAssets(PathwayLayout layout, PathwayId pathway, out bool air, out float hueShift) {
@@ -509,12 +561,68 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 	string GetNotePrefabName(string code, bool air) => $"{SceneInfo.MapIdx:00}{code}{(air ? "04_air_nor_1" : "01_road_nor_1")}";
 
 	MuseDash1ParticleEffect? LoadParticleEffect(string key, string source, Func<GameObject?> find) {
-		if (particleEffects.TryGetValue(key, out var effect))
+		MuseDash1ParticleEffect? effect;
+		if (preparingParticleEffects) {
+			lock (particleEffects)
+				if (particleEffects.TryGetValue(key, out effect))
+					return effect;
+
+			HashSet<SerializedFile> pinned = [];
+			effect = MuseDash1ParticleEffect.Load(find(), PrepareEffectTexture, fileName => MuseDash1Compatibility.StreamingAssets.LoadDependenciesContaining(source, new HashSet<string> { fileName }, pinned));
+			lock (particleEffects) {
+				particleEffects[key] = effect;
+				pinnedFiles.UnionWith(pinned);
+			}
+			return effect;
+		}
+
+		if (pendingEffectTextures.Count > 0) {
+			foreach (var (material, texture) in pendingEffectTextures)
+				material.Texture = textureCache.TryGetValue(texture.m_PathID, out var loaded) ? loaded
+					: preparedEffectImages.Remove(texture.m_PathID, out var image) ? textureCache[texture.m_PathID] = UnityAssetUtils.UploadTexture(image)
+					: LoadTexture(texture);
+			pendingEffectTextures.Clear();
+			ReleasePinnedFiles();
+		}
+
+		if (particleEffects.TryGetValue(key, out effect))
 			return effect;
 
 		particleEffects[key] = effect = MuseDash1ParticleEffect.Load(find(), LoadTexture, fileName => LoadDependency(source, fileName));
 		ReleasePinnedFiles();
 		return effect;
+	}
+
+	void PrepareEffectTexture(ParticleMaterial material, Texture2D texture) {
+		bool decode;
+		lock (pendingEffectTextures) {
+			pendingEffectTextures.Add((material, texture));
+			decode = !textureCache.ContainsKey(texture.m_PathID) && preparedEffectImages.TryAdd(texture.m_PathID, default);
+		}
+		if (!decode)
+			return;
+
+		var image = texture.ToRaylib();
+		lock (pendingEffectTextures)
+			preparedEffectImages[texture.m_PathID] = image;
+	}
+
+	public void PrepareParticleEffects(PathwayLayout layout) {
+		preparingParticleEffects = true;
+		try {
+			List<Action> effects = [];
+			for (int i = 0; i < layout.Count; i++) {
+				var pathway = layout.PathwayAt(i);
+				effects.Add(() => GetEnemyHitEffect(EntityVariant.Small, pathway));
+				effects.Add(() => GetEnemyHitEffect(EntityVariant.Boss1, pathway));
+				effects.Add(() => GetPressEffect(pathway, false));
+				effects.Add(() => GetPressEffect(pathway, true));
+			}
+			Parallel.Invoke([.. effects]);
+		}
+		finally {
+			preparingParticleEffects = false;
+		}
 	}
 
 	bool LoadDependency(string source, string fileName) => MuseDash1Compatibility.StreamingAssets.LoadDependenciesContaining(source, new HashSet<string> { fileName }, pinnedFiles);
@@ -617,32 +725,77 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 	AudioPlaybackHandle pressIdle;
 	int arrayIndex;
 
+	public void Prepare(MD1_GamemodeData data) {
+		preparing = true;
+		try {
+			var sounds = Task.Run(PrepareSounds);
+			SetupEnemyTables();
+
+			HashSet<NullLazyLoad<ModelData>> loads = [BossModel];
+			if (data.Entities.Exists(entity => entity.Blood))
+				loads.Add(HpMountModel);
+			foreach (var entity in data.Entities) {
+				try {
+					if (EnemyModelLoad(entity.Type, entity.Variant, pathwayAirAssets[pathways.PrimaryPathway(entity.Pathway).Index], entity.Flipped) is { } load)
+						loads.Add(load);
+				}
+				catch (NotImplementedException) { }
+			}
+			Parallel.ForEach(loads, load => load.TryLoad());
+			sounds.GetAwaiter().GetResult();
+		}
+		finally {
+			preparing = false;
+		}
+	}
+
+	void PrepareSounds() {
+		var sounds = SceneInfo.Sounds;
+		List<string?> names = [sounds.Begin, sounds.Fever, sounds.Unpause, sounds.FullCombo, sounds.Block, sounds.Crystal, sounds.FailBgm, sounds.Forte2, sounds.Forte3, sounds.Ghost,
+			sounds.Hp, sounds.Jump, sounds.Mezzo1, sounds.Mezzo3, sounds.Piano2, sounds.PressIdle, sounds.PressTop, sounds.Score, sounds.VictoryBgm];
+		for (int i = 0; i < 16; i++)
+			names.Add(sounds.HitSounds[i]);
+		Parallel.ForEach(names.OfType<string>().Distinct(), name => {
+			try {
+				var rebuilt = MuseDash1Compatibility.RebuildSoundFromName(name, out var clipName);
+				preparedSounds[name] = (rebuilt, clipName);
+			}
+			catch (Exception ex) {
+				Logs.Warn($"Couldn't prepare scene sound {name}: {ex.Message}");
+			}
+		});
+	}
+
+	IAudioClip? LoadSceneSound(string name) => preparedSounds.TryGetValue(name, out var sound) ? MuseDash1Compatibility.CreateSound(sound.Rebuilt, sound.ClipName) : MuseDash1Compatibility.LoadSoundFromName(Game, name);
+
+	IAudioClip? LoadSceneMusic(string name) => preparedSounds.TryGetValue(name, out var sound) ? MuseDash1Compatibility.CreateSound(sound.Rebuilt, name) : MuseDash1Compatibility.LoadMusicFromName(Game, name);
+
 	public void Initialize() {
 		var game = this.Game;
 
-		BeginSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Begin ?? throw new NullReferenceException());
-		FeverSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Fever ?? throw new NullReferenceException());
-		UnpauseSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Unpause ?? throw new NullReferenceException());
-		FullComboSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.FullCombo ?? throw new NullReferenceException());
-		BlockSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Block ?? throw new NullReferenceException());
-		CrystalSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Crystal ?? throw new NullReferenceException());
-		FailBgmSound = MuseDash1Compatibility.LoadMusicFromName(game, SceneInfo.Sounds.FailBgm ?? throw new NullReferenceException());
-		Forte2Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Forte2 ?? throw new NullReferenceException());
-		Forte3Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Forte3 ?? throw new NullReferenceException());
-		GhostSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Ghost ?? throw new NullReferenceException());
-		HpSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Hp ?? throw new NullReferenceException());
-		JumpSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Jump ?? throw new NullReferenceException());
-		Mezzo1Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Mezzo1 ?? throw new NullReferenceException());
-		Mezzo3Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Mezzo3 ?? throw new NullReferenceException());
-		Piano2Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Piano2 ?? throw new NullReferenceException());
-		PressIdleSound = MuseDash1Compatibility.LoadMusicFromName(game, SceneInfo.Sounds.PressIdle ?? throw new NullReferenceException());
-		PressTopSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.PressTop ?? throw new NullReferenceException());
-		ScoreSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Score ?? throw new NullReferenceException());
-		VictoryBgmSound = MuseDash1Compatibility.LoadMusicFromName(game, SceneInfo.Sounds.VictoryBgm ?? throw new NullReferenceException());
+		BeginSound = LoadSceneSound(SceneInfo.Sounds.Begin ?? throw new NullReferenceException());
+		FeverSound = LoadSceneSound(SceneInfo.Sounds.Fever ?? throw new NullReferenceException());
+		UnpauseSound = LoadSceneSound(SceneInfo.Sounds.Unpause ?? throw new NullReferenceException());
+		FullComboSound = LoadSceneSound(SceneInfo.Sounds.FullCombo ?? throw new NullReferenceException());
+		BlockSound = LoadSceneSound(SceneInfo.Sounds.Block ?? throw new NullReferenceException());
+		CrystalSound = LoadSceneSound(SceneInfo.Sounds.Crystal ?? throw new NullReferenceException());
+		FailBgmSound = LoadSceneMusic(SceneInfo.Sounds.FailBgm ?? throw new NullReferenceException());
+		Forte2Sound = LoadSceneSound(SceneInfo.Sounds.Forte2 ?? throw new NullReferenceException());
+		Forte3Sound = LoadSceneSound(SceneInfo.Sounds.Forte3 ?? throw new NullReferenceException());
+		GhostSound = LoadSceneSound(SceneInfo.Sounds.Ghost ?? throw new NullReferenceException());
+		HpSound = LoadSceneSound(SceneInfo.Sounds.Hp ?? throw new NullReferenceException());
+		JumpSound = LoadSceneSound(SceneInfo.Sounds.Jump ?? throw new NullReferenceException());
+		Mezzo1Sound = LoadSceneSound(SceneInfo.Sounds.Mezzo1 ?? throw new NullReferenceException());
+		Mezzo3Sound = LoadSceneSound(SceneInfo.Sounds.Mezzo3 ?? throw new NullReferenceException());
+		Piano2Sound = LoadSceneSound(SceneInfo.Sounds.Piano2 ?? throw new NullReferenceException());
+		PressIdleSound = LoadSceneMusic(SceneInfo.Sounds.PressIdle ?? throw new NullReferenceException());
+		PressTopSound = LoadSceneSound(SceneInfo.Sounds.PressTop ?? throw new NullReferenceException());
+		ScoreSound = LoadSceneSound(SceneInfo.Sounds.Score ?? throw new NullReferenceException());
+		VictoryBgmSound = LoadSceneMusic(SceneInfo.Sounds.VictoryBgm ?? throw new NullReferenceException());
 
 		HitSounds = new IAudioClip?[16];
 		for (int i = 0; i < 16; i++) {
-			HitSounds[i] = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.HitSounds[i] ?? throw new NullReferenceException());
+			HitSounds[i] = LoadSceneSound(SceneInfo.Sounds.HitSounds[i] ?? throw new NullReferenceException());
 			HitSounds[i]?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
 		}
 
@@ -692,6 +845,15 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 
 		if (Array.Exists(pathwayHueShift, x => x != 0))
 			HueShiftShader = game.Shaders.LoadFragmentShaderFromFile("shaders", "hue_shift.fs");
+
+		if (!enemyTablesReady)
+			SetupEnemyTables();
+		UploadPreparedModels();
+		preparedSounds.Clear();
+	}
+
+	void SetupEnemyTables() {
+		var assets = MuseDash1Compatibility.StreamingAssets;
 
 		string bossID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSS}";
 		string bossPrefab = GetBossPrefab();
@@ -799,6 +961,7 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 		PopulateThreeSpeedPathwayAnimations(AirRaiderA_Anims, RoadRaiderA_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetRaider(req.scene, req.air, req.speed, false));
 		PopulateThreeSpeedPathwayAnimations(AirRaiderB_Anims, RoadRaiderB_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetRaider(req.scene, req.air, req.speed, true));
 		PopulateThreeSpeedPathwayAnimations(AirGhostAnims, RoadGhostAnims, static (in req) => MuseDash1SceneEnemyInfo.GetGhost(req.scene, req.air, req.speed));
+		enemyTablesReady = true;
 	}
 
 	public struct RequestInfo
@@ -1116,33 +1279,38 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 	}
 
 	public ModelData? GetEnemyModel(DashEnemy enemy) {
-		switch (enemy.Type) {
+		UploadPreparedModels();
+		return EnemyModelLoad(enemy.Type, enemy.Variant, AirAssets(enemy), enemy.Flipped)?.TryLoad();
+	}
+
+	NullLazyLoad<ModelData>? EnemyModelLoad(MuseDash1EntityType type, EntityVariant variant, bool air, bool flipped) {
+		switch (type) {
 			case MuseDash1EntityType.Boss: return BossModel;
 			case MuseDash1EntityType.Single:
-				return enemy.Variant switch {
-					EntityVariant.Boss1 => AirAssets(enemy) ? AirBoss1Model : RoadBoss1Model,
-					EntityVariant.Boss2 => AirAssets(enemy) ? AirBoss2Model : RoadBoss2Model,
-					EntityVariant.Boss3 => AirAssets(enemy) ? AirBoss3Model : RoadBoss3Model,
-					EntityVariant.Small => AirAssets(enemy) ? AirSmallModel : RoadSmallModel,
-					EntityVariant.Medium1 => AirAssets(enemy) ? AirMedium1Model : RoadMedium1Model,
-					EntityVariant.Medium2 => AirAssets(enemy) ? AirMedium2Model : RoadMedium2Model,
-					EntityVariant.Large1 => AirAssets(enemy) ? AirLarge1Model : RoadLarge1Model,
-					EntityVariant.Large2 => AirAssets(enemy) ? AirLarge2Model : RoadLarge2Model,
+				return variant switch {
+					EntityVariant.Boss1 => air ? AirBoss1Model : RoadBoss1Model,
+					EntityVariant.Boss2 => air ? AirBoss2Model : RoadBoss2Model,
+					EntityVariant.Boss3 => air ? AirBoss3Model : RoadBoss3Model,
+					EntityVariant.Small => air ? AirSmallModel : RoadSmallModel,
+					EntityVariant.Medium1 => air ? AirMedium1Model : RoadMedium1Model,
+					EntityVariant.Medium2 => air ? AirMedium2Model : RoadMedium2Model,
+					EntityVariant.Large1 => air ? AirLarge1Model : RoadLarge1Model,
+					EntityVariant.Large2 => air ? AirLarge2Model : RoadLarge2Model,
 					_ => throw new NotImplementedException()
 				};
 			case MuseDash1EntityType.Gear:
-				return enemy.Variant switch {
-					EntityVariant.Boss1 => AirAssets(enemy) ? AirBossGearModel : RoadBossGearModel,
-					EntityVariant.Boss2 => AirAssets(enemy) ? AirBossGearModel : RoadBossGearModel,
-					_ => AirAssets(enemy) ? AirGearModel : RoadGearModel,
+				return variant switch {
+					EntityVariant.Boss1 => air ? AirBossGearModel : RoadBossGearModel,
+					EntityVariant.Boss2 => air ? AirBossGearModel : RoadBossGearModel,
+					_ => air ? AirGearModel : RoadGearModel,
 				};
-			case MuseDash1EntityType.Double: return AirAssets(enemy) ? AirDoubleModel : RoadDoubleModel;
-			case MuseDash1EntityType.Ghost: return AirAssets(enemy) ? AirGhostModel : RoadGhostModel;
-			case MuseDash1EntityType.Hammer: return enemy.Flipped ? (AirAssets(enemy) ? AirHammerBModel : RoadHammerBModel) : (AirAssets(enemy) ? AirHammerModel : RoadHammerModel);
+			case MuseDash1EntityType.Double: return air ? AirDoubleModel : RoadDoubleModel;
+			case MuseDash1EntityType.Ghost: return air ? AirGhostModel : RoadGhostModel;
+			case MuseDash1EntityType.Hammer: return flipped ? (air ? AirHammerBModel : RoadHammerBModel) : (air ? AirHammerModel : RoadHammerModel);
 			case MuseDash1EntityType.Masher: return MasherModel;
-			case MuseDash1EntityType.Raider: return enemy.Flipped ? (AirAssets(enemy) ? AirRaiderBModel : RoadRaiderBModel) : (AirAssets(enemy) ? AirRaiderModel : RoadRaiderModel);
-			case MuseDash1EntityType.Heart: return AirAssets(enemy) ? AirHeartModel : RoadHeartModel;
-			case MuseDash1EntityType.Score: return AirAssets(enemy) ? AirScoreModel : RoadScoreModel;
+			case MuseDash1EntityType.Raider: return flipped ? (air ? AirRaiderBModel : RoadRaiderBModel) : (air ? AirRaiderModel : RoadRaiderModel);
+			case MuseDash1EntityType.Heart: return air ? AirHeartModel : RoadHeartModel;
+			case MuseDash1EntityType.Score: return air ? AirScoreModel : RoadScoreModel;
 			default: throw new NotImplementedException();
 		}
 	}
@@ -1167,6 +1335,7 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 		});
 	}
 	public ModelData? GetHP(out string? mountAnimation) {
+		UploadPreparedModels();
 		if (HpMountModel == null)
 			mountAnimation = null;
 		else

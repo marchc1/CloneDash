@@ -89,7 +89,7 @@ public class MuseDash1CharacterRetriever() : ModProvider<ICharacterDescriptor>("
 	}
 
 	public override ICharacterDescriptor? FindByID(ReadOnlySpan<char> id) {
-		if (MuseDash1Compatibility.Characters == null)
+		if (!MuseDash1Compatibility.Initialized)
 			return null;
 
 		foreach (var character in MuseDash1Compatibility.Characters) {
@@ -236,7 +236,7 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 	}
 
 	// I hate this!
-	public static ModelData PullModelDataFromSkeletonMecanim(Level level, MonoBehaviour skeletonMecanim) {
+	public static ModelData PullModelDataFromSkeletonMecanim(Level level, MonoBehaviour skeletonMecanim, bool uploadTextures = true) {
 		var assets = MuseDash1Compatibility.StreamingAssets;
 
 		// This pulls out skeletonDataAsset m_PathID
@@ -277,11 +277,11 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 			i++;
 		}
 
-		return MuseDash1ModelConverter.MD_GetModelData(level, jsonPathID, atlasPathID, textureIDs, materialsIn);
+		return MuseDash1ModelConverter.MD_GetModelData(level, jsonPathID, atlasPathID, textureIDs, materialsIn, uploadTextures);
 	}
 
-	public static ModelData PullModelDataFromGameObject(Level level, ReadOnlySpan<char> name)
-		=> PullModelDataFromSkeletonMecanim(level, FindSkeletonBehaviour(name)!);
+	public static ModelData PullModelDataFromGameObject(Level level, ReadOnlySpan<char> name, bool uploadTextures = true)
+		=> PullModelDataFromSkeletonMecanim(level, FindSkeletonBehaviour(name)!, uploadTextures);
 
 	public static float GetSkeletonScale(ReadOnlySpan<char> name) {
 		var skeleton = FindSkeletonBehaviour(name);
@@ -492,8 +492,8 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 		return name;
 	}
 
-	public ModelData GetPlayModel(Level level) => PullModelDataFromGameObject(level, ConfigData.GetBattleShow());
-	public ModelData GetPlayGhostModel(Level level) => PullModelDataFromGameObject(level, GetPlayGhostName());
+	public ModelData GetPlayModel(Level level, bool uploadTextures = true) => PullModelDataFromGameObject(level, ConfigData.GetBattleShow(), uploadTextures);
+	public ModelData GetPlayGhostModel(Level level, bool uploadTextures = true) => PullModelDataFromGameObject(level, GetPlayGhostName(), uploadTextures);
 	public ModelData GetVictoryModel(Level level) => PullModelDataFromGameObject(level, ConfigData.VictoryShow);
 	public string GetVictoryStandby() => "standby";
 
