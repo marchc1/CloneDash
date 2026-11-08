@@ -87,6 +87,8 @@ internal class Program
 	// TODO: fix this awfulness
 	private static void LevelTransitions_OnLoadSongSelector(SongSelector selector, Common.Songs.ISong song) {
 		if (song is MD1_CustomChartsSong customChartsSong) {
+			// clicked again mid-download, it already has a bar
+			bool alreadyDownloading = customChartsSong.IsDownloading;
 			customChartsSong.DownloadOrPullFromCache((c) => {
 				if (EngineCore.Level is not MainMenuLevel mml) {
 					Logs.Warn($"Downloading custom charts song '{c.FetchMetadata().Name}' completed downloading in a non-main menu context, ignoring.");
@@ -95,6 +97,9 @@ internal class Program
 
 				mml.LoadChartSelector(selector, c);
 			});
+
+			if (!alreadyDownloading && customChartsSong.IsDownloading)
+				new MainMenuLevel.DownloadProgressBar(selector, customChartsSong);
 		}
 		else
 			EngineCore.Level.As<MainMenuLevel>().LoadChartSelector(selector, song);

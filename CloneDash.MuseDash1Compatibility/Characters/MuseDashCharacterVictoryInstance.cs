@@ -22,12 +22,11 @@ public class MuseDashCharacterVictoryInstance(MuseDash1CharacterDescriptor descr
 		model.Scale = new(scale, scale);
 		anims.SetModel(model);
 		anims.SetAnimation(0, "in");
-		anims.AddAnimation(0, GetStandby(model), true);
+		anims.AddAnimation(0, GetStandby(model, Descriptor.GetVictoryStandby()), true);
 	}
 
 	// Bloodheir uses "Standby"
-	private string GetStandby(ModelInstance model) {
-		var standby = Descriptor.GetVictoryStandby();
+	internal static string GetStandby(ModelInstance model, string standby) {
 		if (model.Data.FindAnimation(standby) != null)
 			return standby;
 

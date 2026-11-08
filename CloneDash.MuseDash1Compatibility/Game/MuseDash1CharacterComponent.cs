@@ -25,6 +25,7 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 	readonly MuseDash1ScenesComponent Scenes;
 	readonly ISustainManager Sustains;
 
+	bool dead;
 	double LastHologramJumpTIme = -2000000000000d;
 	PathwayId LastJumpPathway;
 	double LastJumpTime = -2000000000000d;
@@ -222,6 +223,10 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 	}
 
 	public void PlayCharacterAnimation(CharacterAnimationType type) {
+		// Nothing overrides the death trip (TriggerDeath plays it on the character directly), e.g. the Hurt from the killing hit
+		if (dead)
+			return;
+
 		switch (type) {
 			case CharacterAnimationType.Press:
 			case CharacterAnimationType.DownPress:
@@ -253,6 +258,7 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 	}
 
 	public void Reset() {
+		dead = false;
 		if (Sustains.IsSustaining() && Scenes.HasActiveScene(out var scene))
 			scene.OnPressStateChange(false, true);
 
@@ -335,6 +341,10 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 		if (Quirks.PlayableAfterDeath)
 			return;
 
+		dead = true;
 		Character.GetPrimary().PlayAnimation(CharacterAnimationType.Die);
+		// Input stops on death, so a held note would never see its release and its hold sound would keep looping
+		if (Sustains.IsSustaining() && Scenes.HasActiveScene(out var scene))
+			scene.OnPressStateChange(false, true);
 	}
 }

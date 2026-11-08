@@ -18,6 +18,7 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 	readonly RhythmGameLevel level;
 	readonly MashComponent Mash;
 	readonly MusicComponent Music;
+	readonly ResultComponent Results;
 	readonly MuseDash1RulesComponent rules;
 	readonly MuseDash1ScenesComponent Scenes;
 	readonly ScoreComponent Score;
@@ -31,6 +32,7 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 		this.level = level;
 		Mash = mash;
 		Music = music;
+		Results = results;
 		this.rules = rules;
 		Scenes = scenes;
 		Score = score;
@@ -48,6 +50,7 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 		events.Listen<ScoreChangedGameEvent>(UpdateScore);
 		events.Listen<SeekFinishedGameEvent>(EndSeeking);
 		events.Listen<SongClearedGameEvent>(ShowVictory);
+		events.Listen<PlayerDeathGameEvent>(StartFailure);
 		events.Listen<SongFailedGameEvent>(ShowFailure);
 		events.Listen<UnpauseStartGameEvent>(PlayUnpauseSound);
 		events.Listen<WarningStartGameEvent>(StartWarning);
@@ -95,11 +98,21 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 		UI?.UpdateCombo(0);
 		UI?.UpdateHP(Health.Max, Health.Max);
 		UI?.UpdateFeverProgress(0, 0);
+		// undo the death fade-out
+		Music.SetVolume(1);
 	}
 
 	public void Think(FrameState frameState) {
 		if (!rules.IsDead() && Mash.InMashState)
 			UpdateMashTextEffect();
+
+		if (rules.IsDead()) {
+			// Like Muse Dash, the stage keeps scrolling while the fail screen fades in; the song fades with it and stops when the panel takes over
+			double sinceDeath = level.Curtime - Results.DeathTime;
+			Music.SetVolume((float)Math.Clamp(1 - sinceDeath / 2, 0, 1));
+			if (sinceDeath >= MuseDash1FailPanel.PANEL_START)
+				Music.Pause();
+		}
 
 		var sceneUI = UI;
 		if (sceneUI != null) {
@@ -149,6 +162,12 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 	private void PlayUnpauseSound(ref UnpauseStartGameEvent ev) {
 		if (Scenes.HasActiveScene(out var scene))
 			scene.PlaySound(SceneSound.Unpause, 0);
+	}
+
+	// The fail screen's magenta fade-in (PnlFailText) plays over the death trip, so it opens right away rather than on SongFailed
+	void StartFailure(ref PlayerDeathGameEvent ev) {
+		if (rules.IsDead())
+			UI?.OpenFailure();
 	}
 
 	void ShowFailure(ref SongFailedGameEvent ev) {

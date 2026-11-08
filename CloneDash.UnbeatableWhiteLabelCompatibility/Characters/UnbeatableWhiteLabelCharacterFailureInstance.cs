@@ -1,4 +1,6 @@
 ﻿using CloneDash.Characters;
+using CloneDash.Common.Game;
+using Nucleus;
 
 namespace CloneDash.Compatibility.UnbeatableWhiteLabel;
 
@@ -10,7 +12,11 @@ public class UnbeatableWhiteLabelCharacterFailureInstance(UnbeatableWhiteLabelCh
 
 	public ICharacterDescriptor GetCharacter() => descriptor;
 
+	public void Initialize(RhythmGameLevel? game) { }
+
 	public void PlayAudio() { }
+
+	public void Think() => model.Update(EngineCore.Level.RealtimeDeltaF);
 
 	public void Render() => model.RenderBeat(default, UnbeatableWhiteLabelCharacterVictoryInstance.SCALE);
 
