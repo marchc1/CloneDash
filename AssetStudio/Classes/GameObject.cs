@@ -22,7 +22,7 @@ namespace AssetStudio
         public GameObject(ObjectReader reader) : base(reader)
         {
             var m_ComponentSize = reader.ReadInt32();
-            m_Components = new List<PPtr<Component>>();
+            m_Components = new List<PPtr<Component>>(Math.Clamp(m_ComponentSize, 0, 4096));
             for (var i = 0; i < m_ComponentSize; i++)
             {
                 if (version < (5, 5)) //5.5 down

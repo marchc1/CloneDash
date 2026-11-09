@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace AssetStudio
 {
@@ -27,14 +28,14 @@ namespace AssetStudio
         public AssetBundle(ObjectReader reader) : base(reader)
         {
             var m_PreloadTableSize = reader.ReadInt32();
-            m_PreloadTable = new List<PPtr<Object>>();
+            m_PreloadTable = new List<PPtr<Object>>(Math.Clamp(m_PreloadTableSize, 0, 65536));
             for (var i = 0; i < m_PreloadTableSize; i++)
             {
                 m_PreloadTable.Add(new PPtr<Object>(reader));
             }
 
             var m_ContainerSize = reader.ReadInt32();
-            m_Container = new List<KeyValuePair<string, AssetInfo>>();
+            m_Container = new List<KeyValuePair<string, AssetInfo>>(Math.Clamp(m_ContainerSize, 0, 65536));
             for (var i = 0; i < m_ContainerSize; i++)
             {
                 m_Container.Add(new KeyValuePair<string, AssetInfo>(reader.ReadAlignedString(), new AssetInfo(reader)));

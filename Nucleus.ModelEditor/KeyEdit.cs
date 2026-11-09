@@ -74,7 +74,7 @@ public class KeyEdit
 			foreach (var curve in used) {
 				curves[curve] = timeline as DeformTimeline;
 				for (int i = 0; i + 1 < count; i++) {
-					if (curve.KeyAt(i) is Keyframe<float> key && curve.KeyAt(i + 1) is Keyframe<float> next)
+					if (curve.KeyAt(i) is KeyframeRef<float> key && curve.KeyAt(i + 1) is KeyframeRef<float> next)
 						segments[key] = GetSegment(key, next);
 				}
 			}
@@ -110,7 +110,7 @@ public class KeyEdit
 	}
 
 	public void SetValue(Key key, int curve, float value) {
-		if (key.Keyframes[curve] is not Keyframe<float> keyframe) return;
+		if (key.Keyframes[curve] is not KeyframeRef<float> keyframe) return;
 		float delta = value - keyframe.Value;
 		keyframe.Value = value;
 		if (keyframe.LeftHandle is KeyframeHandle<float> leftHandle)
@@ -175,7 +175,7 @@ public class KeyEdit
 				keySegments[i] = segments.TryGetValue(key.Keyframes[i], out var segment) ? segment : null;
 			}
 			float[]? deform = null;
-			if (key.Timeline is DeformTimeline deformTimeline && key.Primary is Keyframe<float> keyframe) {
+			if (key.Timeline is DeformTimeline deformTimeline && key.Primary is KeyframeRef<float> keyframe) {
 				int index = (int)Math.Round(keyframe.Value);
 				if (index >= 0 && index < deformTimeline.Offsets.Count)
 					deform = (float[])deformTimeline.Offsets[index].Clone();
@@ -206,7 +206,7 @@ public class KeyEdit
 				if (entry.Segments[i] is Segment segment)
 					segments[copies[i]] = segment;
 			}
-			if (timeline is DeformTimeline deformTimeline && copies[0] is Keyframe<float> keyframe) {
+			if (timeline is DeformTimeline deformTimeline && copies[0] is KeyframeRef<float> keyframe) {
 				deformTimeline.Offsets.Add(entry.Deform ?? new float[deformTimeline.Offsets.Count > 0 ? deformTimeline.Offsets[0].Length : 0]);
 				keyframe.Value = deformTimeline.Offsets.Count - 1;
 			}
@@ -273,7 +273,7 @@ public class KeyEdit
 				SyncDeform(deform);
 
 			for (int i = 0; i + 1 < count; i++) {
-				if (curve.KeyAt(i) is Keyframe<float> key && curve.KeyAt(i + 1) is Keyframe<float> next)
+				if (curve.KeyAt(i) is KeyframeRef<float> key && curve.KeyAt(i + 1) is KeyframeRef<float> next)
 					Apply(key, next, segments.TryGetValue(key, out var segment) ? segment : null, valued.Contains(key) || valued.Contains(next));
 			}
 		}
@@ -287,8 +287,10 @@ public class KeyEdit
 		var old = deform.Offsets;
 		List<float[]> offsets = [];
 		HashSet<float[]> used = [];
-		for (int i = 0; i < deform.Curve.Count; i++) {
-			var keyframe = deform.Curve[i];
+		deform.Curve.Recompute();
+		var keys = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(deform.Curve.Keyframes);
+		for (int i = 0; i < keys.Length; i++) {
+			ref var keyframe = ref keys[i];
 			int index = (int)Math.Round(keyframe.Value);
 			float[] values;
 			if (index >= 0 && index < old.Count)
@@ -301,7 +303,7 @@ public class KeyEdit
 		deform.Offsets = offsets;
 	}
 
-	private static Segment GetSegment(Keyframe<float> key, Keyframe<float> next) {
+	private static Segment GetSegment(KeyframeRef<float> key, KeyframeRef<float> next) {
 		double dt = next.Time - key.Time;
 		double valueDelta = next.Value - key.Value;
 		bool flat = Math.Abs(valueDelta) < 1e-6;
@@ -326,7 +328,7 @@ public class KeyEdit
 			next.Value - (next.LeftHandle?.Value ?? next.Value - valueDelta / 3));
 	}
 
-	private static void Apply(Keyframe<float> key, Keyframe<float> next, Segment? segment, bool absolute) {
+	private static void Apply(KeyframeRef<float> key, KeyframeRef<float> next, Segment? segment, bool absolute) {
 		double dt = next.Time - key.Time;
 		double valueDelta = next.Value - key.Value;
 		// a key that had nothing after it gets a straight curve

@@ -716,8 +716,7 @@ public class RuntimeConverter
 										}
 										order = slotIndices.ToArray();
 									}
-									var key = curve.AddKeyframe(new(keyframe.Time, order));
-									key.Interpolation = KeyframeInterpolation.Constant;
+									curve.AddKeyframe(new(keyframe.Time, order) { Interpolation = KeyframeInterpolation.Constant });
 								}
 								tl.Curves[0] = curve;
 								runtimeTimeline = tl;

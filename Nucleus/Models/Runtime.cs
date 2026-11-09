@@ -1580,6 +1580,14 @@ public abstract class CurveTimeline<T> : Timeline
 		}
 	}
 
+	public void NewCurves(int capacity) {
+		capacity = Math.Clamp(capacity, 0, 1 << 16);
+		for (int i = 0; i < Curves.Length; i++) {
+			Curves[i] = new();
+			Curves[i].Keyframes.Capacity = capacity;
+		}
+	}
+
 	/// <summary>
 	/// Returns a shared <typeparamref name="T"/>[] instance; keep this in mind if you store this value somewhere.
 	/// <br/>
@@ -1595,19 +1603,23 @@ public abstract class CurveTimeline<T> : Timeline
 	}
 
 	public bool BeforeFirstFrame(double time, out T? value) {
-		var first = Curves[0].First;
+		var curve = Curves[0];
+		curve.Recompute();
 		value = default;
-		if (first == null) return true;
+		if (curve.Count == 0) return true;
 
+		var first = curve.Keyframes[0];
 		value = first.Value;
 		return time < first.Time;
 	}
 
 	public bool AfterLastFrame(double time, out T? value) {
-		var last = Curves[0].Last;
+		var curve = Curves[0];
+		curve.Recompute();
 		value = default;
-		if (last == null) return true;
+		if (curve.Count == 0) return true;
 
+		var last = curve.Keyframes[^1];
 		value = last.Value;
 		return time > last.Time;
 	}
@@ -1818,8 +1830,8 @@ public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveT
 				}
 
 			if (AfterLastFrame(time)) {
-				x = Curve(0).Last!.Value * GetSetup(bone).X;
-				y = Curve(1).Last!.Value * GetSetup(bone).Y;
+				x = Curve(0).LastValue * GetSetup(bone).X;
+				y = Curve(1).LastValue * GetSetup(bone).Y;
 			}
 			else {
 				int index = Curve(0).DetermineIndexAtTime(time);
@@ -1870,8 +1882,8 @@ public abstract class DuoBoneFloatPropertyTimeline(bool multiplicative) : CurveT
 				}
 
 			if (AfterLastFrame(time)) {
-				x = Curve(0).Last!.Value;
-				y = Curve(1).Last!.Value;
+				x = Curve(0).LastValue;
+				y = Curve(1).LastValue;
 			}
 			else {
 				int index = Curve(0).DetermineIndexAtTime(time);
@@ -1921,10 +1933,10 @@ public class SlotColor4Timeline() : CurveTimeline<float>(4), ISlotTimeline
 		Color rgba;
 
 		if (AfterLastFrame(time)) {
-			r = Curve(0).Last?.Value ?? 1;
-			g = Curve(1).Last?.Value ?? 1;
-			b = Curve(2).Last?.Value ?? 1;
-			a = Curve(3).Last?.Value ?? 1;
+			r = Curve(0).LastValueOr(1);
+			g = Curve(1).LastValueOr(1);
+			b = Curve(2).LastValueOr(1);
+			a = Curve(3).LastValueOr(1);
 		}
 		else {
 			int index = Curve(0).DetermineIndexAtTime(time);
@@ -1981,9 +1993,9 @@ public class SlotRGBTimeline() : CurveTimeline<float>(3), ISlotTimeline
 
 		float r, g, b;
 		if (AfterLastFrame(time)) {
-			r = Curve(0).Last?.Value ?? 1;
-			g = Curve(1).Last?.Value ?? 1;
-			b = Curve(2).Last?.Value ?? 1;
+			r = Curve(0).LastValueOr(1);
+			g = Curve(1).LastValueOr(1);
+			b = Curve(2).LastValueOr(1);
 		}
 		else {
 			int index = Curve(0).DetermineIndexAtTime(time);
@@ -2028,7 +2040,7 @@ public class SlotAlphaTimeline() : CurveTimeline<float>(1), ISlotTimeline
 			}
 		}
 
-		float a = AfterLastFrame(time) ? Curve(0).Last?.Value ?? 1 : Curve(0).DetermineValueAtTime(time);
+		float a = AfterLastFrame(time) ? Curve(0).LastValueOr(1) : Curve(0).DetermineValueAtTime(time);
 		if (mix != 1) {
 			float baseA = (blend == MixBlendMode.Setup ? setup : now.A) / 255f;
 			a = baseA + (a - baseA) * (float)mix;
@@ -2068,7 +2080,7 @@ public class SlotRGBA2Timeline() : CurveTimeline<float>(7), ISlotTimeline
 		Span<float> values = stackalloc float[7];
 		if (AfterLastFrame(time)) {
 			for (int i = 0; i < 7; i++)
-				values[i] = Curve(i).Last?.Value ?? 1;
+				values[i] = Curve(i).LastValueOr(1);
 		}
 		else {
 			int index = Curve(0).DetermineIndexAtTime(time);
@@ -2120,7 +2132,7 @@ public class ActiveAttachmentTimeline() : CurveTimeline<string?>(1), ISlotTimeli
 
 		var curve = Curve(0);
 		if (AfterLastFrame(time)) {
-			attachmentID = curve.Last?.Value ?? null;
+			attachmentID = curve.LastValueOr(null);
 			switch (blend) {
 				case MixBlendMode.Setup:
 				case MixBlendMode.First:

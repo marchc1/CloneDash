@@ -99,10 +99,8 @@ public static class PoseKeys
 		return result;
 	}
 
-	private static Keyframe<float> Key(FCurve<float> curve, double time, float value, bool stepped = false) {
-		var keyframe = curve.AddKeyframe(new(time, value));
-		keyframe.Interpolation = stepped ? KeyframeInterpolation.Constant : KeyframeInterpolation.Linear;
-		return keyframe;
+	private static void Key(FCurve<float> curve, double time, float value, bool stepped = false) {
+		curve.AddKeyframe(new(time, value) { Interpolation = stepped ? KeyframeInterpolation.Constant : KeyframeInterpolation.Linear });
 	}
 
 	/// <summary>
@@ -113,8 +111,7 @@ public static class PoseKeys
 		switch (timeline) {
 			case DrawOrderTimeline drawOrder:
 				var model = (EditorModel)item;
-				drawOrder.Keys.AddKeyframe(new(time, model.DrawOrder.ToList())).Interpolation =
-					KeyframeInterpolation.Constant;
+				drawOrder.Keys.AddKeyframe(new(time, model.DrawOrder.ToList()) { Interpolation = KeyframeInterpolation.Constant });
 				break;
 			case EventTimeline events:
 				var editorEvent = (EditorEvent)item;
@@ -135,7 +132,7 @@ public static class PoseKeys
 					Volume = editorEvent.CurrentVolume,
 					Balance = editorEvent.CurrentBalance
 				});
-				events.Keys.AddKeyframe(new(time, list)).Interpolation = KeyframeInterpolation.Constant;
+				events.Keys.AddKeyframe(new(time, list) { Interpolation = KeyframeInterpolation.Constant });
 				break;
 			case DeformTimeline deform:
 				var pose = DeformPose(deform);

@@ -199,7 +199,7 @@ public partial class EditorFile
 		int index = model.Events.IndexOf(editorEvent);
 		if (index < 0) return new("Event isn't in its model.");
 
-		var keys = new List<(EventTimeline Timeline, Keyframe<List<EditorEventKey>> Key, List<EditorEventKey> Before)>();
+		var keys = new List<(EventTimeline Timeline, KeyframeRef<List<EditorEventKey>> Key, List<EditorEventKey> Before)>();
 		foreach (var animation in model.Animations) {
 			foreach (var timeline in animation.Timelines.OfType<EventTimeline>()) {
 				foreach (var key in timeline.Keys.GetKeyframes()) {
@@ -227,8 +227,8 @@ public partial class EditorFile
 			model.Events.Insert(Math.Min(index, model.Events.Count), editorEvent);
 			foreach (var item in keys) {
 				item.Key.Value = [.. item.Before];
-				if (!item.Timeline.Keys.Keyframes.Contains(item.Key))
-					item.Timeline.Keys.AddKeyframe(item.Key);
+				if (!item.Timeline.Keys.Contains(item.Key))
+					item.Timeline.Keys.RestoreKeyframe(item.Key);
 			}
 			EventAdded?.Invoke(this, editorEvent);
 			foreach (var animation in model.Animations)

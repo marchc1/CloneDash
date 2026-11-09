@@ -52,7 +52,7 @@ namespace Fmod5Sharp.CodecRebuilders
             
             //Begin building the final stream
             var oggStream = new OggStream(1);
-            using var outputStream = new MemoryStream();
+            using var outputStream = new MemoryStream(sample.SampleBytes.Length + sample.SampleBytes.Length / 8 + 8192);
             
             oggStream.PacketIn(infoPacket);
             oggStream.PacketIn(commentPacket);

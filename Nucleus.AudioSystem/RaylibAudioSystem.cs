@@ -81,17 +81,22 @@ public abstract unsafe class BaseAudioClip : IAudioClip
 	private AudioClipSource clipSource;
 	private Sound sound;
 	private bool destroyed;
+	private readonly Lock soundLock = new();
 
 	public byte* Data => data;
 	public nuint Length => length;
 	internal Sound Sound {
 		get {
-			if (!Raylib.IsSoundValid(sound))
-				sound = RaylibAudioHelpers.AllocSound(data, length);
+			lock (soundLock) {
+				if (!destroyed && !Raylib.IsSoundValid(sound))
+					sound = RaylibAudioHelpers.AllocSound(data, length);
 
-			return sound;
+				return sound;
+			}
 		}
 	}
+
+	public virtual void Preload() => Task.Run(() => { _ = Sound; });
 
 	public BaseAudioClip(ReadOnlySpan<char> identifier, AudioClipSource source, Stream stream) {
 		length = (nuint)stream.Length;
@@ -145,13 +150,15 @@ public abstract unsafe class BaseAudioClip : IAudioClip
 	public virtual bool IsValid() => !destroyed && data != null && length != 0;
 
 	public void Destroy() {
-		if (destroyed) return;
-		destroyed = true;
-		if (Raylib.IsSoundValid(sound))
-			Raylib.UnloadSound(sound);
-		if (data != null)
-			Raylib.MemFree(data);
-		data = null;
+		lock (soundLock) {
+			if (destroyed) return;
+			destroyed = true;
+			if (Raylib.IsSoundValid(sound))
+				Raylib.UnloadSound(sound);
+			if (data != null)
+				Raylib.MemFree(data);
+			data = null;
+		}
 	}
 }
 
@@ -178,6 +185,8 @@ public unsafe class DynamicAudioClip : BaseAudioClip
 	}
 
 	public override bool IsValid() => !IsDestroyed && Callback != null;
+
+	public override void Preload() { }
 }
 
 public struct PlaybackProcessor(AudioCallbackFn fn, object? userdata)

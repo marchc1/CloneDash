@@ -766,7 +766,11 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 		});
 	}
 
-	IAudioClip? LoadSceneSound(string name) => preparedSounds.TryGetValue(name, out var sound) ? MuseDash1Compatibility.CreateSound(sound.Rebuilt, sound.ClipName) : MuseDash1Compatibility.LoadSoundFromName(Game, name);
+	IAudioClip? LoadSceneSound(string name) {
+		var clip = preparedSounds.TryGetValue(name, out var sound) ? MuseDash1Compatibility.CreateSound(sound.Rebuilt, sound.ClipName) : MuseDash1Compatibility.LoadSoundFromName(Game, name);
+		clip?.Preload();
+		return clip;
+	}
 
 	IAudioClip? LoadSceneMusic(string name) => preparedSounds.TryGetValue(name, out var sound) ? MuseDash1Compatibility.CreateSound(sound.Rebuilt, name) : MuseDash1Compatibility.LoadMusicFromName(Game, name);
 
@@ -1101,6 +1105,20 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 	}
 
 	public void Refresh() { }
+
+	enum KeyAudioChannel { Hit, Touch, Hold, Bass }
+
+	readonly AudioPlaybackHandle[] keyAudioPlaybacks = new AudioPlaybackHandle[4];
+
+	void PlayKeyAudio(IAudioClip? clip, KeyAudioChannel channel) {
+		if (clip == Forte2Sound || clip == Forte3Sound || clip == Piano2Sound)
+			channel = KeyAudioChannel.Bass;
+
+		ref var playback = ref keyAudioPlaybacks[(int)channel];
+		audiosystem.StopSound(playback);
+		playback = audiosystem.PlaySound(clip, in AudioPlaybackSettings.Unaltered);
+	}
+
 	public void PlaySound(SceneSound sound, int hits) {
 		switch (sound) {
 			case SceneSound.Begin: audiosystem.PlaySound(BeginSound, in AudioPlaybackSettings.Unaltered); break;
@@ -1108,24 +1126,24 @@ public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 			case SceneSound.Unpause: audiosystem.PlaySound(UnpauseSound, in AudioPlaybackSettings.Unaltered); break;
 			case SceneSound.FullCombo: audiosystem.PlaySound(FullComboSound, in AudioPlaybackSettings.Unaltered); break;
 
-			case SceneSound.HitSmall: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitMedium1: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitMedium2: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitLarge1: audiosystem.PlaySound(Piano2Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitLarge2: audiosystem.PlaySound(Forte2Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitRaider: audiosystem.PlaySound(Piano2Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitHammer: audiosystem.PlaySound(Forte3Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitGemini: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.StartedHold: audiosystem.PlaySound(PressTopSound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitMasher: audiosystem.PlaySound(HitSounds![Math.Min(hits, HitSounds!.Length - 1)], in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitBoss1: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitBoss2: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitBoss3: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitGhost: audiosystem.PlaySound(GhostSound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.GotHeart: audiosystem.PlaySound(HpSound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.GotScore: audiosystem.PlaySound(ScoreSound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitBossFast: audiosystem.PlaySound(Forte2Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitBossSlow: audiosystem.PlaySound(Forte2Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitSmall: PlayKeyAudio(Mezzo1Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitMedium1: PlayKeyAudio(Mezzo1Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitMedium2: PlayKeyAudio(Mezzo1Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitLarge1: PlayKeyAudio(Piano2Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitLarge2: PlayKeyAudio(Forte2Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitRaider: PlayKeyAudio(Piano2Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitHammer: PlayKeyAudio(Forte3Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitGemini: PlayKeyAudio(Mezzo1Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.StartedHold: PlayKeyAudio(PressTopSound, KeyAudioChannel.Hold); break;
+			case SceneSound.HitMasher: PlayKeyAudio(HitSounds![Math.Min(hits, HitSounds!.Length - 1)], KeyAudioChannel.Hit); break;
+			case SceneSound.HitBoss1: PlayKeyAudio(Mezzo1Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitBoss2: PlayKeyAudio(Mezzo1Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitBoss3: PlayKeyAudio(Mezzo1Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitGhost: PlayKeyAudio(GhostSound, KeyAudioChannel.Hit); break;
+			case SceneSound.GotHeart: PlayKeyAudio(HpSound, KeyAudioChannel.Touch); break;
+			case SceneSound.GotScore: PlayKeyAudio(ScoreSound, KeyAudioChannel.Touch); break;
+			case SceneSound.HitBossFast: PlayKeyAudio(Forte2Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitBossSlow: PlayKeyAudio(Forte2Sound, KeyAudioChannel.Hit); break;
 			case SceneSound.Victory: audiosystem.PlaySound(VictoryBgmSound, in AudioPlaybackSettings.Unaltered); break;
 		}
 	}

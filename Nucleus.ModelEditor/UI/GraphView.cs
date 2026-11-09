@@ -34,7 +34,7 @@ public class GraphView : BaseTimelineView
 		public required Color Color;
 	}
 
-	public readonly record struct Hit(GraphCurve Curve, Keyframe<float> Key, int Side);
+	public readonly record struct Hit(GraphCurve Curve, KeyframeRef<float> Key, int Side);
 
 	public AnimationRows Rows { get; } = new() { HideOtherRowsOnSelection = false };
 	/// <summary>
@@ -59,7 +59,7 @@ public class GraphView : BaseTimelineView
 		return curves;
 	} }
 	public IReadOnlyCollection<EditorTimeline> Visible => visible;
-	public IReadOnlyCollection<(Keyframe<float> Key, bool Right)> SelectedHandles => selectedHandles;
+	public IReadOnlyCollection<(KeyframeRef<float> Key, bool Right)> SelectedHandles => selectedHandles;
 
 	static TimelineManager Timeline => ModelEditor.Active.File.Timeline;
 	static double FPS => Timeline.GetReferenceFPS();
@@ -68,7 +68,7 @@ public class GraphView : BaseTimelineView
 	readonly CurvePanel curvePanel;
 
 	readonly HashSet<EditorTimeline> visible = [];
-	readonly HashSet<(Keyframe<float> Key, bool Right)> selectedHandles = [];
+	readonly HashSet<(KeyframeRef<float> Key, bool Right)> selectedHandles = [];
 	readonly List<GraphCurve> curves = [];
 	readonly HashSet<IFCurve> visibleCurves = [];
 	int curvesVersion = -1;
@@ -253,7 +253,7 @@ public class GraphView : BaseTimelineView
 	public double YToValue(float y) => ValueCenter + (curveHeight / 2 - y) / ValueZoom;
 	private float TimeToX(double time) => (float)FrameToX(time * FPS);
 
-	public Vector2F KeyScreenPosition(Keyframe<float> key) => curvePanel.GetGlobalPosition() + new Vector2F(TimeToX(key.Time), ValueToY(key.Value));
+	public Vector2F KeyScreenPosition(KeyframeRef<float> key) => curvePanel.GetGlobalPosition() + new Vector2F(TimeToX(key.Time), ValueToY(key.Value));
 	public Vector2F HandleScreenPosition(KeyframeHandle<float> handle)
 		=> curvePanel.GetGlobalPosition() + new Vector2F(TimeToX(handle.Time), ValueToY(handle.Value));
 	public Vector2F CurveScreenPosition(double time, double value) => curvePanel.GetGlobalPosition() + new Vector2F(TimeToX(time), ValueToY(value));
@@ -277,17 +277,17 @@ public class GraphView : BaseTimelineView
 			var keys = curve.Curve.Keyframes;
 			for (int i = 0; i < keys.Count; i++) {
 				var key = keys[i];
-				bool keySelected = ModelEditor.Active.IsKeyframeSelected(key);
+				bool keySelected = ModelEditor.Active.IsKeyframeSelected(curve.Curve.RefAt(i));
 				if (!selectedOnly || keySelected) {
 					Include(key.Time, key.Value, ref minTime, ref maxTime, ref minValue, ref maxValue);
 					any = true;
 				}
 				if (key.Interpolation == KeyframeInterpolation.Bezier && i + 1 < keys.Count) {
-					if (key.RightHandle is KeyframeHandle<float> rightHandle && (!selectedOnly || selectedHandles.Contains((key, true)))) {
+					if (key.RightHandle is KeyframeHandle<float> rightHandle && (!selectedOnly || selectedHandles.Contains((curve.Curve.RefAt(i), true)))) {
 						Include(rightHandle.Time, rightHandle.Value, ref minTime, ref maxTime, ref minValue, ref maxValue);
 						any = true;
 					}
-					if (keys[i + 1].LeftHandle is KeyframeHandle<float> leftHandle && (!selectedOnly || selectedHandles.Contains((keys[i + 1], false)))) {
+					if (keys[i + 1].LeftHandle is KeyframeHandle<float> leftHandle && (!selectedOnly || selectedHandles.Contains((curve.Curve.RefAt(i + 1), false)))) {
 						Include(leftHandle.Time, leftHandle.Value, ref minTime, ref maxTime, ref minValue, ref maxValue);
 						any = true;
 					}
@@ -435,8 +435,8 @@ public class GraphView : BaseTimelineView
 	}
 
 	private static bool HasSelection(GraphCurve curve) {
-		foreach (var key in curve.Curve.Keyframes) {
-			if (ModelEditor.Active.IsKeyframeSelected(key)) return true;
+		for (int i = 0; i < curve.Curve.Keyframes.Count; i++) {
+			if (ModelEditor.Active.IsKeyframeSelected(curve.Curve.RefAt(i))) return true;
 		}
 		return false;
 	}
@@ -470,7 +470,7 @@ public class GraphView : BaseTimelineView
 			var key = keys[i];
 			float x = TimeToX(key.Time);
 			if (x < -20 || x > width + 20) continue;
-			bool selected = ModelEditor.Active.IsKeyframeSelected(key);
+			bool selected = ModelEditor.Active.IsKeyframeSelected(curve.Curve.RefAt(i));
 			if (selected)
 				PaintHandles(curve, i);
 
@@ -482,7 +482,7 @@ public class GraphView : BaseTimelineView
 			Graphics2D.DrawRectangleOutline(rect);
 		}
 		foreach (var handle in selectedHandles) {
-			int index = keys.IndexOf(handle.Key);
+			int index = curve.Curve.IndexOf(handle.Key);
 			if (index >= 0 && !ModelEditor.Active.IsKeyframeSelected(handle.Key))
 				PaintHandles(curve, index);
 		}
@@ -534,7 +534,7 @@ public class GraphView : BaseTimelineView
 		foreach (var right in new[] { false, true }) {
 			if (ShownHandle(keys, i, right) is not KeyframeHandle<float> handle) continue;
 			var pos = new Vector2F(TimeToX(handle.Time), ValueToY(handle.Value));
-			bool selected = selectedHandles.Contains((key, right));
+			bool selected = selectedHandles.Contains((curve.Curve.RefAt(i), right));
 			Graphics2D.SetDrawColor(200, 200, 200, 170);
 			Graphics2D.DrawDottedLine(keyPos, pos, 3);
 			Graphics2D.SetDrawColor(selected ? new Color(255, 255, 255) : curve.Color);
@@ -591,7 +591,7 @@ public class GraphView : BaseTimelineView
 	bool handleSeparate;
 
 	double lastClickTime = -1;
-	Keyframe<float>? lastClick;
+	KeyframeRef<float>? lastClick;
 	bool pressWasSelected;
 
 	double panStartOffset, panStartValue;
@@ -607,7 +607,7 @@ public class GraphView : BaseTimelineView
 			var curve = list[curveIndex];
 			var keys = curve.Curve.Keyframes;
 			for (int i = 0; i < keys.Count; i++) {
-				var key = keys[i];
+				var key = curve.Curve.RefAt(i);
 				if (!ModelEditor.Active.IsKeyframeSelected(key) && !selectedHandles.Contains((key, false)) && !selectedHandles.Contains((key, true))) continue;
 				foreach (var right in new[] { false, true }) {
 					if (ShownHandle(keys, i, right) is KeyframeHandle<float> handle && Near(pos, handle.Time, handle.Value))
@@ -633,7 +633,9 @@ public class GraphView : BaseTimelineView
 		var list = Curves;
 		List<Hit> stack = [];
 		for (int curveIndex = list.Count - 1; curveIndex >= 0; curveIndex--) {
-			foreach (var key in list[curveIndex].Curve.Keyframes) {
+			var curve = list[curveIndex].Curve;
+			for (int i = 0; i < curve.Keyframes.Count; i++) {
+				var key = curve.RefAt(i);
 				if (Near(pos, key.Time, key.Value) && !stack.Any(h => h.Key == key))
 					stack.Add(new Hit(list[curveIndex], key, 0));
 			}
@@ -866,10 +868,11 @@ public class GraphView : BaseTimelineView
 		if (box is not RectangleF boxBounds) return;
 		List<IKeyframe> keys = [];
 		foreach (var curve in Curves) {
-			foreach (var key in curve.Curve.Keyframes) {
+			for (int i = 0; i < curve.Curve.Keyframes.Count; i++) {
+				var key = curve.Curve.Keyframes[i];
 				double frame = key.Time * FPS;
 				if (frame >= boxBounds.X - KeyEdit.TIME_EPSILON && frame <= boxBounds.X + boxBounds.W + KeyEdit.TIME_EPSILON && key.Value >= boxBounds.Y && key.Value <= boxBounds.Y + boxBounds.H)
-					keys.Add(key);
+					keys.Add(curve.Curve.RefAt(i));
 			}
 		}
 		if (!additive)
@@ -914,10 +917,10 @@ public class GraphView : BaseTimelineView
 			var key = moving[index];
 			foreach (int i in targets[index]) {
 				selection.Add(key.Keyframes[i]);
-				if (key.Timeline is not DeformTimeline && key.Keyframes[i] is Keyframe<float> floatKey)
+				if (key.Timeline is not DeformTimeline && key.Keyframes[i] is KeyframeRef<float> floatKey)
 					valueTargets.Add((key, i, floatKey.Value));
 				if (originals[index].Keyframes[i] == hit.Key)
-					pressHit = hit with { Key = (Keyframe<float>)key.Keyframes[i] };
+					pressHit = hit with { Key = (KeyframeRef<float>)key.Keyframes[i] };
 			}
 		}
 		if (duplicate)
@@ -1050,16 +1053,16 @@ public class GraphView : BaseTimelineView
 		List<IKeyframe> withSelection = [];
 		foreach (var curve in Curves) {
 			if (!HasSelection(curve)) continue;
-			foreach (var key in curve.Curve.Keyframes)
-				withSelection.Add(key);
+			for (int i = 0; i < curve.Curve.Keyframes.Count; i++)
+				withSelection.Add(curve.Curve.RefAt(i));
 		}
 		if (withSelection.Count > 0 && !withSelection.All(ModelEditor.Active.IsKeyframeSelected))
 			ModelEditor.Active.SelectKeyframes(withSelection);
 		else {
 			List<IKeyframe> all = [];
 			foreach (var curve in Curves) {
-				foreach (var key in curve.Curve.Keyframes)
-					all.Add(key);
+				for (int i = 0; i < curve.Curve.Keyframes.Count; i++)
+					all.Add(curve.Curve.RefAt(i));
 			}
 			ModelEditor.Active.SelectKeyframes(all);
 		}

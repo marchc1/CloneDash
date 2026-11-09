@@ -75,6 +75,11 @@ public interface IAudioClip : IValidatable
 	/// The source of the audio data.
 	/// </summary>
 	AudioClipSource GetSource();
+
+	/// <summary>
+	/// Decodes the clip on a worker thread ahead of its first playback.
+	/// </summary>
+	void Preload();
 }
 
 public interface IAudioSystem

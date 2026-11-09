@@ -1264,11 +1264,11 @@ public class IkConstraintTimeline() : CurveTimeline<float>(5)
 		float keyCompress;
 		float keyStretch;
 		if (AfterLastFrame(time)) {
-			keyMix = Curve(0).Last!.Value;
-			keySoftness = Curve(1).Last!.Value;
-			keyBend = Curve(2).Last!.Value;
-			keyCompress = Curve(3).Last!.Value;
-			keyStretch = Curve(4).Last!.Value;
+			keyMix = Curve(0).LastValue;
+			keySoftness = Curve(1).LastValue;
+			keyBend = Curve(2).LastValue;
+			keyCompress = Curve(3).LastValue;
+			keyStretch = Curve(4).LastValue;
 		}
 		else {
 			int index = Curve(0).DetermineIndexAtTime(time);
@@ -1333,7 +1333,7 @@ public class TransformConstraintTimeline() : CurveTimeline<float>(4)
 			return;
 		}
 
-		var values = AfterLastFrame(time) ? [Curve(0).Last!.Value, Curve(1).Last!.Value, Curve(2).Last!.Value, Curve(3).Last!.Value] : DetermineValue(time);
+		var values = AfterLastFrame(time) ? [Curve(0).LastValue, Curve(1).LastValue, Curve(2).LastValue, Curve(3).LastValue] : DetermineValue(time);
 		float rotate = values[0];
 		float translate = values[1];
 		float scale = values[2];
@@ -1372,7 +1372,7 @@ public class PathConstraintPositionTimeline() : CurveTimeline<float>(1)
 			return;
 		}
 
-		float value = AfterLastFrame(time) ? Curve(0).Last!.Value : Curve(0).DetermineValueAtTime(time);
+		float value = AfterLastFrame(time) ? Curve(0).LastValue : Curve(0).DetermineValueAtTime(time);
 		if (blend == MixBlendMode.Setup)
 			constraint.Position = NMath.Lerp(alpha, setup, value);
 		else
@@ -1398,7 +1398,7 @@ public class PathConstraintSpacingTimeline() : CurveTimeline<float>(1)
 			return;
 		}
 
-		float value = AfterLastFrame(time) ? Curve(0).Last!.Value : Curve(0).DetermineValueAtTime(time);
+		float value = AfterLastFrame(time) ? Curve(0).LastValue : Curve(0).DetermineValueAtTime(time);
 		if (blend == MixBlendMode.Setup)
 			constraint.Spacing = NMath.Lerp(alpha, setup, value);
 		else
@@ -1433,8 +1433,8 @@ public class PathConstraintMixTimeline() : CurveTimeline<float>(2)
 		float rotate;
 		float translate;
 		if (AfterLastFrame(time)) {
-			rotate = Curve(0).Last!.Value;
-			translate = Curve(1).Last!.Value;
+			rotate = Curve(0).LastValue;
+			translate = Curve(1).LastValue;
 		}
 		else {
 			int index = Curve(0).DetermineIndexAtTime(time);

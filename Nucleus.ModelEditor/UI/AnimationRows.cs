@@ -548,13 +548,13 @@ public class AnimationRows
 	}
 
 	// Selected float keyframes with the key after them
-	private IEnumerable<(Keyframe<float> Key, Keyframe<float>? Next, Keyframe<float>? Previous)>
+	private IEnumerable<(KeyframeRef<float> Key, KeyframeRef<float>? Next, KeyframeRef<float>? Previous)>
 		SelectedFloatKeys() {
 		foreach (var timeline in SelectedTimelines()) {
 			foreach (var curve in timeline.KeyCurves) {
 				for (int i = 0; i < curve.Count; i++) {
-					if (curve.KeyAt(i) is Keyframe<float> key && ModelEditor.Active.IsKeyframeSelected(key))
-						yield return (key, i + 1 < curve.Count ? curve.KeyAt(i + 1) as Keyframe<float> : null, i > 0 ? curve.KeyAt(i - 1) as Keyframe<float> : null);
+					if (curve.KeyAt(i) is KeyframeRef<float> key && ModelEditor.Active.IsKeyframeSelected(key))
+						yield return (key, i + 1 < curve.Count ? curve.KeyAt(i + 1) as KeyframeRef<float> : null, i > 0 ? curve.KeyAt(i - 1) as KeyframeRef<float> : null);
 				}
 			}
 		}

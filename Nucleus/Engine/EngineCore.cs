@@ -264,19 +264,6 @@ public static class EngineCore
 			OpenGL.Import(Platform.OpenGL_GetProc);
 			gfxHardwareConfig.ConfirmCapabilities();
 
-			// English language
-			Graphics2D.RegisterCodepoints(@"`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:""ZXCVBNM<>?");
-			//Graphics2D.RegisterCodepoints(@"`1234567890");
-
-			// Japanese (hiragana, katakana)
-			Graphics2D.RegisterCodepoints(@"あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ");
-			Graphics2D.RegisterCodepoints(@"アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポ");
-
-			// Some korean
-			Graphics2D.RegisterCodepoints(@"하고는을이다의에지게도한안가나의되사아그수과보있어서것같시으로와더는지기요내나또만주잘어서면때자게해이제여어야전라중좀거그래되것들이에게해요정말");
-
-			Graphics2D.RegisterCodepoints(string.Join("", PanicSystem.ErrorMessages.Keys));
-
 			// Set GameThread_GLReady flag so the main thread can finish its work
 		}
 

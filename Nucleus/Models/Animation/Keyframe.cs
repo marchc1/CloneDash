@@ -1,4 +1,5 @@
-﻿using Nucleus.Types;
+﻿using Newtonsoft.Json;
+using Nucleus.Types;
 using System.Runtime.CompilerServices;
 
 namespace Nucleus.Models;
@@ -37,8 +38,9 @@ public static class KeyframeSettings
 	[ThreadStatic] public static KeyframeInterpolation? InterpolationOverride;
 }
 
-public class Keyframe<T> : IKeyframe
+public struct Keyframe<T>
 {
+	[JsonConstructor]
 	public Keyframe() {
 		Time = 0;
 		Value = default;
@@ -57,9 +59,10 @@ public class Keyframe<T> : IKeyframe
 		Easing = KeyframeEasing.Automatic;
 	}
 
-	public Keyframe<T> Copy(double scale = 1) {
+	public readonly Keyframe<T> Copy(double scale = 1) {
 		Keyframe<T> copy = new Keyframe<T>();
 
+		copy.Id = Id;
 		copy.Time = Time * scale;
 		copy.Value = Value;
 		copy.Interpolation = Interpolation;
@@ -78,6 +81,7 @@ public class Keyframe<T> : IKeyframe
 		return copy;
 	}
 
+	[JsonIgnore] public int Id;
 	public double Time;
 	public T? Value;
 	public KeyframeHandle<T>? LeftHandle;
@@ -85,24 +89,13 @@ public class Keyframe<T> : IKeyframe
 	public KeyframeInterpolation Interpolation;
 	public KeyframeEasing Easing;
 
-	public double GetTime() => Time;
-
-	public object? GetValue() => Value;
-
-	public T2? GetValue<T2>() => Value is T2 tV ? tV : default;
-
-	public Type GetValueType() => typeof(T);
-
-	public void SetTime(double time) => Time = time;
-
-	public void SetValue(object? value) => Value = value is T tV ? tV : (T?)value;
-
-	public void SetValue<T2>(T2? value) => SetValue((object?)value);
-
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-	private static T? LinearInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-		if (typeof(T) == typeof(float))
-			return (T)(object)(float)NMath.Remap(time, ((Keyframe<float>)(object)leftmostOfTime).Time, ((Keyframe<float>)(object)rightmostOfTime).Time, ((Keyframe<float>)(object)leftmostOfTime).Value, ((Keyframe<float>)(object)rightmostOfTime).Value, true);
+	private static T? LinearInterpolator(double time, in Keyframe<T> leftmostOfTime, in Keyframe<T> rightmostOfTime) {
+		if (typeof(T) == typeof(float)) {
+			ref readonly Keyframe<float> left = ref Unsafe.As<Keyframe<T>, Keyframe<float>>(ref Unsafe.AsRef(in leftmostOfTime));
+			ref readonly Keyframe<float> right = ref Unsafe.As<Keyframe<T>, Keyframe<float>>(ref Unsafe.AsRef(in rightmostOfTime));
+			return (T)(object)(float)NMath.Remap(time, left.Time, right.Time, left.Value, right.Value, true);
+		}
 		else
 			return leftmostOfTime.Value;
 	}
@@ -112,7 +105,7 @@ public class Keyframe<T> : IKeyframe
 	/// Handles are absolute, a missing one is a third of the way to the other key.
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-	public static float EvaluateBezier(double time, Keyframe<float> a, Keyframe<float> b) {
+	public static float EvaluateBezier(double time, in Keyframe<float> a, in Keyframe<float> b) {
 		double t0 = a.Time, t1 = b.Time;
 		double dt = t1 - t0;
 		double v0 = a.Value, v1 = b.Value;
@@ -149,14 +142,14 @@ public class Keyframe<T> : IKeyframe
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-	private static T? BezierInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
+	private static T? BezierInterpolator(double time, in Keyframe<T> leftmostOfTime, in Keyframe<T> rightmostOfTime) {
 		if (typeof(T) == typeof(float))
-			return (T)(object)EvaluateBezier(time, (Keyframe<float>)(object)leftmostOfTime, (Keyframe<float>)(object)rightmostOfTime);
+			return (T)(object)EvaluateBezier(time, in Unsafe.As<Keyframe<T>, Keyframe<float>>(ref Unsafe.AsRef(in leftmostOfTime)), in Unsafe.As<Keyframe<T>, Keyframe<float>>(ref Unsafe.AsRef(in rightmostOfTime)));
 		else
 			return leftmostOfTime.Value;
 	}
 
-	public static T? DetermineValue(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime, KeyframeInterpolation? interpolationOverride = null) {
+	public static T? DetermineValue(double time, in Keyframe<T> leftmostOfTime, in Keyframe<T> rightmostOfTime, KeyframeInterpolation? interpolationOverride = null) {
 		if (time < leftmostOfTime.Time)
 			return leftmostOfTime.Value;
 

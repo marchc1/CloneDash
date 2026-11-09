@@ -1510,15 +1510,18 @@ public static class MuseDash1ModelConverter
 			LeftHandle = interpKFH(prevCt, c3, c4)
 		};
 		// Keys at the same time (a jump) would replace each other here.
-		if (curve.Last is { } last && key.Time - last.Time <= FCurve<float>.KEYFRAME_TIME_EPSILON) {
+		curve.Recompute();
+		var keys = curve.Keyframes;
+		if (keys.Count > 0 && key.Time - keys[^1].Time <= FCurve<float>.KEYFRAME_TIME_EPSILON) {
+			var last = keys[^1];
 			double moved = key.Time - 2 * FCurve<float>.KEYFRAME_TIME_EPSILON;
-			var keys = curve.Keyframes;
 			if (keys.Count >= 2) {
 				var previous = keys[keys.Count - 2];
 				if (previous.Interpolation != KeyframeInterpolation.Constant && last.Time > previous.Time)
 					last.Value = (float)(previous.Value + (last.Value - previous.Value) * (moved - previous.Time) / (last.Time - previous.Time));
 			}
 			last.Time = moved;
+			keys[^1] = last;
 		}
 		curve.AddKeyframe(key);
 	}
@@ -1542,7 +1545,7 @@ public static class MuseDash1ModelConverter
 					case SLOT_ATTACHMENT: {
 							ActiveAttachmentTimeline tl = new ActiveAttachmentTimeline();
 							tl.SlotIndex = slotIndex;
-							tl.NewCurves();
+							tl.NewCurves(frames);
 
 							for (int frame = 0; frame < frames; frame++)
 								tl.Curve(0).AddKeyframe(new(skeleton.MD_ReadFloat(), skeleton.MD_ReadRefString(refStrings)));
@@ -1554,7 +1557,7 @@ public static class MuseDash1ModelConverter
 					case SLOT_COLOR: {
 							SlotColor4Timeline tl = new SlotColor4Timeline();
 							tl.SlotIndex = slotIndex;
-							tl.NewCurves();
+							tl.NewCurves(frames);
 
 							byte prevCt = CURVE_LINEAR; float lc3 = 0, lc4 = 0;
 							for (int frame = 0; frame < frames; frame++) {
@@ -1585,7 +1588,7 @@ public static class MuseDash1ModelConverter
 							LastConversionStats.TwoColorTimelines++;
 							SlotRGBA2Timeline timeline = new SlotRGBA2Timeline();
 							timeline.SlotIndex = slotIndex;
-							timeline.NewCurves();
+							timeline.NewCurves(frames);
 
 							byte prevCt = CURVE_LINEAR;
 							float lc3 = 0, lc4 = 0;
@@ -1628,7 +1631,7 @@ public static class MuseDash1ModelConverter
 					case BONE_ROTATE: {
 							RotationTimeline tl = new RotationTimeline();
 							tl.BoneIndex = boneIndex;
-							tl.NewCurves();
+							tl.NewCurves(frames);
 
 							byte prevCt = CURVE_LINEAR; float lc3 = 0, lc4 = 0;
 							for (int frame = 0; frame < frames; frame++) {
@@ -1657,7 +1660,7 @@ public static class MuseDash1ModelConverter
 							};
 
 							tl.BoneIndex = boneIndex;
-							tl.NewCurves();
+							tl.NewCurves(frames);
 
 							byte prevCt = CURVE_LINEAR; float lc3 = 0, lc4 = 0;
 							for (int frame = 0; frame < frames; frame++) {
@@ -1762,7 +1765,7 @@ public static class MuseDash1ModelConverter
 					PATH_SPACING => new PathConstraintSpacingTimeline() { ConstraintIndex = pathIndex },
 					_ => new PathConstraintMixTimeline() { ConstraintIndex = pathIndex }
 				};
-				timeline.NewCurves();
+				timeline.NewCurves(frames);
 
 				byte prevCt = CURVE_LINEAR;
 				float lc3 = 0, lc4 = 0;

@@ -260,8 +260,6 @@ public class MD1_Song : ModDescriptor, ISong, IHasLowToHighDifficulties
 
 	public void AddBaseJSONInfo(MuseDashSongInfoJSON baseInfo, bool doNotLocalize = false) {
 		baseInfo.CloneInto(__jsonInfo);
-		Graphics2D.RegisterCodepoints(baseInfo.Name);
-		Graphics2D.RegisterCodepoints(baseInfo.Author);
 		if (!doNotLocalize) {
 			__jsonInfo.Name = $"#{GetUUID()}_NAME";
 			__jsonInfo.Author = $"#{GetUUID()}_AUTHOR";
@@ -274,9 +272,6 @@ public class MD1_Song : ModDescriptor, ISong, IHasLowToHighDifficulties
 		}
 		localize.AddString(__jsonInfo.Name, nameValue, lang);
 		localize.AddString(__jsonInfo.Author, authorValue, lang);
-
-		Graphics2D.RegisterCodepoints(nameValue);
-		Graphics2D.RegisterCodepoints(authorValue);
 	}
 
 	public static string? GetFixedFilename(string givenBase, string fileName, [NotNullWhen(true)] bool throwExp = true) {

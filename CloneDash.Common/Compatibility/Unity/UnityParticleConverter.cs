@@ -16,6 +16,8 @@ public static class UnityParticleConverter
 {
 	const float UNITY_GRAVITY = -9.81f;
 
+	static readonly HashSet<string> SystemFields = ["lengthInSec", "looping", "simulationSpeed", "moveWithTransform", "startDelay", "InitialModule", "ShapeModule", "EmissionModule", "ClampVelocityModule", "ForceModule", "VelocityModule", "RotationModule", "SizeModule", "ColorModule", "UVModule"];
+
 	public static ParticleSystemDefinition Convert(GameObject root, Func<Texture2D, ITexture> loadTexture, Func<string, bool>? loadMissingFile = null)
 		=> Convert(root, (material, texture) => material.Texture = loadTexture(texture), loadMissingFile);
 
@@ -69,20 +71,23 @@ public static class UnityParticleConverter
 				continue;
 			}
 
-			var definition = CreateDefinition(child, setTexture, loadMissingFile);
+			var definition = CreateDefinition(child, setTexture, loadMissingFile, out var data);
 			AddChildren(definition, childTransform, Matrix4x4.Identity, setTexture, loadMissingFile);
-			var data = system.ToType();
 			parent.Children.Add(new(definition, ReadRange(Dict(data, "startDelay")).Evaluate(0, 0.5f), local));
 		}
 	}
 
-	static ParticleSystemDefinition CreateDefinition(GameObject gameObject, Action<ParticleMaterial, Texture2D> setTexture, Func<string, bool>? loadMissingFile) {
+	static ParticleSystemDefinition CreateDefinition(GameObject gameObject, Action<ParticleMaterial, Texture2D> setTexture, Func<string, bool>? loadMissingFile)
+		=> CreateDefinition(gameObject, setTexture, loadMissingFile, out _);
+
+	static ParticleSystemDefinition CreateDefinition(GameObject gameObject, Action<ParticleMaterial, Texture2D> setTexture, Func<string, bool>? loadMissingFile, out OrderedDictionary data) {
 		var definition = new ParticleSystemDefinition(gameObject.m_Name ?? "");
 		var system = gameObject.GetFirstComponent<AssetStudio.ParticleSystem>();
+		data = null!;
 		if (system == null)
 			return definition;
 
-		var data = system.ToType();
+		data = system.ToType(SystemFields);
 		definition.Duration = Float(data, "lengthInSec", 5);
 		definition.Looping = Bool(data, "looping");
 		definition.TimeScale = Float(data, "simulationSpeed", 1);

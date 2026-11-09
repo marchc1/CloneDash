@@ -206,7 +206,7 @@ public abstract class ConstraintCurveTimeline<TConstraint> : CurveTimeline where
 		for (int i = 0; i < curves[0].Count; i++) {
 			var keyframes = new IKeyframe[curves.Length];
 			for (int j = 0; j < curves.Length; j++)
-				keyframes[j] = (IKeyframe)curves[j][i];
+				keyframes[j] = curves[j].KeyAt(i);
 			yield return new(this, curves, keyframes);
 		}
 	}
@@ -355,7 +355,7 @@ public class DeformTimeline : CurveTimeline, ISlotTimeline
 
 	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
 		for (int i = 0; i < Curve.Count; i++)
-			yield return new(this, [Curve], [Curve[i]]);
+			yield return new(this, [Curve], [Curve.KeyAt(i)]);
 	}
 
 	public override IEnumerable<double> GetKeyframeTimes() {
@@ -384,7 +384,7 @@ public class DrawOrderTimeline : CurveTimeline
 
 	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
 		for (int i = 0; i < Keys.Count; i++)
-			yield return new(this, [Keys], [Keys[i]]);
+			yield return new(this, [Keys], [Keys.KeyAt(i)]);
 	}
 
 	public override IEnumerable<double> GetKeyframeTimes() {
@@ -420,7 +420,7 @@ public class EventTimeline : CurveTimeline
 
 	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
 		for (int i = 0; i < Keys.Count; i++)
-			yield return new(this, [Keys], [Keys[i]]);
+			yield return new(this, [Keys], [Keys.KeyAt(i)]);
 	}
 
 	public override IEnumerable<double> GetKeyframeTimes() {

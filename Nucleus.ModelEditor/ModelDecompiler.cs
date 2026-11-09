@@ -609,8 +609,7 @@ public class ModelDecompiler
 				foreach (var index in keyframe.Value)
 					order.Add(slots[index]);
 			}
-			var key = editorTimeline.Keys.AddKeyframe(new(keyframe.Time, order));
-			key.Interpolation = KeyframeInterpolation.Constant;
+			editorTimeline.Keys.AddKeyframe(new(keyframe.Time, order) { Interpolation = KeyframeInterpolation.Constant });
 		}
 		return editorTimeline;
 	}
@@ -624,8 +623,7 @@ public class ModelDecompiler
 			}
 
 			if (!editorTimeline.Keys.TryFindKeyframe(runtimeEvent.Time, out var key)) {
-				key = editorTimeline.Keys.AddKeyframe(new(runtimeEvent.Time, []));
-				key.Interpolation = KeyframeInterpolation.Constant;
+				key = editorTimeline.Keys.AddKeyframeRef(new(runtimeEvent.Time, []) { Interpolation = KeyframeInterpolation.Constant });
 			}
 			key.Value!.Add(new EditorEventKey() {
 				Event = editorEvent,

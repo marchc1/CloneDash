@@ -288,7 +288,7 @@ public abstract class CurveTimeline2 : CurveTimeline, IKeyframeQueryable<Vector2
 
 	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
 		for (int i = 0; i < CurveX.Count; i++)
-			yield return new(this, [CurveX, CurveY], [CurveX[i], CurveY[i]]);
+			yield return new(this, [CurveX, CurveY], [CurveX.KeyAt(i), CurveY.KeyAt(i)]);
 	}
 	public override IEnumerable<double> GetKeyframeTimes() {
 		foreach (var keyframe in CurveX.GetKeyframes())
@@ -515,7 +515,7 @@ public class SlotColorTimeline : CurveTimeline, ISlotProperty<Color>, IKeyframeQ
 
 	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
 		for (int i = 0; i < CurveR.Count; i++)
-			yield return new(this, [CurveR, CurveG, CurveB, CurveA], [CurveR[i], CurveG[i], CurveB[i], CurveA[i]]);
+			yield return new(this, [CurveR, CurveG, CurveB, CurveA], [CurveR.KeyAt(i), CurveG.KeyAt(i), CurveB.KeyAt(i), CurveA.KeyAt(i)]);
 	}
 	public override IEnumerable<double> GetKeyframeTimes() {
 		foreach (var keyframe in CurveR.GetKeyframes())
@@ -563,7 +563,7 @@ public class SlotColorRGBTimeline : CurveTimeline, ISlotProperty<Color>, IKeyfra
 
 	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
 		for (int i = 0; i < CurveR.Count; i++)
-			yield return new(this, [CurveR, CurveG, CurveB], [CurveR[i], CurveG[i], CurveB[i]]);
+			yield return new(this, [CurveR, CurveG, CurveB], [CurveR.KeyAt(i), CurveG.KeyAt(i), CurveB.KeyAt(i)]);
 	}
 	public override IEnumerable<double> GetKeyframeTimes() {
 		foreach (var keyframe in CurveR.GetKeyframes())
@@ -679,7 +679,7 @@ public class SlotTwoColorTimeline : CurveTimeline, ISlotProperty<Color>, IKeyfra
 
 	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
 		for (int i = 0; i < CurveR.Count; i++)
-			yield return new(this, [CurveR, CurveG, CurveB, CurveA, CurveR2, CurveG2, CurveB2], [CurveR[i], CurveG[i], CurveB[i], CurveA[i], CurveR2[i], CurveG2[i], CurveB2[i]]);
+			yield return new(this, [CurveR, CurveG, CurveB, CurveA, CurveR2, CurveG2, CurveB2], [CurveR.KeyAt(i), CurveG.KeyAt(i), CurveB.KeyAt(i), CurveA.KeyAt(i), CurveR2.KeyAt(i), CurveG2.KeyAt(i), CurveB2.KeyAt(i)]);
 	}
 	public override IEnumerable<double> GetKeyframeTimes() {
 		foreach (var keyframe in CurveR.GetKeyframes())

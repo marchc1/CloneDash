@@ -112,7 +112,7 @@ namespace AssetStudio
 
             // Read Types
             int typeCount = reader.ReadInt32();
-            m_Types = new List<SerializedType>();
+            m_Types = new List<SerializedType>(Math.Clamp(typeCount, 0, 4096));
             for (var i = 0; i < typeCount; i++)
             {
                 m_Types.Add(ReadSerializedType(false));
@@ -125,9 +125,10 @@ namespace AssetStudio
 
             // Read Objects
             int objectCount = reader.ReadInt32();
-            m_Objects = new List<ObjectInfo>();
-            Objects = new List<Object>();
-            ObjectsDic = new Dictionary<long, Object>();
+            var objectCapacity = Math.Clamp(objectCount, 0, 1 << 18);
+            m_Objects = new List<ObjectInfo>(objectCapacity);
+            Objects = new List<Object>(objectCapacity);
+            ObjectsDic = new Dictionary<long, Object>(objectCapacity);
             for (var i = 0; i < objectCount; i++)
             {
                 var objectInfo = new ObjectInfo();

@@ -112,12 +112,6 @@ namespace Nucleus.Core
 			return alpha;
 		}
 
-		/// <summary>
-		/// This should be done before starting EngineCore or loading a level.
-		/// </summary>
-		/// <param name="codepointsStr"></param>
-		public static void RegisterCodepoints(ReadOnlySpan<char> codepointsStr) => FontManager.RegisterCodepoints(codepointsStr);
-
 		public static Vector2F Offset => __offset;
 
 		/// <summary>
@@ -151,8 +145,7 @@ namespace Nucleus.Core
 
 		public static Vector2F GetTextSize(ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) {
 			int size = QuantizeFontSize(fontSize);
-			var s = Raylib.MeasureTextEx(FontManager[message, font, size].GetFont(), message, size, 0);
-			return new(s.X, s.Y);
+			return FontManager[message, font, size].MeasureText(message, size, 0);
 		}
 
 		public readonly record struct TextMetrics(float LineHeight, float CapTop, float CapHeight);
@@ -164,12 +157,11 @@ namespace Nucleus.Core
 			if (s_metrics.TryGetValue(key, out var m))
 				return m;
 
-			ref Font f = ref FontManager["H", font, size].GetFont();
-			float scale = f.BaseSize > 0 ? size / (float)f.BaseSize : 1;
-			GlyphInfo g = Raylib.GetGlyphInfo(f, 'H');
-			Rectangle rec = Raylib.GetGlyphAtlasRec(f, 'H');
+			FontState f = FontManager["H", font, size];
+			float scale = f.Size > 0 ? size / (float)f.Size : 1;
+			FontGlyph g = f.GetGlyph('H');
 
-			m = new TextMetrics(LineHeight: size, CapTop: g.OffsetY * scale, CapHeight: rec.Height * scale);
+			m = new TextMetrics(LineHeight: size, CapTop: g.OffsetY * scale, CapHeight: g.Rec.Height * scale);
 			if (m.CapHeight <= 0)
 				m = new TextMetrics(size, 0, size);
 			s_metrics[key] = m;
@@ -252,7 +244,7 @@ namespace Nucleus.Core
 			=> DrawText(pos.X, pos.Y, message, font, fontSize);
 		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) {
 			int size = QuantizeFontSize(fontSize);
-			Raylib.DrawTextEx(FontManager[message, font, size].GetFont(), message, SnapToPixel(x, y), size, 0, __drawColor);
+			FontManager[message, font, size].DrawText(message, SnapToPixel(x, y), size, 0, __drawColor);
 		}
 		public static Vector2F DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
 			int length = message.Length + font.Length;
@@ -300,8 +292,7 @@ namespace Nucleus.Core
 
 				for (int j = i; j < lineEnd; j++) {
 					TextChunk piece = textsFontsMap[j];
-					ref Font font = ref FontManager[piece.Text, piece.Font, size].GetFont();
-					Vector2F measuredSize = Raylib.MeasureTextEx(font, piece.Text, size, fontSpacing).ToNucleus();
+					Vector2F measuredSize = FontManager[piece.Text, piece.Font, size].MeasureText(piece.Text, size, fontSpacing);
 
 					ref MappedText textPiece = ref mappedTextsCache.Add();
 					textPiece.Chunk = j;

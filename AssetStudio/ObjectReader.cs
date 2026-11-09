@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace AssetStudio
 {
     public class ObjectReader : EndianBinaryReader
     {
+        private static readonly HashSet<int> definedClassIDs = [.. Enum.GetValues<ClassIDType>().Select(x => (int)x)];
+
         public SerializedFile assetsFile;
         public long m_PathID;
         public long byteStart;
@@ -26,7 +30,7 @@ namespace AssetStudio
             byteStart = objectInfo.byteStart;
             byteSize = objectInfo.byteSize;
             classID = objectInfo.classID;
-            if (Enum.IsDefined(typeof(ClassIDType), objectInfo.classID))
+            if (definedClassIDs.Contains(objectInfo.classID))
             {
                 type = (ClassIDType)objectInfo.classID;
             }

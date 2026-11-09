@@ -343,7 +343,7 @@ public class DopesheetView : BaseTimelineView
 		Graphics2D.SetDrawColor(color.R, color.G, color.B, 170);
 		float mid = y + ROW_HEIGHT / 2;
 		for (int i = 0; i + 1 < curve.Count; i++) {
-			if (curve.KeyAt(i) is not Keyframe<float> key) return;
+			if (curve.KeyAt(i) is not KeyframeRef<float> key) return;
 			float x0 = (float)FrameToX(key.Time * FPS) + KEY_WIDTH / 2;
 			float x1 = (float)FrameToX(curve.KeyAt(i + 1).GetTime() * FPS) - KEY_WIDTH / 2;
 			if (x1 < 0 || x1 <= x0) continue;
@@ -367,7 +367,7 @@ public class DopesheetView : BaseTimelineView
 
 	private static bool SameValue(IFCurve[] curves, int i) {
 		foreach (var curve in curves) {
-			if (i + 1 >= curve.Count || curve.KeyAt(i) is not Keyframe<float> key || curve.KeyAt(i + 1) is not Keyframe<float> next || key.Value != next.Value)
+			if (i + 1 >= curve.Count || curve.KeyAt(i) is not KeyframeRef<float> key || curve.KeyAt(i + 1) is not KeyframeRef<float> next || key.Value != next.Value)
 				return false;
 		}
 		return true;

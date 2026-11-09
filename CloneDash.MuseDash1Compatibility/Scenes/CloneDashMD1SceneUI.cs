@@ -278,7 +278,62 @@ public class TextImageRenderItem
 	public bool IsOver(double curtime) => curtime >= (StartTime + Length);
 	public void Dispose() {
 		if (textRT != null)
-			Graphics2D.DestroyRenderTarget(textRT);
+			ReturnTextRT(textRT);
+		textRT = null;
+	}
+
+	const int TextRTPoolLimit = 32;
+	static readonly List<IRenderTexture> freeTextRTs = [];
+
+	static IRenderTexture RentTextRT(int w, int h) {
+		w = (w + 63) & ~63;
+		h = (h + 63) & ~63;
+
+		int best = -1;
+		for (int i = 0; i < freeTextRTs.Count; i++) {
+			var rt = freeTextRTs[i];
+			if (rt.GetWidth() < w || rt.GetHeight() < h)
+				continue;
+			if (best < 0 || rt.GetWidth() * rt.GetHeight() < freeTextRTs[best].GetWidth() * freeTextRTs[best].GetHeight())
+				best = i;
+		}
+
+		if (best >= 0) {
+			var rt = freeTextRTs[best];
+			freeTextRTs.RemoveAt(best);
+			return rt;
+		}
+
+		return CreateTextRT(w, h);
+	}
+
+	static IRenderTexture CreateTextRT(int w, int h) {
+		var rt = Graphics2D.CreateRenderTarget(w, h);
+		rt.SetFilter(TextureFilter.Bilinear);
+		return rt;
+	}
+
+	public static void PrewarmTextRTs(string font, string widestText, int count) {
+		var sample = new TextImageRenderItem(0, 0, new(0, 0), 0, new(1, 1), "0123456789", font, Color.White);
+		sample.GetTextSize();
+		sample.Text = widestText;
+		var size = sample.GetTextSize();
+		int w = ((int)size.W + 63) & ~63, h = ((int)size.H + 63) & ~63;
+		for (int i = freeTextRTs.Count; i < count; i++)
+			freeTextRTs.Add(CreateTextRT(w, h));
+	}
+
+	static void ReturnTextRT(IRenderTexture rt) {
+		if (freeTextRTs.Count < TextRTPoolLimit)
+			freeTextRTs.Add(rt);
+		else
+			Graphics2D.DestroyRenderTarget(rt);
+	}
+
+	public static void ClearTextRTPool() {
+		foreach (var rt in freeTextRTs)
+			Graphics2D.DestroyRenderTarget(rt);
+		freeTextRTs.Clear();
 	}
 	float FontResolution = 90;
 	public float BorderSize = 2.6f;
@@ -348,15 +403,13 @@ public class TextImageRenderItem
 		bool requiresResize = textRT == null || (textRT.GetWidth() < rtSize.W || textRT.GetHeight() < rtSize.H);
 		if (requiresResize) {
 			if (textRT != null) {
-				Graphics2D.DestroyRenderTarget(textRT);
+				ReturnTextRT(textRT);
 				textRT = null;
 			}
 		}
 
-		if (textRT == null) {
-			textRT = Graphics2D.CreateRenderTarget(rtSize.W, rtSize.H);
-			textRT.SetFilter(TextureFilter.Bilinear);
-		}
+		if (textRT == null)
+			textRT = RentTextRT((int)rtSize.W, (int)rtSize.H);
 
 		if (requiresRedraw) {
 			IRenderTexture rt = textRT;
@@ -506,6 +559,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		ScoreLabel?.Dispose();
 		ComboNumber?.Dispose();
 		MultiHitCombo?.Dispose();
+		TextImageRenderItem.ClearTextRTPool();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -558,6 +612,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		LoadScoreAssets();
 		LoadMultiHitAssets();
 		LoadHealthBarAssets();
+
+		TextImageRenderItem.PrewarmTextRTs("Snaps Taste", "88888", 16);
 		LoadComboModels();
 		victoryImport = Task.Run(ImportVictoryCanvasInBackground);
 

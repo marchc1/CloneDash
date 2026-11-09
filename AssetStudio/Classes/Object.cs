@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -102,6 +103,16 @@ namespace AssetStudio
 
             lock (reader)
                 return TypeTreeHelper.ReadType(m_Type, reader);
+        }
+
+        public OrderedDictionary ToType(IReadOnlySet<string> fields)
+        {
+            var m_Type = serializedType?.m_Type;
+            if (m_Type == null)
+                return null;
+
+            lock (reader)
+                return TypeTreeHelper.ReadType(m_Type, reader, fields);
         }
 
         public JsonDocument ToJsonDoc(TypeTree m_Type = null)
