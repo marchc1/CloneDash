@@ -1,4 +1,5 @@
-﻿using CloneDash.Common.Songs;
+﻿using CloneDash.Charts;
+using CloneDash.Common.Songs;
 using Newtonsoft.Json;
 using Nucleus.Core;
 
@@ -14,12 +15,37 @@ public class FavoritesSystem
 	static Dictionary<string, FavoritedSong> favoritedUIDs = [];
 	static DateTime LastSave = DateTime.MinValue;
 	static bool SaveQueued;
-	public static void FavoriteSong(ISong song) {
-		string uid = song.GetUniqueID().ToString();
-	}
-	public static void UnfavoriteSong(ISong song) {
+	static Dictionary<string, FavoritedSong>.AlternateLookup<ReadOnlySpan<char>> GetLookup() => favoritedUIDs.GetAlternateLookup<ReadOnlySpan<char>>();
+	
+	public static bool FavoriteSong(ISong song) {
+		ReadOnlySpan<char> uid = song.GetUniqueID();
+		var lookup = GetLookup();
 
+		if (lookup.TryGetValue(uid, out _))
+			return false;
+
+		lookup[uid] = new() {
+			Time = DateTime.UtcNow
+		};
+		SaveQueued = true;
+		return true;
 	}
+
+	public static bool UnfavoriteSong(ISong song) {
+		ReadOnlySpan<char> uid = song.GetUniqueID();
+		var lookup = GetLookup();
+
+		if (!lookup.Remove(uid))
+			return false;
+
+		SaveQueued = true;
+		return true;
+	}
+
+	public static bool IsSongFavorited(ISong song) {
+		return GetLookup().ContainsKey(song.GetUniqueID());
+	}
+
 	public static void Think() {
 		if (!SaveQueued)
 			return;
@@ -31,9 +57,22 @@ public class FavoritesSystem
 			SaveQueued = false;
 		}
 	}
+
+	public static IReadOnlyList<ISong> GetFavoritedSongs(){
+		List<ISong> songs = new List<ISong>(favoritedUIDs.Count);
+		foreach(var kvp in favoritedUIDs){
+			ISong? song = ChartMod.Instance.GetDescriptorByUID(kvp.Key);
+			if (song == null)
+				continue;
+			songs.Add(song);
+		}
+		return songs;
+	}
+
 	public static void LoadFavorites() {
 		favoritedUIDs = JsonConvert.DeserializeObject<Dictionary<string, FavoritedSong>>(filesystem.ReadAllText("cfg", "favorites.json") ?? "{}") ?? [];
 	}
+
 	public static void SaveFavorites() {
 		filesystem.WriteAllText("cfg", "favorites.json", JsonConvert.SerializeObject(favoritedUIDs));
 	}
