@@ -148,6 +148,7 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 
 	private void EnterFever(ref FeverStartGameEvent ev) {
 		UI?.UpdateInFever(Fever.TimeLeft, ev.Duration);
+		UI?.PlayFeverTips(Fever.Manual ? MuseDash1FeverTipsClip.End : MuseDash1FeverTipsClip.Light);
 	}
 
 	private void PlayUnpauseSound(ref UnpauseStartGameEvent ev) {
@@ -156,6 +157,8 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 	}
 
 	void ShowFailure(ref SongFailedGameEvent ev) {
+		if (Fever.Manual)
+			UI?.PlayFeverTips(MuseDash1FeverTipsClip.Failed);
 		if (UI != null && !UI.ShowingFailureScreen())
 			UI.OpenFailure();
 	}
@@ -178,6 +181,8 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 
 	private void UpdateFeverProgress(ref FeverChangedGameEvent ev) {
 		UI?.UpdateFeverProgress(ev.Value, ev.Max);
+		if (Fever.Manual && ev.Max > 0 && ev.Value >= ev.Max)
+			UI?.PlayFeverTips(MuseDash1FeverTipsClip.Start);
 	}
 
 	private void UpdateScore(ref ScoreChangedGameEvent ev) => UI?.UpdateScore(ev.Score);

@@ -6,6 +6,7 @@ public class FeverComponent(IConductor conductor, GameEventManager events) : IRh
 {
 	public double DismissalTime;
 	public double Duration = 6;
+	public bool Manual;
 	public float Max;
 
 	double LastExitTime = -1000000d;
@@ -48,12 +49,21 @@ public class FeverComponent(IConductor conductor, GameEventManager events) : IRh
 	/// </summary>
 	/// <param name="fever"></param>
 	public void Add(float fever) {
-		if (InFever || Dismissed) return;
+		if (InFever || Dismissed || IsFull) return;
 
 		Value = Math.Clamp(Value + fever, 0, Max);
 		events.Fire(new FeverChangedGameEvent(Value, Max));
-		if (Value >= Max)
+		if (IsFull && !Manual)
 			Enter();
+	}
+
+	public bool IsFull => Value >= Max;
+
+	public bool TryEnter() {
+		if (InFever || !IsFull) return false;
+
+		Enter();
+		return true;
 	}
 
 	public float Consume(float amount) {

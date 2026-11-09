@@ -37,6 +37,13 @@ public class UnbeatableWhiteLabelGamemode(ICloneDashModProvider provider) : Rhyt
 	public override string GetName() => "UNBEATABLE [white label]";
 	public override string GetID() => "standard";
 
+	public override IEnumerable<GamemodeInput> GetInputs() {
+		List<GamemodeInput> inputs = [];
+		foreach (var definition in UnbeatableWhiteLabelPathways.Layout.Definitions)
+			inputs.Add(new(definition.Name, UnbeatableWhiteLabelActions.SET, definition.Action, definition.Color));
+		return inputs;
+	}
+
 	protected override void Compose(RhythmGameLevel level, ServiceCollection parts, ISongChart chart) {
 		var beatmap = (Beatmap)chart.GetGamemodeData();
 

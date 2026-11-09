@@ -1,4 +1,5 @@
 ﻿using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using Nucleus.Types;
 
@@ -10,6 +11,7 @@ public class MuseDash1RulesComponent : IRhythmGameThinker
 	public readonly Conductor Conductor;
 	public readonly FeverComponent Fever;
 	public readonly HealthComponent Health;
+	public readonly InputComponent Input;
 	public readonly ResultComponent Results;
 	public readonly ScoreComponent Score;
 
@@ -22,6 +24,7 @@ public class MuseDash1RulesComponent : IRhythmGameThinker
 		Conductor = conductor;
 		Fever = fever;
 		Health = health;
+		Input = input;
 		Results = results;
 		Score = score;
 		this.events = events;
@@ -95,6 +98,9 @@ public class MuseDash1RulesComponent : IRhythmGameThinker
 	public bool NeedsToHoldSustains() => !Quirks.AutoHoldsSustains;
 
 	public void Think(FrameState frameState) {
+		if (Input.State.ClickCount(MuseDashActions.Fever) > 0 && !level.Paused)
+			Fever.TryEnter();
+
 		// Health drain
 		if (Quirks.HealthLossPerSecond != null && Conductor.GetTime() >= 0) {
 			double loss = 0;

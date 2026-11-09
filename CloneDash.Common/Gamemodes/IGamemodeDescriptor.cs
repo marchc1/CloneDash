@@ -15,4 +15,7 @@ public interface IGamemodeProvider : ICloneDashModProvider<IGamemodeDescriptor> 
 public interface IGamemodeDescriptor : ICloneDashModDescriptor
 {
 	RhythmGameLevel Load(ISongChart chart, RhythmGameLoadParameters parms);
+
+	IEnumerable<GamemodeInput> GetInputs() => [];
+	IEnumerable<GamemodeInputSwitch> GetInputSwitches() => [];
 }

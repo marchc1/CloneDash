@@ -47,9 +47,12 @@ public abstract class RhythmGamemode(ICloneDashModProvider provider) : IGamemode
 
 	public RhythmGameLevel Load(ISongChart chart, RhythmGameLoadParameters parms) => new(this, chart, parms);
 
-	public ICloneDashModProvider GetProvider() => provider; 
+	public ICloneDashModProvider GetProvider() => provider;
 	public abstract string GetName();
 	public abstract string GetID();
+
+	public virtual IEnumerable<GamemodeInput> GetInputs() => [];
+	public virtual IEnumerable<GamemodeInputSwitch> GetInputSwitches() => [];
 }
 
 [MarkForStaticConstruction]

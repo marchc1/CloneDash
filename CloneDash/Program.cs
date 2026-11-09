@@ -190,6 +190,8 @@ public class GameDLL : IGameDLL
 			NucleusRegisterMDFont("Luckiest Guy", "LuckiestGuy-Regular");
 			Interlude.Spin(submessage: "fonts: Loading Snaps Taste from MD");
 			NucleusRegisterMDFont("Snaps Taste", "Snaps Taste");
+			Interlude.Spin(submessage: "fonts: Loading Teko from MD");
+			NucleusRegisterMDFont("Teko", "Normal");
 		}
 
 		Interlude.Spin(submessage: "Initializing Nucleus filesystem paths");

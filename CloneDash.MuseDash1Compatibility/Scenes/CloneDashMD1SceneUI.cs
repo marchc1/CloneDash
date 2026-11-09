@@ -544,8 +544,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	protected ITexture? HpFeverBase;
 	protected ITexture? slider_light;
 	protected ITexture? power_slider;
-	protected ITexture? power_slider_white;
 	protected ITexture? Fever;
+	protected MuseDash1FeverTips? FeverTips;
 	protected ITexture? bubble;
 	protected ITexture? score_English;
 	protected ModelData? fx_combo_1;
@@ -583,7 +583,6 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	double CurrentFever, MaxFever;
 	double HP, MaxHP;
 	bool InFever;
-	double EnterFeverTime = -20000;
 	double FeverRemainingTime, FeverTotalTime;
 	double LastHitTime = -2000000;
 	int MultiHits = 0;
@@ -724,10 +723,11 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		HpFeverBase = LoadTextureByName("HpFeverBase");
 		slider_light = LoadTextureByName("slider_light");
 		power_slider = LoadTextureByName("power_slider");
-		power_slider_white = LoadTextureByName("power_slider_white");
 		Fever = LoadTextureByName("Fever");
 		bubble = LoadTextureByName("bubble");
 		bubble?.SetWrap(TextureWrap.Repeat);
+		FeverTips = new();
+		FeverTips.Initialize(name => LoadTextureByName(name));
 	}
 
 	public virtual void LoadComboModels() {
@@ -1013,7 +1013,6 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		Vector2F hpFeverBaseSize = GetTextureSize(HpFeverBase);
 		Vector2F hp_sliderSize = GetTextureSize(hp_slider);
 		Vector2F power_sliderSize = GetTextureSize(power_slider);
-		Vector2F power_slider_whiteSize = GetTextureSize(power_slider_white);
 
 		Graphics2D.SetDrawColor(255, 255, 255, 255);
 		Graphics2D.SetTexture(BelowBase);
@@ -1041,12 +1040,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		DrawSomeBubbles(power_slider, power_sliderSize, (float)feverRatio, 0.3f, new(61, -4), new(87, 181, 245));
 		DrawSliderLight(power_slider, power_sliderSize, (float)feverRatio, (float)NMath.Remap(Time - LastFeverUpdateTime, 0, 0.3, 1, 0, clampInput: true), new(61, -4), new(180, 229, 255));
 
-		float feverActivated = Math.Clamp((float)(Time - EnterFeverTime) * 1, 0, 1);
-		if (feverActivated < 1) {
-			Graphics2D.SetDrawColor(255, 255, 255, (int)((float)NMath.Ease.InQuart(1 - feverActivated) * 255));
-			Graphics2D.SetTexture(power_slider_white);
-			Graphics2D.DrawTexturedRectangle(new Vector2F(-(power_slider_whiteSize.W / 2) + 0, -power_slider_whiteSize.H + 16), power_slider_whiteSize);
-		}
+		FeverTips?.Render();
 
 		Graphics2D.SetDrawColor(255, 255, 255, 255);
 		float fontSize = 32;
@@ -1108,6 +1102,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		if (!game.Paused) {
 			MultiHitCombo?.Think(dt);
 			MultiHitTip?.Think(dt);
+			FeverTips?.Think(dt);
 		}
 
 		if (ScoreLabel != null && ScoreNumber != null) {
@@ -1261,10 +1256,9 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		MaxHP = maxHP;
 	}
 
+	public void PlayFeverTips(MuseDash1FeverTipsClip clip) => FeverTips?.Play(clip);
+
 	public void UpdateInFever(double feverRemainingTime, double feverTotalTime) {
-		if (!InFever) {
-			EnterFeverTime = Time;
-		}
 		InFever = true;
 		FeverRemainingTime = feverRemainingTime;
 		FeverTotalTime = feverTotalTime;
@@ -1285,7 +1279,6 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	public void Reset() {
 		BackgroundItems.Clear();
 		ForegroundItems.Clear();
-		EnterFeverTime = -2000000;
 		LastHitTime = -2000000;
 		LastComboUpdateTime = -2000000;
 		ComboGrade = ComboGrade.NotApplicable;
@@ -1297,6 +1290,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		InMultiHit = false;
 		MultiHits = 0;
 		MultiHitCombo?.Hide();
+		FeverTips?.Reset();
 
 		ForceDeactivateCombo1();
 		ForceDeactivateCombo2();

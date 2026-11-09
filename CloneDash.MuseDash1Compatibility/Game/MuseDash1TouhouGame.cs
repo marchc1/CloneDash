@@ -17,6 +17,9 @@ public partial class MuseDash1TouhouGamemode(ICloneDashModProvider provider) : M
 	public override string GetName() => "Muse Dash 1 (Touhou)";
 	public override string GetID() => "touhou";
 
+	public override IEnumerable<GamemodeInput> GetInputs() => [];
+	public override IEnumerable<GamemodeInputSwitch> GetInputSwitches() => [];
+
 	protected override void AddChart(ServiceCollection parts, MD1_GamemodeData data) => parts.AddPartWith<MuseDash1ChartComponent, MuseDash1TouhouChartComponent>(data);
 
 	public const string UUID = "gamemode/musedash1/touhou";

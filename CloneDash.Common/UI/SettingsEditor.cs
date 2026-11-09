@@ -1,4 +1,5 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common.Compatibility;
+using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Systems;
 using CloneDash.Common.Systems.Discord;
 using CloneDash.Game;
@@ -55,8 +56,19 @@ public class SettingsCategory(Element? parent) : Button(parent)
 public class SettingsPanel : ScrollPanel
 {
 	public SettingsCategory Category;
+	readonly List<Element> rows = [];
+
 	public SettingsPanel(Element? parent) : base(parent) {
 		SetPaintBorderEnabled(false);
+	}
+
+	public int RowCount => rows.Count;
+
+	public void RemoveRows(int start) {
+		for (int i = rows.Count - 1; i >= start; i--) {
+			rows[i].Remove();
+			rows.RemoveAt(i);
+		}
 	}
 
 	private (Panel Top, Panel Bottom, Label Name, Label Description) buildBackPanel(string nameTxt, string descTxt) {
@@ -66,6 +78,7 @@ public class SettingsPanel : ScrollPanel
 		panel.DynamicallySized = true;
 		panel.Dock = Dock.Top;
 		panel.Size = new(0.08f);
+		rows.Add(panel);
 
 		var top = new Panel(panel);
 		top.DynamicallySized = true;
@@ -109,6 +122,7 @@ public class SettingsPanel : ScrollPanel
 		name.DockMargin = RectangleF.TLRB(16);
 		name.TextOverflowMode = TextOverflowMode.WordWrap;
 		name.TextSize = 20;
+		rows.Add(name);
 		return name;
 	}
 
@@ -131,6 +145,14 @@ public class SettingsPanel : ScrollPanel
 		return slider;
 	}
 	public NumSlider PercentageNumber(ConVar cv, string name) => Number(cv, name, "{0:P0}");
+
+	public Checkbox Switch(ConVar cv, string name) {
+		var back = buildBackPanel(name, cv.HelpString);
+		var holder = new SettingsSwitch(back.Bottom);
+		holder.Dock = Dock.Fill;
+		holder.Checkbox.BindToConVar(cv);
+		return holder.Checkbox;
+	}
 
 	public InputActionKeybindingButtonsPanel InputActionKeybindingButtonsPanel(string set, InputAction action, Color color, string name) {
 		var back = buildBackPanel(name, "");
@@ -309,23 +331,55 @@ public class SettingsEditor : Panel, IMainMenuPanel
 			}
 		};
 
+		var gamemodeRow = panel.Blank("Gamemode", "The gamemode whose keys you're editing.");
+		var gamemodes = new DropdownSelector<IGamemodeDescriptor>(gamemodeRow);
+		gamemodes.Dock = Dock.Fill;
+		gamemodes.OnToString += gamemode => gamemode?.GetName();
+		foreach (var gamemode in ModStores.Get<GamemodeMod>().GetAllDescriptors())
+			if (gamemode.GetInputs().Any())
+				gamemodes.Items.Add(gamemode);
+
 		panel.Label("Left-click an existing key to rebind the key.\nRight-click an existing key to unbind the key.\nUse the Add button to add a new key.");
 
-		List<PathwayDefinition> pathwayDefinitions = [];
-		foreach (var layout in PathwayLayout.Registered)
-			foreach (var definition in layout.Definitions)
-				if (pathwayDefinitions.FindIndex(x => x.Action == definition.Action) < 0)
-					pathwayDefinitions.Add(definition);
+		int gamemodeRowsStart = panel.RowCount;
+		gamemodes.OnSelectionChanged += (_, _, gamemode) => BuildGamemodeInputs(panel, gamemodeRowsStart, gamemode);
+		gamemodes.Selected = gamemodes.Items.FirstOrDefault();
+		BuildGamemodeInputs(panel, gamemodeRowsStart, gamemodes.Selected);
+	}
 
-		pathwayDefinitions.Sort((a, b) => b.NormalizedY.CompareTo(a.NormalizedY));
-		foreach (var definition in pathwayDefinitions)
-			panel.InputActionKeybindingButtonsPanel(MuseDashActions.SET, definition.Action, definition.Color, $"{definition.Name} Keys");
+	private static void BuildGamemodeInputs(SettingsPanel panel, int start, IGamemodeDescriptor? gamemode) {
+		panel.RemoveRows(start);
+		if (gamemode == null) return;
+
+		foreach (var input in gamemode.GetInputs())
+			panel.InputActionKeybindingButtonsPanel(input.Set, input.Action, input.Color, $"{input.Name} Keys");
+		foreach (var toggle in gamemode.GetInputSwitches())
+			panel.Switch(toggle.ConVar, toggle.Name);
 	}
 
 
 	IMainMenuLevel mainMenu = null!;
 	public IMainMenuLevel GetMainMenu() => mainMenu;
 	public void SetMainMenu(IMainMenuLevel level) => mainMenu = level;
+}
+
+public class SettingsSwitch : Panel
+{
+	public readonly Checkbox Checkbox;
+
+	public SettingsSwitch(Element? parent) : base(parent) {
+		SetPaintBackgroundEnabled(false);
+		SetPaintBorderEnabled(false);
+		Checkbox = new Checkbox(this);
+	}
+
+	protected override void PerformLayout(float width, float height) {
+		base.PerformLayout(width, height);
+		int padding = 4;
+		float side = height - (padding * 2);
+		Checkbox.Position = new(padding, padding);
+		Checkbox.Size = new(side, side);
+	}
 }
 
 public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)

@@ -18,6 +18,7 @@ public interface IMuseDash1SceneUI : IDisposable
 	void UpdateHP(double hp, double maxHP);
 	void UpdateFeverProgress(double fever, double maxFever);
 	void UpdateInFever(double feverRemainingTime, double feverTotalTime);
+	void PlayFeverTips(MuseDash1FeverTipsClip clip);
 	void UpdateScore(double score);
 	void UpdateAllPerfect(bool allPerfect);
 	void UpdateFullCombo(bool fullCombo);

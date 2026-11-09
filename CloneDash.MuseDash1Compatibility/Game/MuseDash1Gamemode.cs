@@ -19,6 +19,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Nucleus;
 using Nucleus.Commands;
 using Nucleus.Common.Commands;
+using Color = Nucleus.Common.Types.Color;
 
 namespace CloneDash.Game;
 
@@ -44,6 +45,8 @@ public class MuseDash1GamemodeProvider : ModProvider<IGamemodeDescriptor>, IGame
 		foreach (var descriptor in descriptors)
 			yield return descriptor.GetID();
 	}
+
+	public override int GetSortIndex() => int.MinValue;
 }
 
 [Nucleus.MarkForStaticConstruction]
@@ -51,12 +54,31 @@ public partial class MuseDash1Gamemode(ICloneDashModProvider provider) : RhythmG
 {
 	public const string UUID = "gamemode/musedash1/standard";
 
+	public static readonly ConVar md1_manualfever = new(nameof(md1_manualfever), "0", FCvar.Saved, "Fever starts when you press the Fever key instead of when the bar fills.");
 	public static ConCommand md1level = new(nameof(md1level), clonedash_openmdlevel_execute, clonedash_openmdlevel_autocomplete, "Opens a Muse Dash 1 level.");
 
+	public static readonly Color FEVER_COLOR = new(255, 214, 120, 120);
 	public static float GlobalScale => 1 / 200f;
 
 	public override string GetName() => "Muse Dash 1";
 	public override string GetID() => "standard";
+
+	public override IEnumerable<GamemodeInput> GetInputs() {
+		List<PathwayDefinition> definitions = [];
+		foreach (var layout in PathwayLayout.Registered)
+			foreach (var definition in layout.Definitions)
+				if (definitions.FindIndex(x => x.Action == definition.Action) < 0)
+					definitions.Add(definition);
+
+		definitions.Sort((a, b) => b.NormalizedY.CompareTo(a.NormalizedY));
+		foreach (var definition in definitions)
+			yield return new(definition.Name, MuseDashActions.SET, definition.Action, definition.Color);
+		yield return new("Fever", MuseDashActions.SET, MuseDashActions.Fever, FEVER_COLOR);
+	}
+
+	public override IEnumerable<GamemodeInputSwitch> GetInputSwitches() {
+		yield return new("Manual Fever", md1_manualfever);
+	}
 
 	protected override void Compose(RhythmGameLevel level, ServiceCollection parts, ISongChart chart) {
 		MuseDash1SceneRuntime.Preload(chart);
@@ -145,6 +167,7 @@ public partial class MuseDash1Gamemode(ICloneDashModProvider provider) : RhythmG
 		});
 		parts.AddPart<FeverComponent>(fever => {
 			ref var quirks = ref level.Component<MuseDash1GameplayQuirksComponent>().Value;
+			fever.Manual = md1_manualfever.GetBool();
 			fever.Max = quirks.MaxFever;
 			fever.Duration = quirks.FeverDuration;
 			fever.DismissalTime = quirks.PostFeverDismissalTime;
