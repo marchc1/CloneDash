@@ -171,7 +171,7 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 
 	float PathwayY(PathwayId pathway, float roadY, float airY) => PathwayLayout.LerpY(Pathways.Layout[pathway].NormalizedY, roadY, airY);
 
-	ParticleCollection? Play(MuseDash1ParticleEffect? effect, in Matrix4x4 transform) => effect == null ? null : Particles.Create(effect.Definition, transform);
+	ParticleCollection? Play(MuseDash1ParticleEffect? effect, in Matrix4x4 transform) => effect == null || level.IsSeeking ? null : Particles.Create(effect.Definition, transform);
 
 	void PlayBonus(DashEnemy note, PathwayId pathway) {
 		var effect = note.Type == MuseDash1EntityType.Heart ? hpPickup : scorePickup;
