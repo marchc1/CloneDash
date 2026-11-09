@@ -299,7 +299,7 @@ public class UnbeatableWhiteLabelChartProvider() : ModProvider<ISong>("UNBEATABL
 	public IChartSongFilter? GetSavedFilter() => ubwl_lastfilter.GetString().IsEmpty ? null : JSON.Deserialize<BaseContiguousChartSongFilter>(new(ubwl_lastfilter.GetString()));
 	public ISong? GetSavedSong() => ChartMod.Instance.GetDescriptorByUID(ubwl_lastsong.GetString());
 	public void UpdateSavedFilter(IChartSongFilter? filter) => ubwl_lastfilter.SetValue(filter == null ? "" : JSON.Serialize((BaseContiguousChartSongFilter)filter));
-	public void UpdateSavedSong(ISong? selectedSong) => ubwl_lastsong.SetValue(selectedSong == null ? "" : selectedSong.GetUUID());
+	public void UpdateSavedSong(ISong? selectedSong) => ubwl_lastsong.SetValue(selectedSong == null ? "" : selectedSong.GetUniqueID());
 
 	public ISong? FindSongByName(ReadOnlySpan<char> name) {
 		name = name.SliceNullTerminatedString();

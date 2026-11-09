@@ -38,7 +38,7 @@ public class MuseDash1ScenesComponent : IRhythmGameComponent
 
 	public IMuseDash1SceneInstance? AddOrGetScene(ISceneDescriptor? descriptor) {
 		if (descriptor == null) return null;
-		if (sceneLUT.TryGetValue(descriptor.GetUUID().SliceNullTerminatedString().Hash(), out var instance))
+		if (sceneLUT.TryGetValue(descriptor.GetUniqueID().SliceNullTerminatedString().Hash(), out var instance))
 			return instance;
 
 		// Does the scene support the gamemode?
@@ -51,7 +51,7 @@ public class MuseDash1ScenesComponent : IRhythmGameComponent
 
 	public void AddScene(IMuseDash1SceneInstance instance) {
 		scenes.Add(instance);
-		sceneLUT[instance.GetScene().GetUUID().Hash()] = instance;
+		sceneLUT[instance.GetScene().GetUniqueID().Hash()] = instance;
 		instance.SetSceneArrayIndex(scenes.Count - 1);
 	}
 
@@ -86,7 +86,7 @@ public class MuseDash1ScenesComponent : IRhythmGameComponent
 	public bool HasActiveScene([NotNullWhen(true)] out IMuseDash1SceneInstance? scene) => (scene = ActiveScene) != null;
 
 	public bool HasSceneInitialized(ISceneDescriptor descriptor) {
-		return sceneLUT.ContainsKey(descriptor.GetUUID().Hash());
+		return sceneLUT.ContainsKey(descriptor.GetUniqueID().Hash());
 	}
 
 	public void Load() {

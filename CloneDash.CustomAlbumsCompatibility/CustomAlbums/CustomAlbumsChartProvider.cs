@@ -37,7 +37,7 @@ public class CustomAlbumsChartProvider() : ModProvider<ISong>("Custom Albums", "
 	public IChartSongFilter? GetSavedFilter() => cam_lastfilter.GetString().IsEmpty ? null : JSON.Deserialize<BaseContiguousChartSongFilter>(new(cam_lastfilter.GetString()));
 	public ISong? GetSavedSong() => ChartMod.Instance.GetDescriptorByUID(cam_lastsong.GetString());
 	public void UpdateSavedFilter(IChartSongFilter? filter) => cam_lastfilter.SetValue(filter == null ? "" : JSON.Serialize((BaseContiguousChartSongFilter)filter));
-	public void UpdateSavedSong(ISong? selectedSong) => cam_lastsong.SetValue(selectedSong == null ? "" : selectedSong.GetUUID());
+	public void UpdateSavedSong(ISong? selectedSong) => cam_lastsong.SetValue(selectedSong == null ? "" : selectedSong.GetUniqueID());
 
 	public ISong? FindSongByName(ReadOnlySpan<char> name) {
 		name = name.SliceNullTerminatedString();

@@ -261,8 +261,8 @@ public class MD1_Song : ModDescriptor, ISong, IHasLowToHighDifficulties
 	public void AddBaseJSONInfo(MuseDashSongInfoJSON baseInfo, bool doNotLocalize = false) {
 		baseInfo.CloneInto(__jsonInfo);
 		if (!doNotLocalize) {
-			__jsonInfo.Name = $"#{GetUUID()}_NAME";
-			__jsonInfo.Author = $"#{GetUUID()}_AUTHOR";
+			__jsonInfo.Name = $"#{GetUniqueID()}_NAME";
+			__jsonInfo.Author = $"#{GetUniqueID()}_AUTHOR";
 		}
 	}
 	public void AddLocalizedInfo(CultureInfo lang, ReadOnlySpan<char> nameValue, ReadOnlySpan<char> authorValue, HashSet<char>? codepoints = null) {

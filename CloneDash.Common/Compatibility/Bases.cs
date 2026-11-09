@@ -21,11 +21,6 @@ public interface ICloneDashModNameID
 	string GetID();
 }
 
-public interface ICloneDashModUniqueID
-{
-	string GetUniqueID();
-}
-
 public static class UniqueIDFactory
 {
 	public const char Separator = '/';
@@ -76,7 +71,7 @@ public interface ICloneDashModStore : ICloneDashModNameID
 	void ClearDescriptorCache();
 }
 
-public interface ICloneDashModProvider : ICloneDashModNameID, ICloneDashModUniqueID
+public interface ICloneDashModProvider : ICloneDashModNameID, IUniquelyIdentifiableObject
 {
 	ICloneDashModStore? GetStore();
 	void OnAddedToStore(ICloneDashModStore store);
@@ -87,10 +82,10 @@ public interface ICloneDashModProvider : ICloneDashModNameID, ICloneDashModUniqu
 
 	IEnumerable<string> GetAvailableIDs();
 
-	string ICloneDashModUniqueID.GetUniqueID() {
-		var store = GetStore();
-		return store == null ? GetID() : UniqueIDFactory.BuildUniqueID(store.GetID(), GetID());
-	}
+	// ReadOnlySpan<char> GetUniqueID() {
+	// 	var store = GetStore();
+	// 	return store == null ? GetID() : UniqueIDFactory.BuildUniqueID(store.GetID(), GetID());
+	// }
 }
 
 public interface ICloneDashModProvider<TDescriptor> : ICloneDashModProvider
@@ -99,20 +94,18 @@ public interface ICloneDashModProvider<TDescriptor> : ICloneDashModProvider
 	TDescriptor? FindByID(ReadOnlySpan<char> id);
 }
 
-public interface ICloneDashModDescriptor : ICloneDashModNameID, ICloneDashModUniqueID, IUniquelyIdentifiableObject
+public interface ICloneDashModDescriptor : ICloneDashModNameID, IUniquelyIdentifiableObject
 {
 	ICloneDashModProvider GetProvider();
 	ICloneDashModStore? GetStore() => GetProvider().GetStore();
 
-	string ICloneDashModUniqueID.GetUniqueID() {
+	ReadOnlySpan<char> IUniquelyIdentifiableObject.GetUniqueID() {
 		var provider = GetProvider();
 		var store = provider.GetStore();
 		return store == null
 			? UniqueIDFactory.BuildUniqueID(provider.GetID(), GetID())
 			: UniqueIDFactory.BuildUniqueID(store.GetID(), provider.GetID(), GetID());
 	}
-
-	ReadOnlySpan<char> IUniquelyIdentifiableObject.GetUUID() => GetUniqueID();
 }
 
 public abstract class ModProvider<TDescriptor>(string name, string id) : ICloneDashModProvider<TDescriptor>
@@ -125,7 +118,7 @@ public abstract class ModProvider<TDescriptor>(string name, string id) : ICloneD
 
 	public string GetName() => name;
 	public string GetID() => id;
-	public string GetUniqueID() => uniqueID ??= store == null ? id : UniqueIDFactory.BuildUniqueID(store.GetID(), id);
+	public ReadOnlySpan<char> GetUniqueID() => uniqueID ??=store == null ? id : UniqueIDFactory.BuildUniqueID(store.GetID(), id);
 	public ICloneDashModStore? GetStore() => store;
 
 	public virtual void OnAddedToStore(ICloneDashModStore store) {
@@ -156,7 +149,7 @@ public abstract class ModDescriptor : ICloneDashModDescriptor
 
 	protected void InvalidateUniqueID() => uniqueID = null;
 
-	public string GetUniqueID() {
+	public ReadOnlySpan<char> GetUniqueID() {
 		if (uniqueID != null) return uniqueID;
 		var provider = GetProvider();
 		var store = provider.GetStore();
@@ -164,8 +157,6 @@ public abstract class ModDescriptor : ICloneDashModDescriptor
 			? UniqueIDFactory.BuildUniqueID(provider.GetID(), GetID())
 			: UniqueIDFactory.BuildUniqueID(store.GetID(), provider.GetID(), GetID());
 	}
-
-	public ReadOnlySpan<char> GetUUID() => GetUniqueID();
 }
 
 public abstract class SimpleModDescriptor(string name, string id, ICloneDashModProvider provider) : ModDescriptor
@@ -211,7 +202,7 @@ public abstract class ModStore<TProvider, TDescriptor> : ICloneDashModStore
 	readonly string name;
 	readonly string id;
 	readonly ClassAndIDs<TProvider> providers = new(static p => p.GetID());
-	readonly ClassAndIDs<TDescriptor> descriptors = new(static d => d.GetUniqueID());
+	readonly ClassAndIDs<TDescriptor> descriptors = new(static d => d.GetUniqueID().ToString());
 	readonly Lock discoveryLock = new();
 	volatile bool discovered;
 

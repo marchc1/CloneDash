@@ -30,7 +30,7 @@ public class MuseDash1ChartProvider() : ModProvider<ISong>("Muse Dash 1", "mused
 	public IChartSongFilter? GetSavedFilter() => md1_lastfilter.GetString().IsEmpty ? null : JSON.Deserialize<BaseContiguousChartSongFilter>(new(md1_lastfilter.GetString()));
 	public ISong? GetSavedSong() => ChartMod.Instance.GetDescriptorByUID(md1_lastsong.GetString());
 	public void UpdateSavedFilter(IChartSongFilter? filter) => md1_lastfilter.SetValue(filter == null ? "" : JSON.Serialize((BaseContiguousChartSongFilter)filter));
-	public void UpdateSavedSong(ISong? selectedSong) => md1_lastsong.SetValue(selectedSong == null ? "" : selectedSong.GetUUID());
+	public void UpdateSavedSong(ISong? selectedSong) => md1_lastsong.SetValue(selectedSong == null ? "" : selectedSong.GetUniqueID());
 
 	public ISong? FindSongByName(ReadOnlySpan<char> name) {
 		name = name.SliceNullTerminatedString();

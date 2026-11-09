@@ -35,7 +35,7 @@ public class CustomPlayChartProvider() : ModProvider<ISong>("Muse Dash CustomPla
 	public IChartSongFilter? GetSavedFilter() => mdcp_lastfilter.GetString().IsEmpty ? null : JSON.Deserialize<BaseContiguousChartSongFilter>(new(mdcp_lastfilter.GetString()));
 	public ISong? GetSavedSong() => ChartMod.Instance.GetDescriptorByUID(mdcp_lastsong.GetString());
 	public void UpdateSavedFilter(IChartSongFilter? filter) => mdcp_lastfilter.SetValue(filter == null ? "" : JSON.Serialize((BaseContiguousChartSongFilter)filter));
-	public void UpdateSavedSong(ISong? selectedSong) => mdcp_lastsong.SetValue(selectedSong == null ? "" : selectedSong.GetUUID());
+	public void UpdateSavedSong(ISong? selectedSong) => mdcp_lastsong.SetValue(selectedSong == null ? "" : selectedSong.GetUniqueID());
 
 	public ISong? FindSongByName(ReadOnlySpan<char> name) {
 		name = name.SliceNullTerminatedString();
