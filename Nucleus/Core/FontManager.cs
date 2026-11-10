@@ -59,6 +59,13 @@ namespace Nucleus.Core
 			public bool Dirty;
 		}
 
+		private struct PendingUpload
+		{
+			public int Page;
+			public Rectangle Rec;
+			public byte[] Pixels;
+		}
+
 		private static int nextId;
 
 		public FontKey Key;
@@ -69,14 +76,20 @@ namespace Nucleus.Core
 		private readonly List<Page> Pages = [];
 		private readonly List<FontGlyph> Glyphs = [];
 		private readonly Dictionary<int, int> GlyphIndices = [];
+		private readonly List<PendingUpload> PendingUploads = [];
+		private readonly object Sync = new();
 		private int EmptyGlyph = -1;
 		private bool Killed;
 		private bool MarkedForDeath;
 		private bool NeverKillThisFont;
+		private bool FlushQueued;
 		private DateTime LastUsed;
 
-		private static readonly List<int> missingCodepoints = [];
-		private static readonly HashSet<int> missingCodepointsHash = [];
+		private readonly List<int> missingCodepoints = [];
+		private readonly HashSet<int> missingCodepointsHash = [];
+
+		// GL calls off the game thread silently do nothing
+		private static bool CanUseGL => !MainThread.GameThreadSet || Thread.CurrentThread == MainThread.GameThread;
 
 		public FontState(FontEntry entry, int size) {
 			Entry = entry;
@@ -94,26 +107,41 @@ namespace Nucleus.Core
 
 		public int PageCount => Pages.Count;
 
-		public Texture2D GetPageTexture(int page) => Pages[page].Texture;
+		public Texture2D GetPageTexture(int page) {
+			lock (Sync) {
+				if (PendingUploads.Count > 0 && CanUseGL)
+					FlushUploads();
+				return Pages[page].Texture;
+			}
+		}
 
 		public void Destroy() {
-			if (Killed) return;
+			lock (Sync) {
+				if (Killed) return;
 
-			foreach (var page in Pages)
-				Raylib.UnloadTexture(page.Texture);
-			Pages.Clear();
+				foreach (var page in Pages)
+					if (page.Texture.Id != 0)
+						Raylib.UnloadTexture(page.Texture);
+				Pages.Clear();
 
-			Killed = true;
+				foreach (var upload in PendingUploads)
+					System.Buffers.ArrayPool<byte>.Shared.Return(upload.Pixels);
+				PendingUploads.Clear();
+
+				Killed = true;
+			}
 		}
 
 		public void MarkFontAsInvincible() => NeverKillThisFont = true;
 		public bool IsFontInvincible() => NeverKillThisFont;
 
 		internal ulong GetUsedGPUBits() {
-			ulong bits = 0;
-			foreach (var page in Pages)
-				bits += (ulong)(page.Texture.Width * page.Texture.Height * 8 * page.Texture.Format.GetBitsPerPixel());
-			return bits;
+			lock (Sync) {
+				ulong bits = 0;
+				foreach (var page in Pages)
+					bits += (ulong)(page.Texture.Width * page.Texture.Height * 8 * page.Texture.Format.GetBitsPerPixel());
+				return bits;
+			}
 		}
 
 		static int NextCodepoint(ReadOnlySpan<char> text, ref int i) {
@@ -126,26 +154,30 @@ namespace Nucleus.Core
 		}
 
 		public FontGlyph GetGlyph(int codepoint) {
-			if (!GlyphIndices.TryGetValue(codepoint, out int index)) {
-				AddCodepoints([codepoint]);
-				index = GlyphIndices[codepoint];
+			lock (Sync) {
+				if (!GlyphIndices.TryGetValue(codepoint, out int index)) {
+					AddCodepoints([codepoint]);
+					index = GlyphIndices[codepoint];
+				}
+				return Glyphs[index];
 			}
-			return Glyphs[index];
 		}
 
 		public void AddGlyphs(ReadOnlySpan<char> text) {
-			missingCodepoints.Clear();
-			missingCodepointsHash.Clear();
-			for (int i = 0; i < text.Length;) {
-				int codepoint = NextCodepoint(text, ref i);
-				if (codepoint == 0)
-					break;
-				if (codepoint != '\n' && !GlyphIndices.ContainsKey(codepoint) && missingCodepointsHash.Add(codepoint))
-					missingCodepoints.Add(codepoint);
-			}
+			lock (Sync) {
+				missingCodepoints.Clear();
+				missingCodepointsHash.Clear();
+				for (int i = 0; i < text.Length;) {
+					int codepoint = NextCodepoint(text, ref i);
+					if (codepoint == 0)
+						break;
+					if (codepoint != '\n' && !GlyphIndices.ContainsKey(codepoint) && missingCodepointsHash.Add(codepoint))
+						missingCodepoints.Add(codepoint);
+				}
 
-			if (missingCodepoints.Count > 0)
-				AddCodepoints(missingCodepoints.ToArray());
+				if (missingCodepoints.Count > 0)
+					AddCodepoints(missingCodepoints.ToArray());
+			}
 		}
 
 		private unsafe void AddCodepoints(ReadOnlySpan<int> codepoints) {
@@ -177,6 +209,33 @@ namespace Nucleus.Core
 						GlyphIndices[codepoint] = codepoint == '?' ? GetEmptyGlyph() : FallbackGlyph();
 				}
 			}
+
+			if (CanUseGL)
+				FlushUploads();
+			else if (!FlushQueued) {
+				FlushQueued = true;
+				MainThread.RunASAP(() => {
+					lock (Sync)
+						FlushUploads();
+				});
+			}
+		}
+
+		private unsafe void FlushUploads() {
+			FlushQueued = false;
+			if (Killed || PendingUploads.Count == 0)
+				return;
+
+			foreach (var upload in PendingUploads) {
+				Page page = Pages[upload.Page];
+				if (page.Texture.Id == 0)
+					page.Texture = CreatePageTexture();
+				fixed (byte* pixels = upload.Pixels)
+					Raylib.UpdateTextureRec(page.Texture, upload.Rec, pixels);
+				System.Buffers.ArrayPool<byte>.Shared.Return(upload.Pixels);
+				page.Dirty = true;
+			}
+			PendingUploads.Clear();
 
 			foreach (var page in Pages) {
 				if (!page.Dirty)
@@ -240,17 +299,20 @@ namespace Nucleus.Core
 				grayAlpha[i * 2] = 255;
 				grayAlpha[i * 2 + 1] = gray[i];
 			}
-			fixed (byte* upload = grayAlpha)
-				Raylib.UpdateTextureRec(page.Texture, new Rectangle(x, y, width, height), upload);
-			System.Buffers.ArrayPool<byte>.Shared.Return(grayAlpha);
 
-			page.Dirty = true;
 			glyph.Page = Pages.Count - 1;
 			glyph.Rec = new Rectangle(x, y, width, height);
+			PendingUploads.Add(new() { Page = glyph.Page, Rec = glyph.Rec, Pixels = grayAlpha });
 			return glyph;
 		}
 
-		private unsafe Page AddPage() {
+		private Page AddPage() {
+			Page page = new();
+			Pages.Add(page);
+			return page;
+		}
+
+		private unsafe Texture2D CreatePageTexture() {
 			int pixels = PageSize * PageSize;
 			ushort* data = (ushort*)NativeMemory.Alloc((nuint)(pixels * 2));
 			new Span<ushort>(data, pixels).Fill(BitConverter.IsLittleEndian ? (ushort)0x00FF : (ushort)0xFF00);
@@ -267,13 +329,15 @@ namespace Nucleus.Core
 
 			Raylib.GenTextureMipmaps(ref texture);
 			Raylib.SetTextureFilter(texture, TextureFilter.Trilinear); // << CHANGE FOR 3D FONT DRAWING: REVIEW?
-
-			Page page = new() { Texture = texture };
-			Pages.Add(page);
-			return page;
+			return texture;
 		}
 
 		public Vector2F MeasureText(ReadOnlySpan<char> text, float fontSize, float spacing) {
+			lock (Sync)
+				return MeasureTextLocked(text, fontSize, spacing);
+		}
+
+		private Vector2F MeasureTextLocked(ReadOnlySpan<char> text, float fontSize, float spacing) {
 			if (text.IsEmpty || text[0] == '\0')
 				return default;
 
@@ -314,6 +378,14 @@ namespace Nucleus.Core
 		}
 
 		public void DrawText(ReadOnlySpan<char> text, Vector2 position, float fontSize, float spacing, Color tint) {
+			lock (Sync) {
+				if (PendingUploads.Count > 0 && CanUseGL)
+					FlushUploads();
+				DrawTextLocked(text, position, fontSize, spacing, tint);
+			}
+		}
+
+		private void DrawTextLocked(ReadOnlySpan<char> text, Vector2 position, float fontSize, float spacing, Color tint) {
 			float textOffsetY = 0;
 			float textOffsetX = 0.0f;
 
@@ -360,28 +432,34 @@ namespace Nucleus.Core
 
 		private readonly List<FontKey> FontsMarkedForDeath = new();
 
+		private readonly object sync = new();
+
 		public ulong GetUsedGPUBits() {
-			ulong bits = 0;
+			lock (sync) {
+				ulong bits = 0;
 
-			foreach (var kvp in FontTable) {
-				FontState state = kvp.Value;
+				foreach (var kvp in FontTable) {
+					FontState state = kvp.Value;
 
-				if (!state.IsMarkedForDeath())
-					bits += state.GetUsedGPUBits();
+					if (!state.IsMarkedForDeath())
+						bits += state.GetUsedGPUBits();
+				}
+
+				return bits;
 			}
-
-			return bits;
 		}
 
 		public void MarkFontForDeath(FontState font) {
-			if (font.IsFontInvincible())
-				return;
+			lock (sync) {
+				if (font.IsFontInvincible())
+					return;
 
-			if (font.IsMarkedForDeath())
-				return;
+				if (font.IsMarkedForDeath())
+					return;
 
-			font.MarkForDeath();
-			FontsMarkedForDeath.Add(font.Key);
+				font.MarkForDeath();
+				FontsMarkedForDeath.Add(font.Key);
+			}
 		}
 
 		private bool AreFontsMarkedForDeath => FontsMarkedForDeath.Count != 0;
@@ -404,6 +482,11 @@ namespace Nucleus.Core
 		private DateTime lastCheckTimes;
 
 		public void CleanUpFontsMarkedForDeath() {
+			lock (sync)
+				CleanUpFontsMarkedForDeathLocked();
+		}
+
+		private void CleanUpFontsMarkedForDeathLocked() {
 			DateTime now = DateTime.UtcNow;
 			if ((now - lastCheckTimes).TotalSeconds > 3) {
 				lastCheckTimes = now;
@@ -431,20 +514,22 @@ namespace Nucleus.Core
 				fontSize = Math.Clamp(fontSize, 7, 256);
 				FontKey key = new FontKey(symbols.AddString(fontName), fontSize);
 
-				if (!FontTable.TryGetValue(key, out FontState? state)) {
-					if (!FontNameToFilepath.TryGetValue(key.FontSymbol, out var entry)) {
-						FontState fallback = GetFallbackFont(fontSize);
-						fallback.AddGlyphs(text);
-						return fallback;
+				lock (sync) {
+					if (!FontTable.TryGetValue(key, out FontState? state)) {
+						if (!FontNameToFilepath.TryGetValue(key.FontSymbol, out var entry)) {
+							FontState fallback = GetFallbackFont(fontSize);
+							fallback.AddGlyphs(text);
+							return fallback;
+						}
+
+						state = FontTable[key] = new FontState(entry, fontSize);
+						state.Key = key;
 					}
 
-					state = FontTable[key] = new FontState(entry, fontSize);
-					state.Key = key;
+					state.AddGlyphs(text);
+					state.Rehydrate();
+					return state;
 				}
-
-				state.AddGlyphs(text);
-				state.Rehydrate();
-				return state;
 			}
 		}
 
