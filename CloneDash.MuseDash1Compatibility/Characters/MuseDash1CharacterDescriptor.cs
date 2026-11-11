@@ -297,27 +297,30 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 		var assets = MuseDash1Compatibility.StreamingAssets;
 
 		var mainshowObject = assets.FindAssetByName<GameObject>(name);
-		var skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonMecanim");
-		if (skeletonMecanim == null)
-			skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonAnimation");
-		if (skeletonMecanim == null)
-			skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonGraphic");
+		var skeletonMecanim = FindSkeletonOn(mainshowObject!);
 		if (skeletonMecanim == null) {
 			// OK time to go through the depths of hell for a victory model
-			var rectTransform = mainshowObject.GetFirstComponent<RectTransform>()!;
-			rectTransform.m_Children[0].TryGet(out rectTransform!);
-			rectTransform.m_GameObject.TryGet(out mainshowObject);
-			skeletonMecanim = mainshowObject.GetMonoBehaviorByScriptName("SkeletonGraphic");
+			var transform = mainshowObject!.GetFirstComponent<Transform>()!;
+			transform.m_Children[0].TryGet(out transform!);
+			transform.m_GameObject.TryGet(out mainshowObject);
+			skeletonMecanim = FindSkeletonOn(mainshowObject!);
 		}
 
 		return skeletonMecanim;
 	}
 
+	static MonoBehaviour? FindSkeletonOn(GameObject gameObject)
+		=> gameObject.GetMonoBehaviorByScriptName("SkeletonMecanim")
+		?? gameObject.GetMonoBehaviorByScriptName("SkeletonAnimation")
+		?? gameObject.GetMonoBehaviorByScriptName("SkeletonGraphic");
+
 	public bool GetFailIn() => ConfigData.Skins?.FirstOrDefault()?.FailIn ?? false;
 
 	public float GetFailModelScale() => GetSkeletonScale(ConfigData.FailShow);
 
-	public string? GetFailStandby() => FindSkeletonBehaviour(ConfigData.FailShow)?.ToType()["startingAnimation"] as string;
+	public string? GetFailStandby() => GetStartingAnimation(ConfigData.FailShow);
+
+	public static string? GetStartingAnimation(ReadOnlySpan<char> name) => FindSkeletonBehaviour(name)?.ToType()["startingAnimation"] as string;
 
 	public float GetVictoryModelScale() => GetSkeletonScale(ConfigData.VictoryShow);
 

@@ -91,6 +91,10 @@ public class HealthComponent(IConductor conductor, GameEventManager events) : IR
 		LastIFrameGivenTime = conductor.GetTime();
 	}
 
+	public void SetIFrameTime(double length) {
+		LastIFrameGivenTime = Math.Max(LastIFrameGivenTime, conductor.GetTime() + length - IFrameLength);
+	}
+
 	void TriggerDeath() {
 		if (Dead) return;
 		if (Value <= 0) {

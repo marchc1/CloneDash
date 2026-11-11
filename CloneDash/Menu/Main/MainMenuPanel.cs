@@ -3,6 +3,7 @@ using CloneDash.Common.Systems.Discord;
 using CloneDash.Common.UI.Searching;
 using CloneDash.Game;
 using CloneDash.Menu.Character;
+using CloneDash.Menu.Elfin;
 using Nucleus;
 using Nucleus.Common.Types;
 using Nucleus.Extensions;
@@ -114,6 +115,11 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		MakeNavigationButton(
 			"Change Character", "Select a character to play as.", 20,
 			"icons/person-simple-run.png", menu => menu.PushActiveElement(new CharacterSelector(Level.Content))
+		);
+
+		MakeNavigationButton(
+			"Change Elfin", "Select an elfin to accompany you.", 300,
+			"icons/star.png", menu => menu.PushActiveElement(new ElfinSelector(Level.Content))
 		);
 
 		// Hidden because there is not really any functional stuff here

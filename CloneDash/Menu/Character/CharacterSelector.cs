@@ -47,7 +47,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 	private readonly Element _bottom;
 	private readonly Element _line;
-	private readonly CharacterSelectorScroller _scroller;
+	private readonly DescriptorSelectorScroller<ICharacterDescriptor> _scroller;
 
 	private ICharacterDescriptor? _lastCharacterSelected;
 
@@ -94,16 +94,16 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		_line.SetPaintBackgroundEnabled(true);
 		_line.SetBgColor(this.GetPrimaryColor(GetScheme()));
 
-		_scroller = new CharacterSelectorScroller(_bottom);
+		_scroller = new DescriptorSelectorScroller<ICharacterDescriptor>(_bottom, CharacterMod.Instance.GetAllDescriptors(), static character => character?.GetThumbnailTexture());
 		_scroller.Dock = Dock.Top;
 		_scroller.DockMargin = new RectangleF(20, 0, 0, 0);
 		_scroller.Size = new Vector2F(0, 100); // margin subtracts from size??
 		_scroller.BorderSize = 0;
-		_scroller.CharacterSelected += BackPanel_CharacterSelected;
+		_scroller.Selected += BackPanel_CharacterSelected;
 
 		ICharacterDescriptor? currentCharacter = CharacterMod.Instance.GetActive();
 		BackPanel_CharacterSelected(currentCharacter);
-		_scroller.SetCharacter(currentCharacter);
+		_scroller.SetSelected(currentCharacter);
 	}
 
 	public override void OnSchemeChanged(IScheme? prev, IScheme? now) {

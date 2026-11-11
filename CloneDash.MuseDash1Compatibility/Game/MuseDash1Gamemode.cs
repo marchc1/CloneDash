@@ -9,6 +9,7 @@ using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Scenes;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Elfins;
 using CloneDash.Game.Entities;
 using CloneDash.Game.Logic;
 using CloneDash.Game.Statistics;
@@ -98,6 +99,7 @@ public partial class MuseDash1Gamemode(ICloneDashModProvider provider) : RhythmG
 	static void AddBehaviour(RhythmGameLevel level, ServiceCollection parts) {
 		parts.AddPart<MashComponent>();
 		parts.AddPart<MuseDash1CharacterComponent>();
+		parts.AddPart<MuseDash1ElfinComponent>();
 		parts.AddPart<ISustainManager, StackBasedSustainManager>();
 		parts.AddPart<MuseDash1JudgeComponent>();
 		parts.AddEntityPart<AutoPlayer>(autoPlayer => {
@@ -118,6 +120,8 @@ public partial class MuseDash1Gamemode(ICloneDashModProvider provider) : RhythmG
 		parts.AddSlot<IMuseDash1CharacterInstance>(slot => slot
 			.From(() => CharacterMod.Instance.GetActive())
 			.Required());
+		parts.AddSlot<MuseDash1ElfinInstance>(slot => slot
+			.From(() => ElfinMod.Instance.GetActive()));
 	}
 
 	static void AddPresentation(RhythmGameLevel level, ServiceCollection parts, MD1_GamemodeData data) {
@@ -143,10 +147,12 @@ public partial class MuseDash1Gamemode(ICloneDashModProvider provider) : RhythmG
 		parts.AddPart<MuseDash1GameplayQuirksComponent>(quirks => {
 			var charData = CharacterMod.Instance.GetActive();
 			if (charData == null) throw new ArgumentNullException(nameof(charData));
-			charData.ApplyQuirks(ref quirks.Value);
+			var elfin = ElfinMod.Instance.GetActive();
+			if (elfin?.SilencesCharacter() != true)
+				charData.ApplyQuirks(ref quirks.Value);
 
 			// Before loading the scene, load quirks, since some quirks might affect entity data
-			// TODO: Elfin quirk mods
+			elfin?.ApplyQuirks(ref quirks.Value);
 			MuseDash1GameplayQuirks.ApplyMods(ref quirks.Value);
 		});
 	}

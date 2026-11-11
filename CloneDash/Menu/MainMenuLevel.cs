@@ -11,6 +11,7 @@ using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
 using CloneDash.MuseDashCustomPlayCompatibility;
 using CloneDash.Menu;
 using CloneDash.Menu.Character;
+using CloneDash.Menu.Elfin;
 using CloneDash.Menu.Main;
 using CloneDash.Menu.Searching;
 
@@ -641,7 +642,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		var active = ActiveElements.Peek();
 		var wasHidden = !Character.IsVisible();
 
-		if (active is not (CharacterSelector or MainMenuPanel)) {
+		if (active is not (CharacterSelector or ElfinSelector or MainMenuPanel)) {
 			Character.SetVisible(false);
 			Character.StopAudio();
 			return;
@@ -653,7 +654,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 			Character.PlayAudio();
 		}
 
-		var center = ActiveElements.Peek() is CharacterSelector;
+		var center = ActiveElements.Peek() is CharacterSelector or ElfinSelector;
 		var target = FrameState.WindowWidth * (center ? 0.5f : 1 / 3f);
 
 		float x;

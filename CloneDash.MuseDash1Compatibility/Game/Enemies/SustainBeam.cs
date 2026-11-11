@@ -300,7 +300,7 @@ namespace CloneDash.Game.Entities
 
 		private void addJudgedFever(double distanceToHit, double time) => Components.Rules.AddFever(CDUtils.DetermineFever(FeverGiven, PollResult.Create(this, distanceToHit).IsPerfect), this, time);
 
-		private void addJudgedScore(double distanceToHit, double time) => Components.Rules.AddScore(Components.Rules.DetermineScoreMultiplied(ScoreGiven, PollResult.Create(this, distanceToHit), time), this);
+		private void addJudgedScore(double distanceToHit, double time) => Components.Rules.AddScore(Components.Rules.DetermineScoreMultiplied(this, PollResult.Create(this, distanceToHit).IsPerfect, time), this);
 
 		internal void Complete(double distanceToEnd) {
 			Hold();

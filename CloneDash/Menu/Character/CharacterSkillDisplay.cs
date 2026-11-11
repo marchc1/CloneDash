@@ -36,7 +36,7 @@ namespace CloneDash.Menu.Character
 		private readonly Label _title;
 		private readonly Label _text;
 
-		public CharacterSkillDisplay(CharacterSelector parent) : base(parent) {
+		public CharacterSkillDisplay(Element parent) : base(parent) {
 			DockPadding = new RectangleF();
 			Clipping = false;
 

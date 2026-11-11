@@ -4,6 +4,7 @@ using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
+using CloneDash.Elfins;
 using CloneDash.Game.Entities;
 using CloneDash.Game.Logic;
 using CloneDash.Scenes;
@@ -29,6 +30,12 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 	const float SKILL_AIR_Y = 1.25f;
 	const float SKILL_ROAD_Y = -0.75f;
 
+	static readonly Dictionary<string, string[]> ElfinEffects = new() {
+		["elfin_carrot_robot"] = ["elfin_carrot_robot_fx_skill"],
+		["elfin_doctor"] = ["elfin_doctor_fx_skill"],
+		["elfin_egg"] = ["elfin_egg_fx_skill", "elfin_r6_fx_skill"],
+		["elfin_fan_robot"] = ["elfin_fan_robot_fx_skill", "elfin_fan_robot_fx_role_skill"]
+	};
 	static readonly Dictionary<string, string> SkillEffects = new() {
 		["char_1_racer"] = "racer_girl_normal_fx_skill",
 		["char_1_rampage"] = "rampage_girl_fx_skill",
@@ -44,6 +51,7 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 
 	readonly MuseDash1ChartComponent Chart;
 	readonly Conductor Conductor;
+	readonly Dictionary<string, MuseDash1ParticleEffect> elfinEffects = [];
 	readonly Dictionary<DashEnemy, ParticleCollection> hearts = [];
 	readonly ParticleSystemManager Particles = new();
 	readonly PathwaysComponent Pathways;
@@ -75,6 +83,7 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 
 		events.Listen<BonusCollectedGameEvent>(PlayBonusEffect);
 		events.Listen<CharacterSkillGameEvent>(PlaySkillEffect);
+		events.Listen<ElfinSkillGameEvent>(PlayElfinEffect);
 		events.Listen<NoteHitGameEvent>(PlayHitEffects);
 		events.Listen<SustainStateChangedGameEvent>(UpdatePressEffect);
 	}
@@ -108,15 +117,23 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 	public void Prepare() {
 		var character = CharacterMod.Instance.GetActive()?.GetID();
 		string? skillEffect = character != null && SkillEffects.TryGetValue(character, out var name) ? name : null;
+		var elfin = ElfinMod.Instance.GetActive()?.GetID();
+		string[] elfinEffectNames = elfin != null && ElfinEffects.TryGetValue(elfin, out var names) ? names : [];
 
+		elfinEffects.Clear();
 		Parallel.Invoke(
 			() => attackCrit = LoadEffect("girl_fx_atk_c"),
 			() => attackGreat = LoadEffect("girl_fx_atk_g"),
 			() => attackPerfect = LoadEffect("girl_fx_atk_p"),
 			() => heartOnNote = LoadEffect("hp_on_note"),
-			() => hpPickup = LoadEffect("fx_hp_ground"),
+			() => hpPickup = LoadEffect(MuseDash1ElfinComponent.HP_EFFECT),
 			() => scorePickup = LoadEffect("fx_score_ground"),
 			() => skill = skillEffect == null ? null : LoadEffect(skillEffect),
+			() => {
+				foreach (var effectName in elfinEffectNames)
+					if (LoadEffect(effectName) is MuseDash1ParticleEffect effect)
+						elfinEffects[effectName] = effect;
+			},
 			() => {
 				foreach (var scene in Scenes.GetAllScenes())
 					scene.PrepareParticleEffects(Pathways.Layout);
@@ -180,6 +197,14 @@ public class MuseDash1BattleFXComponent : IRhythmGameComponent, IRhythmGameEntit
 	}
 
 	void PlayBonusEffect(ref BonusCollectedGameEvent ev) => PlayBonus(ev.Note, ev.Pathway);
+
+	void PlayElfinEffect(ref ElfinSkillGameEvent ev) {
+		var effect = ev.Effect == MuseDash1ElfinComponent.HP_EFFECT ? hpPickup : elfinEffects.GetValueOrDefault(ev.Effect);
+		if (effect == null)
+			return;
+
+		Play(effect, ev.X == null && ev.Y == null ? effect.Transform : effect.At(ev.X ?? effect.Transform.M41, ev.Y ?? effect.Transform.M42));
+	}
 
 	void PlayHitEffects(ref NoteHitGameEvent ev) {
 		if (ev.Note.Type is MuseDash1EntityType.Heart or MuseDash1EntityType.Score) {

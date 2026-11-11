@@ -9,6 +9,7 @@ using Nucleus.Core;
 using Nucleus.Files;
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -47,6 +48,11 @@ public static partial class MuseDash1Compatibility
 			Logs.Warn($"Couldn't read {path}: {ex.Message}");
 			return default;
 		}
+	}
+
+	static void AddElfinLocalization(ElfinConfigData elfin, CultureInfo lang, List<ElfinLocalizationData> localization, int index) {
+		if (index < localization.Count)
+			elfin.AddLocalization(lang, localization[index]);
 	}
 
 	static Task<AppStatus>? initializeTask;
@@ -106,6 +112,12 @@ public static partial class MuseDash1Compatibility
 				() => CharactersZHTW = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/chineset/character_ChineseT.json")!,
 				() => CharactersJP = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/japanese/character_Japanese.json")!,
 				() => CharactersKO = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/korean/character_Korean.json")!,
+				() => Elfins = ReadOptionalJSON<List<ElfinConfigData>>("Assets/Static Resources/Data/Configs/others/elfin.json") ?? [],
+				() => ElfinsEN = ReadOptionalJSON<List<ElfinLocalizationData>>("Assets/Static Resources/Data/Configs/english/elfin_English.json") ?? [],
+				() => ElfinsZHCN = ReadOptionalJSON<List<ElfinLocalizationData>>("Assets/Static Resources/Data/Configs/chineses/elfin_ChineseS.json") ?? [],
+				() => ElfinsZHTW = ReadOptionalJSON<List<ElfinLocalizationData>>("Assets/Static Resources/Data/Configs/chineset/elfin_ChineseT.json") ?? [],
+				() => ElfinsJP = ReadOptionalJSON<List<ElfinLocalizationData>>("Assets/Static Resources/Data/Configs/japanese/elfin_Japanese.json") ?? [],
+				() => ElfinsKO = ReadOptionalJSON<List<ElfinLocalizationData>>("Assets/Static Resources/Data/Configs/korean/elfin_Korean.json") ?? [],
 				() => FailBarrages = ReadOptionalJSON<List<FailBarrageConfigData>>("Assets/Static Resources/Data/Configs/others/fail_barrage.json") ?? [],
 				() => FailBarragesEN = ReadOptionalJSON<List<FailBarrageConfigData>>("Assets/Static Resources/Data/Configs/english/fail_barrage_English.json") ?? []
 			);
@@ -126,6 +138,17 @@ public static partial class MuseDash1Compatibility
 				ch.AddLocalization(ILocalize.Japanese, CharactersJP[i]);
 				ch.AddLocalization(ILocalize.Korean, CharactersKO[i]);
 			});
+
+		for (int i = 0; i < Elfins.Count; i++) {
+			var elfin = Elfins[i];
+			elfin.Index = i;
+			elfin.PrepareLocalization();
+			AddElfinLocalization(elfin, ILocalize.English, ElfinsEN, i);
+			AddElfinLocalization(elfin, ILocalize.ChineseSimplified, ElfinsZHCN, i);
+			AddElfinLocalization(elfin, ILocalize.ChineseTraditional, ElfinsZHTW, i);
+			AddElfinLocalization(elfin, ILocalize.Japanese, ElfinsJP, i);
+			AddElfinLocalization(elfin, ILocalize.Korean, ElfinsKO, i);
+		}
 
 		using (StaticSequentialProfiler.StartStackFrame("Parallel Process NoteDataManager")) {
 			// parallel process the dictionaries

@@ -135,7 +135,7 @@ public class DashEnemy : RhythmNote
 	}
 
 	protected override void OnReward() {
-		Components.Rules.AddScore(Components.Rules.DetermineScoreMultiplied(ScoreGiven, Components.Judge.LastPollResult, JudgedTime), this);
+		Components.Rules.AddScore(Components.Rules.DetermineScoreMultiplied(this, Components.Judge.LastPollResult.IsPerfect, JudgedTime), this);
 	}
 
 	/// <summary>
@@ -145,6 +145,7 @@ public class DashEnemy : RhythmNote
 
 	public bool RelatedToBoss { get; set; }
 	public string? BossAction { get; set; }
+	public bool IsBossAttack => !string.IsNullOrEmpty(BossAction) && BossAction != "0";
 
 	private Color? __hitColor;
 	public Color HitColor {

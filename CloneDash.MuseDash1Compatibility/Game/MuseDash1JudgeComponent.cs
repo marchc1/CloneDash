@@ -14,13 +14,14 @@ using Color = Nucleus.Common.Types.Color;
 
 namespace CloneDash.Game;
 
-public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, MuseDash1ChartComponent chart, Conductor conductor, GameEventManager events, FeverComponent fever, HitsoundComponent hitsounds, InputComponent input, RhythmGameLevel level, MashComponent mash, PathwaysComponent pathways, MuseDash1RulesComponent rules, ISustainManager sustains) : IRhythmGameThinker
+public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, MuseDash1ChartComponent chart, Conductor conductor, MuseDash1ElfinComponent elfin, GameEventManager events, FeverComponent fever, HitsoundComponent hitsounds, InputComponent input, RhythmGameLevel level, MashComponent mash, PathwaysComponent pathways, MuseDash1RulesComponent rules, ISustainManager sustains) : IRhythmGameThinker
 {
 	public PollResult LastPollResult = PollResult.Empty;
 
 	readonly MuseDash1CharacterComponent Character = character;
 	readonly MuseDash1ChartComponent Chart = chart;
 	readonly Conductor Conductor = conductor;
+	readonly MuseDash1ElfinComponent Elfin = elfin;
 	readonly FeverComponent Fever = fever;
 	readonly HitsoundComponent Hitsounds = hitsounds;
 	readonly InputComponent Input = input;
@@ -34,6 +35,17 @@ public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, Muse
 	AutoPlayer? autoPlayer;
 
 	double GetJudgedTime(DashEnemy entity) => (autoPlayer ??= level.Component<AutoPlayer>()).Enabled ? entity.GetJudgementHitTime() : Conductor.Time;
+
+	void SaveMiss(DashEnemy entity) {
+		var pathway = Pathways.PrimaryPathway(entity.Pathway);
+		double distance = -(entity.PrePerfectRange + entity.PreGreatRange) / 2;
+		LastPollResult = PollResult.Create(entity, distance);
+		entity.WasHitPerfect = false;
+		entity.JudgedTime = GetJudgedTime(entity);
+		entity.Hit(pathway, distance);
+		if (!level.IsSeeking)
+			events.Fire(new NoteHitGameEvent(entity, pathway, false, LastPollResult.Precision, Fever.InFever, EarlyLate.Perfect));
+	}
 
 	public bool InHit { get; private set; } = false;
 
@@ -118,8 +130,15 @@ public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, Muse
 							&& !(entity is SustainBeam se && se.HeldState == true)
 							&& !(entity is Masher me && me.Hits > 0)
 						) {
-							entity.Miss();
-							events.Fire(new NoteMissedGameEvent(entity));
+							if (Elfin.TrySaveMiss(entity)) {
+								SaveMiss(entity);
+								if (entity is DoubleHitEnemy { Partner: DashEnemy { Dead: false } partner })
+									SaveMiss(partner);
+							}
+							else {
+								entity.Miss();
+								events.Fire(new NoteMissedGameEvent(entity));
+							}
 						}
 					}
 					break;
@@ -201,6 +220,9 @@ public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, Muse
 			}
 			else {
 				pollResult = Poll(in pollParams);
+
+				if (pollResult.Hit && !pollResult.IsPerfect && Elfin.TryUpgradeGreat(pollResult.HitEntity))
+					LastPollResult = pollResult = PollResult.Create(pollResult.HitEntity, 0);
 
 				if (pollResult.Hit) {
 					pollResult.HitEntity.WasHitPerfect = pollResult.IsPerfect;

@@ -1,6 +1,7 @@
 using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.UI;
+using CloneDash.Elfins;
 using CloneDash.Game;
 using Nucleus;
 using Nucleus.Common.Input;
@@ -19,9 +20,11 @@ namespace CloneDash.Menu;
 public class MainMenuCharacter : Panel
 {
 	private ICharacterMainMenuInstance? CharacterInstance;
+	private IElfinMainMenuInstance? ElfinInstance;
 	private int Click = 0;
 	private string? ExpressionText;
 	public Vector2F CharacterOffset { get; set; }
+	public Vector2F ElfinOffset { get; set; } = new(-750, -1400);
 	public float ExpressionRightLimit { get; set; } = float.MaxValue;
 
 	private string? wrapSource;
@@ -40,9 +43,18 @@ public class MainMenuCharacter : Panel
 		return character != null;
 	}
 
+	public void SetElfin(IElfinDescriptor? elfin) {
+		if (elfin.UUIDEquals(ElfinInstance?.GetElfin()))
+			return;
+
+		ElfinInstance?.Dispose();
+		ElfinInstance = elfin?.CreateMainMenu();
+	}
+
 	protected override void OnThink() {
 		base.OnThink();
 		CharacterInstance?.Update();
+		ElfinInstance?.Update();
 	}
 
 	Label ExpressionLabel = null!;
@@ -66,13 +78,20 @@ public class MainMenuCharacter : Panel
 			CharacterMod.Instance.PostChange += CharacterMod_CharacterUpdated;
 		else
 			CharacterMod.Instance.PostChange -= CharacterMod_CharacterUpdated;
+
+		SetElfin(ElfinMod.Instance.GetActive());
+		ElfinMod.Instance.PostChange += ElfinMod_ElfinUpdated;
 	}
 
 	protected override void OnRemoval() {
 		base.OnRemoval();
 		CharacterMod.Instance.PostChange -= CharacterMod_CharacterUpdated;
+		ElfinMod.Instance.PostChange -= ElfinMod_ElfinUpdated;
 		CharacterInstance?.Dispose();
+		ElfinInstance?.Dispose();
 	}
+
+	private void ElfinMod_ElfinUpdated(IElfinDescriptor? previous, IElfinDescriptor? elfin) => SetElfin(elfin);
 
 	protected override bool MouseClick(FrameState state, ButtonCode button) {
 		PlayRandomExpression();
@@ -112,6 +131,7 @@ public class MainMenuCharacter : Panel
 		});
 
 		CharacterInstance?.Render(CharacterOffset);
+		ElfinInstance?.Render(CharacterOffset + ElfinOffset);
 
 		EngineCore.Window.EndMode2D();
 

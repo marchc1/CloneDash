@@ -38,7 +38,7 @@ public class MuseDash1RulesComponent : IRhythmGameThinker
 		events.Listen<PauseRequestGameEvent>(GuardPause);
 	}
 
-	ref MuseDash1GameplayQuirks Quirks => ref quirks.Value;
+	public ref MuseDash1GameplayQuirks Quirks => ref quirks.Value;
 
 	/// <summary>
 	/// Adds to the players fever value, and automatically enters fever when the player has maxed out the fever bar.

@@ -43,7 +43,7 @@ namespace CloneDash.Game.Entities
 		protected override void OnReward() {
 			if (!completesPair)
 				return;
-			Components.Rules.AddScore(CDUtils.DetermineScoreMultiplied(ScoreGiven, Components.Rules.InFeverAt(JudgedTime), Components.Combo.Value, KilledPerfect), this);
+			Components.Rules.AddScore(Components.Rules.DetermineScoreMultiplied(this, KilledPerfect, JudgedTime), this);
 		}
 
 		static bool IsHit(EnemyStatisticsState state) => state is EnemyStatisticsState.Perfect or EnemyStatisticsState.Great;
