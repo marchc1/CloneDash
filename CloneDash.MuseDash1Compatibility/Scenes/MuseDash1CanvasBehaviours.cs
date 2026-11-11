@@ -2,8 +2,17 @@
 using CloneDash.Compatibility.Unity;
 using System.Collections;
 using System.Collections.Specialized;
+using Vector2 = System.Numerics.Vector2;
 
 namespace CloneDash.Scenes;
+
+public class MuseDash1BarrageText
+{
+	public CanvasNode Node = null!;
+	public Vector2 StartPosition;
+
+	public void Restart() => Node.AnchoredPosition = StartPosition;
+}
 
 public class MuseDash1SongNameMarquee
 {
@@ -81,6 +90,8 @@ public class MuseDash1CanvasBehaviours
 {
 	UnityCanvas? canvas;
 
+	public List<CanvasNode> BarrageLines { get; } = [];
+	public List<MuseDash1BarrageText> BarrageTexts { get; } = [];
 	public List<CanvasNode> GradeObjects { get; } = [];
 	public MuseDash1LikeButton? LikeButton { get; private set; }
 	public List<MuseDash1SongNameMarquee> Marquees { get; } = [];
@@ -88,6 +99,8 @@ public class MuseDash1CanvasBehaviours
 	public bool Capture(UnityCanvas canvas, CanvasNode node, MonoBehaviour behaviour, string className, OrderedDictionary data) {
 		if (this.canvas != canvas) {
 			this.canvas = canvas;
+			BarrageLines.Clear();
+			BarrageTexts.Clear();
 			GradeObjects.Clear();
 			LikeButton = null;
 			Marquees.Clear();
@@ -103,6 +116,22 @@ public class MuseDash1CanvasBehaviours
 					Like = Resolve(canvas, behaviour, data["imgLike"])
 				};
 				node.Notes.Add($"like button: like={LikeButton.Like?.Path} hide={LikeButton.Hide?.Path} button={LikeButton.ButtonName} holdTime={LikeButton.HoldTime}");
+				return true;
+			case "FailBarrage":
+				if (data["barrages"] is IList lines)
+					foreach (OrderedDictionary pointer in lines)
+						if (Resolve(canvas, behaviour, pointer) is CanvasNode line)
+							BarrageLines.Add(line);
+				node.Notes.Add($"fail barrage: {string.Join(", ", BarrageLines.Select(line => line.Name))}");
+				return true;
+			case "FailTxtBarrageAnimation":
+				var start = (OrderedDictionary)data["m_StartPos"]!;
+				var text = new MuseDash1BarrageText {
+					Node = Resolve(canvas, behaviour, data["m_RectTransform"]) ?? node,
+					StartPosition = new(Convert.ToSingle(start["x"]), Convert.ToSingle(start["y"]))
+				};
+				BarrageTexts.Add(text);
+				node.Notes.Add($"barrage text: start=({text.StartPosition.X},{text.StartPosition.Y})");
 				return true;
 			case "GameMainGrade":
 				if (data["gradeObjects"] is IList grades)

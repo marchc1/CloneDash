@@ -26,6 +26,7 @@ public class CharacterSkinData
 	[JsonProperty("battleSubShow")] public string BattleSubShow {get; set;}
 	[JsonProperty("victoryShow")] public string VictoryShow {get; set;}
 	[JsonProperty("failShow")] public string FailShow {get; set;}
+	[JsonProperty("failIn")] public bool FailIn {get; set;}
 	[JsonProperty("chipName")] public string ChipName {get; set;}
 	[JsonProperty("free")] public bool Free {get; set;}
 	[JsonProperty("hide")] public bool Hide {get; set;}

@@ -76,7 +76,7 @@ public class MuseDash1RulesComponent : IRhythmGameThinker
 	/// <param name="entity"></param>
 	/// <param name="damage"></param>
 	public void Damage(float damage, DashEnemy? responsible) {
-		if (Fever.InFever && Quirks.InvincibleInFever)
+		if (IsDead() || Fever.InFever && Quirks.InvincibleInFever)
 			return;
 
 		double damageD = (double)damage;

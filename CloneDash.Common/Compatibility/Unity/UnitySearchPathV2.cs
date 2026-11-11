@@ -1107,6 +1107,14 @@ public class UnitySearchPathV2 : SearchPath
 		}
 	}
 
+	public T? FindAssetByName<T>(ReadOnlySpan<char> key, ReadOnlySpan<char> name) where T : AssetStudio.Object {
+		lock (sync)
+			foreach (var entry in Catalog.SearchAll(key))
+				if (entry is UnitySearchAsset searchAsset && SearchAssetInBundles<T>(searchAsset, name) is T result)
+					return result;
+		return null;
+	}
+
 	public bool LoadDependenciesContaining(ReadOnlySpan<char> name, IReadOnlySet<string> fileNames, ISet<SerializedFile> pinned) {
 		bool loaded = false;
 		lock (sync)

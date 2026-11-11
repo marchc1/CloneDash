@@ -14,6 +14,7 @@ public interface IMuseDash1SceneUI : IDisposable
 	bool ShowingFailureScreen();
 	void PreRenderWorldspace();
 	void PostRenderWorldspace();
+	void RenderFailText();
 	void RenderUI();
 	void UpdateHP(double hp, double maxHP);
 	void UpdateFeverProgress(double fever, double maxFever);

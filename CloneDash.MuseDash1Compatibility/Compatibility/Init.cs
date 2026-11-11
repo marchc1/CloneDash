@@ -105,7 +105,9 @@ public static partial class MuseDash1Compatibility
 				() => CharactersZHCN = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/chineses/character_ChineseS.json")!,
 				() => CharactersZHTW = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/chineset/character_ChineseT.json")!,
 				() => CharactersJP = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/japanese/character_Japanese.json")!,
-				() => CharactersKO = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/korean/character_Korean.json")!
+				() => CharactersKO = ReadJSON<List<CharacterLocalizationData>>("Assets/Static Resources/Data/Configs/korean/character_Korean.json")!,
+				() => FailBarrages = ReadOptionalJSON<List<FailBarrageConfigData>>("Assets/Static Resources/Data/Configs/others/fail_barrage.json") ?? [],
+				() => FailBarragesEN = ReadOptionalJSON<List<FailBarrageConfigData>>("Assets/Static Resources/Data/Configs/english/fail_barrage_English.json") ?? []
 			);
 
 		System.Diagnostics.Debug.Assert(Characters.Count == CharactersEN.Count);

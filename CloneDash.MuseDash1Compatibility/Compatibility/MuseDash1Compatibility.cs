@@ -248,6 +248,8 @@ namespace CloneDash.Compatibility.MuseDash
 		public static List<CharacterLocalizationData> CharactersEN { get; set; } = [];
 		public static List<CharacterLocalizationData> CharactersZHCN { get; set; } = [];
 		public static List<CharacterLocalizationData> CharactersZHTW { get; set; } = [];
+		public static List<FailBarrageConfigData> FailBarrages { get; set; } = [];
+		public static List<FailBarrageConfigData> FailBarragesEN { get; set; } = [];
 		public static List<CharacterLocalizationData> CharactersJP { get; set; } = [];
 		public static List<CharacterLocalizationData> CharactersKO { get; set; } = [];
 		public static List<NoteConfigData> NoteDataManager { get; set; } = null!;

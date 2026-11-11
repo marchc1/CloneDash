@@ -172,6 +172,7 @@ public class CanvasAnimator
 	internal CanvasClip? Current;
 	internal readonly Dictionary<string, CanvasClip> Decoded = [];
 	public string? ControllerName;
+	public string? DefaultState;
 	public CanvasNode Node = null!;
 	public float Time;
 
@@ -297,6 +298,7 @@ public class UnityCanvas
 		layers.Sort(static (a, b) => a.Order != b.Order ? a.Order.CompareTo(b.Order) : a.Index.CompareTo(b.Index));
 
 		Rlgl.DrawRenderBatchActive();
+		bool culling = OpenGL.IsEnabled(OpenGL.CULL_FACE);
 		var projection = Rlgl.GetMatrixProjection();
 		var modelview = Rlgl.GetMatrixModelview();
 		lastProjection = GetProjection(width, height);
@@ -345,7 +347,8 @@ public class UnityCanvas
 
 		Rlgl.DrawRenderBatchActive();
 		OpenGL.Disable(OpenGL.STENCIL_TEST);
-		Rlgl.EnableBackfaceCulling();
+		if (culling)
+			Rlgl.EnableBackfaceCulling();
 		Rlgl.SetMatrixProjection(projection);
 		Rlgl.SetMatrixModelView(modelview);
 	}
@@ -1059,9 +1062,12 @@ public class UnityCanvas
 		var animator = new CanvasAnimator { ControllerName = controller.m_Name, Node = node };
 		var names = controller.m_TOS.ToDictionary(pair => pair.Key, pair => pair.Value);
 		foreach (var machine in controller.m_ControllerConstant.m_StateMachineArray)
-			foreach (var state in machine.m_StateConstantArray) {
+			for (int i = 0; i < machine.m_StateConstantArray.Length; i++) {
+				var state = machine.m_StateConstantArray[i];
 				if (!names.TryGetValue(state.m_NameID, out var stateName) || state.m_BlendTreeConstantArray.Length == 0 || state.m_BlendTreeConstantArray[0].m_NodeArray.Length == 0)
 					continue;
+				if (i == machine.m_DefaultState)
+					animator.DefaultState ??= stateName;
 
 				uint clipIndex = state.m_BlendTreeConstantArray[0].m_NodeArray[0].m_ClipID;
 				if (clipIndex < controller.m_AnimationClips.Count && controller.m_AnimationClips[(int)clipIndex].TryGet(out var clip))

@@ -136,6 +136,7 @@ public partial class MuseDash1Gamemode(ICloneDashModProvider provider) : RhythmG
 			.From(() => FeverMod.Instance.GetActive()));
 		parts.AddPart<MuseDash1FeverFXComponent>();
 		parts.AddPart<MuseDash1PlayfieldComponent>();
+		parts.AddPart<MuseDash1FailTextComponent>();
 	}
 
 	static void AddQuirks(ServiceCollection parts) {

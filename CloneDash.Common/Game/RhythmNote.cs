@@ -332,7 +332,6 @@ public abstract class RhythmNote : Entity, IDashChunkable, IScrollable
 	public void Miss() {
 		if (DidMiss)
 			return;
-		Logs.Info("Miss");
 
 		OnMiss();
 		OnMissEvent?.Invoke(this);

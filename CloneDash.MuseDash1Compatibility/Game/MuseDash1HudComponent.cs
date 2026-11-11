@@ -47,11 +47,11 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 		events.Listen<NoteMissedGameEvent>(BreakFullCombo);
 		events.Listen<PlayerDamagedGameEvent>(BreakFullCombo);
 		events.Listen<PlayerDamagedGameEvent>(PlayHurtFlash);
+		events.Listen<PlayerDeathGameEvent>(ShowFailure);
 		events.Listen<PlayerHealedGameEvent>(PlayHpAdd);
 		events.Listen<ScoreChangedGameEvent>(UpdateScore);
 		events.Listen<SeekFinishedGameEvent>(EndSeeking);
 		events.Listen<SongClearedGameEvent>(ShowVictory);
-		events.Listen<SongFailedGameEvent>(ShowFailure);
 		events.Listen<UnpauseStartGameEvent>(PlayUnpauseSound);
 		events.Listen<UnpauseStartGameEvent>(PlayResume321);
 		events.Listen<WarningStartGameEvent>(StartWarning);
@@ -176,7 +176,9 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 			scene.PlaySound(SceneSound.Unpause, 0);
 	}
 
-	void ShowFailure(ref SongFailedGameEvent ev) {
+	void ShowFailure(ref PlayerDeathGameEvent ev) {
+		if (!rules.IsDead())
+			return;
 		if (Fever.Manual)
 			UI?.PlayFeverTips(MuseDash1FeverTipsClip.Failed);
 		if (UI != null && !UI.ShowingFailureScreen())

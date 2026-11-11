@@ -25,6 +25,7 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 	readonly MuseDash1ScenesComponent Scenes;
 	readonly ISustainManager Sustains;
 
+	bool Dead;
 	bool HologramInAir;
 	double LastHologramJumpTIme = -2000000000000d;
 	PathwayId LastJumpPathway;
@@ -272,6 +273,7 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 			scene.OnPressStateChange(false, true);
 
 		Character.Reset();
+		Dead = false;
 		HologramInAir = false;
 		LastJumpPathway = Pathways.JumpPathway;
 		LastJumpTime = -2000000000000d;
@@ -334,7 +336,7 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 	}
 
 	void PlayHurtAnimation(ref PlayerDamagedGameEvent ev) {
-		if (!ev.Hurt)
+		if (!ev.Hurt || Dead)
 			return;
 
 		if (InAir)
@@ -351,6 +353,7 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 		if (Quirks.PlayableAfterDeath)
 			return;
 
+		Dead = true;
 		Character.GetPrimary().PlayAnimation(CharacterAnimationType.Die);
 	}
 }

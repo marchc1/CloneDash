@@ -563,6 +563,9 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	protected MuseDash1HudPanel? ReadyGo;
 	protected MuseDash1HudPanel? Resume321;
 	protected virtual MuseDash1ComboTextClips ComboTextClips => MuseDash1HudAnimations.ComboText;
+	MuseDash1FailScreen? CurrentFailScreen;
+	MuseDash1FailAssets? failAssets;
+	Task<MuseDash1FailAssets?>? failImport;
 	MuseDash1PauseButton? PauseButton;
 	Task<MuseDash1VictoryAssets?>? victoryImport;
 
@@ -648,6 +651,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		TextImageRenderItem.PrewarmTextRTs("Snaps Taste", "88888", 16);
 		LoadComboModels();
 		victoryImport = Task.Run(ImportVictoryCanvasInBackground);
+		failImport = Task.Run(ImportFailCanvas);
 
 		ForceDeactivateCombo1();
 		ForceDeactivateCombo2();
@@ -657,12 +661,66 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	}
 
 	void ClickPause() {
-		if (!game.Paused && !ShowingVictoryScreen())
+		if (!game.Paused && !ShowingVictoryScreen() && !ShowingFailureScreen())
 			game.Component<PauseComponent>().TogglePauseMenu();
 	}
 
 	static AssetStudio.Transform? FindChild(AssetStudio.Transform? transform, string name)
 		=> transform?.GetChildren().FirstOrDefault(child => child.GetGameObject()?.m_Name == name);
+
+	internal static MuseDash1FailAssets? ImportFailCanvas() {
+		UnitySearchPathV2 assets = new(MuseDash1Compatibility.StreamingAssets);
+		try {
+			return ImportFailCanvas(assets);
+		}
+		finally {
+			assets.UnloadAll();
+		}
+	}
+
+	static MuseDash1FailAssets? ImportFailCanvas(UnitySearchPathV2 assets) {
+		const string SCENE = "GameMain";
+		static bool IsFailPanel(AssetStudio.GameObject gameObject) => gameObject.m_Name == "PnlFail" && gameObject.GetMonoBehaviorByScriptName("PnlFail") != null;
+
+		var text = assets.FindAssetByName<AssetStudio.GameObject>(SCENE, "PnlFailText");
+		var panel = text?.assetsFile.Objects.OfType<AssetStudio.GameObject>().FirstOrDefault(IsFailPanel);
+		if (panel == null || text == null)
+			return null;
+
+		HashSet<AssetStudio.SerializedFile> pinned = [];
+		var script = panel.GetMonoBehaviorByScriptName("PnlFail");
+		var data = script?.ToType();
+		var settings = new UnityCanvasSettings("GameMain.unity UI_2D canvas (CanvasScaler) + Camera_2D", false, 60, 100, new(1920, 1080), 0);
+		UnityCanvas ImportCanvas(AssetStudio.GameObject gameObject, MuseDash1CanvasBehaviours behaviours) {
+			var canvas = UnityCanvas.Import(gameObject, settings,
+				files => assets.LoadDependenciesContaining(SCENE, files, pinned),
+				(canvas, node, behaviour, className, data) => MuseDash1Localization.Apply(canvas, node, behaviour, className, data) || behaviours.Capture(canvas, node, behaviour, className, data));
+			MuseDash1Localization.ApplyGlobalFonts(canvas, assets.Assets.AssetsFileList);
+			canvas.Report();
+			return canvas;
+		}
+
+		var behaviours = new MuseDash1CanvasBehaviours();
+		var canvas = ImportCanvas(panel, behaviours);
+		var textCanvas = ImportCanvas(text, new MuseDash1CanvasBehaviours());
+
+		IAudioClip? LoadClip(string field) {
+			if (script == null || data?[field] is not System.Collections.Specialized.OrderedDictionary pointer)
+				return null;
+
+			var pptr = new AssetStudio.PPtr<AssetStudio.AudioClip>(Convert.ToInt32(pointer["m_FileID"]), Convert.ToInt64(pointer["m_PathID"]), script.assetsFile);
+			if (!pptr.TryGet(out var clip) && pptr.m_FileID > 0 && pptr.m_FileID <= script.assetsFile.m_Externals.Count)
+				assets.LoadDependenciesContaining(SCENE, new HashSet<string> { Path.GetFileName(script.assetsFile.m_Externals[pptr.m_FileID - 1].fileName) }, pinned);
+			return pptr.TryGet(out clip) ? MainThread.Invoke(() => MuseDash1Compatibility.LoadSound(clip)) : null;
+		}
+
+		float failInShowDelay = data?["m_FailInShowDelay"] is object delay ? Convert.ToSingle(delay) : 0.1f;
+		return new MuseDash1FailAssets(canvas, behaviours, textCanvas, LoadClip("m_FailMusic"),
+			MainThread.Invoke(() => MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1FailScreen.CLICK_SOUND)),
+			MainThread.Invoke(() => MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1VictoryScreen.LIKE_SOUND)),
+			MainThread.Invoke(() => MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1VictoryScreen.UNLIKE_SOUND)),
+			failInShowDelay);
+	}
 
 	static MuseDash1VictoryAssets? ImportVictoryCanvasInBackground() {
 		UnitySearchPathV2 assets = new(MuseDash1Compatibility.StreamingAssets);
@@ -876,6 +934,25 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 
 		BattleOut = true;
 		BattleOutStart = Stopwatch.GetTimestamp();
+		if (IValidatable.IsValid(CurrentFailScreen))
+			return;
+
+		if (failImport != null) {
+			MainThread.WaitFor(failImport);
+			failAssets = failImport.GetAwaiter().GetResult();
+			failImport = null;
+		}
+		failAssets ??= ImportFailCanvas();
+		if (failAssets == null)
+			return;
+
+		game.Component<ScreenEffectsComponent>().Reset();
+		CurrentFailScreen = new MuseDash1FailScreen(EngineCore.Level.RootPanel, failAssets, game.GetSongChart(), game.Component<MusicComponent>(), true, false, false, game.Restart, LevelTransitions.LoadMainMenu);
+	}
+
+	void CloseFailure() {
+		CurrentFailScreen?.Close();
+		CurrentFailScreen = null;
 	}
 
 	protected virtual StatisticsPanel? LoadPanel(StatisticsData stats) {
@@ -893,6 +970,11 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	void CloseVictory() {
 		CurrentStatisticsPanel?.Remove();
 		CurrentStatisticsPanel = null;
+	}
+
+	public void RenderFailText() {
+		if (IValidatable.IsValid(CurrentFailScreen))
+			CurrentFailScreen.RenderText();
 	}
 
 	public void PreRenderWorldspace() {
@@ -1237,7 +1319,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	}
 
 	public bool ShowingVictoryScreen() => IValidatable.IsValid(CurrentStatisticsPanel);
-	public bool ShowingFailureScreen() => false; // todo
+	public bool ShowingFailureScreen() => IValidatable.IsValid(CurrentFailScreen);
 
 
 	public void StartMultiHitText() {
@@ -1524,6 +1606,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		FeverRemainingTime = 0;
 		FeverTotalTime = 0;
 		CloseVictory();
+		CloseFailure();
 		EndWarning();
 		InMultiHit = false;
 		MultiHits = 0;

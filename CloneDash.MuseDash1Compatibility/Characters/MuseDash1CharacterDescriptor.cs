@@ -313,6 +313,12 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 		return skeletonMecanim;
 	}
 
+	public bool GetFailIn() => ConfigData.Skins?.FirstOrDefault()?.FailIn ?? false;
+
+	public float GetFailModelScale() => GetSkeletonScale(ConfigData.FailShow);
+
+	public string? GetFailStandby() => FindSkeletonBehaviour(ConfigData.FailShow)?.ToType()["startingAnimation"] as string;
+
 	public float GetVictoryModelScale() => GetSkeletonScale(ConfigData.VictoryShow);
 
 	public ModelData GetMainShowModel(Level level) => PullModelDataFromGameObject(level, ConfigData.MainShow);
@@ -448,6 +454,11 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 
 	private void playCharacterAnimation(CharacterAnimationType animationType, MD1_SpineActionController handler) {
 		string? name = convertAnimationTypeToName(animationType);
+		if (animationType == CharacterAnimationType.Die && !ConfigData.BattleShow.Contains(',')) {
+			handler.Animation.ClearAllAnimation();
+			handler.Animation.SetAnimation(0, ActionKeys.CHAR_DEAD_CLIP, false);
+			return;
+		}
 		handler.PlaySkeletonAction(new() {
 			ActionName = name,
 			CustomCompleteEvent = (a) => {
@@ -494,6 +505,7 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 
 	public ModelData GetPlayModel(Level level, bool uploadTextures = true) => PullModelDataFromGameObject(level, ConfigData.GetBattleShow(), uploadTextures);
 	public ModelData GetPlayGhostModel(Level level, bool uploadTextures = true) => PullModelDataFromGameObject(level, GetPlayGhostName(), uploadTextures);
+	public ModelData GetFailModel(Level level) => PullModelDataFromGameObject(level, ConfigData.FailShow);
 	public ModelData GetVictoryModel(Level level) => PullModelDataFromGameObject(level, ConfigData.VictoryShow);
 	public string GetVictoryStandby() => "standby";
 

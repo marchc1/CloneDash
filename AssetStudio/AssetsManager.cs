@@ -641,6 +641,9 @@ namespace AssetStudio
             {
                 foreach (var obj in assetsFile.Objects)
                     obj.DetachReader();
+            }
+            foreach (var assetsFile in AssetsFileList)
+            {
                 assetsFile.Objects.Clear();
                 assetsFile.ObjectsDic.Clear();
                 assetsFile.reader.Close();
