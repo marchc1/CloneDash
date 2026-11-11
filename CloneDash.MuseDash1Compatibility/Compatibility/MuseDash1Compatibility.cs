@@ -10,6 +10,7 @@ using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
+using CloneDash.Scenes;
 
 using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;
@@ -370,11 +371,14 @@ namespace CloneDash.Compatibility.MuseDash
 			var bottomPathway = gamemodeData.Layout.PathwayAt(gamemodeData.Layout.Count - 1);
 
 			gamemodeData.InitialScene = "scene/musedash1/" + MDinfo.scene;
-			gamemodeData.SceneChanges.AddRange(MDinfo.sceneEvents.Select(x => new ChartSceneChange() {
-				SceneUID = "scene/musedash1/scene_" + x.uid.Split("SceneEvent/")[1],
-				Time = Convert.ToDouble(x.time),
-				Value = x.value
-			}));
+			gamemodeData.SceneChanges.AddRange(MDinfo.sceneEvents
+				.Select(x => (Event: x, Scene: "scene_" + x.uid.Split("SceneEvent/")[1]))
+				.Where(x => MuseDash1SceneInfo.GetSceneInfo(x.Scene) != null)
+				.Select(x => new ChartSceneChange() {
+					SceneUID = "scene/musedash1/" + x.Scene,
+					Time = Convert.ToDouble(x.Event.time),
+					Value = x.Event.value
+				}));
 
 			gamemodeData.TempoChanges.Add(new(0, 0, MDinfo.bpm));
 			if (tempoChanges != null)

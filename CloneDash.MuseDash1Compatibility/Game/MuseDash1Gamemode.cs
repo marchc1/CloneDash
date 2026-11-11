@@ -135,6 +135,7 @@ public partial class MuseDash1Gamemode(ICloneDashModProvider provider) : RhythmG
 		parts.AddPart<ICameraRig, MuseDash1CameraRig>();
 		parts.AddPartWith<MuseDash1BackgroundComponent>(data);
 		parts.AddPart<MuseDash1BattleFXComponent>();
+		parts.AddPart<MuseDash1AudioVisualizationComponent>();
 		parts.AddPart<MuseDash1HudComponent>();
 		parts.AddSlot<IMuseDash1FeverRuntime>(slot => slot
 			.From(() => FeverMod.Instance.GetActive()));

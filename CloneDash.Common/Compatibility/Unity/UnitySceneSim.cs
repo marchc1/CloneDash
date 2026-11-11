@@ -195,6 +195,7 @@ public abstract class SceneComponent
 	public SceneObject Object { get; internal set; } = null!;
 	public SceneTransform Transform => Object.Transform;
 	public virtual void Awake() { }
+	public virtual SceneComponent? Clone() => null;
 }
 
 public class SceneTransform : SceneComponent
@@ -223,6 +224,15 @@ public class SceneTransform : SceneComponent
 			wx += p.LocalX; wy += p.LocalY; wz += p.LocalZ;
 			p = p.Parent;
 		}
+	}
+
+	public void SetWorldPosition(float x, float y, float z) {
+		var position = new System.Numerics.Vector3(x, y, z);
+		if (Parent != null && System.Numerics.Matrix4x4.Invert(Parent.GetWorldMatrix(), out var inverse))
+			position = System.Numerics.Vector3.Transform(position, inverse);
+		LocalX = position.X;
+		LocalY = position.Y;
+		LocalZ = position.Z;
 	}
 
 	public void GetWorldScale(out float sx, out float sy) {
@@ -342,6 +352,7 @@ public class SceneSpriteRenderer : SceneRenderer
 	public bool FlipX { get => flipX; set => flipX = value; }
 	public bool FlipY { get => flipY; set => flipY = value; }
 	public System.Numerics.Vector2 Size { get; set; }
+	public float? VerticalClip { get; set; }
 
 	public override void Awake() {
 		if (UnitySpriteRenderer.m_MaskInteraction != SpriteMaskInteraction.None) {
@@ -582,6 +593,17 @@ public class SceneSpriteRenderer : SceneRenderer
 		float u0 = texRectX / atlasW, v0 = flippedY / atlasH;
 		float u1 = (texRectX + texRectW) / atlasW, v1 = (flippedY + texRectH) / atlasH;
 
+		if (VerticalClip is float clip) {
+			float bottomV = texRectY / atlasH, topV = (texRectY + texRectH) / atlasH;
+			float low = MathF.Max(bottomV, 0.5f - clip / 2), high = MathF.Min(topV, 0.5f + clip / 2);
+			if (high <= low) return;
+			float lowFraction = (low - bottomV) / (topV - bottomV), highFraction = (high - bottomV) / (topV - bottomV);
+			offY += h * (1 - highFraction);
+			h *= highFraction - lowFraction;
+			v0 = 1 - high;
+			v1 = 1 - low;
+		}
+
 		float halfTexelU = 0.5f / atlasW;
 		float halfTexelV = 0.5f / atlasH;
 		u0 += halfTexelU; u1 -= halfTexelU;
@@ -682,6 +704,8 @@ public class SceneParticleSystem : SceneRenderer
 
 	public ParticleSystemDefinition Definition { get; }
 	public ParticleSystemRenderer? UnityParticleSystemRenderer { get; }
+
+	public void Restart() => particles = null;
 
 	public override void Render(UnitySimScene scene) {
 		if (particles != null && UnitySimScene.IsActiveInHierarchy(Object))
@@ -1216,6 +1240,10 @@ public class SceneObject
 				case SceneParticleSystem ps:
 					clone.AddComponent(new SceneParticleSystem(ps.Definition, ps.UnityParticleSystemRenderer));
 					break;
+				default:
+					if (comp.Clone() is SceneComponent cloned)
+						clone.AddComponent(cloned);
+					break;
 			}
 		}
 
@@ -1541,6 +1569,10 @@ public abstract class UnitySimScene
 
 	protected virtual bool LoadMissingFile(string fileName) => false;
 
+	protected virtual SceneComponent? CreateBehaviour(MonoBehaviour behaviour, string className) => null;
+
+	public SceneObject? FindImportedObject(long pathID) => pathIdToObject.GetValueOrDefault(pathID);
+
 	protected internal ITexture LoadTexture(AssetStudio.Texture2D? texture2D) {
 		if (textureCache.TryGetValue(texture2D!.m_PathID, out var tex)) return tex;
 		textureCache[texture2D.m_PathID] = tex = UnityAssetUtils.ConvertTexture(EngineCore.Level, texture2D!);
@@ -1568,6 +1600,7 @@ public abstract class UnitySimScene
 				case Animator animator: obj.AddComponent(new SceneAnimator { UnityAnimator = animator }); break;
 				case MeshRenderer mr: obj.AddComponent(new SceneMeshRenderer(mr, unityGO.GetFirstComponent<MeshFilter>())); break;
 				case ParticleSystem: particleSystems.Add(obj.AddComponent(new SceneParticleSystem(UnityParticleConverter.ConvertSystem(unityGO, LoadTexture, LoadMissingFile), unityGO.GetFirstComponent<ParticleSystemRenderer>()))); break;
+				case MonoBehaviour behaviour when behaviour.m_Script.TryGet(out var script) && CreateBehaviour(behaviour, script.m_ClassName) is SceneComponent component: obj.AddComponent(component); break;
 			}
 		}
 

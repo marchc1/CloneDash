@@ -56,6 +56,15 @@ public class MonoBehaviourReader : IEnumerable<KeyValuePair<object, object?>>
 		return (T?)GetUnderlyingTypeByNecessaryMeans(o);
 	}
 
+	public string? GetExternalFileName(object key) {
+		if (Dict[key] is not OrderedDictionary pointer)
+			return null;
+
+		int fileID = Convert.ToInt32(pointer["m_FileID"]);
+		var externals = MonoBehaviour.assetsFile.m_Externals;
+		return fileID > 0 && fileID <= externals.Count ? externals[fileID - 1].fileName : null;
+	}
+
 	public Vector3? GetVector3(object key) {
 		object? o = Dict[key];
 		if (o == null) return null;
