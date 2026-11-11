@@ -14,7 +14,7 @@ using System.Diagnostics;
 
 namespace CloneDash.Game.Logic
 {
-	public class AutoPlayer(MuseDash1CharacterComponent character, MuseDash1ChartComponent chart, Conductor conductor, FeverComponent fever, MashComponent mash, PathwaysComponent pathways, ISustainManager sustains) : LogicalEntity, IInputReceiver, IRhythmGameComponent
+	public class AutoPlayer(MuseDash1CharacterComponent character, MuseDash1ChartComponent chart, Conductor conductor, MashComponent mash, PathwaysComponent pathways, ISustainManager sustains) : LogicalEntity, IInputReceiver, IRhythmGameComponent
 	{
 		/// <summary>
 		/// Used to store which sustains are currently being held.
@@ -108,9 +108,6 @@ namespace CloneDash.Game.Logic
 		public void Play(ref InputState input) {
 			if (!Enabled)
 				return;
-
-			if (fever.Manual && fever.IsFull && !fever.InFever)
-				input.Click(MuseDashActions.Fever);
 
 			// Mash state functionality
 			if (mash.InMashState && CanHitMasher) {

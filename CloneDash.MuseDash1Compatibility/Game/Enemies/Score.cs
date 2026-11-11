@@ -16,12 +16,13 @@ namespace CloneDash.Game.Entities
 		}
 
 		protected override void OnHit(PathwayId pathway, double distanceToHit) {
+			GetStats().Pass(this);
 			RewardPlayer();
 			Kill();
 		}
 
 		protected override void OnReward() {
-			base.OnReward();
+			Components.Rules.AddScore(ScoreGiven, this);
 			Components.Hud.UI?.CreateScoreText(ScoreGiven, Pathway);
 		}
 		public override void OnBuildVisuals(DashEnemyVisuals visuals) {

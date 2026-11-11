@@ -8,6 +8,8 @@ namespace CloneDash.Game;
 
 public class MuseDash1NoteRules(ComboComponent combo, HealthComponent health, MuseDash1HudComponent hud, MashComponent mash, MuseDash1RulesComponent rules, MuseDash1ScenesComponent scenes) : INoteRules<DashEnemy>
 {
+	public const int FULL_HEALTH_SCORE = 300;
+
 	public bool CanAffectPlayer(DashEnemy note) => !mash.InMashState;
 
 	public void Damage(DashEnemy note) {
@@ -18,7 +20,8 @@ public class MuseDash1NoteRules(ComboComponent combo, HealthComponent health, Mu
 		if (note.DeathAddsToCombo)
 			combo.Add();
 
-		rules.AddFever((int)note.FeverGiven, note);
+		if (note is not Health || HealthFull())
+			rules.AddFever(CDUtils.DetermineFever(note.FeverGiven, note.KilledPerfect), note, note.JudgedTime);
 	}
 
 	public void Punish(DashEnemy note) {
@@ -27,14 +30,29 @@ public class MuseDash1NoteRules(ComboComponent combo, HealthComponent health, Mu
 
 	public void Reward(DashEnemy note) {
 		if (note is Health) {
-			health.Heal(note.HealthGiven);
-			hud.UI?.CreateHealthText(note.HealthGiven, note.Pathway);
+			if (HealthFull())
+				GiveFullHealthScore(note, note);
+			else {
+				health.Heal(note.HealthGiven);
+				hud.UI?.CreateHealthText(note.HealthGiven, note.Pathway);
+			}
 		}
 
 		if (note.Blood) {
+			bool full = HealthFull();
 			health.Heal(MD1_SongChartEntity.DEFAULT_HP);
-			hud.UI?.CreateHealthText(MD1_SongChartEntity.DEFAULT_HP, note.Pathway);
+			if (full)
+				GiveFullHealthScore(note, null);
+			else
+				hud.UI?.CreateHealthText(MD1_SongChartEntity.DEFAULT_HP, note.Pathway);
 			scenes.GetActiveScene()?.PlaySound(SceneSound.GotHeart, 0);
 		}
 	}
+
+	void GiveFullHealthScore(DashEnemy note, DashEnemy? responsible) {
+		rules.AddScore(FULL_HEALTH_SCORE, responsible);
+		hud.UI?.CreateScoreText(FULL_HEALTH_SCORE, note.Pathway);
+	}
+
+	bool HealthFull() => health.Value >= health.Max;
 }

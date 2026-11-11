@@ -188,8 +188,10 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 	void ShowFullComboText(ref FullComboGameEvent ev) => UI?.PlayFullComboText();
 
 	void ShowVictory(ref SongClearedGameEvent ev) {
-		if (!Health.Dead)
+		if (!Health.Dead) {
 			Stats.UploadScore(Score.Value);
+			Stats.UploadMaxCombo(Combo.Max);
+		}
 		UI?.OpenVictory(Stats);
 		Music.Pause();
 	}

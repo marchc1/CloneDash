@@ -45,7 +45,7 @@ public struct MuseDash1GameplayQuirks()
 
 	public int MaxHP = DEFAULT_MAX_HP;
 	public int MaxFever = DEFAULT_MAX_FEVER;
-	public double FeverDuration = 6;
+	public double FeverDuration = 5;
 
 	public bool Autoplay;
 
@@ -116,11 +116,7 @@ public struct MuseDash1GameplayQuirks()
 	/// </summary>
 	public int MissComboForgiveness;
 
-	/// <summary>
-	/// Threshold for forgiveness. If accuracy is less than this number, <see cref="ForgivenAccuracy"/> is granted.
-	/// </summary>
-	public double MaximumApplicableResultAccuracy;
-	public double ForgivenAccuracy;
+	public Func<float, float>? AccuracyFunction;
 
 	/// <summary>
 	/// Can forgive up to this many greats (except for sustain beams and mashers)
@@ -242,8 +238,7 @@ public struct MuseDash1GameplayQuirks()
 			// todo
 		});
 		AddCharacterQuirks("character/musedash1/char_1_santa", (ref MuseDash1GameplayQuirks quirks) => {
-			quirks.MaximumApplicableResultAccuracy = 90;
-			quirks.ForgivenAccuracy = 5;
+			quirks.AccuracyFunction = static accuracy => accuracy > .9f ? accuracy * .5f + .5f : accuracy + .05f;
 		});
 		AddCharacterQuirks("character/musedash1/char_2_jk", (ref MuseDash1GameplayQuirks quirks) => {
 			// todo

@@ -10,7 +10,9 @@ namespace CloneDash.Game.Entities
 {
 	public class Masher : DashEnemy
 	{
+		public const int MASH_HIT_SCORE = 20;
 		public const double MASH_IDLE_TIME = 0.5;
+		public const int MASH_TOTAL_SCORE = 200;
 		public const double MUL_HIT_AUTO_THRESHOLD = 25;
 		public const double MUL_HIT_HIGH_THRESHOLD = 25;
 		public const double MUL_HIT_LOW_THRESHOLD = 5;
@@ -55,7 +57,7 @@ namespace CloneDash.Game.Entities
 			if (Hits < LowHits) {
 				if (ended && Hits == LowHits - 1) {
 					Hits++;
-					Complete(false);
+					Complete(false, time: GetJudgementHitTime() + Length);
 				}
 				else if (ended || !mashing)
 					Fail();
@@ -63,29 +65,41 @@ namespace CloneDash.Game.Entities
 			else if (ended) {
 				bool total = Hits >= MidHits - 1;
 				Hits++;
-				Complete(total);
+				Complete(total, time: GetJudgementHitTime() + Length);
 			}
-			else if (!mashing)
-				Complete(false);
+			else if (!mashing) {
+				GetStats().BreakCombo();
+				Components.Combo.Break();
+				Complete(false, false);
+			}
+		}
+
+		protected override void OnKill() {
+			if (perfect)
+				base.OnKill();
 		}
 
 		protected override void OnReward() {
-			base.OnReward();
-			if (perfect)
+			if (perfect) {
+				Components.Rules.AddScore(MASH_TOTAL_SCORE, this);
 				GetStats().Hit(this, 0);
+			}
 			else
 				GetStats().Great(this);
 		}
 
-		private void Complete(bool perfect) {
+		private void Complete(bool perfect, bool showResult = true, double? time = null) {
+			JudgedTime = time ?? GetConductor().Time;
 			this.perfect = perfect;
 			WasHitPerfect = perfect;
-			if (perfect)
-				Components.Hud.UI?.CreatePerfectHitText(0, PathwaySet.Any, fever.InFever, 0);
-			else
-				Components.Hud.UI?.CreateGreatHitText(0, PathwaySet.Any, fever.InFever, 0);
-			Kill();
+			if (showResult) {
+				if (perfect)
+					Components.Hud.UI?.CreatePerfectHitText(0, PathwaySet.Any, fever.InFever, 0);
+				else
+					Components.Hud.UI?.CreateGreatHitText(0, PathwaySet.Any, fever.InFever, 0);
+			}
 			End(true);
+			Kill();
 		}
 
 		private void End(bool success) {
@@ -106,6 +120,8 @@ namespace CloneDash.Game.Entities
 		}
 		protected override void OnHit(PathwayId pathway, double distanceToHit) {
 			base.OnHit(pathway, distanceToHit);
+			if (!Dead)
+				Components.Rules.AddScore(MASH_HIT_SCORE, this);
 
 			if (!Level.As<RhythmGameLevel>().IsSeeking)
 				hitsounds.Play(SceneSound.HitMasher, Hits);

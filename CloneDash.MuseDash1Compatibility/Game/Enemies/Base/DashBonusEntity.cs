@@ -6,6 +6,8 @@ namespace CloneDash.Game
 {
 	public class DashBonusEntity(MuseDash1EntityType type, DashEnemyComponents components) : DashEnemy(type, components)
 	{
+		public override bool KilledPerfect => true;
+
 		public override void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
 			if (Dead) {
 				Components.Scenes.SetEnemyKilledPosition(this);

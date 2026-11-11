@@ -31,6 +31,9 @@ public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, Muse
 
 	PathwayId LastAttackPathway;
 	double LastAttackTime;
+	AutoPlayer? autoPlayer;
+
+	double GetJudgedTime(DashEnemy entity) => (autoPlayer ??= level.Component<AutoPlayer>()).Enabled ? entity.GetJudgementHitTime() : Conductor.Time;
 
 	public bool InHit { get; private set; } = false;
 
@@ -125,6 +128,7 @@ public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, Muse
 						PathwaySet characterPathways = Character.CharacterPathways;
 						var entityPathway = Pathways.PrimaryPathway(entity.Pathway);
 						if ((characterPathways.Count >= 2 || Character.IsCharacterOn(entity.Pathway) || Character.IsCharacterNear(entityPathway)) && entity.Hits == 0) {
+							entity.JudgedTime = GetJudgedTime(entity);
 							entity.Hit(entityPathway, 0);
 							if (!level.IsSeeking)
 								events.Fire(new BonusCollectedGameEvent(entity, entityPathway));
@@ -200,6 +204,7 @@ public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, Muse
 
 				if (pollResult.Hit) {
 					pollResult.HitEntity.WasHitPerfect = pollResult.IsPerfect;
+					pollResult.HitEntity.JudgedTime = GetJudgedTime(pollResult.HitEntity);
 					pollResult.HitEntity.Hit(pathway, pollResult.DistanceToHit);
 
 					if (SuppressHitMessages == false && !level.IsSeeking) {

@@ -66,8 +66,8 @@ namespace CloneDash.Game.Entities
 			holdTicksScored = 0;
 			sustains.StartSustainBeam(this);
 			Components.Combo.Add();
-			addJudgedScore(distanceToHit);
-			Components.Rules.AddFever(FeverGiven, this);
+			addJudgedScore(distanceToHit, JudgedTime);
+			addJudgedFever(distanceToHit, JudgedTime);
 			GetStats().Hit(this, distanceToHit);
 		}
 
@@ -298,7 +298,9 @@ namespace CloneDash.Game.Entities
 			buildCurveSamples();
 		}
 
-		private void addJudgedScore(double distanceToHit) => Components.Rules.AddScore(Components.Rules.DetermineScoreMultiplied(ScoreGiven, PollResult.Create(this, distanceToHit)), this);
+		private void addJudgedFever(double distanceToHit, double time) => Components.Rules.AddFever(CDUtils.DetermineFever(FeverGiven, PollResult.Create(this, distanceToHit).IsPerfect), this, time);
+
+		private void addJudgedScore(double distanceToHit, double time) => Components.Rules.AddScore(Components.Rules.DetermineScoreMultiplied(ScoreGiven, PollResult.Create(this, distanceToHit), time), this);
 
 		internal void Complete(double distanceToEnd) {
 			Hold();
@@ -309,8 +311,9 @@ namespace CloneDash.Game.Entities
 			RewardPlayer();
 
 			Components.Combo.Add();
-			addJudgedScore(distanceToEnd);
-			Components.Rules.AddFever(FeverGiven, this);
+			double endTime = distanceToEnd <= 0 ? GetJudgementHitTime() + Length : GetConductor().Time;
+			addJudgedScore(distanceToEnd, endTime);
+			addJudgedFever(distanceToEnd, endTime);
 			sustains.CompleteSustainBeam(this);
 			hitsounds.Play(SceneSound.StartedHold, 1);
 		}

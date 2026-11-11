@@ -44,15 +44,18 @@ public class MuseDash1RulesComponent : IRhythmGameThinker
 	/// Adds to the players fever value, and automatically enters fever when the player has maxed out the fever bar.
 	/// </summary>
 	/// <param name="fever"></param>
-	public void AddFever(float fever, DashEnemy? responsible = null) {
-		if (Fever.InFever) return;
+	public void AddFever(float fever, DashEnemy? responsible = null, double? time = null) {
+		double when = time ?? Conductor.Time;
+		if (Fever.IsActiveAt(when)) return;
 
 		double feverD = (double)fever;
 		if (Quirks.FeverModifier != null) Quirks.FeverModifier.Invoke(ProduceSnapshot(responsible), ref feverD);
 		fever = (float)feverD;
 
-		Fever.Add(fever);
+		Fever.Add(fever, when);
 	}
+
+	public bool InFeverAt(double time) => Fever.IsActiveAt(time);
 
 	/// <summary>
 	/// Adds to the players score.

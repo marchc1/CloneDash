@@ -50,6 +50,7 @@ public class MuseDash1SeekComponent(AutoPlayer autoPlayer, MuseDash1CharacterCom
 			foreach (var entity in level.Entities) {
 				if (entity is DashEnemy mEnt && mEnt.GetJudgementHitTime() < time) {
 					Conductor.ForceTimeTo(mEnt.GetJudgementHitTime()); // Hack...
+					mEnt.JudgedTime = mEnt.GetJudgementHitTime();
 
 					// Evaluate if fever must end
 					if (Fever.ShouldExit && Fever.InFever)
@@ -85,6 +86,7 @@ public class MuseDash1SeekComponent(AutoPlayer autoPlayer, MuseDash1CharacterCom
 						default:
 							switch (mEnt.Interactivity) {
 								case EntityInteractivity.Hit:
+									mEnt.WasHitPerfect = true;
 									mEnt.Hit(Pathways.PrimaryPathway(mEnt.Pathway), 0);
 									mEnt.RewardPlayer();
 									break;

@@ -25,6 +25,8 @@ namespace CloneDash.Game.Entities
 			GetStats().Pass(this);
 		}
 
+		protected override void OnReward() => Components.Rules.AddScore(ScoreGiven, this);
+
 		protected override void OnPunishment() {
 			base.OnPunishment();
 			GetStats().Miss(this);

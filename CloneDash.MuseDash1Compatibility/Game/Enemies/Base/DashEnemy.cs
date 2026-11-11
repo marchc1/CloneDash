@@ -124,6 +124,10 @@ public class DashEnemy : RhythmNote
 
 	public List<DashEnemy> SameTimeNotes { get; } = [];
 
+	public virtual bool KilledPerfect => WasHitPerfect;
+
+	public double JudgedTime { get; set; }
+
 	public override double GetShowTime() => GetActiveVisuals().GetShowTime() ?? ShowTime;
 
 	protected override void OnPunishment() {
@@ -131,7 +135,7 @@ public class DashEnemy : RhythmNote
 	}
 
 	protected override void OnReward() {
-		Components.Rules.AddScore(Components.Rules.DetermineScoreMultiplied(ScoreGiven, Components.Judge.LastPollResult), this);
+		Components.Rules.AddScore(Components.Rules.DetermineScoreMultiplied(ScoreGiven, Components.Judge.LastPollResult, JudgedTime), this);
 	}
 
 	/// <summary>

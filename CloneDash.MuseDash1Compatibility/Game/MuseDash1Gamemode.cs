@@ -174,7 +174,9 @@ public partial class MuseDash1Gamemode(ICloneDashModProvider provider) : RhythmG
 			fever.DismissalTime = quirks.PostFeverDismissalTime;
 		});
 		parts.AddPart<ScoreComponent>();
-		parts.AddPart(sp => new StatisticsData(level.GetSongChart()));
+		parts.AddPart(sp => new StatisticsData(level.GetSongChart()) {
+			AccuracyFunction = level.Component<MuseDash1GameplayQuirksComponent>().Value.AccuracyFunction
+		});
 		parts.AddPart<MuseDash1RulesComponent>();
 	}
 

@@ -10,6 +10,7 @@ public class FeverComponent(IConductor conductor, GameEventManager events) : IRh
 	public float Max;
 
 	double LastExitTime = -1000000d;
+	double windowStart = -1000000d;
 
 	public bool Dismissed => (conductor.GetTime() - LastExitTime) < DismissalTime;
 
@@ -48,14 +49,23 @@ public class FeverComponent(IConductor conductor, GameEventManager events) : IRh
 	/// Adds to the players fever value, and automatically enters fever when the player has maxed out the fever bar.
 	/// </summary>
 	/// <param name="fever"></param>
-	public void Add(float fever) {
-		if (InFever || Dismissed || IsFull) return;
+	public void Add(float fever) => Add(fever, conductor.GetTime());
+
+	public void Add(float fever, double time) {
+		if (IsActiveAt(time)) return;
+		if (InFever) {
+			if (time < windowStart) return;
+			Exit();
+		}
+		if (Dismissed || IsFull) return;
 
 		Value = Math.Clamp(Value + fever, 0, Max);
 		events.Fire(new FeverChangedGameEvent(Value, Max));
 		if (IsFull && !Manual)
-			Enter();
+			Enter(time);
 	}
+
+	public bool IsActiveAt(double time) => time >= windowStart && time <= windowStart + Duration;
 
 	public bool IsFull => Value >= Max;
 
@@ -78,9 +88,12 @@ public class FeverComponent(IConductor conductor, GameEventManager events) : IRh
 	/// <summary>
 	/// Enters fever.
 	/// </summary>
-	public void Enter() {
+	public void Enter() => Enter(conductor.GetTime());
+
+	public void Enter(double time) {
 		InFever = true;
-		WhenDidFeverStart = conductor.GetTime();
+		WhenDidFeverStart = time;
+		windowStart = time;
 		events.Fire(new FeverStartGameEvent(Duration));
 	}
 
@@ -98,6 +111,7 @@ public class FeverComponent(IConductor conductor, GameEventManager events) : IRh
 	public void Reset() {
 		InFever = false;
 		WhenDidFeverStart = -1000000d;
+		windowStart = -1000000d;
 		Value = 0;
 		LastExitTime = -1000000d;
 	}
