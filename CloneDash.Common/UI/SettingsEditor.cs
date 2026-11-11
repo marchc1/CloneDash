@@ -260,6 +260,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 		BuildAudioPanel(Category("Audio", "oxygen/preferences-desktop-sound.png"));
 		BuildDisplayPanel(Category("Display", "oxygen/video-display.png"));
+		BuildGameplayPanel(Category("Gameplay", "oxygen/audio-midi.png"));
 		BuildInputPanel(Category("Input", "oxygen/input-keyboard.png"));
 	}
 
@@ -270,6 +271,10 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		panel.PercentageNumber(AudioSettings.snd_hitvolume, "Hit-sound Volume");
 	}
 	private void BuildDisplayPanel(SettingsPanel panel) { }
+	private void BuildGameplayPanel(SettingsPanel panel) {
+		panel.Switch(GameSettings.gp_apindicator, "All Perfect Indicator");
+		panel.Switch(GameSettings.gp_earlylate, "Early/Late Indicator");
+	}
 
 	public void OpenOffsetWizard() {
 		// TODO: Make offset wizard level-agnostic

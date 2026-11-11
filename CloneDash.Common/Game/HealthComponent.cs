@@ -71,6 +71,8 @@ public class HealthComponent(IConductor conductor, GameEventManager events) : IR
 			DyingUsed = false;
 
 		Value = Math.Clamp(Value + health, 0, Max);
+		if (health > 0)
+			events.Fire(new PlayerHealedGameEvent(health));
 	}
 
 	public void Reset() {

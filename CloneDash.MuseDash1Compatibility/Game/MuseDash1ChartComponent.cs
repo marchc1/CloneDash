@@ -250,6 +250,7 @@ public class MuseDash1ChartComponent : IRhythmGameComponent, IRhythmGameThinker
 			if (Stats.CalculateFullCombo()) {
 				Logs.Info("Full combo achieved.");
 				Hitsounds.Play(SceneSound.FullCombo, 0);
+				events.Fire(new FullComboGameEvent());
 			}
 		}
 

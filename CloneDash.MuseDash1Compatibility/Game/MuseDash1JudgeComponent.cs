@@ -5,6 +5,7 @@ using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Game.Entities;
 using CloneDash.Game.Input;
 using CloneDash.Game.Logic;
+using CloneDash.Game.Statistics;
 using CloneDash.Settings;
 using Nucleus;
 using Nucleus.Types;
@@ -207,7 +208,10 @@ public class MuseDash1JudgeComponent(MuseDash1CharacterComponent character, Muse
 						bool showearlylate = GameSettings.gp_earlylate.GetBool();
 						EarlyLate earlylate = EarlyLate.Perfect;
 						if (showearlylate) {
-							// TODO: tolerances for early/late..
+							if (pollResult.DistanceToHit > EnemyStatistics.EARLY_LATE_THRESHOLD)
+								earlylate = EarlyLate.Early;
+							else if (pollResult.DistanceToHit < -EnemyStatistics.EARLY_LATE_THRESHOLD)
+								earlylate = EarlyLate.Late;
 						}
 
 						// Mashers don't create perfects, they'll start the mash hit UI

@@ -40,16 +40,20 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 
 		events.Listen<FeverChangedGameEvent>(UpdateFeverProgress);
 		events.Listen<FeverStartGameEvent>(EnterFever);
+		events.Listen<FullComboGameEvent>(ShowFullComboText);
 		events.Listen<MashEndGameEvent>(EndMultiHitText);
 		events.Listen<MashStartGameEvent>(StartMultiHitText);
 		events.Listen<NoteHitGameEvent>(CreateHitText);
 		events.Listen<NoteMissedGameEvent>(BreakFullCombo);
 		events.Listen<PlayerDamagedGameEvent>(BreakFullCombo);
+		events.Listen<PlayerDamagedGameEvent>(PlayHurtFlash);
+		events.Listen<PlayerHealedGameEvent>(PlayHpAdd);
 		events.Listen<ScoreChangedGameEvent>(UpdateScore);
 		events.Listen<SeekFinishedGameEvent>(EndSeeking);
 		events.Listen<SongClearedGameEvent>(ShowVictory);
 		events.Listen<SongFailedGameEvent>(ShowFailure);
 		events.Listen<UnpauseStartGameEvent>(PlayUnpauseSound);
+		events.Listen<UnpauseStartGameEvent>(PlayResume321);
 		events.Listen<WarningStartGameEvent>(StartWarning);
 	}
 
@@ -73,8 +77,10 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 		UI?.UpdateAllPerfect(true);
 		UI?.UpdateFullCombo(true);
 
-		if (!CommandLine().CheckParm("-mdbmsc", out var p) && Scenes.HasActiveScene(out var sceneInstance))
+		if (!CommandLine().CheckParm("-mdbmsc", out var p) && Scenes.HasActiveScene(out var sceneInstance)) {
 			sceneInstance.PlaySound(SceneSound.Begin, 0);
+			UI?.PlayReadyGo();
+		}
 	}
 
 	public void PostRender(FrameState frameState) {
@@ -124,9 +130,15 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 		UI?.UpdateMultiHitText(Mash.MashingEntity.Hits);
 	}
 
-	private void BreakFullCombo(ref NoteMissedGameEvent ev) => UI?.UpdateFullCombo(false);
+	private void BreakFullCombo(ref NoteMissedGameEvent ev) {
+		UI?.UpdateAllPerfect(false);
+		UI?.UpdateFullCombo(false);
+	}
 
-	private void BreakFullCombo(ref PlayerDamagedGameEvent ev) => UI?.UpdateFullCombo(false);
+	private void BreakFullCombo(ref PlayerDamagedGameEvent ev) {
+		UI?.UpdateAllPerfect(false);
+		UI?.UpdateFullCombo(false);
+	}
 
 	private void CreateHitText(ref NoteHitGameEvent ev) {
 		if (ev.Perfect)
@@ -135,7 +147,6 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 			UI?.CreateGreatHitText(ev.Precision, ev.Pathway.AsSet, ev.InFever, ev.EarlyLate);
 			UI?.UpdateAllPerfect(false);
 		}
-		UI?.UpdateHit();
 	}
 
 	private void EndMultiHitText(ref MashEndGameEvent ev) {
@@ -151,6 +162,15 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 		UI?.PlayFeverTips(Fever.Manual ? MuseDash1FeverTipsClip.End : MuseDash1FeverTipsClip.Light);
 	}
 
+	private void PlayHpAdd(ref PlayerHealedGameEvent ev) => UI?.PlayHpAdd();
+
+	private void PlayHurtFlash(ref PlayerDamagedGameEvent ev) {
+		if (ev.Hurt)
+			UI?.PlayHurtFlash();
+	}
+
+	private void PlayResume321(ref UnpauseStartGameEvent ev) => UI?.PlayResume321();
+
 	private void PlayUnpauseSound(ref UnpauseStartGameEvent ev) {
 		if (Scenes.HasActiveScene(out var scene))
 			scene.PlaySound(SceneSound.Unpause, 0);
@@ -162,6 +182,8 @@ public class MuseDash1HudComponent : IRhythmGameComponent, IRhythmGameEntityPost
 		if (UI != null && !UI.ShowingFailureScreen())
 			UI.OpenFailure();
 	}
+
+	void ShowFullComboText(ref FullComboGameEvent ev) => UI?.PlayFullComboText();
 
 	void ShowVictory(ref SongClearedGameEvent ev) {
 		if (!Health.Dead)

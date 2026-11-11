@@ -4,7 +4,7 @@ namespace CloneDash.Game.Statistics;
 
 public class EnemyStatistics
 {
-	const double EARLY_LATE_THRESHOLD = 0.025;
+	public const double EARLY_LATE_THRESHOLD = 0.025;
 
 	public DashEnemy Enemy;
 	public EnemyStatisticsState State;

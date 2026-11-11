@@ -19,6 +19,11 @@ public interface IMuseDash1SceneUI : IDisposable
 	void UpdateFeverProgress(double fever, double maxFever);
 	void UpdateInFever(double feverRemainingTime, double feverTotalTime);
 	void PlayFeverTips(MuseDash1FeverTipsClip clip);
+	void PlayFullComboText();
+	void PlayHpAdd();
+	void PlayHurtFlash();
+	void PlayReadyGo();
+	void PlayResume321();
 	void UpdateScore(double score);
 	void UpdateAllPerfect(bool allPerfect);
 	void UpdateFullCombo(bool fullCombo);
@@ -36,5 +41,4 @@ public interface IMuseDash1SceneUI : IDisposable
 	void EndWarning();
 	void SetSeeking(bool seeking);
 	void Reset();
-	void UpdateHit();
 }

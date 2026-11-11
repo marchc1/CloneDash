@@ -8,6 +8,7 @@ using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 using CloneDash.Game.Statistics;
+using CloneDash.Settings;
 using CommunityToolkit.HighPerformance;
 using Nucleus;
 using Nucleus.Common.Audio;
@@ -22,6 +23,7 @@ using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.Util;
 using Raylib_cs;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Velopack.Sources;
@@ -496,7 +498,8 @@ public enum ComboGrade
 {
 	NotApplicable = 0,
 	Low = 5,
-	High = 30
+	Middle = 20,
+	High = 50
 }
 
 public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : IMuseDash1SceneUI
@@ -537,8 +540,14 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	protected MuseDash1MultiHitTip? MultiHitTip;
 	protected ITexture? HitsBase;
 	protected ITexture? BelowBase;
+	protected ITexture? BtnPause;
+	protected ITexture? Early;
 	protected ITexture? hp_icon;
+	protected ITexture? hp_icon_light;
 	protected ITexture? hp_icon_mistake;
+	protected ITexture? icon_ap;
+	protected ITexture? Late;
+	protected ITexture? MissReaction;
 	protected ITexture? hp_slider;
 	protected ITexture? hp_slider_base;
 	protected ITexture? HpFeverBase;
@@ -550,9 +559,16 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	protected ITexture? score_English;
 	protected ModelData? fx_combo_1;
 	protected ModelData? fx_combo_2;
+	protected MuseDash1HudPanel? FullComboText;
+	protected MuseDash1HudPanel? ReadyGo;
+	protected MuseDash1HudPanel? Resume321;
+	protected virtual MuseDash1ComboTextClips ComboTextClips => MuseDash1HudAnimations.ComboText;
+	MuseDash1PauseButton? PauseButton;
 	Task<MuseDash1VictoryAssets?>? victoryImport;
 
 	public virtual void Dispose() {
+		PauseButton?.Remove();
+		PauseButton = null;
 		foreach (var item in BackgroundItems) item.Dispose();
 		foreach (var item in ForegroundItems) item.Dispose();
 		ScoreNumber?.Dispose();
@@ -584,13 +600,24 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	double HP, MaxHP;
 	bool InFever;
 	double FeverRemainingTime, FeverTotalTime;
-	double LastHitTime = -2000000;
+	double HpAddTime = -2000000;
+	double HpFillStart, HpTrailStart;
+	float HpFillFrom = 1, HpFillTo = 1, HpTrailFrom = 1, HpTrailTo = 1;
+	double HurtTime = -2000000;
+	bool SnapHealth = true;
 	int MultiHits = 0;
 	bool InMultiHit;
 	double Score = 0;
 	bool Seeking;
 	ComboGrade ComboGrade;
 	double ComboGradeUpdateTime = -200000;
+	MuseDash1ComboTextState ComboText;
+	protected ComboGrade ComboTextGrade;
+	double ComboTextStart;
+	bool BattleIntro, BattleOut;
+	long BattleOutStart;
+	long ReadyGoStart;
+	double Resume321Start;
 
 	public static float MinorTextScale => 0.65f;
 	public static float TextScale => 0.85f;
@@ -611,6 +638,12 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		LoadScoreAssets();
 		LoadMultiHitAssets();
 		LoadHealthBarAssets();
+		LoadBattlePanelAssets();
+		LoadBattleTextAssets();
+		LoadEarlyLateAssets();
+		FullComboText?.Initialize(name => LoadTextureByName(name));
+		ReadyGo?.Initialize(name => LoadTextureByName(name));
+		Resume321?.Initialize(name => LoadTextureByName(name));
 
 		TextImageRenderItem.PrewarmTextRTs("Snaps Taste", "88888", 16);
 		LoadComboModels();
@@ -618,6 +651,14 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 
 		ForceDeactivateCombo1();
 		ForceDeactivateCombo2();
+
+		PauseButton = new MuseDash1PauseButton(EngineCore.Level.RootPanel);
+		PauseButton.Clicked = ClickPause;
+	}
+
+	void ClickPause() {
+		if (!game.Paused && !ShowingVictoryScreen())
+			game.Component<PauseComponent>().TogglePauseMenu();
 	}
 
 	static AssetStudio.Transform? FindChild(AssetStudio.Transform? transform, string name)
@@ -717,6 +758,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	public virtual void LoadHealthBarAssets() {
 		BelowBase = LoadTextureByName("BelowBase");
 		hp_icon = LoadTextureByName("hp_icon");
+		hp_icon_light = LoadTextureByName("hp_icon_light");
 		hp_icon_mistake = LoadTextureByName("hp_icon_mistake");
 		hp_slider = LoadTextureByName("hp_slider");
 		hp_slider_base = LoadTextureByName("hp_slider_base");
@@ -730,6 +772,23 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		FeverTips.Initialize(name => LoadTextureByName(name));
 	}
 
+	public virtual void LoadBattlePanelAssets() {
+		BtnPause = LoadTextureByName("BtnPause");
+		icon_ap = LoadTextureByName("icon_ap");
+		MissReaction = LoadTextureByName("MissReaction");
+	}
+
+	public virtual void LoadEarlyLateAssets() {
+		Early = LoadTextureByName("Early");
+		Late = LoadTextureByName("Late");
+	}
+
+	public virtual void LoadBattleTextAssets() {
+		FullComboText = MuseDash1BattleTexts.FullCombo();
+		ReadyGo = MuseDash1BattleTexts.ReadyGo();
+		Resume321 = MuseDash1BattleTexts.Resume321();
+	}
+
 	public virtual void LoadComboModels() {
 		combo1model = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.MonoBehaviour>("fx_combo_1_SkeletonData")!)?.Instantiate();
 		combo2model = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.MonoBehaviour>("fx_combo_2_SkeletonData")!)?.Instantiate();
@@ -741,6 +800,22 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	public virtual void CreateGreatHitText(double precision, PathwaySet pathways, bool inFever, EarlyLate earlylate) {
 		Color color = inFever ? new(255, 108, 0) : new(146, 55, 255);
 		var text = new TextImageRenderItem(Time, 0.5, TextPosition(pathways), 0, new(TextScale), inFever ? GoldGreat : ScoreGreat, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : IsAirText(pathways) ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
+		text.Worldspace = true;
+		BackgroundItems.Add(text);
+		CreateEarlyLateText(text, inFever, earlylate);
+	}
+
+	void CreateEarlyLateText(TextImageRenderItem judgement, bool inFever, EarlyLate earlylate) {
+		var texture = earlylate switch {
+			EarlyLate.Early => Early,
+			EarlyLate.Late => Late,
+			_ => null
+		};
+		if (texture == null)
+			return;
+
+		float offset = (inFever ? -0.47f : -0.4f) * TextScale;
+		var text = new TextImageRenderItem(judgement.StartTime, judgement.Length, judgement.StartPosition + new Vector2F(0, offset), 0, judgement.StartScale, texture, Color.White, judgement.Fn);
 		text.Worldspace = true;
 		BackgroundItems.Add(text);
 	}
@@ -763,6 +838,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		var text = new TextImageRenderItem(Time, 0.5, TextPosition(pathways), 0, new(TextScale), inFever ? GoldPerfect : ScorePerfect, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : IsAirText(pathways) ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
 		text.Worldspace = true;
 		BackgroundItems.Add(text);
+		CreateEarlyLateText(text, inFever, earlylate);
 	}
 
 	public virtual void CreateScoreText(int scoreGiven, PathwaySet pathways) {
@@ -795,7 +871,11 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	}
 
 	public void OpenFailure() {
+		if (BattleOut)
+			return;
 
+		BattleOut = true;
+		BattleOutStart = Stopwatch.GetTimestamp();
 	}
 
 	protected virtual StatisticsPanel? LoadPanel(StatisticsData stats) {
@@ -815,10 +895,6 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		CurrentStatisticsPanel = null;
 	}
 
-	public void UpdateHit() {
-		LastHitTime = Time;
-	}
-
 	public void PreRenderWorldspace() {
 		var t = Time;
 		foreach (var text in BackgroundItems)
@@ -836,7 +912,13 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	public void RenderUI() {
 		float width = EngineCore.Level.FrameState.WindowWidth;
 		float height = EngineCore.Level.FrameState.WindowHeight;
+		RenderHurtFlash(width, height);
 		DrawUI(width, height);
+		FullComboText?.Render(width, height);
+		ReadyGo?.Time = (float)Stopwatch.GetElapsedTime(ReadyGoStart).TotalSeconds;
+		ReadyGo?.Render(width, height);
+		Resume321?.Time = (float)(EngineCore.Level.Realtime - Resume321Start);
+		Resume321?.Render(width, height);
 	}
 
 	Vector2F GetTextureSize(ITexture? tex) => tex == null ? default : new(tex.GetWidth(), tex.GetHeight());
@@ -933,11 +1015,12 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		UIAlphatestShader?.Activate();
 
 		float resize = (h / 1080f);
+		SampleBattlePanel(out float below, out float up, out float score);
 		// Draw the health/fever bars
 		{
 			Rlgl.PushMatrix();
 
-			Rlgl.Translatef(w / 2, h, 0);
+			Rlgl.Translatef(w / 2, h - below * resize, 0);
 			Rlgl.Scalef(resize, resize, 1);
 
 			RenderHealth();
@@ -949,13 +1032,15 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		{
 			Rlgl.PushMatrix();
 
-			Rlgl.Translatef(0, 0, 0);
+			Rlgl.Translatef(0, -score * resize, 0);
 			Rlgl.Scalef(resize, resize, 1);
 			RenderScore();
 			Rlgl.PopMatrix();
 		}
 
 		UIAlphatestShader?.Deactivate();
+
+		RenderPauseButton(w, -up * resize, resize);
 
 		// Draw combo
 
@@ -969,8 +1054,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.PopMatrix();
 
-		if (ComboGrade != ComboGrade.NotApplicable) {
-			PrepareComboColors(ComboGrade, out var borderColor, out var color);
+		if (ComboText != MuseDash1ComboTextState.None) {
+			PrepareComboColors(ComboTextGrade, out var borderColor, out var color);
 			SetComboColors(borderColor, color);
 
 			Rlgl.PushMatrix();
@@ -994,6 +1079,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	protected virtual void PrepareComboColors(ComboGrade comboGrade, out Color borderColor, out Color color) {
 		switch (comboGrade) {
 			case ComboGrade.Low:
+			case ComboGrade.Middle:
 				borderColor = ComboLowBorderColor;
 				color = ComboLowColor;
 				break;
@@ -1022,12 +1108,19 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		Graphics2D.SetTexture(HpFeverBase);
 		Graphics2D.DrawTexturedRectangle(new(-(hpFeverBaseSize.W / 2), -hpFeverBaseSize.H), hpFeverBaseSize);
 
-		float hpRatio = (float)(HP / MaxHP);
+		float hpRatio = SampleHpFill();
 		float feverRatio;
 		if (!InFever)
 			feverRatio = (float)(CurrentFever / MaxFever);
 		else
 			feverRatio = (float)(FeverRemainingTime / FeverTotalTime);
+
+		if (hp_slider_base != null) {
+			Vector2F hp_slider_baseSize = GetTextureSize(hp_slider_base);
+			Graphics2D.SetTexture(hp_slider_base);
+			Graphics2D.SetDrawColor(255, 255, 255);
+			Graphics2D.DrawTexturedProgress(new(-(hp_slider_baseSize.W / 2) - 56, -(hp_sliderSize.H / 2) - (hp_slider_baseSize.H / 2) - 4), hp_slider_baseSize, SampleHpTrail(), Axis.Horizontal);
+		}
 
 		Graphics2D.SetTexture(hp_slider);
 		Graphics2D.SetDrawColor(255, 53, 133);
@@ -1051,16 +1144,35 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		}
 		if (hp_icon != null) {
 			Graphics2D.SetTexture(hp_icon);
-			float lastHitTime = Math.Clamp((float)(Time - LastHitTime) * 1, 0, 1);
-			float size = (float)NMath.Remap(lastHitTime, 0, 0.3, 1, 1.15, clampInput: true);
+			float hpAdd = SampleHpAdd();
+			float size = 1 + (MuseDash1HudAnimations.HP_ADD_SCALE - 1) * hpAdd;
 
 			Vector2F sizeOfHeart = new(hp_icon.GetWidth() * size, hp_icon.GetHeight() * size);
 			Graphics2D.DrawTexturedRectangle(new(-328, -38f), sizeOfHeart, origin: sizeOfHeart / 2);
+
+			if (hp_icon_light != null && hpAdd > 0) {
+				Vector2F sizeOfLight = new(hp_icon_light.GetWidth() * size, hp_icon_light.GetHeight() * size);
+				Graphics2D.SetTexture(hp_icon_light);
+				Graphics2D.SetDrawColor(255, 255, 255, (int)(Math.Clamp(hpAdd, 0, 1) * 255));
+				Graphics2D.DrawTexturedRectangle(new(-328, -38f), sizeOfLight, origin: sizeOfLight / 2);
+				Graphics2D.SetDrawColor(255, 255, 255, 255);
+			}
 		}
 	}
 	public virtual void RenderScore() {
 		ScoreNumber?.Render(Time, StyledTextShader);
 		ScoreLabel?.Render(Time, StyledTextShader);
+		RenderApIcon();
+	}
+
+	void RenderApIcon() {
+		if (!AllPerfect || !GameSettings.gp_apindicator.GetBool() || icon_ap == null || ScoreNumber == null)
+			return;
+
+		float textWidth = ScoreNumber.GetTextSize().X * ScoreNumber.StartScale.X;
+		Graphics2D.SetDrawColor(255, 255, 255, 255);
+		Graphics2D.SetTexture(icon_ap);
+		Graphics2D.DrawTexturedRectangle(new Vector2F(ScoreNumber.StartPosition.X + textWidth, -ScoreNumber.StartPosition.Y), new Vector2F(68, 66));
 	}
 	// allows setting up custom transforms in inheritors
 	public virtual void PreRenderCombo() {
@@ -1070,15 +1182,11 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		if (ShouldRenderCombo1()) renderOneCombo(combo1model, animations_1);
 		if (ShouldRenderCombo2()) renderOneCombo(combo2model, animations_2);
 	}
-	public float GetSizeForComboHit() {
-		float sizeT = (float)NMath.Remap(Time - LastComboUpdateTime, 0, 0.25, 0, 1, clampInput: true);
-		float size = (float)NMath.Remap(NMath.Ease.OutQuad(sizeT), 0, 1, 1.2, 1, clampInput: true);
-		return size;
-	}
+	public Vector2F GetComboTextScale() => ComboTextClips.Sample(ComboText, (float)Math.Max(0, Time - ComboTextStart));
 	public virtual void RenderComboForeground() {
 		ComboNumber?.SplitY = 1;
 		ComboNumber?.StartPosition = new(0, -180);
-		ComboNumber?.Scale = new(GetSizeForComboHit());
+		ComboNumber?.Scale = GetComboTextScale();
 		ComboNumber?.Render(Time, StyledTextShader);
 	}
 	void renderOneCombo(ModelInstance? model, AnimationHandler anims) {
@@ -1103,7 +1211,11 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 			MultiHitCombo?.Think(dt);
 			MultiHitTip?.Think(dt);
 			FeverTips?.Think(dt);
+			FullComboText?.Think((float)dt);
 		}
+
+		if (ComboText == MuseDash1ComboTextState.Out && Time - ComboTextStart >= ComboTextClips.OutLength)
+			ComboText = MuseDash1ComboTextState.None;
 
 		if (ScoreLabel != null && ScoreNumber != null) {
 			ScoreLabel.TopLeftAligned = ScoreNumber.TopLeftAligned = true;
@@ -1133,8 +1245,6 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		MultiHits = 0;
 	}
 
-	double LastComboUpdateTime = -2000000;
-
 	public void StartWarning() {
 		MultiHitTip?.Play();
 	}
@@ -1146,6 +1256,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	public static ComboGrade GetGrade(int combo) {
 		if (combo >= (int)ComboGrade.High)
 			return ComboGrade.High;
+		if (combo >= (int)ComboGrade.Middle)
+			return ComboGrade.Middle;
 		if (combo >= (int)ComboGrade.Low)
 			return ComboGrade.Low;
 		return ComboGrade.NotApplicable;
@@ -1154,9 +1266,17 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	public void UpdateCombo(int currentCombo) {
 		if (Combo == currentCombo) return;
 		Combo = currentCombo;
-		ComboNumber?.Text = $"{Combo}";
-		LastComboUpdateTime = Time;
 		var currentComboGrade = GetGrade(currentCombo);
+		if (currentComboGrade != ComboGrade.NotApplicable) {
+			ComboNumber?.Text = $"{Combo}";
+			ComboText = MuseDash1ComboTextState.In;
+			ComboTextGrade = currentComboGrade;
+			ComboTextStart = Time;
+		}
+		else if (ComboText == MuseDash1ComboTextState.In) {
+			ComboText = MuseDash1ComboTextState.Out;
+			ComboTextStart = Time;
+		}
 		if (currentComboGrade != ComboGrade)
 			UpdateComboGrade(currentComboGrade);
 	}
@@ -1172,6 +1292,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 			case ComboGrade.NotApplicable:
 				switch (lastComboGrade) {
 					case ComboGrade.Low:
+					case ComboGrade.Middle:
 						DeactivateCombo1();
 						break;
 					case ComboGrade.High:
@@ -1180,12 +1301,17 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 				}
 				break;
 			case ComboGrade.Low:
+			case ComboGrade.Middle:
 				switch (lastComboGrade) {
 					case ComboGrade.NotApplicable:
 						ActivateCombo1();
 						break;
+					case ComboGrade.Low:
+						HideCombo1();
+						ActivateCombo1();
+						break;
 					case ComboGrade.High:
-						DeactivateCombo2();
+						HideCombo2();
 						ActivateCombo1();
 						break;
 				}
@@ -1196,7 +1322,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 						ActivateCombo2();
 						break;
 					case ComboGrade.Low:
-						DeactivateCombo1();
+					case ComboGrade.Middle:
+						HideCombo1();
 						ActivateCombo2();
 						break;
 				}
@@ -1224,6 +1351,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		animations_2.ClearAllAnimation();
 		animations_2.SetAnimation(0, "end");
 	}
+	void HideCombo1() => animations_1.ClearAllAnimation();
+	void HideCombo2() => animations_2.ClearAllAnimation();
 	void ForceDeactivateCombo1() {
 		animations_1.ClearAllAnimation();
 		animations_1.SetAnimation(0, "end");
@@ -1254,9 +1383,114 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	public void UpdateHP(double hp, double maxHP) {
 		HP = hp;
 		MaxHP = maxHP;
+
+		float rate = maxHP > 0 ? (float)(hp / maxHP) : 0;
+		if (SnapHealth || Seeking) {
+			SnapHealth = false;
+			HpFillFrom = HpFillTo = HpTrailFrom = HpTrailTo = rate;
+			return;
+		}
+		if (rate == HpFillTo)
+			return;
+
+		if (rate < HpFillTo)
+			HpFillFrom = HpFillTo = rate;
+		else {
+			HpFillFrom = SampleHpFill();
+			HpFillTo = rate;
+			HpFillStart = Time;
+		}
+		HpTrailFrom = SampleHpTrail();
+		HpTrailTo = rate;
+		HpTrailStart = Time;
+	}
+
+	float SampleHpAdd() {
+		float time = (float)(Time - HpAddTime);
+		return time < 0 || time >= MuseDash1HudAnimations.HP_ADD_LENGTH ? 0 : MuseDash1HudAnimations.SampleHpAdd(time);
+	}
+
+	float SampleHpFill() {
+		float t = (float)((Time - HpFillStart) / MuseDash1HudAnimations.HP_FILL_LENGTH);
+		if (t < 0 || t >= 1)
+			return HpFillTo;
+		return HpFillFrom + (HpFillTo - HpFillFrom) * (1 - (1 - t) * (1 - t));
+	}
+
+	float SampleHpTrail() {
+		float t = (float)((Time - HpTrailStart - MuseDash1HudAnimations.HP_TRAIL_DELAY) / MuseDash1HudAnimations.HP_TRAIL_LENGTH);
+		if (t <= 0)
+			return HpTrailFrom;
+		if (t >= 1)
+			return HpTrailTo;
+		return HpTrailFrom + (HpTrailTo - HpTrailFrom) * MuseDash1HudAnimations.HpTrail.Evaluate(t);
+	}
+
+	void SampleBattlePanel(out float below, out float up, out float score) {
+		below = up = score = 0;
+		if (BattleOut) {
+			float time = (float)Stopwatch.GetElapsedTime(BattleOutStart).TotalSeconds;
+			below = MuseDash1HudAnimations.BattleOutBelow.Evaluate(time) - MuseDash1HudAnimations.BELOW_REST;
+			up = MuseDash1HudAnimations.BattleOutUp.Evaluate(time) - MuseDash1HudAnimations.UP_REST;
+			score = MuseDash1HudAnimations.BattleOutScore.Evaluate(time) - MuseDash1HudAnimations.SCORE_REST;
+		}
+		else if (BattleIntro) {
+			float time = (float)Stopwatch.GetElapsedTime(ReadyGoStart).TotalSeconds;
+			below = MuseDash1HudAnimations.BattleInBelow.Evaluate(time) - MuseDash1HudAnimations.BELOW_REST;
+			up = MuseDash1HudAnimations.BattleInUp.Evaluate(time) - MuseDash1HudAnimations.UP_REST;
+			score = MuseDash1HudAnimations.BattleInScore.Evaluate(time) - MuseDash1HudAnimations.SCORE_REST;
+		}
+	}
+
+	void RenderHurtFlash(float width, float height) {
+		float time = (float)(Time - HurtTime);
+		if (MissReaction == null || time < 0 || time >= MuseDash1HudAnimations.HURT_LENGTH)
+			return;
+
+		Graphics2D.SetTexture(MissReaction);
+		Graphics2D.SetDrawColor(154, 0, 0, (int)(MuseDash1HudAnimations.HURT_ALPHA * (1 - time / MuseDash1HudAnimations.HURT_LENGTH) * 255));
+		Graphics2D.DrawTexturedRectangle(new Vector2F(0, 0), new Vector2F(width, height));
+		Graphics2D.SetDrawColor(255, 255, 255, 255);
+	}
+
+	void RenderPauseButton(float width, float top, float resize) {
+		if (PauseButton != null) {
+			PauseButton.Position = new(width - 180 * resize, top);
+			PauseButton.Size = new(120 * resize, 120 * resize);
+		}
+		if (BtnPause == null)
+			return;
+
+		Graphics2D.SetTexture(BtnPause);
+		Graphics2D.SetDrawColor(255, 255, 255, (int)(MuseDash1HudAnimations.PAUSE_ALPHA * 255));
+		Graphics2D.DrawTexturedRectangle(new Vector2F(width - 150 * resize, top + 20 * resize), new Vector2F(60 * resize, 60 * resize));
+		Graphics2D.SetDrawColor(255, 255, 255, 255);
 	}
 
 	public void PlayFeverTips(MuseDash1FeverTipsClip clip) => FeverTips?.Play(clip);
+
+	public void PlayFullComboText() => FullComboText?.Play();
+
+	public void PlayHpAdd() {
+		if (!Seeking)
+			HpAddTime = Time;
+	}
+
+	public void PlayHurtFlash() {
+		if (!Seeking)
+			HurtTime = Time;
+	}
+
+	public void PlayReadyGo() {
+		ReadyGoStart = Stopwatch.GetTimestamp();
+		BattleIntro = true;
+		ReadyGo?.Play();
+	}
+
+	public void PlayResume321() {
+		Resume321Start = EngineCore.Level.Realtime;
+		Resume321?.Play();
+	}
 
 	public void UpdateInFever(double feverRemainingTime, double feverTotalTime) {
 		InFever = true;
@@ -1279,8 +1513,12 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	public void Reset() {
 		BackgroundItems.Clear();
 		ForegroundItems.Clear();
-		LastHitTime = -2000000;
-		LastComboUpdateTime = -2000000;
+		BattleIntro = false;
+		BattleOut = false;
+		ComboText = MuseDash1ComboTextState.None;
+		HpAddTime = -2000000;
+		HurtTime = -2000000;
+		SnapHealth = true;
 		ComboGrade = ComboGrade.NotApplicable;
 		Combo = 0;
 		FeverRemainingTime = 0;
@@ -1291,6 +1529,9 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		MultiHits = 0;
 		MultiHitCombo?.Hide();
 		FeverTips?.Reset();
+		FullComboText?.Stop();
+		ReadyGo?.Stop();
+		Resume321?.Stop();
 
 		ForceDeactivateCombo1();
 		ForceDeactivateCombo2();
@@ -1299,18 +1540,18 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 
 public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, RhythmGameLevel game) : MD1SceneUI(scene, game)
 {
-	protected TextImageRenderItem ComboLabel = null!;
+	const float COMBO_FONT_SCALE = 95f / 110f;
+	const float COMBO_LABEL_OFFSET = 96.6f;
+	const float COMBO_NUMBER_Y = 146;
+
+	protected ITexture? combo_high_gc;
+	protected ITexture? combo_normal_gc;
+
+	protected override MuseDash1ComboTextClips ComboTextClips => MuseDash1HudAnimations.ComboTextGrooveCoaster;
 
 	public override void SetupComboNumber() {
 		base.SetupComboNumber();
 		ComboNumber?.Font = "Infinity Font";
-		ComboLabel = new(0, 0, new(0, 0), 0, new(1, 1), "COMBO", "Snaps Taste", new(165, 254, 254), null);
-	}
-
-	protected override void SetComboColors(Color borderColor, Color color) {
-		base.SetComboColors(borderColor, color);
-		ComboLabel.borderColor = borderColor;
-		ComboLabel.StartColor = color;
 	}
 
 	public override void SetupScoreNumber() {
@@ -1326,9 +1567,16 @@ public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, RhythmGameLe
 		ScorePass = LoadTextureByName("ScorePassGC");
 	}
 
-	public override void PreRenderCombo() {
-		float value = GetSizeForComboHit();
-		Rlgl.Scalef(value, value, 1);
+	public override void LoadBattleTextAssets() {
+		FullComboText = MuseDash1BattleTexts.FullComboGrooveCoaster();
+		ReadyGo = MuseDash1BattleTexts.ReadyGoGrooveCoaster();
+		Resume321 = MuseDash1BattleTexts.Resume321();
+	}
+
+	public override void LoadComboModels() {
+		base.LoadComboModels();
+		combo_high_gc = LoadTextureByName("combo_high_gc");
+		combo_normal_gc = LoadTextureByName("combo_normal_gc");
 	}
 
 	public override void RenderComboBackground() {
@@ -1337,15 +1585,18 @@ public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, RhythmGameLe
 
 	public override void RenderComboForeground() {
 		if (ComboNumber == null) return;
-		if (ComboLabel == null) return;
-		float dist = 180;
+		Vector2F scale = GetComboTextScale();
 		ComboNumber.SplitY = 1;
-		ComboNumber.StartPosition = new(0, -dist);
+		ComboNumber.StartPosition = new(0, -COMBO_NUMBER_Y);
+		ComboNumber.Scale = scale * COMBO_FONT_SCALE;
 		ComboNumber.Render(Time, StyledTextShader);
 
-		ComboLabel.SplitY = 1;
-		ComboLabel.StartPosition = new(0, dist);
-		ComboLabel.Render(Time, StyledTextShader);
+		var label = ComboTextGrade == ComboGrade.High ? combo_high_gc : combo_normal_gc;
+		if (label == null) return;
+		Vector2F size = new(512 * scale.X, 140 * scale.Y);
+		Graphics2D.SetDrawColor(255, 255, 255, 255);
+		Graphics2D.SetTexture(label);
+		Graphics2D.DrawTexturedRectangle(new Vector2F(-size.W / 2, COMBO_NUMBER_Y + COMBO_LABEL_OFFSET * scale.Y - size.H / 2), size);
 	}
 }
 
