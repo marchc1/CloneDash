@@ -11,8 +11,9 @@ public static partial class MuseDash1Compatibility
 		if (!SteamApps.WhereIsAppInstalled(MUSEDASH_APPID).IsOK(out string? installdir, out AppStatus err))
 			return err;
 
-		WhereIsMuseDashInstalled = Path.Combine(installdir, "MuseDash_Mac_Steam.app", "Contents", "Resources");
-		WhereIsMuseDashDataFolder = Path.Combine(installdir, "Data");
+			WhereIsMuseDashInstalled = Path.Combine(musedash_installdir, "MuseDash_Mac_Steam.app", "Contents", "Resources");
+			// Unity's macOS player stores Data inside the application bundle.
+			WhereIsMuseDashDataFolder = Path.Combine(WhereIsMuseDashInstalled, "Data");
 
 		// If installed, load noteinfo.json for BMS references
 		// The bundle is named globalconfigs_assets_notedatamananger
@@ -20,9 +21,9 @@ public static partial class MuseDash1Compatibility
 		string platform = "StandaloneOSX";
 		StandalonePlatform = platform;
 
-		string streamingassets = Path.Combine(installdir, "Data", "StreamingAssets", "aa", platform); // TODO: support multiple platforms
-		if (!Directory.Exists(streamingassets))
-			return AppStatus.CriticalPathNotFound;
+			string musedash_streamingassets = Path.Combine(WhereIsMuseDashDataFolder, "StreamingAssets", "aa", platform);
+			if (!Directory.Exists(musedash_streamingassets))
+				return MD1CompatLayerInitResult.StreamingAssetsNotFound;
 
 		BuildTarget = streamingassets;
 		StreamingFiles = Directory.GetFiles(streamingassets);
