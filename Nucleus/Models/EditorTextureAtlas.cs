@@ -157,7 +157,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 	public uint StepSize => 1;
 
 	public EditorTextureAtlas() {
-		page = new EditorAtlasPage("default");
+		page = new EditorAtlasPage(PAGE_NAME);
 	}
 
 	public void Invalidate() => valid = false;
@@ -318,20 +318,7 @@ public class EditorTextureAtlas : IEditorTextureAtlas, IRuntimeTextureAtlas
 		return toRemove.Count > 0;
 	}
 
-	public bool Serialize(StringWriter sw) {
-		Validate();
-		sw.WriteLine("TextureAtlasVersion1");
-		for (int i = 0; i < page.Regions.Count; i++) {
-			var region = page.Regions[i];
-			region.GetBounds(out int x, out int y, out int w, out int h);
-			sw.WriteLine(region.GetName().ToString());
-			sw.WriteLine($"\tX: {x}");
-			sw.WriteLine($"\tY: {y}");
-			sw.WriteLine($"\tW: {w}");
-			sw.WriteLine($"\tH: {h}");
-		}
-		return true;
-	}
+	public const string PAGE_NAME = "default";
 
 	public ITextureAtlasEdit? Edit() => null;
 

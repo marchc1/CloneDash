@@ -67,6 +67,11 @@ namespace Nucleus.ModelEditor
 		}
 
 		public override Vector2F GetWorldPosition() => WorldTransform.Translation;
+		public override void SetWorldPosition(Vector2F pos, bool additive = false) {
+			var bone = Slot.Bone.WorldTransform;
+			// additive moves by -pos
+			this.pos = bone.WorldToLocal(additive ? bone.LocalToWorld(this.pos) - pos : pos);
+		}
 		public override float GetWorldRotation() => WorldTransform.LocalToWorldRotation(0) + GetRotation();
 		public override float GetScreenRotation() {
 			var wp = WorldTransform.Translation;
@@ -272,6 +277,7 @@ namespace Nucleus.ModelEditor
 		public bool Sequence { get; set; }
 
 		public override void BuildProperties(Panel props, PreUIDeterminations determinations) {
+			base.BuildProperties(props, determinations);
 			var imagePathRow = PropertiesPanel.NewRow(props, "Image", "models/images.png");
 			var editorRow = PropertiesPanel.NewRow(props, "Editor", "models/images.png");
 
@@ -283,8 +289,7 @@ namespace Nucleus.ModelEditor
 			};
 			var boneScale = PropertiesPanel.AddLabeledCheckbox(optionsRow, "Sequence", Sequence);
 
-			var colorRow = PropertiesPanel.NewRow(props, "Color", "models/colorwheel.png");
-
+			AddColorRow(props, () => Color, v => Color = v);
 		}
 	}
 }

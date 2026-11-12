@@ -1,13 +1,10 @@
-﻿namespace CloneDash.Common.Scenes;
+using CloneDash.Common.Compatibility;
+
+namespace CloneDash.Common.Scenes;
 
 /// <summary>
-/// Provides a way to get <see cref="ISceneDescriptor"/>'s by name and a total list of available <see cref="ISceneDescriptor"/> names.
+/// Provides <see cref="ISceneDescriptor"/>'s to <see cref="SceneMod"/>.
 /// <br/>
 /// By implementing this interface, it will auto-register with Clone Dash.
 /// </summary>
-public interface ISceneProvider
-{
-	public ISceneDescriptor? FindByName(ReadOnlySpan<char> name);
-	public int Priority { get; }
-	public IEnumerable<string> GetAvailable();
-}
+public interface ISceneProvider : ICloneDashModProvider<ISceneDescriptor>;

@@ -6,7 +6,7 @@ namespace CloneDash.Game.Entities
 {
 	public class Raider : DashEnemy
 	{
-		public Raider() : base(MuseDash1EntityType.Raider) {
+		public Raider(DashEnemyComponents components) : base(MuseDash1EntityType.Raider, components) {
 			Interactivity = EntityInteractivity.Hit;
 		}
 
@@ -15,7 +15,7 @@ namespace CloneDash.Game.Entities
 		}
 
 
-		protected override void OnHit(PathwaySide side, double distanceToHit) {
+		protected override void OnHit(PathwayId pathway, double distanceToHit) {
 			Kill();
 			GetStats().Hit(this, distanceToHit);
 		}
@@ -23,19 +23,19 @@ namespace CloneDash.Game.Entities
 		protected override void OnMiss() {
 			PunishPlayer();
 			GetStats().Miss(this);
-			if (Level.As<MuseDash1Game>().Pathway == this.Pathway) {
+			if (Components.Character.IsCharacterOn(Pathway)) {
 				DamagePlayer();
 			}
 		}
 
 		public override void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
 			if (Dead) {
-				GetGameLevel().SetEnemyKilledPosition(this);
+				Components.Scenes.SetEnemyKilledPosition(this);
 				var anim = WasHitPerfect ? visuals.PerfectHitAnimation : visuals.GreatHitAnimation;
 				anim?.Apply(visuals.Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
-			GetGameLevel().SetEnemyPosition(this);
+			Components.Scenes.SetEnemyPosition(this);
 			base.DetermineAnimationPlayback(visuals);
 		}
 

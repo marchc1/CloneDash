@@ -1071,12 +1071,12 @@ namespace AssetStudio
         public float m_SampleRate;
         public int m_WrapMode;
         public AABB m_Bounds;
-        public uint m_MuscleClipSize;
-        public ClipMuscleConstant m_MuscleClip;
-        public AnimationClipBindingConstant m_ClipBindingConstant;
-        public List<AnimationEvent> m_Events;
+        public uint m_MuscleClipSize { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
+        public ClipMuscleConstant m_MuscleClip { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
+        public AnimationClipBindingConstant m_ClipBindingConstant { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
+        public List<AnimationEvent> m_Events { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
         public byte[] m_AnimData;
-        public StreamingInfo m_StreamingInfo;
+        public StreamingInfo m_StreamingInfo { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
 
         public AnimationClip() { }
 
@@ -1216,6 +1216,14 @@ namespace AssetStudio
             {
                 m_Bounds = new AABB(reader);
             }
+            if (version.IsTuanjie)
+                ReadMuscleClip(reader);
+            else
+                ReadLater(reader, ReadMuscleClip);
+        }
+
+        private void ReadMuscleClip(ObjectReader reader)
+        {
             if (version >= 4)//4.0 and up
             {
                 if (version.IsTuanjie && version >= (2022, 3, 61)) //2022.3.61t1(1.6.0) and up

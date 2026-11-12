@@ -23,11 +23,12 @@ namespace AssetStudio
 		public uint m_SortingLayerID;
 		public int m_SortingOrder;
 		public int m_MaskInteraction;
+		public bool m_Enabled = true;
 
 		protected Renderer(ObjectReader reader) : base(reader) {
 			if (version < 5) //5.0 down
 			{
-				var m_Enabled = reader.ReadBoolean();
+				m_Enabled = reader.ReadBoolean();
 				var m_CastShadows = reader.ReadBoolean();
 				var m_ReceiveShadows = reader.ReadBoolean();
 				var m_LightmapIndex = reader.ReadByte();
@@ -36,7 +37,7 @@ namespace AssetStudio
 			{
 				if (version >= (5, 4)) //5.4 and up
 				{
-					var m_Enabled = reader.ReadBoolean();
+					m_Enabled = reader.ReadBoolean();
 					var m_CastShadows = reader.ReadByte();
 					var m_ReceiveShadows = reader.ReadByte();
 					if (version >= (2017, 2)) //2017.2 and up
@@ -90,7 +91,7 @@ namespace AssetStudio
 					}
 				}
 				else {
-					var m_Enabled = reader.ReadBoolean();
+					m_Enabled = reader.ReadBoolean();
 					reader.AlignStream();
 					var m_CastShadows = reader.ReadByte();
 					var m_ReceiveShadows = reader.ReadBoolean();

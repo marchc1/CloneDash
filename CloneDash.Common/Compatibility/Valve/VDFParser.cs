@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace CloneDash.Compatibility.Valve;
+namespace CloneDash.Common.Compatibility.Valve;
 
 public class ValveDataFile
 {

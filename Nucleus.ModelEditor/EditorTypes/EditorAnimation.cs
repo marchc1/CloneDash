@@ -77,6 +77,7 @@ public struct TimelineKeyframePairs(EditorTimeline timeline, IFCurve[] curves, I
 	/// </summary>
 	/// <param name="time"></param>
 	public void SetTime(double time) {
+		ModelEditor.Active?.Actions.TrackAnimation(ModelEditor.Active.File.ActiveAnimation);
 		time = Math.Max(0, time);
 		for (int i = 0; i < curves.Length; i++) {
 			curves[i].SetKeyframeTime(keyframes[i], time);
@@ -85,12 +86,14 @@ public struct TimelineKeyframePairs(EditorTimeline timeline, IFCurve[] curves, I
 	}
 
 	public void SetValue(object? value) {
+		ModelEditor.Active?.Actions.TrackAnimation(ModelEditor.Active.File.ActiveAnimation);
 		for (int i = 0; i < keyframes.Length; i++) {
 			keyframes[i].SetValue(value);
 		}
 	}
 
 	public void SetValue<T>(T? value) {
+		ModelEditor.Active?.Actions.TrackAnimation(ModelEditor.Active.File.ActiveAnimation);
 		for (int i = 0; i < keyframes.Length; i++) {
 			keyframes[i].SetValue(value);
 		}
@@ -117,6 +120,45 @@ public struct TimelineKeyframePairs(EditorTimeline timeline, IFCurve[] curves, I
 
 public abstract class EditorTimeline
 {
+	private static readonly Dictionary<Type, Func<EditorTimeline, IEnumerable<IFCurve>>> curveGetters = [];
+
+	public IEnumerable<IFCurve> GetCurves() {
+		var type = GetType();
+		if (!curveGetters.TryGetValue(type, out var getter)) {
+			var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+			// skip auto-property backing fields
+			var fields = new List<FieldInfo>();
+			foreach (var field in type.GetFields(flags)) {
+				if (typeof(IFCurve).IsAssignableFrom(field.FieldType) && !field.IsDefined(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute)))
+					fields.Add(field);
+			}
+			var props = new List<PropertyInfo>();
+			foreach (var property in type.GetProperties(flags)) {
+				if (typeof(IFCurve).IsAssignableFrom(property.PropertyType) && property.GetIndexParameters().Length == 0)
+					props.Add(property);
+			}
+			getter = timeline => {
+				var curves = new List<IFCurve>();
+				foreach (var field in fields) {
+					if (field.GetValue(timeline) is IFCurve curve)
+						curves.Add(curve);
+				}
+				foreach (var property in props) {
+					if (property.GetValue(timeline) is IFCurve curve)
+						curves.Add(curve);
+				}
+				return curves;
+			};
+			curveGetters[type] = getter;
+		}
+		return getter(this);
+	}
+
+	/// <summary>
+	/// The curves keyed together, the first one decides the key times
+	/// </summary>
+	public virtual IFCurve[] KeyCurves => [.. GetCurves()];
+
 	public static readonly Color TIMELINE_COLOR_ROTATION = new(50, 255, 50);
 	public static readonly Color TIMELINE_COLOR_TRANSLATE = new(50, 50, 255);
 	public static readonly Color TIMELINE_COLOR_SCALE = new(255, 50, 50);
@@ -157,6 +199,7 @@ public abstract class CurveTimeline : EditorTimeline;
 public abstract class CurveTimeline1 : CurveTimeline, IKeyframeQueryable<float>
 {
 	public FCurve<float> Curve = new();
+	public override IFCurve[] KeyCurves => [Curve];
 
 	public bool KeyframedAtTime(double time) => Curve.TryFindKeyframe(time, out var _);
 	public bool TryGetKeyframedValueAtTime(double time, out float value) {
@@ -188,6 +231,7 @@ public abstract class CurveTimeline1 : CurveTimeline, IKeyframeQueryable<float>
 public abstract class GenericStepTimeline<T> : CurveTimeline, IKeyframeQueryable<T>
 {
 	public FCurve<T> Curve = new();
+	public override IFCurve[] KeyCurves => [Curve];
 	public bool KeyframedAtTime(double time) => Curve.TryFindKeyframe(time, out var _);
 	public bool TryGetKeyframedValueAtTime(double time, out T? value) {
 		var found = Curve.TryFindKeyframe(time, out var key);
@@ -219,6 +263,7 @@ public abstract class CurveTimeline2 : CurveTimeline, IKeyframeQueryable<Vector2
 {
 	public FCurve<float> CurveX = new();
 	public FCurve<float> CurveY = new();
+	public override IFCurve[] KeyCurves => [CurveX, CurveY];
 
 	public bool KeyframedAtTime(double time) => CurveX.TryFindKeyframe(time, out var _);
 	public bool TryGetKeyframedValueAtTime(double time, out Vector2F value) {
@@ -243,7 +288,7 @@ public abstract class CurveTimeline2 : CurveTimeline, IKeyframeQueryable<Vector2
 
 	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
 		for (int i = 0; i < CurveX.Count; i++)
-			yield return new(this, [CurveX, CurveY], [CurveX[i], CurveY[i]]);
+			yield return new(this, [CurveX, CurveY], [CurveX.KeyAt(i), CurveY.KeyAt(i)]);
 	}
 	public override IEnumerable<double> GetKeyframeTimes() {
 		foreach (var keyframe in CurveX.GetKeyframes())
@@ -470,7 +515,171 @@ public class SlotColorTimeline : CurveTimeline, ISlotProperty<Color>, IKeyframeQ
 
 	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
 		for (int i = 0; i < CurveR.Count; i++)
-			yield return new(this, [CurveR, CurveG, CurveB, CurveA], [CurveR[i], CurveG[i], CurveB[i], CurveA[i]]);
+			yield return new(this, [CurveR, CurveG, CurveB, CurveA], [CurveR.KeyAt(i), CurveG.KeyAt(i), CurveB.KeyAt(i), CurveA.KeyAt(i)]);
+	}
+	public override IEnumerable<double> GetKeyframeTimes() {
+		foreach (var keyframe in CurveR.GetKeyframes())
+			yield return keyframe.Time;
+	}
+}
+
+/// <summary>
+/// Slot color without alpha, for when color and alpha are keyed apart
+/// </summary>
+public class SlotColorRGBTimeline : CurveTimeline, ISlotProperty<Color>, IKeyframeQueryable<Color>
+{
+	public FCurve<float> CurveR { get; set; } = new();
+	public FCurve<float> CurveG { get; set; } = new();
+	public FCurve<float> CurveB { get; set; } = new();
+	public override Color Color => TIMELINE_COLOR_SLOT_COLOR;
+	public EditorSlot Slot { get; set; }
+
+	private static int Channel(float value) => (int)Math.Clamp(value * 255f, 0, 255);
+
+	public override void Apply(EditorModel model, double time) {
+		Slot.Color = new(Channel(CurveR.DetermineValueAtTime(time)), Channel(CurveG.DetermineValueAtTime(time)), Channel(CurveB.DetermineValueAtTime(time)), Slot.Color.A);
+	}
+	public Color GetSetupValue() => Slot.SetupColor;
+	public Color GetValue() => Slot.Color;
+	public bool Compare(Color a, Color b) => a.R == b.R && a.G == b.G && a.B == b.B;
+	public bool KeyframedAtTime(double time) => CurveR.TryFindKeyframe(time, out var _);
+
+	public bool TryGetKeyframedValueAtTime(double time, out Color value) {
+		value = Color.Blank;
+		if (!CurveR.TryFindKeyframe(time, out var red) || !CurveG.TryFindKeyframe(time, out var green) || !CurveB.TryFindKeyframe(time, out var blue))
+			return false;
+		value = new(Channel(red?.Value ?? 0), Channel(green?.Value ?? 0), Channel(blue?.Value ?? 0), 255);
+		return true;
+	}
+
+	public void InsertKeyframe(double time, Color value) {
+		CurveR.AddKeyframe(new(time, value.R / 255f));
+		CurveG.AddKeyframe(new(time, value.G / 255f));
+		CurveB.AddKeyframe(new(time, value.B / 255f));
+	}
+
+	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<SlotColorRGBTimeline, Color>(this, time);
+	public override double CalculateMaxTime() => CurveR.Last?.Time ?? 0;
+
+	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
+		for (int i = 0; i < CurveR.Count; i++)
+			yield return new(this, [CurveR, CurveG, CurveB], [CurveR.KeyAt(i), CurveG.KeyAt(i), CurveB.KeyAt(i)]);
+	}
+	public override IEnumerable<double> GetKeyframeTimes() {
+		foreach (var keyframe in CurveR.GetKeyframes())
+			yield return keyframe.Time;
+	}
+}
+
+/// <summary>
+/// Slot alpha on its own, for when color and alpha are keyed apart
+/// </summary>
+public class SlotColorAlphaTimeline : CurveTimeline, ISlotProperty<Color>, IKeyframeQueryable<Color>
+{
+	public FCurve<float> CurveA { get; set; } = new();
+	public override Color Color => TIMELINE_COLOR_SLOT_COLOR;
+	public EditorSlot Slot { get; set; }
+
+	public override void Apply(EditorModel model, double time) {
+		var color = Slot.Color;
+		Slot.Color = new(color.R, color.G, color.B, (int)Math.Clamp(CurveA.DetermineValueAtTime(time) * 255f, 0, 255));
+	}
+	public Color GetSetupValue() => Slot.SetupColor;
+	public Color GetValue() => Slot.Color;
+	public bool Compare(Color a, Color b) => a.A == b.A;
+	public bool KeyframedAtTime(double time) => CurveA.TryFindKeyframe(time, out var _);
+
+	public bool TryGetKeyframedValueAtTime(double time, out Color value) {
+		value = Color.Blank;
+		if (!CurveA.TryFindKeyframe(time, out var alpha)) return false;
+		value = new(255, 255, 255, (int)Math.Clamp((alpha?.Value ?? 0) * 255f, 0, 255));
+		return true;
+	}
+
+	public void InsertKeyframe(double time, Color value) => CurveA.AddKeyframe(new(time, value.A / 255f));
+
+	public override KeyframeState KeyframedAt(double time) => KeyframedAtCalc<SlotColorAlphaTimeline, Color>(this, time);
+	public override double CalculateMaxTime() => CurveA.Last?.Time ?? 0;
+
+	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
+		foreach (var keyframe in CurveA.GetKeyframes())
+			yield return new(this, [CurveA], [keyframe]);
+	}
+	public override IEnumerable<double> GetKeyframeTimes() {
+		foreach (var keyframe in CurveA.GetKeyframes())
+			yield return keyframe.Time;
+	}
+}
+
+/// <summary>
+/// Slot color plus the tint black (dark) color, keyed together
+/// </summary>
+public class SlotTwoColorTimeline : CurveTimeline, ISlotProperty<Color>, IKeyframeQueryable<Color>
+{
+	public FCurve<float> CurveR { get; set; } = new();
+	public FCurve<float> CurveG { get; set; } = new();
+	public FCurve<float> CurveB { get; set; } = new();
+	public FCurve<float> CurveA { get; set; } = new();
+	public FCurve<float> CurveR2 { get; set; } = new();
+	public FCurve<float> CurveG2 { get; set; } = new();
+	public FCurve<float> CurveB2 { get; set; } = new();
+	public override Color Color => TIMELINE_COLOR_SLOT_COLOR;
+	public EditorSlot Slot { get; set; }
+
+	private static int Channel(float value) => (int)Math.Clamp(value * 255f, 0, 255);
+
+	public override void Apply(EditorModel model, double time) {
+		Slot.Color = new(Channel(CurveR.DetermineValueAtTime(time)), Channel(CurveG.DetermineValueAtTime(time)),
+			Channel(CurveB.DetermineValueAtTime(time)), Channel(CurveA.DetermineValueAtTime(time)));
+		Slot.DarkColor = new(Channel(CurveR2.DetermineValueAtTime(time)), Channel(CurveG2.DetermineValueAtTime(time)), Channel(CurveB2.DetermineValueAtTime(time)), 255);
+	}
+	public Color GetSetupValue() => Slot.SetupColor;
+	public Color GetValue() => Slot.Color;
+	public bool Compare(Color a, Color b) => a.R == b.R && a.G == b.G && a.B == b.B && a.A == b.A;
+	public bool KeyframedAtTime(double time) => CurveR.TryFindKeyframe(time, out var _);
+
+	public bool TryGetKeyframedValueAtTime(double time, out Color value) {
+		value = Color.Blank;
+		if (!CurveR.TryFindKeyframe(time, out var red) || !CurveG.TryFindKeyframe(time, out var green) || !CurveB.TryFindKeyframe(time, out var blue) || !CurveA.TryFindKeyframe(time, out var alpha))
+			return false;
+		value = new(Channel(red?.Value ?? 0), Channel(green?.Value ?? 0), Channel(blue?.Value ?? 0), Channel(alpha?.Value ?? 0));
+		return true;
+	}
+
+	private bool TryGetDarkAtTime(double time, out Color value) {
+		value = Color.Black;
+		if (!CurveR2.TryFindKeyframe(time, out var red) || !CurveG2.TryFindKeyframe(time, out var green) || !CurveB2.TryFindKeyframe(time, out var blue))
+			return false;
+		value = new(Channel(red?.Value ?? 0), Channel(green?.Value ?? 0), Channel(blue?.Value ?? 0), 255);
+		return true;
+	}
+
+	/// <summary>
+	/// Takes the dark half from the slot
+	/// </summary>
+	public void InsertKeyframe(double time, Color value) {
+		var dark = Slot.DarkColor;
+		CurveR.AddKeyframe(new(time, value.R / 255f));
+		CurveG.AddKeyframe(new(time, value.G / 255f));
+		CurveB.AddKeyframe(new(time, value.B / 255f));
+		CurveA.AddKeyframe(new(time, value.A / 255f));
+		CurveR2.AddKeyframe(new(time, dark.R / 255f));
+		CurveG2.AddKeyframe(new(time, dark.G / 255f));
+		CurveB2.AddKeyframe(new(time, dark.B / 255f));
+	}
+
+	public override KeyframeState KeyframedAt(double time) {
+		if (!TryGetKeyframedValueAtTime(time, out var light) || !TryGetDarkAtTime(time, out var dark))
+			return KeyframeState.NotKeyframed;
+		var now = Slot.DarkColor;
+		return Compare(light, GetValue()) && dark.R == now.R && dark.G == now.G && dark.B == now.B ? KeyframeState.Keyframed : KeyframeState.PendingKeyframe;
+	}
+
+	public override double CalculateMaxTime() => CurveR.Last?.Time ?? 0;
+
+	public override IEnumerable<TimelineKeyframePairs> GetKeyframes() {
+		for (int i = 0; i < CurveR.Count; i++)
+			yield return new(this, [CurveR, CurveG, CurveB, CurveA, CurveR2, CurveG2, CurveB2], [CurveR.KeyAt(i), CurveG.KeyAt(i), CurveB.KeyAt(i), CurveA.KeyAt(i), CurveR2.KeyAt(i), CurveG2.KeyAt(i), CurveB2.KeyAt(i)]);
 	}
 	public override IEnumerable<double> GetKeyframeTimes() {
 		foreach (var keyframe in CurveR.GetKeyframes())
@@ -517,6 +726,11 @@ public class EditorAnimation : IEditorType, IModel4Nameable
 
 		return hs.Contains(bone);
 	}
+	/// <summary>
+	/// Slots whose color and alpha are keyed apart in this animation
+	/// </summary>
+	public HashSet<EditorSlot> SeparatedColors = [];
+
 	public void SetDoesBoneHaveSeparatedProperty(EditorBone bone, KeyframeProperty property, bool state) {
 		if (!SeparatedProperties.TryGetValue(property, out var hs)) {
 			hs = [];
@@ -597,7 +811,13 @@ public class EditorAnimation : IEditorType, IModel4Nameable
 			},
 			EditorSlot slot => property switch {
 				KeyframeProperty.Slot_Attachment => GetTimeline<ActiveAttachmentTimeline>(slot, createIfMissing),
-				KeyframeProperty.Slot_Color => GetTimeline<SlotColorTimeline>(slot, createIfMissing),
+				KeyframeProperty.Slot_Color => arrayIndex switch {
+					0 => GetTimeline<SlotColorRGBTimeline>(slot, createIfMissing),
+					1 => GetTimeline<SlotColorAlphaTimeline>(slot, createIfMissing),
+					// Tint black slots key the dark color with the color
+					_ when slot.TintBlack => GetTimeline<SlotTwoColorTimeline>(slot, createIfMissing),
+					_ => GetTimeline<SlotColorTimeline>(slot, createIfMissing),
+				},
 				_ => throw new Exception("Missing property to search.")
 			},
 			_ => new(null, false)
@@ -637,7 +857,12 @@ public class EditorAnimation : IEditorType, IModel4Nameable
 
 	public virtual bool CanRename() => true;
 	public virtual bool CanDelete() => true;
-	public EditorResult Rename(string newName) => ModelEditor.Active.File.RenameAnimation(Model, this, newName);
+	public EditorResult Remove() => ModelEditor.Active.File.RemoveAnimation(Model, this);
+	// a plain name means the same folder
+	public EditorResult Rename(string newName) => ModelEditor.Active.File.RenameAnimation(Model, this, FullName(newName));
+	public bool IsNameTaken(string name) => Model.Animations.Any(x => x != this && x.Name == FullName(name));
+	private string FullName(string newName)
+		=> newName.Contains('/') ? newName : AnimationFolder.Join(AnimationFolder.Parent(Name), newName);
 	public virtual void Render() { }
 	public virtual void RenderOverlay() { }
 

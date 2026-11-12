@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Nucleus.Common.Engine;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Nucleus.Common;
@@ -104,7 +105,7 @@ public static class ReflectionUtils
 	}
 
 	public static bool IsOkAssembly(Assembly assembly) {
-		return true;
+		return assembly.IsDefined(typeof(NucleusAssemblyAttribute));
 	}
 
 	public static bool TryExtractMethodDelegate<T>(this Type type, object? instance, Func<MethodInfo, bool> preFilter, [NotNullWhen(true)] out T? asDelegate) where T : Delegate {

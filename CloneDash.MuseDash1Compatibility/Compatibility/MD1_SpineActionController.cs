@@ -1,4 +1,5 @@
-﻿using CloneDash.Compatibility.Unity;
+﻿using CloneDash.Common.Game;
+using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 using Nucleus;
 using Nucleus.Common.Graphics;
@@ -72,7 +73,7 @@ public class MD_DoNothing
 public class MD_AttackToNormalRun : MD_DoNothing
 {
 	public override void Do(DoNothingCtx ctx) {
-		if (EngineCore.Level is not MuseDash1Game dashLvl)
+		if (EngineCore.Level is not RhythmGameLevel dashLvl)
 			return;
 
 		ctx.Controller.PlaySkeletonAction(new(ActionKeys.RUN), true);
@@ -82,7 +83,7 @@ public class MD_AttackToNormalRun : MD_DoNothing
 public class MD_OnJumpEnd : MD_DoNothing
 {
 	public override void Do(DoNothingCtx ctx) {
-		if (EngineCore.Level is not MuseDash1Game dashLvl)
+		if (EngineCore.Level is not RhythmGameLevel dashLvl)
 			return;
 
 		ctx.Controller.PlaySkeletonAction(new(ActionKeys.RUN), true);
@@ -131,10 +132,8 @@ public class MD1_SpineActionController(MD1_SpineActionControllerData data, Anima
 			var randEv = action.ActionEventIdx[randIdx];
 
 			var entry = isOverride ? Animation.SetAnimation(0, randAnim, action.IsEndLoop) : Animation.AddAnimation(0, randAnim, action.IsEndLoop);
-			if (entry != null && MD_DoNothing.TryGetValue(randEv, out MD_DoNothing? nothing)) {
+			if (entry != null && MD_DoNothing.TryGetValue(randEv, out MD_DoNothing? nothing))
 				entry.OnPlaybackEnd += (e) => nothing?.Do(new(e, this));
-				return;
-			}
 
 			if (entry != null && del != null)
 				entry.OnPlaybackEnd += _ => del(action);

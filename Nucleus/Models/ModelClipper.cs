@@ -66,8 +66,8 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 	private SlotType? _endAt;
 	private ClipAttachmentType? _workingAttachment;
 	private int _verticesLength;
-	private readonly Shape _shape = new Shape();
-	private readonly List<Triangle> _triangles = [];
+	private readonly List<Vector2F> _points = [];
+	private readonly List<int> _triangles = [];
 
 	private Vector2F[]? _cachedVertices;
 	private int _cachedVerticesLength;
@@ -106,10 +106,17 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 			_clipPolygon.AsSpan(0, _verticesLength).SequenceEqual(_cachedVertices.AsSpan(0, _verticesLength));
 
 		if (!isCached) {
-			BuildNonDegeneratePolygon(_clipPolygon, _verticesLength, _shape.Points);
+			BuildNonDegeneratePolygon(_clipPolygon, _verticesLength, _points);
 
 			_triangles.Clear();
-			_shape.Triangulate(_triangles);
+			if (_points.Count > 0) {
+				var triangulator = Triangulator.Shared;
+				triangulator.Clear();
+				foreach (var point in _points)
+					triangulator.AddPoint(point.X, point.Y);
+				triangulator.AddLoop(0, _points.Count);
+				triangulator.Triangulate(_triangles);
+			}
 
 			// Update the cache
 			if (_cachedVertices == null || _cachedVertices.Length < _verticesLength) {
@@ -133,17 +140,17 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 		Rlgl.Begin(DrawMode.TRIANGLES);
 		Rlgl.Color4ub(255, 255, 255, 255);
 
-		foreach (Triangle triangle in _triangles) {
-			TriPoint a = triangle.Points[0], b = triangle.Points[1], c = triangle.Points[2];
+		for (int i = 0; i < _triangles.Count; i += 3) {
+			Vector2F a = _points[_triangles[i]], b = _points[_triangles[i + 1]], c = _points[_triangles[i + 2]];
 			if (FlipY) {
-				Rlgl.Vertex2f((float)a.X, -(float)a.Y);
-				Rlgl.Vertex2f((float)b.X, -(float)b.Y);
-				Rlgl.Vertex2f((float)c.X, -(float)c.Y);
+				Rlgl.Vertex2f(a.X, -a.Y);
+				Rlgl.Vertex2f(b.X, -b.Y);
+				Rlgl.Vertex2f(c.X, -c.Y);
 			}
 			else {
-				Rlgl.Vertex2f((float)a.X, (float)a.Y);
-				Rlgl.Vertex2f((float)b.X, (float)b.Y);
-				Rlgl.Vertex2f((float)c.X, (float)c.Y);
+				Rlgl.Vertex2f(a.X, a.Y);
+				Rlgl.Vertex2f(b.X, b.Y);
+				Rlgl.Vertex2f(c.X, c.Y);
 			}
 		}
 
@@ -155,7 +162,7 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 	private const double DuplicateEpsilon = 1e-4;
 	private const double CollinearEpsilon = 1e-3;
 
-	private static void BuildNonDegeneratePolygon(Vector2F[] source, int length, List<TriPoint> into) {
+	private static void BuildNonDegeneratePolygon(Vector2F[] source, int length, List<Vector2F> into) {
 		into.Clear();
 
 		Span<Vector2F> pts = length <= 256 ? stackalloc Vector2F[length] : new Vector2F[length];
@@ -184,7 +191,7 @@ public abstract class ModelClipper<ModelType, BoneType, SlotType, ClipAttachment
 			if (edgeLen > 0 && area2 <= CollinearEpsilon * edgeLen)
 				continue;
 
-			into.Add(new TriPoint(cur.X, cur.Y));
+			into.Add(cur);
 		}
 
 		if (into.Count < 3)

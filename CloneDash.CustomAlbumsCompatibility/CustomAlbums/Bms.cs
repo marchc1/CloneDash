@@ -301,8 +301,23 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			["3F"] = BmsId.BossBullet2LaneShift
 		};
 
+		public readonly struct Note
+		{
+			public readonly float Time;
+			public readonly string Value;
+			public readonly string Tone;
+			public readonly long SortKey;
+
+			public Note(float time, string value, string tone) {
+				Time = time;
+				Value = value;
+				Tone = tone;
+				SortKey = (long)(time * 1000000) * 10 + (tone == "15" ? 0 : 1);
+			}
+		}
+
 		public JsonObject Info { get; set; }
-		public JsonArray Notes { get; set; }
+		public List<Note> Notes { get; set; }
 		public JsonArray NotesPercent { get; set; }
 		public string Md5 { get; set; }
 		public Dictionary<string, NoteConfigData> NoteData { get; set; }
@@ -318,10 +333,25 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			return $"{bmsId}-{pathway}-{speed}-{scene}";
 		}
 
-		public void InitNoteData() {
-			NoteData = new Dictionary<string, NoteConfigData>();
+		static readonly object sharedNoteDataLock = new();
+		static List<NoteConfigData>? sharedNoteDataSource;
+		static Dictionary<string, NoteConfigData>? sharedNoteData;
 
-			foreach (var config in MuseDash1Compatibility.NoteDataManager) {
+		public void InitNoteData() {
+			lock (sharedNoteDataLock) {
+				var source = MuseDash1Compatibility.NoteDataManager;
+				if (sharedNoteData == null || sharedNoteDataSource != source) {
+					sharedNoteData = BuildNoteData(source);
+					sharedNoteDataSource = source;
+				}
+				NoteData = sharedNoteData;
+			}
+		}
+
+		static Dictionary<string, NoteConfigData> BuildNoteData(List<NoteConfigData> source) {
+			var noteData = new Dictionary<string, NoteConfigData>();
+
+			foreach (var config in source) {
 				// Ignore april fools variants (these are handled elsewhere)
 				if (config.IsAprilFools()) continue;
 				// Ignore phase 2 boss gears
@@ -346,30 +376,32 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 
 				foreach (var key in pathways.SelectMany(pathway => speeds.SelectMany(speed =>
 							 scenes.Select(scene => GetNoteDataKey(config.ibms_id, pathway, speed, scene)))))
-					NoteData.TryAdd(key, config);
+					noteData.TryAdd(key, config);
 			}
+
+			return noteData;
 		}
 
 		public List<SceneEvent> GetSceneEvents() {
 			List<SceneEvent> sceneEvents = [];
 
 			foreach (var note in Notes) {
-				var bmsKey = note["value"]?.GetValue<string>() ?? string.Empty;
+				var bmsKey = note.Value ?? string.Empty;
 				if (string.IsNullOrEmpty(bmsKey)) continue;
 
-				var channelTone = note["tone"]?.GetValue<string>() ?? string.Empty;
+				var channelTone = note.Tone ?? string.Empty;
 				if (!Channels.TryGetValue(channelTone, out var channel)) continue;
 
 				if (channel.HasFlag(ChannelType.Scene))
 					sceneEvents.Add(new SceneEvent {
-						time = CustomAlbumsFormat.ParseAsDecimal(note["time"].GetValue<string>()),
+						time = Convert.ToDecimal(note.Time),
 						uid = $"SceneEvent/{bmsKey}"
 					});
 				else if (channel.HasFlag(ChannelType.SpBpmDirect) || channel.HasFlag(ChannelType.SpBpmLookup))
 					sceneEvents.Add(new SceneEvent {
-						time = CustomAlbumsFormat.ParseAsDecimal(note["time"].GetValue<string>()),
+						time = Convert.ToDecimal(note.Time),
 						uid = "SceneEvent/OnBPMChanged",
-						value = note["value"]?.GetValue<string>() ?? string.Empty
+						value = note.Value ?? string.Empty
 					});
 			}
 
@@ -384,6 +416,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 			var speedGround = speedAir;
 
 			var objectId = 1;
+			var scene = Info["GENRE"]?.GetValue<string>();
 
 			// Track which note indices have been consumed as hold-note endpoints
 			var consumedIndices = new HashSet<int>();
@@ -393,11 +426,10 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				var note = Notes[i];
-				if (note is null) continue;
 
-				var bmsKey = note["value"]?.GetValue<string>() ?? "00";
+				var bmsKey = note.Value ?? "00";
 				var bmsId = BmsIds.GetValueOrDefault(bmsKey, BmsId.None);
-				var channel = note["tone"]?.GetValue<string>() ?? string.Empty;
+				var channel = note.Tone ?? string.Empty;
 				var channelType = Channels.GetValueOrDefault(channel, ChannelType.None);
 
 				// Handle lane type
@@ -445,12 +477,11 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				}
 
 				var speed = pathway == 1 ? speedAir : speedGround;
-				var scene = Info["GENRE"]?.GetValue<string>();
 				if (!NoteData!.TryGetValue(GetNoteDataKey(bmsKey, pathway, speed, scene), out var configData))
 					if (!NoteData!.TryGetValue(GetNoteDataKey(bmsKey, pathway, speed, "0"), out configData))
 						continue;
 
-				var time = Convert.ToDecimal(note["time"].GetValue<float>());
+				var time = Convert.ToDecimal(note.Time);
 
 				// Hold note & masher 
 				var holdLength = 0M;
@@ -463,9 +494,9 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 							if (consumedIndices.Contains(j)) continue;
 
 							var holdEndNote = Notes[j];
-							var holdEndTime = Convert.ToDecimal(holdEndNote["time"].GetValue<float>());
-							var holdEndBmsKey = holdEndNote?["value"]?.GetValue<string>() ?? string.Empty;
-							var holdEndChannel = holdEndNote?["tone"]?.GetValue<string>() ?? string.Empty;
+							var holdEndTime = Convert.ToDecimal(holdEndNote.Time);
+							var holdEndBmsKey = holdEndNote.Value ?? string.Empty;
+							var holdEndChannel = holdEndNote.Tone ?? string.Empty;
 
 							if (holdEndBmsKey != bmsKey || holdEndChannel != channel) continue;
 							holdLength = holdEndTime - time;

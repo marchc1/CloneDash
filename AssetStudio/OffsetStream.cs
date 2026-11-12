@@ -23,6 +23,8 @@ namespace AssetStudio
 
         public long BasePosition => _baseStream.Position;
 
+        public Stream BaseStream => _baseStream;
+
         public long Offset
         {
             get => _offset;

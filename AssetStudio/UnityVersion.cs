@@ -30,32 +30,54 @@ namespace AssetStudio
         public bool IsPatch => BuildType == BuildTypes.Patch;
         public bool IsTuanjie => BuildType == BuildTypes.Tuanjie && this >= (2022, 3, 2);
 
-        public UnityVersion(string version)
-        {
-            if (string.IsNullOrEmpty(version))
-                throw new ArgumentException("Unity version cannot be empty.");
+		public UnityVersion(string version) {
+			if (string.IsNullOrEmpty(version))
+				throw new ArgumentException("Unity version cannot be empty.");
 
-            try
-            {
-                int[] ver = Regex.Matches(version, @"\d+").Cast<Match>().Select(x => int.Parse(x.Value)).ToArray();
-                (Major, Minor, Patch) = (ver[0], ver[1], ver[2]);
-                if (ver.Length >= 4)
-                    Build = ver[3];
-                FullVersion = version;
-            }
-            catch (Exception)
-            {
-                throw new NotSupportedException($"Failed to parse Unity version: \"{version}\".");
-            }
+			try {
+				ReadOnlySpan<char> s = version;
+				int i = 0, len = s.Length;
+				int field = 0;
+				string buildType = null;
 
-            string[] build = Regex.Matches(version, @"\D+").Cast<Match>().Select(x => x.Value).ToArray();
-            if (build.Length > 2)
-            {
-                BuildType = build[2];
-            }
-        }
+				while (i < len) {
+					char c = s[i];
+					if (c >= '0' && c <= '9') {
+						int val = 0;
+						while (i < len && (c = s[i]) >= '0' && c <= '9') {
+							val = val * 10 + (c - '0');
+							i++;
+						}
+						switch (field) {
+							case 0: Major = val; break;
+							case 1: Minor = val; break;
+							case 2: Patch = val; break;
+							case 3: Build = val; break;
+						}
+						field++;
+					}
+					else {
+						int start = i;
+						while (i < len && !((c = s[i]) >= '0' && c <= '9'))
+							i++;
+						// 3rd non-digit run (index 2) is BuildType
+						if (field == 3)
+							buildType = s.Slice(start, i - start).ToString();
+					}
+				}
 
-        [JsonConstructor]
+				if (field < 3)
+					throw new FormatException();
+
+				BuildType = buildType;
+				FullVersion = version;
+			}
+			catch (Exception) {
+				throw new NotSupportedException($"Failed to parse Unity version: \"{version}\".");
+			}
+		}
+
+		[JsonConstructor]
         public UnityVersion(int major = 0, int minor = 0, int patch = 0)
         {
             (Major, Minor, Patch) = (major, minor, patch);

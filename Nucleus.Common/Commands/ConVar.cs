@@ -61,6 +61,12 @@ public class ConVar : ConCommandBase, IConVar
 
 	public event ChangeCallback? OnChange;
 
+	public override void Init() {
+		base.Init();
+		if (OnChange != null)
+			OnChange?.Invoke(this, "", 0);
+	}
+
 	public string DefaultValue { get; set; }
 
 	public static void PrintDescription(ConCommandBase cmdbase) {

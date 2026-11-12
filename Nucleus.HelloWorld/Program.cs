@@ -28,7 +28,7 @@ internal class Program : IGameDLL
 	public class HelloWorldLevel : Level
 	{
 		readonly TestBtn[] tests = [
-			new("Label Content Alignment", (level) => {
+			new("Label Content Alignment", (level) => { // move this to a scene!!
 				var window = new Window(level.RootPanel);
 
 				Panel row(Dock vertical){
@@ -62,14 +62,33 @@ internal class Program : IGameDLL
 				var mid = row(Dock.Fill);
 				window.Center();
 			}),
+			new("Scroll Over Fields", (level) => Scenes.ScrollFields(level.RootPanel)),
+			new("Text Boxes", (level) => Scenes.Textboxes(level.RootPanel)),
+			new("Number Sliders", (level) => Scenes.NumSliders(level.RootPanel)),
+			new("Menus and Dropdowns", (level) => Scenes.Menus(level.RootPanel)),
+			new("Buttons", (level) => Scenes.Buttons(level.RootPanel)),
+			new("Controls", (level) => Scenes.Gallery(level.RootPanel)),
+			new("Text Layout", (level) => Scenes.TextLayout(level.RootPanel)),
+			new("Color Selector", (level) => Scenes.ColorSelector(level.RootPanel)),
+			new("Dialog", (level) =>
+				level.RootPanel.DialogOKCancel("Dialog", "Is this what a dialog should look like?", () => { })),
 		];
+
+		public static event Action<HelloWorldLevel>? Initialized;
+		public static event Action<HelloWorldLevel, FrameState>? PreThinking;
+		public static event Action<HelloWorldLevel, FrameState>? PostRenderedUI;
+
+		/// <summary>
+		/// The hello world text and spinning cube
+		/// </summary>
+		public bool ShowDemo { get; set; } = true;
 
 		public override void Initialize(params object[] args) {
 			base.Initialize(args);
 
 			var tools = new Panel(RootPanel);
 			tools.			Dock = Dock.Right;
-			tools.			Size = new(640, 0);
+			tools.Size = new(320, 0);
 			var testLabel = new Label(tools);
 			testLabel.SetAutoSize(true);
 			testLabel.			Dock = Dock.Top;
@@ -80,15 +99,26 @@ internal class Program : IGameDLL
 				b.				Dock = Dock.Top;
 				b.OnButtonClick += (_, _) => test.Click(this);
 			}
+
+			Initialized?.Invoke(this);
 		}
 
-		private void B_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
+		public override void PreThink(ref FrameState frameState) {
+			base.PreThink(ref frameState);
+			PreThinking?.Invoke(this, frameState);
+		}
 
+		public override void PostRenderUI(FrameState frameState) {
+			base.PostRenderUI(frameState);
+			PostRenderedUI?.Invoke(this, frameState);
 		}
 
 		Camera3D cam;
 		public override void PostRender(FrameState frameState) {
 			base.PostRender(frameState);
+			if (!ShowDemo)
+				return;
+
 			Graphics2D.SetDrawColor(255, 255, 255);
 			Graphics2D.DrawText(0, 0, "Hello SDL!", Graphics2D.UI_FONT_NAME, 32);
 			Graphics2D.DrawRectangle(500, 500, 120, 120);

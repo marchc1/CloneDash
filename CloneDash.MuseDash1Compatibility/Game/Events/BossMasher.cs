@@ -1,31 +1,30 @@
 ﻿using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
-using System.Diagnostics;
 
 namespace CloneDash.Game.Events;
 
-public class BossMasher(MuseDash1Game game, int type) : DashEvent(game)
+public class BossMasher(DashEventComponents components, int type) : DashEvent(components)
 {
-	public override void Activate() {
-		Game.Boss.Masher();
-	}
+	public DashEnemy? Masher { get; private set; }
 
 	public override void OnBuild() {
 		base.OnBuild();
 
-		var boss = Game.Boss;
-		var scene = Game.GetSceneAtTime(Time);
-		var anims = boss.Visuals[scene.GetSceneArrayIndex()].Animations;
-		var time = scene.GetBossAnimationTime(BossAnimationType.MultiAttack, anims);
-
-		Debug.Assert(time != 0);
-		Game.LoadEntity(new() {
+		Masher = Components.Chart.LoadEntity(new() {
 			Type = MuseDash1EntityType.Masher,
-			Pathway = PathwaySide.Both,
+			Pathway = PathwaySet.Any,
 			Variant = type == 1 ? EntityVariant.BossMasher : EntityVariant.BossMasherEnd,
-			ShowTime = Time - time,
+			ShowTime = Time - Dt,
 			HitTime = Time,
-			Length = Length
+			Length = Length,
+			Speed = Speed,
+			LeftGreatRange = LeftGreatRange,
+			LeftPerfectRange = LeftPerfectRange,
+			RightGreatRange = RightGreatRange,
+			RightPerfectRange = RightPerfectRange,
+			Fever = Fever ?? 0,
+			Damage = Damage ?? 0,
+			Score = Score ?? 0
 		});
 	}
 }

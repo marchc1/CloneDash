@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace AssetStudio
 {
@@ -77,6 +78,14 @@ namespace AssetStudio
         public byte[] GetData()
         {
             var binaryReader = GetReader();
+            var view = BlockStream.View(binaryReader.BaseStream);
+            if (view != binaryReader.BaseStream)
+            {
+                var data = new byte[size];
+                view.Position = Offset;
+                var read = view.ReadAtLeast(data, data.Length, false);
+                return read == data.Length ? data : data[..read];
+            }
             lock (binaryReader)
             {
                 binaryReader.BaseStream.Position = Offset;
@@ -88,6 +97,12 @@ namespace AssetStudio
         {
             int dataLen;
             var binaryReader = GetReader();
+            var view = BlockStream.View(binaryReader.BaseStream);
+            if (view != binaryReader.BaseStream)
+            {
+                view.Position = Offset;
+                return view.ReadAtLeast(buff.AsSpan(startIndex, (int)size), (int)size, false);
+            }
             lock (binaryReader)
             {
                 binaryReader.BaseStream.Position = Offset;

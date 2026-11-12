@@ -9,10 +9,14 @@ using Nucleus.UI.Elements;
 
 using Raylib_cs;
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Nucleus.UI;
 
+/// <summary>
+/// The primary selection in row/column terms, Start is the anchor
+/// </summary>
 public struct TextEditorCaret
 {
 	public int StartCol = 0;
@@ -50,18 +54,14 @@ public struct TextEditorCaret
 
 public class AutocompletePanel : Panel
 {
-	public TextEditor Editor;
+	public TextEditor Editor = null!;
 	public int SelectionIndex;
-	public int LastPulsingIndex;
 	public ScrollPanel OptionsParent;
 	public AutocompletePanel(Element? parent) : base(parent) {
 		Size = new(480, 180);
 		OptionsParent = new ScrollPanel(this);
 		OptionsParent.SetPaintBackgroundEnabled(false);
-		OptionsParent.		Dock = Dock.Fill;
-	}
-	public override void Paint(float width, float height) {
-		base.Paint(width, height);
+		OptionsParent.Dock = Dock.Fill;
 	}
 	public readonly List<string> Options = [];
 	public readonly List<Button> Buttons = [];
@@ -71,11 +71,11 @@ public class AutocompletePanel : Panel
 	public void AddOption(int fontHeight, ReadOnlySpan<char> text) {
 		Options.Add(new(text));
 		Button btn = new Button(OptionsParent);
-		btn.		Dock = Dock.Top;
+		btn.Dock = Dock.Top;
 		btn.SetAutoSize(true);
-		btn.		TextSize = fontHeight;
-		btn.		Font = Graphics2D.UI_MONO_BOLD_FONT_NAME;
-		btn.		Text = text;
+		btn.TextSize = fontHeight;
+		btn.Font = Graphics2D.UI_MONO_BOLD_FONT_NAME;
+		btn.Text = text;
 		btn.SetTextAlignment(Anchor.CenterLeft);
 		btn.SetTextPadding(new(12, 0));
 		btn.BorderSize = 0;
@@ -90,41 +90,43 @@ public class AutocompletePanel : Panel
 		Options.Clear();
 		Buttons.Clear();
 		SelectionIndex = 0;
-		LastPulsingIndex = 0;
 	}
 
-	public void MoveSelectUp() {
-		if (Buttons.Count < LastPulsingIndex)
-			Buttons[LastPulsingIndex].Pulsing = false;
-
-		if (--LastPulsingIndex < 0)
-			LastPulsingIndex = Options.Count - 1;
-
-		Buttons[LastPulsingIndex].Pulsing = true;
+	private void Select(int index) {
+		if (Buttons.Count == 0)
+			return;
+		if (SelectionIndex >= 0 && SelectionIndex < Buttons.Count)
+			Buttons[SelectionIndex].Pulsing = false;
+		SelectionIndex = (index % Buttons.Count + Buttons.Count) % Buttons.Count;
+		Buttons[SelectionIndex].Pulsing = true;
 	}
 
-	public void MoveSelectDown() {
-		if (Buttons.Count < LastPulsingIndex)
-			Buttons[LastPulsingIndex].Pulsing = false;
-
-		if (++LastPulsingIndex >= Options.Count)
-			LastPulsingIndex = 0;
-
-		Buttons[LastPulsingIndex].Pulsing = true;
-	}
+	public void MoveSelectUp() => Select(SelectionIndex - 1);
+	public void MoveSelectDown() => Select(SelectionIndex + 1);
 }
 
-public class TextEditor : Panel, ITextElement
+public class TextEditor : Panel, ITextElement, ITextLayout
 {
 	SchemeableSetting<float> __TextSize = SchemeableSetting<float>.Default(18);
 	SchemeableSetting<string> __Font = SchemeableSetting<string>.Default(Graphics2D.UI_FONT_NAME);
 
+	readonly TextEditingCore core = new() { AutoIndent = true };
+	readonly TextEditingInput input;
+
+	public TextEditingCore Editing => core;
+
 	internal TextEditorInternals Editor { get; set; }
 	internal TextEditorGutter Gutter { get; set; }
 	public Scrollbar VScrollbar { get; set; }
-	public Scrollbar HScrollbar { get; set; }
-	public TextEditorCaret LastCaret = new(0, 0);
-	public TextEditorCaret Caret = new(0, 0);
+	public Scrollbar? HScrollbar { get; set; }
+
+	public TextEditorCaret Caret {
+		get {
+			var selection = core.Primary;
+			return new(selection.Anchor.Line, selection.Anchor.Column, selection.Caret.Line, selection.Caret.Column);
+		}
+		set => SetSelection(value.StartCol, value.StartRow, value.EndCol, value.EndRow);
+	}
 
 	public delegate void EditorPaintDelegate(TextEditor self, float w, float h);
 	public event EditorPaintDelegate? PreRenderEditorLines;
@@ -139,7 +141,8 @@ public class TextEditor : Panel, ITextElement
 	public AutocompletePanel? AutocompletePanel;
 	[MemberNotNullWhen(true, nameof(AutocompletePanel))]
 	public bool IsAutocompleteActive => IValidatable.IsValid(AutocompletePanel);
-	public string? AutocompleteOption => AutocompletePanel?.Options[AutocompletePanel?.SelectionIndex ?? -1];
+	public string? AutocompleteOption => IsAutocompleteActive && AutocompletePanel.SelectionIndex < AutocompletePanel.Options.Count
+			? AutocompletePanel.Options[AutocompletePanel.SelectionIndex] : null;
 
 	[MemberNotNull(nameof(AutocompletePanel))]
 	public void ShowAutocomplete() {
@@ -151,9 +154,12 @@ public class TextEditor : Panel, ITextElement
 	}
 
 	private void AutocompletePanel_Selected(ReadOnlySpan<char> selectedText) {
-		string option = AutocompleteOption!;
-		Logs.Info(option);
+		// Replaces what was typed since the autocomplete start
+		var caret = core.Primary.Caret;
+		core.SetSelection(new(new TextPosition(caret.Line, Math.Min(lastAutocompleteStart, caret.Column)), caret));
+		core.Insert(new string(selectedText));
 		CloseAutocomplete();
+		EnsureCaretVisible();
 	}
 
 	public ReadOnlySpan<char> Font {
@@ -177,12 +183,9 @@ public class TextEditor : Panel, ITextElement
 			return;
 
 		Span<char> writeBuffer = stackalloc char[1024 * 8];
-		string? completionRow = Rows[Caret.Row];
-		if (completionRow == null) {
-			CloseAutocomplete();
-			return;
-		}
-		ReadOnlySpan<char> completionWork = completionRow.AsSpan()[..Math.Min(Caret.Column, completionRow.Length)];
+		var caret = core.Primary.Caret;
+		string completionRow = core.Document.GetLine(caret.Line);
+		ReadOnlySpan<char> completionWork = completionRow.AsSpan()[..Math.Min(caret.Column, completionRow.Length)];
 		int start = DetermineAutoCompleteStartPosition?.Invoke(this, completionWork) ?? -1;
 		if (start == -1) {
 			CloseAutocomplete();
@@ -198,12 +201,16 @@ public class TextEditor : Panel, ITextElement
 		ShowAutocomplete();
 
 		AutocompletePanel!.Reset();
-		AutocompletePanel.SelectionIndex = 0;
 		for (int i = 0; i < solutions; i++) {
-			Span<char> oneString = writeBuffer[..writeBuffer.IndexOf('\0')];
+			int end = writeBuffer.IndexOf('\0');
+			if (end == -1)
+				end = writeBuffer.Length;
+			Span<char> oneString = writeBuffer[..end];
 			AutocompletePanel.AddOption((int)FontHeight, oneString);
 
-			writeBuffer = writeBuffer[(oneString.Length + 1)..];
+			if (end + 1 >= writeBuffer.Length)
+				break;
+			writeBuffer = writeBuffer[(end + 1)..];
 		}
 		lastAutocompleteStart = start;
 	}
@@ -214,7 +221,7 @@ public class TextEditor : Panel, ITextElement
 			return;
 
 		AutocompletePanel.
-		Position = new((column * FontWidth) + (FontWidth / 2), PaddingTop + (((row + 1) - TopRow) * FontHeight));
+		Position = new(((column - LeftCol) * FontWidth) + (FontWidth / 2), PaddingTop + (((row + 1) - TopRow) * FontHeight));
 	}
 
 	public void CloseAutocomplete() {
@@ -222,17 +229,20 @@ public class TextEditor : Panel, ITextElement
 			AutocompletePanel.Remove();
 	}
 
-	public void WriteLastCaret() {
-		LastCaret = Caret;
+	/// <summary>
+	/// The document's lines.
+	/// Changing the list directly skips undo and events
+	/// </summary>
+	public SafeArray<string> Rows {
+		get => core.Document.Lines;
+		set => core.ModifyDocument(doc => doc.SetLines(value));
 	}
-
-	public SafeArray<string> Rows { get; set; } = [""];
 
 	private bool _showGutter = true, _showDetails = true;
 
-	public bool Multiline { get; set; } = true;
+	public bool Multiline { get => core.MultiLine; set => core.MultiLine = value; }
 	public bool TriggerExecuteOnEnter { get; set; } = false;
-	public bool Readonly { get; set; } = false;
+	public bool Readonly { get => core.ReadOnly; set => core.ReadOnly = value; }
 	public bool ShowGutter {
 		get => _showGutter;
 		set {
@@ -248,9 +258,9 @@ public class TextEditor : Panel, ITextElement
 		}
 	}
 	private void RefreshFromParams() {
-		if (Gutter != null) 
+		if (Gutter != null)
 			Gutter.SetVisible(_showGutter);
-		
+
 		InvalidateLayout();
 		InvalidateChildren(true, true);
 	}
@@ -266,14 +276,9 @@ public class TextEditor : Panel, ITextElement
 	public float Height { get; set; } = 0;
 	public float PaddingTop { get; set; } = 0;
 	public float PaddingLeft { get; set; } = 0;
-	public float CaretWidth { get; set; } = 0;
+	public float CaretWidth { get; set; } = 2;
 	public float GutterLength { get; set; } = 6;
 	public float GutterPaddingRight { get; set; } = 2;
-
-	public int CaretLeftHold { get; set; } = 0;
-	public void UpdateCaretLeftHold() {
-		CaretLeftHold = Caret.Column;
-	}
 
 	public static ConVar textedit_fontwidthpad = new(nameof(textedit_fontwidthpad), "0", FCvar.Saved, "Additive offset to FontWidth");
 	public static ConVar textedit_fontheightpad = new(nameof(textedit_fontheightpad), "1", FCvar.Saved, "Additive offset to FontHeight");
@@ -291,16 +296,13 @@ public class TextEditor : Panel, ITextElement
 		MaxVisibleCols = MathF.Floor(Width / FontWidth);
 		PaddingTop = FontHeight * 0.3f;
 		PaddingLeft = FontWidth * 1f;
-		CaretWidth = FontWidth * 0.2f;
+		CaretWidth = MathF.Max(2, MathF.Round(FontWidth * 0.15f));
 		GutterPaddingRight = FontWidth * 1f;
 
 		if (this.SetScrollS.HasValue) {
 			this.SetScroll(SetScrollS.Value);
 			this.SetScrollS = null;
 		}
-
-		//Logs.Debug($"MaxVisibleRows: {MaxVisibleRows}");
-		//Logs.Debug($"MaxVisibleCols: {MaxVisibleCols}");
 	}
 
 	private SyntaxHighlighter __highlighter = SyntaxHighlighter.Blank;
@@ -308,7 +310,7 @@ public class TextEditor : Panel, ITextElement
 		get => __highlighter;
 		set {
 			__highlighter = value;
-			OnEdit();
+			__highlighter.Rebuild(Rows);
 		}
 	}
 	internal class TextEditorGutter(TextEditor editor) : Panel(editor)
@@ -325,25 +327,20 @@ public class TextEditor : Panel, ITextElement
 			editor.Editor_MouseClickEvent(this, state, button);
 			return true;
 		}
-		protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
-			editor.Editor_MouseReleaseEvent(this, state, button);
-			return true;
-		}
+		protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) => true;
 		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
-			editor.Editor_MouseDragEvent(this, state, delta);
+			editor.Editor_MouseDragEvent(this, state);
 			return true;
 		}
-		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
-			editor.Editor_MouseScrollEvent(this, state, delta);
-			return true;
-		}
-		protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) {
-			editor.Editor_OnKeyPressed(this, in keyboardState, key);
-			return true;
-		}
+		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) => editor.Editor_MouseScrollEvent(state, delta);
+		protected override bool KeyPressed(in KeyboardState keyboardState, ButtonCode key) => editor.Editor_OnKeyPressed(in keyboardState, key);
 		protected override bool TextInput(in KeyboardState keyboardState, string text) {
-			editor.Editor_OnTextInput(this, in keyboardState, text);
+			editor.Editor_OnTextInput(in keyboardState, text);
 			return true;
+		}
+		protected override bool OnGainingKeyboardFocus(Element? lastFocus, ref Element? passTo) {
+			editor.input.Blink.Reset();
+			return base.OnGainingKeyboardFocus(lastFocus, ref passTo);
 		}
 		public override void Paint(float width, float height) {
 			editor.Editor_PaintOverride(this, width, height);
@@ -351,91 +348,48 @@ public class TextEditor : Panel, ITextElement
 		protected override void OnThink() {
 			editor.Editor_Thinking(this);
 		}
+		public override bool WantsTextInput => true;
 	}
 
+	public override bool WantsTextInput => true;
 	public TextEditor(Element? parent) : base(parent) {
+		input = new(core);
+		core.Layout = this;
+		core.TextChanged += Core_TextChanged;
+
 		Gutter = new(this);
 		Editor = new(this);
 		VScrollbar = new Scrollbar(Editor);
 		RefreshFromParams();
-		//Editor.DockMargin = RectangleF.TLRB(6);
-		//Gutter.DockMargin = RectangleF.TLRB(6);
 
-		Gutter.		//Editor.DockMargin = RectangleF.TLRB(6);
-		//Gutter.DockMargin = RectangleF.TLRB(6);
+		Gutter.Dock = Dock.Left;
+		Gutter.Size = new(64, 0);
+		Editor.Dock = Dock.Fill;
 
-		Dock = Dock.Left;
-		Gutter.		Size = new(64, 0);
-		Editor.		Dock = Dock.Fill;
-
-		VScrollbar.
-		Dock = Dock.Right;
+		VScrollbar.Dock = Dock.Right;
 		VScrollbar.OnScrolled += Scrollbar_OnScrolled;
 
-		Editor.
-		KeyboardInputMarshal = new HoldingKeyboardInputMarshal();
-
-		Editor.Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyA], () => {
-			SetCaret(0, 0, Rows[Rows.Count - 1].Length, Rows.Count - 1);
-		});
-		Editor.Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyC], () => {
-			Clipboard.Text = GetSelection();
-		});
-		Editor.Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyX], () => {
-			if (Readonly) return;
-			Clipboard.Text = GetSelection();
-			DeleteSelection();
-		});
-		Editor.Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyV], () => {
-			if (Readonly) return;
-			WriteLastCaret();
-			InsertText(Clipboard.Text);
-			OnEdit();
-		});
-
-		Editor.Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyZ], () => {
-			if (Readonly) return;
-			UndoBackwards();
-		}); Editor.Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyY], () => {
-			if (Readonly) return;
-			UndoForwards();
-		});
+		Editor.KeyboardInputMarshal = new HoldingKeyboardInputMarshal();
 
 		SetFont("Consolas", 16);
 	}
-	private void Editor_OnTextInput(Element self, in KeyboardState state, string text) {
-		OnWindowInput(text);
+
+	private int chars;
+
+	private void Core_TextChanged(TextEditingCore _) {
+		Highlighter.Rebuild(Rows);
+		chars = 0;
+		foreach (var row in Rows)
+			chars += row.Length;
+		OnTextEdited?.Invoke(this);
+	}
+
+	private void Editor_OnTextInput(in KeyboardState state, string text) {
+		input.TextInput(in state, text);
+		PopulateAutocomplete();
+		EnsureCaretVisible();
 		OnTextInput?.Invoke(this, in state, text);
 	}
-	private void OnWindowInput(string text) {
-		if (Readonly)
-			return;
-		WriteLastCaret();
-		DeleteSelection();
-		AddText(text);
-		PopulateAutocomplete();
-	}
-	private void AddText(string text) {
-		if (Readonly)
-			return;
-
-		int endCol = Caret.EndCol, endRow = Caret.EndRow;
-
-		if (endRow >= Rows.Count) {
-			Rows.Add(text);
-		}
-		else {
-			var rowContent = Rows[endRow];
-			if (rowContent is null) return;
-
-			var ec = Math.Clamp(endCol, 0, rowContent?.Length ?? 0);
-			Rows[endRow] = rowContent.Substring(0, ec) + text + rowContent.Substring(ec);
-		}
-
-		SetCaret(endCol + text.Length, endRow);
-		OnEdit();
-	}
-
 
 	private void Scrollbar_OnScrolled(float value) {
 		int maxRows = (int)MaxVisibleRows;
@@ -444,55 +398,116 @@ public class TextEditor : Panel, ITextElement
 		TopRow = Math.Clamp(v, 0, Math.Max(Rows.Count - maxRows, 0));
 	}
 
-	bool wasHovered = false;
+	long lastAutoScroll;
+
 	private void Editor_Thinking(Element self) {
+		input.EndFrame();
+
 		// The second part is a hack, but it allows mouse selecting autocomplete items.
 		if (UI.GetKeyboardFocusedElement() != self && (!IValidatable.IsValid(UI.GetHoveredElement()) || !UI.GetHoveredElement()!.IsIndirectChildOf(self)))
 			CloseAutocomplete();
 		if (self.IsHovered())
 			EngineCore.SetMouseCursor(MouseCursor.MOUSE_CURSOR_IBEAM);
-		else if (wasHovered)
-			EngineCore.ResetMouseCursor();
 
-		wasHovered = self.IsHovered();
-		MoveAutocompletePanel(Caret.Row, lastAutocompleteStart);
+		// Dragging past the edges scrolls
+		if (self.IsDepressed(ButtonCode.MouseLeft) && Stopwatch.GetElapsedTime(lastAutoScroll).TotalSeconds > 0.05) {
+			var local = self.GetMousePos();
+			var bounds = self.GetRenderBounds();
+			bool scrolled = false;
+			if (local.Y < 0 && TopRow > 0) {
+				TopRow--;
+				scrolled = true;
+			}
+			else if (local.Y > bounds.H && TopRow < MaxTopRow) {
+				TopRow++;
+				scrolled = true;
+			}
+			if (local.X < 0 && LeftCol > 0) {
+				LeftCol--;
+				scrolled = true;
+			}
+			else if (local.X > bounds.W) {
+				LeftCol++;
+				scrolled = true;
+			}
+			if (scrolled) {
+				lastAutoScroll = Stopwatch.GetTimestamp();
+				Editor_MouseDragEvent(self, null);
+			}
+		}
+
+		MoveAutocompletePanel(core.Primary.Caret.Line, lastAutocompleteStart);
 	}
+
+	float MaxTopRow => MathF.Max(0, Rows.Count - MaxVisibleRows);
 
 	static readonly Color BACKGROUND_FOCUSED = new(20, 32, 25, 127);
 	static readonly Color BACKGROUND_UNFOCUSED = new(20, 25, 32, 127);
 	static readonly Color FOREGROUND_FOCUSED = new(85, 110, 95, 255);
 	static readonly Color FOREGROUND_UNFOCUSED = new(85, 95, 110, 255);
 
+	private float ColumnX(int column) => PaddingLeft + (column - LeftCol) * FontWidth;
+	private float RowY(int row) => PaddingTop + (row - TopRow) * FontHeight;
+
 	public void RenderRowPiece(int character, int row, string text, Color color) {
 		Graphics2D.SetDrawColor(color);
-		Graphics2D.DrawText(PaddingLeft + (character * FontWidth), PaddingTop + (row * FontHeight) + 2, text, Font, TextSize);
+		Graphics2D.DrawText(ColumnX(character), PaddingTop + (row * FontHeight) + 2, text, Font, TextSize);
+	}
+
+	private bool LineHasCaret(int line) {
+		foreach (var selection in core.Selections) {
+			if (selection.Caret.Line == line)
+				return true;
+		}
+		return false;
 	}
 
 	private void Editor_PaintOverride(Element self, float width, float height) {
-
 		int i = 0;
 		int row = (int)TopRow;
 		PreRenderEditorLines?.Invoke(this, width, height);
 		SetBgColor(self.IsKeyboardFocused() ? BACKGROUND_FOCUSED : BACKGROUND_UNFOCUSED);
 		SetFgColor(self.IsKeyboardFocused() ? FOREGROUND_FOCUSED : FOREGROUND_UNFOCUSED);
+		bool focused = this.Editor.IsKeyboardFocused();
 
 		while (i < MaxVisibleRows) {
 			if (row >= Rows.Count)
 				break;
 
-			var content = Rows[row];
-
 			var y = PaddingTop + ((i) * FontHeight);
-			var x = PaddingLeft;
 
-			TextEditorCaret t = GetCaretTopLeft(), b = GetCaretBottomRight();
-			var inRange = NMath.InRange(row, t.Row, b.Row);
-
-			Graphics2D.SetDrawColor((inRange && this.Editor.IsKeyboardFocused()) ? new Color(42, 45, 50, 155) : i % 2 == 1 ? new Color(2, 5, 10, 155) : new Color(13, 16, 22, 155));
+			Color rowColor;
+			if (focused && LineHasCaret(row))
+				rowColor = new Color(42, 45, 50, 155);
+			else if (i % 2 == 1)
+				rowColor = new Color(2, 5, 10, 155);
+			else
+				rowColor = new Color(13, 16, 22, 155);
+			Graphics2D.SetDrawColor(rowColor);
 			Graphics2D.DrawRectangle(0, y, width, FontHeight);
 
 			row += 1;
 			i += 1;
+		}
+
+		// Selections go under the text
+		if (focused || core.HasSelection) {
+			Graphics2D.SetDrawColor(97, 137, 200, focused ? 140 : 70);
+			foreach (var selection in core.Selections) {
+				if (selection.IsEmpty)
+					continue;
+				int first = Math.Max(selection.Start.Line, (int)TopRow);
+				int last = Math.Min(selection.End.Line, (int)(TopRow + MaxVisibleRows));
+				for (int line = first; line <= last; line++) {
+					int startColumn = line == selection.Start.Line ? selection.Start.Column : 0;
+					int endColumn = line == selection.End.Line ? selection.End.Column : Rows[line]?.Length ?? 0;
+					float rectWidth = (endColumn - startColumn) * FontWidth;
+					// a bit extra for the line break
+					if (line != selection.End.Line)
+						rectWidth += FontWidth * 0.5f;
+					Graphics2D.DrawRectangle(ColumnX(startColumn), RowY(line), rectWidth, FontHeight);
+				}
+			}
 		}
 
 		i = 0;
@@ -502,12 +517,8 @@ public class TextEditor : Panel, ITextElement
 			if (row >= Rows.Count)
 				break;
 
-			var content = Rows[row];
-
 			var y = PaddingTop + ((i) * FontHeight);
-			var x = PaddingLeft;
 
-			var textPos = new Vector2F(x, y);
 			var xOffset = 0;
 
 			int whitespace = 0;
@@ -532,7 +543,7 @@ public class TextEditor : Panel, ITextElement
 
 			Graphics2D.SetDrawColor(130, 135, 140, 60);
 			for (int wi = 0; wi < whitespaceCounter; wi++) {
-				var xV = (FontWidth * (wi) * 4) + (FontWidth * 1.5f);
+				var xV = ColumnX(wi * 4) + (FontWidth * 0.5f);
 				Graphics2D.DrawLine(new(xV, y), new(xV, y + FontHeight), 1);
 			}
 
@@ -540,102 +551,67 @@ public class TextEditor : Panel, ITextElement
 			i += 1;
 		}
 
-		float aF = (1 - ((EngineCore.Level.CurtimeF * 3) % 1)) * 255.5f;
-		byte a = (byte)(int)aF;
-		if (this.Editor!.IsKeyboardFocused()) {
-			Graphics2D.SetDrawColor(255, 255, 255, a);
-			Graphics2D.DrawRectangle(PaddingLeft + (Caret.EndCol) * FontWidth, PaddingTop + (Caret.EndRow - TopRow) * FontHeight, CaretWidth, FontHeight);
-			Graphics2D.SetDrawColor(255, 255, 255, a / 2);
-			Graphics2D.DrawRectangle((PaddingLeft + (Caret.EndCol) * FontWidth) + CaretWidth, PaddingTop + (Caret.EndRow - TopRow) * FontHeight, CaretWidth, FontHeight);
-		}
-		if (HasSelection() && this.Editor.IsKeyboardFocused()) {
-			Graphics2D.SetDrawColor(97, 137, 200, 140);
-			if (Caret.StartRow == (int)MathF.Max(Caret.EndRow, 0)) {
-				int leftmost = (int)MathF.Min(Caret.StartCol, Caret.EndCol);
-				int rightmost = (int)MathF.Max(Caret.StartCol, Caret.EndCol);
-
-				Graphics2D.DrawRectangle(PaddingLeft + leftmost * FontWidth, PaddingTop + (Caret.EndRow - TopRow) * FontHeight, FontWidth * (rightmost - leftmost), FontHeight);
-			}
-			else {
-				TextEditorCaret top = GetCaretTop(), bottom = GetCaretBottom();
-
-				Graphics2D.DrawRectangle(PaddingLeft + FontWidth * (top.Column), PaddingTop + (top.Row - TopRow) * FontHeight, FontWidth * (Rows[top.Row].Length - top.Column), FontHeight);
-				Graphics2D.DrawRectangle(PaddingLeft, PaddingTop + (bottom.Row - TopRow) * FontHeight, (bottom.Column) * FontWidth, FontHeight);
-
-				for (int i2 = top.Row + 1; i2 < bottom.Row; i2++) {
-					var absi = i2 - TopRow;
-					var rowContent = Rows[i2];
-					if (rowContent != null) {
-						Graphics2D.DrawRectangle(PaddingLeft, PaddingTop + absi * FontHeight, FontWidth * rowContent.Length, FontHeight);
-					}
-				}
+		if (focused && input.Blink.Visible) {
+			Graphics2D.SetDrawColor(255, 255, 255, 255);
+			foreach (var selection in core.Selections) {
+				var caret = selection.Caret;
+				if (caret.Line < TopRow || caret.Line >= TopRow + MaxVisibleRows)
+					continue;
+				Graphics2D.DrawRectangle(MathF.Round(ColumnX(caret.Column)), RowY(caret.Line), CaretWidth, FontHeight);
 			}
 		}
 
 		if (_showDetails) {
 			Graphics2D.SetDrawColor(Highlighter.Color);
+			var selection = core.Primary;
 			string linePart;
-			if (Caret.StartRow != Caret.EndRow)
-				linePart = $"selected: {Math.Min(Caret.StartRow, Caret.EndRow)} - {Math.Max(Caret.StartRow, Caret.EndRow)}";
+			if (selection.Anchor.Line != selection.Caret.Line)
+				linePart = $"selected: {selection.Start.Line} - {selection.End.Line}";
 			else
-				linePart = $"line {Caret.StartRow} / {Rows.Count}";
+				linePart = $"line {selection.Caret.Line} / {Rows.Count}";
+			if (core.HasMultipleCarets)
+				linePart += $" - {core.Selections.Count} carets";
 			Graphics2D.DrawText(width - 4, height - 2, $"{StringExtensions.FormatNumberByThousands(chars)} chars - {linePart} - {Highlighter.Name}", Font, 14, Anchor.BottomRight);
 		}
 	}
 
-	private void Editor_MouseDragEvent(Element self, FrameState state, Vector2F delta) {
-		if (doubleClicked) return;
-
-		var pos = CalculatePos(state.Mouse.MousePos - self.GetGlobalPosition());
-		Caret.EndCol = pos.Column;
-		Caret.EndRow = pos.Row;
+	private TextPosition MouseToPosition(Element self, out float layoutX) {
+		Vector2F local = self.GetMousePos();
+		var pos = CalculatePos(local.X, local.Y);
+		layoutX = local.X - PaddingLeft + LeftCol * FontWidth;
+		return new(pos.EndRow, pos.EndCol);
 	}
-	public TextEditorCaret CalculatePos(Vector2F p) => CalculatePos(p.X, p.Y);
-	public TextEditorCaret CalculatePos(float Fx, float Fy) {
-		//int x = (int)Fx, y = (int)Fy;
 
-		Fx = MathF.Max(0, Fx - PaddingLeft) - 2;
-		Fy = MathF.Max(0, Fy - PaddingTop);
-
-		int col = (int)MathF.Round(Fx / FontWidth), row = (int)(MathF.Floor(Fy / FontHeight) + TopRow);
-		if (row < Rows.Count) {
-			var content = Rows[row];
-			col = (int)MathF.Min(content.Length, col);
-
-			return new(row, col);
-		}
-		else {
-			for (int i = row; i < TopRow; i--) {
-				if (i < Rows.Count) {
-					return new(row, (int)MathF.Min(Rows[i].Length, col));
-				}
-			}
-
-			return new(Rows.Count - 1, (Rows[Rows.Count - 1] ?? "").Length);
-		}
+	private void Editor_MouseDragEvent(Element self, FrameState? state) {
+		var pos = MouseToPosition(self, out float x);
+		input.PointerDrag(pos, x, state?.Keyboard.AltDown ?? false);
 	}
+
+	/// <summary>
+	/// Element-local point to a row/column, clamped onto the text
+	/// </summary>
+	public TextEditorCaret CalculatePos(float x, float y) {
+		x = x - PaddingLeft;
+		y = y - PaddingTop;
+
+		int row = (int)MathF.Floor(y / FontHeight + TopRow);
+		row = Math.Clamp(row, 0, Rows.Count - 1);
+		int column = (int)MathF.Round(x / FontWidth + LeftCol);
+		column = Math.Clamp(column, 0, core.Document.GetLine(row).Length);
+		return new(row, column);
+	}
+	public TextEditorCaret CalculatePos(Vector2F point) => CalculatePos(point.X, point.Y);
 
 	public bool DoesLineOverflowTop(int line) {
-		int currentRows = Rows.Count;
-		int maxRows = (int)MaxVisibleRows;
-
-		// cannot scroll anyway
-		if (currentRows <= maxRows) {
+		if (Rows.Count <= (int)MaxVisibleRows)
 			return false;
-		}
-
 		return line < TopRow;
 	}
 
 	public bool DoesLineOverflowBottom(int line) {
-		int currentRows = Rows.Count;
 		int maxRows = (int)MaxVisibleRows;
-
-		// cannot scroll anyway
-		if (currentRows <= maxRows) {
+		if (Rows.Count <= maxRows)
 			return false;
-		}
-
 		return line > (TopRow + (maxRows - 1));
 	}
 
@@ -649,7 +625,7 @@ public class TextEditor : Panel, ITextElement
 			return;
 		}
 
-		TopRow = Math.Max(0, line - (int)((maxRows - 1) * ratio));
+		TopRow = Math.Clamp(line - (int)((maxRows - 1) * ratio), 0, MaxTopRow);
 	}
 	public void MoveTopToLine(int line) => ScrollToLine(line, 0);
 	public void MoveCenterToLine(int line) => ScrollToLine(line, 0.5f);
@@ -677,332 +653,95 @@ public class TextEditor : Panel, ITextElement
 		return targLine < topRow ? LineOverflow.Above : LineOverflow.Below;
 	}
 
-	private void Editor_OnKeyPressed(Element self, in KeyboardState state, ButtonCode key) {
-		TextEditorCaret c = Caret;
-		bool caretPointerOnTop = MathF.Min(c.StartRow, c.EndRow) == c.EndRow;
-		int eRow = c.EndRow, eCol = c.EndCol;
-
-
-		if (key == ButtonCode.KeyPageUp) {
-			// TODO
+	float VisibleColumns {
+		get {
+			float width = Editor.GetRenderBounds().W - PaddingLeft;
+			if (VScrollbar.IsVisible())
+				width -= VScrollbar.GetRenderBounds().W;
+			return MathF.Max(1, MathF.Floor(width / MathF.Max(1, FontWidth)) - 1);
 		}
-		else if (key == ButtonCode.KeyPageDown) {
-			// TODO
-		}
-		if (key == ButtonCode.KeyRight) {
-			var bottom = GetCaretBottomRight();
-			if (state.ShiftDown) {
-				if (eCol <= Rows[eRow].Length - 1) {
-					if (state.ControlDown) {
-						string r = Rows[bottom.Row];
-						int rlen = r.Length;
-						Caret.EndCol = GetSkipGroupRight(r, bottom.Column, SkipMode.KeyboardSkip) ?? rlen + 1;
-					}
-					else {
-						Caret.EndCol = Caret.EndCol + 1;
-					}
-				}
-				else if (eRow < MaxVisibleRows && Rows[eRow + 1] != null) {
-					Caret.EndCol = 1;
-					Caret.EndRow += 1;
-				}
-			}
-			else {
-				if (bottom.Column < Rows[bottom.Row].Length) {
-					if (state.ControlDown) {
-						string r = Rows[bottom.Row];
-						int rlen = r.Length;
+	}
 
-						SetCaret(GetSkipGroupRight(r, bottom.Column, SkipMode.KeyboardSkip) ?? rlen + 1, bottom.Row);
-					}
-					else if (HasSelection())
-						SetCaret(bottom.Column, bottom.Row);
-					else
-						SetCaret(bottom.Column + 1, bottom.Row);
-				}
-				else if (bottom.Row < (MaxVisibleRows + TopRow) && bottom.Row < Rows.Count - 1)
-					SetCaret(0, bottom.Row + 1);
-				else
-					SetCaret(Rows[bottom.Row].Length, bottom.Row);
-			}
-			OnEdit();
-			UpdateCaretLeftHold();
+	public void EnsureCaretVisible() {
+		var caret = core.Primary.Caret;
+		if (MaxVisibleRows > 0) {
+			if (caret.Line < TopRow)
+				TopRow = caret.Line;
+			else if (caret.Line >= TopRow + MaxVisibleRows)
+				TopRow = caret.Line - MaxVisibleRows + 1;
+			TopRow = Math.Clamp(TopRow, 0, MaxTopRow);
 		}
-		else if (key == ButtonCode.KeyLeft) {
-			var top = GetCaretTopLeft();
-			if (state.ShiftDown) {
-				if (eCol > 0) {
-					if (state.ControlDown)
-						Caret.EndCol = GetSkipGroupLeft(Rows[top.Row] ?? "", top.Column, SkipMode.KeyboardSkip) ?? 0;
-					else
-						Caret.EndCol -= 1;
-				}
-				else if (top.Row > 0) {
-					if (top.Row <= TopRow)
-						TopRow -= 1;
 
-					Caret.EndCol = Rows[eRow - 1].Length;
-					Caret.EndRow -= 1;
-				}
-			}
-			else {
-				if (top.Column > 0) {
-					if (state.ControlDown) SetCaret(GetSkipGroupLeft(Rows[top.Row], top.Column, SkipMode.KeyboardSkip) ?? 0, top.Row);
-					else if (HasSelection()) SetCaret(top.Column, top.Row);
-					else SetCaret(top.Column - 1, top.Row);
-				}
-				else if (top.Row > 0) SetCaret(Rows[top.Row - 1].Length, top.Row - 1);
-				else SetCaret(0, 0);
-			}
-			OnEdit();
-			UpdateCaretLeftHold();
-		}
-		else if (key == ButtonCode.KeyUp) {
-			var top = GetCaretTopLeft();
-			if (IsAutocompleteActive) {
+		float columns = VisibleColumns;
+		if (caret.Column < LeftCol)
+			LeftCol = caret.Column;
+		else if (caret.Column > LeftCol + columns)
+			LeftCol = caret.Column - columns;
+		LeftCol = MathF.Max(0, LeftCol);
+	}
+
+	public delegate bool TextEditorKeyInterceptFn(TextEditor self, in KeyboardState state, ButtonCode key);
+
+	/// <summary>
+	/// Gets keys before the editor does, true eats the key.
+	/// </summary>
+	public TextEditorKeyInterceptFn? InterceptKey;
+
+	private bool Editor_OnKeyPressed(in KeyboardState state, ButtonCode key) {
+		if (InterceptKey != null && InterceptKey(this, in state, key))
+			return true;
+
+		bool handled = false;
+		bool enter = key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter;
+
+		if (IsAutocompleteActive && (key is ButtonCode.KeyUp or ButtonCode.KeyDown or ButtonCode.KeyTab or ButtonCode.KeyEscape || enter)) {
+			if (key == ButtonCode.KeyUp)
 				AutocompletePanel.MoveSelectUp();
-				goto exitFunction;
-			}
-			if (state.ShiftDown) {
-				if (eRow > 0) {
-					Caret.EndCol = (int)MathF.Min(eCol, Rows[eRow - 1].Length);
-					Caret.EndRow -= 1;
-				}
-				else {
-					Caret.EndCol = 0;
-					Caret.EndRow = 0;
-				}
-
-				if (DoesLineOverflowTop(Caret.EndRow)) MoveTopToLine(Caret.EndRow);
-			}
-			else {
-				if (top.Row > 0)
-					SetCaret((int)MathF.Min(top.Column, Rows[top.Row - 1].Length), top.Row - 1);
-				else
-					SetCaret(0, 0);
-
-				if (DoesLineOverflowTop(Caret.Row)) MoveTopToLine(Caret.Row);
-			}
-
-			OnEdit();
-		}
-		else if (key == ButtonCode.KeyDown) {
-			var bottom = GetCaretBottom();
-			if (IsAutocompleteActive) {
+			else if (key == ButtonCode.KeyDown)
 				AutocompletePanel.MoveSelectDown();
-				goto exitFunction;
-			}
-			if (state.ShiftDown) {
-				if (eRow < Rows.Count) {
-					if (Rows[eRow + 1] != null) {
-						Caret.EndCol = (int)MathF.Min(eCol, Rows[eRow + 1].Length);
-						Caret.EndRow += 1;
-					}
-					else Caret.EndCol = Rows[eRow].Length;
-				}
-
-				if (DoesLineOverflowBottom(Caret.EndRow)) MoveBottomToLine(Caret.EndRow);
-			}
-			else {
-				if (Rows[bottom.Row + 1] != null)
-					SetCaret((int)MathF.Min(bottom.Column, Rows[bottom.Row + 1].Length), bottom.Row + 1);
-				else
-					SetCaret(Rows[bottom.Row].Length, bottom.Row);
-
-				if (DoesLineOverflowBottom(Caret.Row)) MoveBottomToLine(Caret.Row);
-			}
-			OnEdit();
-		}
-		else if (key == ButtonCode.KeyBackspace && !DeleteSelection()) {
-			if (Readonly) goto exitFunction;
-
-			WriteLastCaret();
-
-			int col = Caret.EndCol, row = Caret.EndRow;
-			string rowContent = Rows[row] ?? "";
-			col = Math.Clamp(col, 0, rowContent.Length);
-			if (col == 0) {
-				if (row != 0) {
-					var rest = Rows[row];
-					if (rest == null) goto exitFunction;
-					Rows.RemoveAt(row);
-					SetCaret(Rows[row - 1].Length, row - 1);
-					Rows[row - 1] = Rows[row - 1] + rest;
-				}
-			}
-			else if (state.ControlDown) {
-				int endColC = GetSkipGroupLeft(rowContent, col, SkipMode.KeyboardSkip) ?? throw new Exception();
-				Rows[row] = rowContent.Substring(0, Math.Clamp(endColC, 0, rowContent.Length)) + rowContent.Substring(Math.Clamp(col, 0, rowContent.Length));
-				SetCaret(endColC, row);
-			}
-			else {
-				if (col > 0 && rowContent[col - 1] == ' ') {
-					var charsToDelete = (col % 4);
-					if (charsToDelete == 0)
-						charsToDelete = 4;
-
-					var actualSpaces = 0;
-					while (actualSpaces < charsToDelete && (col - 1 - actualSpaces) >= 0 && rowContent[col - 1 - actualSpaces] == ' ') {
-						actualSpaces++;
-					}
-
-					charsToDelete = actualSpaces;
-
-					Rows[row] = rowContent.Substring(0, col - charsToDelete) + rowContent.Substring(col);
-					SetCaret(col - charsToDelete, row);
-				}
-				else {
-					Rows[row] = rowContent.Substring(0, col - 1) + rowContent.Substring(col);
-					SetCaret(col - 1, row);
-				}
-			}
-			OnEdit();
-			PopulateAutocomplete();
-		}
-		else if (key == ButtonCode.KeyS && state.ControlDown) {
-			OnSave?.Invoke(this);
-			goto exitFunction;
-		}
-		else if (key == ButtonCode.KeyD && state.ControlDown) {
-			if (Readonly) goto exitFunction;
-
-			if (!HasSelection()) {
-				WriteLastCaret();
-				int col = Caret.EndCol, row = Caret.EndRow;
-				var rowContent = Rows[row] ?? "";
-				Rows.Insert(row + 1, rowContent);
-				SetCaret(col, row + 1);
-				OnEdit();
-			}
-			goto exitFunction;
-		}
-		else if (key == ButtonCode.KeyP && state.AltDown) {
-			OnExecute?.Invoke(this);
-			goto exitFunction;
-		}
-		else if (key == ButtonCode.KeyEscape) {
-			if (IsAutocompleteActive) {
+			else if (key == ButtonCode.KeyEscape)
 				CloseAutocomplete();
-				goto exitFunction;
-			}
+			else if (AutocompleteOption is string option)
+				AutocompletePanel_Selected(option);
+			handled = true;
 		}
-		else if (key == ButtonCode.KeyEnter || key == ButtonCode.KeyPadEnter) {
-			if (Readonly) goto exitFunction;
-
-			if (IsAutocompleteActive) {
-				AutocompletePanel_Selected(AutocompleteOption!);
-				goto exitFunction;
-			}
-
-			if (Multiline) {
-				bool deleted = DeleteSelection();
-
-				WriteLastCaret();
-
-				int col = Caret.EndCol, row = Caret.EndRow;
-				string? rowContent = Rows[row];
-
-				Rows[row] = rowContent == null ? "" : rowContent.Substring(0, Math.Clamp(col, 0, rowContent.Length));
-
-				if (!deleted) {
-					string lastSpace = rowContent?.TrimStart(' ') ?? "";
-					lastSpace = rowContent?.Substring(0, (rowContent?.Length ?? 0) - lastSpace.Length) ?? "";
-					Rows.Insert(row + 1, lastSpace + rowContent?.Substring(Math.Clamp(col, 0, rowContent.Length)) ?? "");
-					SetCaret(lastSpace.Length, row + 1);
-				}
-				else {
-					Rows.Insert(row + 1, rowContent == null ? "" : rowContent.Substring(Math.Clamp(col, 0, rowContent.Length)));
-					SetCaret(0, row + 1);
-				}
-				OnEdit();
-			}
-			else if (TriggerExecuteOnEnter) {
+		else if (enter && !Multiline) {
+			if (TriggerExecuteOnEnter) {
 				OnExecute?.Invoke(this);
 				SetText("");
-				SetCaret(0, 0);
-				goto exitFunction;
 			}
-			else {
+			else
 				// We release focus instead.
 				KeyboardUnfocus();
-				goto exitFunction;
-			}
+			handled = true;
 		}
-		else if (key == ButtonCode.KeyDelete && !DeleteSelection()) {
-			if (Readonly) goto exitFunction;
-
-			WriteLastCaret();
-
-			int col = Caret.EndCol, row = Caret.EndRow;
-			string rowContent = Rows[row] ?? "";
-			col = Math.Clamp(col, 0, rowContent.Length);
-
-			if (col == rowContent.Length) {
-				if (row + 1 < Rows.Count) {
-					var rest = Rows[row + 1];
-					if (rest == null) goto exitFunction;
-					Rows[row] = Rows[row] + rest;
-					Rows.RemoveAt(row + 1);
-				}
-			}
-			else if (state.ControlDown) {
-				int endColC = GetSkipGroupRight(rowContent, col, SkipMode.KeyboardSkip) ?? throw new Exception();
-				Rows[row] = rowContent.Substring(0, col) + rowContent.Substring(Math.Clamp(endColC, 0, rowContent.Length));
-				SetCaret(col, row);
-			}
-			else {
-				Rows[row] = rowContent.Substring(0, col) + rowContent.Substring(col + 1);
-				SetCaret(col, row);
-			}
-
-			OnEdit();
+		else if (key == ButtonCode.KeyTab && OnTab != null && !state.ShiftDown && !state.ControlDown) {
+			OnTab.Invoke(this);
+			handled = true;
 		}
-		var t = key.GetAction(ctrl: state.ControlDown, alt: state.AltDown, shift: state.ShiftDown);
-		if (t.Type != CharacterType.VisibleCharacter && t.Type != CharacterType.Tab)
-			goto exitFunction;
-
-		if (Readonly) goto exitFunction;
-
-		if (t.Type == CharacterType.Tab) {
-			if (OnTab != null) {
-				OnTab.Invoke(this);
-				goto exitFunction;
-			}
-			if (!HasSelection()) {
-				var cCount = (4 - (Caret.Column % 4));
-				AddText(new string(' ', cCount));
-			}
-			else {
-				var tl = GetCaretTopLeft();
-				var br = GetCaretBottomRight();
-
-				if (state.ShiftDown) {
-					for (int i = tl.Row; i <= br.Row; i++) {
-						for (int i2 = 0; i2 < 4; i2++) {
-							if ((Rows[i]?.Length ?? 0) > 0 && Rows[i][0] == ' ')
-								Rows[i] = Rows[i]?.Substring(1) ?? null;
-							else break;
-						}
-					}
-
-					SetCaret(Caret.StartCol - 4, Caret.StartRow, Caret.EndCol - 4, Caret.EndRow);
-				}
-				else {
-					for (int i = tl.Row; i <= br.Row; i++)
-						Rows[i] = "    " + Rows[i];
-
-					SetCaret(Caret.StartCol + 4, Caret.StartRow, Caret.EndCol + 4, Caret.EndRow);
-				}
-
-				OnEdit();
-				goto exitFunction;
-			}
+		else if (key == ButtonCode.KeyS && state.ControlDown && !state.AltDown) {
+			OnSave?.Invoke(this);
+			handled = true;
+		}
+		else if (key == ButtonCode.KeyP && state.AltDown && !state.ControlDown) {
+			OnExecute?.Invoke(this);
+			handled = true;
+		}
+		else {
+			handled = input.KeyPressed(in state, key);
+			if (handled && key is ButtonCode.KeyBackspace or ButtonCode.KeyDelete)
+				PopulateAutocomplete();
 		}
 
-	exitFunction:
+		if (handled)
+			EnsureCaretVisible();
+
 		OnKeyPressed?.Invoke(this, in state, key);
-		// Effectively return but ensures this ^^ gets called
-		// This is mostly backwards compatibility, but I am fine with the text editor exposing it, theres bigger fish to fry right now
+
+		// Let these go up to the parent if we didn't use them
+		if (!handled && key is ButtonCode.KeyTab or ButtonCode.KeyEscape)
+			return false;
+		return true;
 	}
 
 	public delegate void OnVoid(TextEditor self);
@@ -1019,164 +758,88 @@ public class TextEditor : Panel, ITextElement
 			VScrollbar.ScrollDelta = 3;
 		}
 	}
-	private void Editor_MouseScrollEvent(Element self, FrameState state, Vector2F delta) {
-		var diff = TopRow - (delta.Y * 4);
 
-		if (diff >= 0 && diff <= Rows.Count - MaxVisibleRows) {
-			TopRow = diff;
-		}
-		else if (diff <= 0) {
-			TopRow = 0;
-		}
-		else {
-			TopRow = Rows.Count - MaxVisibleRows;
+	float MaxLeftCol {
+		get {
+			int longest = 0;
+			foreach (var row in Rows)
+				longest = Math.Max(longest, row.Length);
+			return MathF.Max(0, longest - VisibleColumns);
 		}
 	}
 
-	private void Editor_MouseReleaseEvent(Element self, FrameState state, ButtonCode button) {
+	private bool Editor_MouseScrollEvent(FrameState state, Vector2F delta) {
+		// Shift scrolls sideways
+		if (state.Keyboard.ShiftDown && delta.X == 0)
+			delta = new(delta.Y, 0);
 
+		bool used = false;
+		if (delta.Y != 0 && MaxTopRow > 0) {
+			TopRow = Math.Clamp(TopRow - delta.Y * 4, 0, MaxTopRow);
+			used = true;
+		}
+		if (delta.X != 0) {
+			float maxLeft = MathF.Max(MaxLeftCol, LeftCol);
+			if (maxLeft > 0) {
+				LeftCol = Math.Clamp(LeftCol - delta.X * 4, 0, maxLeft);
+				used = true;
+			}
+		}
+		// Nothing to scroll, let the parent have it
+		return used;
 	}
 
-	double LastDoublePress;
-	double LastPress;
-	bool doubleClicked = false;
-	bool tripleClicked = false;
 	private void Editor_MouseClickEvent(Element self, FrameState state, ButtonCode button) {
 		CloseAutocomplete();
-		if (button == ButtonCode.Mouse1) {
-			self.KeyboardFocus();
-
-			Vector2F xy = self.CursorPos();
-			TextEditorCaret pos = CalculatePos(xy.X, xy.Y);
-
-			var now = EngineCore.Level.Curtime;
-			doubleClicked = now - LastPress < 0.2;
-			tripleClicked = now - LastDoublePress < 0.2;
-
-			if (tripleClicked) {
-				// Select the whole line
-				var content = Rows[pos.Row];
-				if (content == null) {
-					Logs.Warn("Content was null here? How??");
-					return;
-				}
-				SetCaret(0, pos.Row, content.Length, pos.Row);
-			}
-			else if (doubleClicked) {
-				// Select a skip group piece
-				LastDoublePress = now;
-				var content = Rows[pos.Row];
-				if (content == null) {
-					Logs.Warn("Content was null here? How??");
-					return;
-				}
-
-				var right = GetSkipGroupRight(content, pos.Column, SkipMode.MouseClickSkip) ?? pos.Column;
-				var left = GetSkipGroupLeft(content, pos.Column, SkipMode.MouseClickSkip) ?? pos.Column;
-
-				SetCaret(left, pos.Row, right, pos.Row);
-			}
-			else {
-				// Set the caret
-				SetCaret(pos.Column, pos.Row);
-			}
-
-			UpdateCaretLeftHold();
-
-			LastPress = now;
-		}
-	}
-
-	private int chars;
-
-	public MaxStack<UndoFrame> Undos = new MaxStack<UndoFrame>(100);
-	public Stack<UndoFrame> Redos = new Stack<UndoFrame>();
-
-	public void UndoBackwards() {
-		if (Undos.Count > 1) {
-			var frame = Undos.Pop();
-			Redos.Push(frame);
-			var t = Undos.Peek();
-			Rows = new SafeArray<string>(t.Rows);
-			Caret = frame.CaretBefore;
-			OnEdit(false);
-		}
-	}
-	public void UndoForwards() {
-		if (Redos.Count == 0)
+		if (button != ButtonCode.MouseLeft)
 			return;
 
-		var t = Redos.Pop();
-		Undos.Push(t);
-		Rows = new SafeArray<string>(t.Rows);
-		Caret = t.CaretAfter;
-		OnEdit(false);
+		self.KeyboardFocus();
+		var pos = MouseToPosition(self, out _);
+		input.PointerDown(pos, state.Keyboard.ShiftDown, state.Keyboard.ControlDown, state.Keyboard.AltDown);
+		EnsureCaretVisible();
 	}
 
-	public void OnEdit(bool modifyUndoStack = true) {
-		Highlighter.Rebuild(Rows);
-		chars = 0;
-
-		foreach (var row in Rows)
-			chars += row.Length;
-
-		if (modifyUndoStack) {
-			Redos.Clear();
-			Undos.Push(new() { CaretBefore = LastCaret, CaretAfter = Caret, Rows = Rows.ToArray() });
-		}
-		OnTextEdited?.Invoke(this);
-
-		if ((Caret.Row + 1) >= Rows.Count)
-			MoveBottomToLine(Caret.Row);
-
-		switch (GetLineOverflow(Caret.Row)) {
-			case LineOverflow.Above:
-				MoveTopToLine(Caret.Row);
-				break;
-			case LineOverflow.Below:
-				MoveBottomToLine(Caret.Row);
-				break;
-		}
+	public void UndoBackwards() {
+		core.Undo();
+		EnsureCaretVisible();
+	}
+	public void UndoForwards() {
+		core.Redo();
+		EnsureCaretVisible();
 	}
 
-	public void ResetUndoStack() {
-		if (Redos.Count > 0)
-			Redos.Clear();
-		if (Undos.Count > 0)
-			Undos.Clear();
-		Undos.Push(new() { CaretBefore = Caret, Rows = Rows.ToArray() });
-	}
+	public void ResetUndoStack() => core.ResetUndo();
 
 	public void SetText(string? text) {
-		text = text ?? "";
-		Rows = new SafeArray<string>(text.Replace("\r", "").Replace("\t", "    ").Split("\n"));
-		OnEdit();
+		core.SetText((text ?? "").Replace("\t", new string(' ', core.TabSize)));
+		core.SetCaret(core.Document.Start);
+		TopRow = 0;
+		LeftCol = 0;
 	}
 	public void RemoveLine(int index = 0) {
-		Rows.RemoveAt(index);
-		OnEdit();
+		core.ModifyDocument(document => {
+			if (index >= 0 && index < document.LineCount)
+				document.Lines.RemoveAt(index);
+		});
 	}
 	public void AppendLine(string text) {
-		if (Rows.Count > 0 && (Rows[Rows.Count - 1]?.Length ?? 0) <= 0)
-			Rows[Rows.Count - 1] = text;
-		else
-			Rows.Add(text);
-		OnEdit();
+		core.ModifyDocument(document => {
+			if (document.LineCount > 0 && document.GetLine(document.LineCount - 1).Length <= 0)
+				document.Lines[document.LineCount - 1] = text;
+			else
+				document.Lines.Add(text);
+		});
 	}
-	public string GetText() {
-		return string.Join("\n", Rows);
-	}
-	public void SetCaret(int col, int row, int? endcolI = null, int? endrowI = null) {
-		col = (int)MathF.Max(0, col);
-		row = (int)MathF.Max(0, row);
+	public string GetText() => core.GetText();
 
-		if (endcolI.HasValue) endcolI = (int)MathF.Max(0, endcolI.Value);
-		if (endrowI.HasValue) endrowI = (int)MathF.Max(0, endrowI.Value);
-
-		Caret.StartCol = col;
-		Caret.EndCol = endcolI ?? col;
-		Caret.StartRow = row;
-		Caret.EndRow = endrowI ?? row;
+	/// <summary>
+	/// Sets the primary selection with (col, row) as the anchor, dropping other carets.
+	/// </summary>
+	public void SetCaret(int col, int row, int? endCol = null, int? endRow = null) {
+		var anchor = new TextPosition(Math.Max(0, row), Math.Max(0, col));
+		var caret = new TextPosition(Math.Max(0, endRow ?? row), Math.Max(0, endCol ?? col));
+		core.SetSelection(new(anchor, caret));
 	}
 	private float? SetScrollS = null;
 
@@ -1191,17 +854,8 @@ public class TextEditor : Panel, ITextElement
 			this.SetScrollS = percent;
 			return;
 		}
-		if (percent <= 0)
-			this.TopRow = 0;
-		else if (percent >= 1)
-			this.TopRow = (Rows.Count - MaxVisibleRows);
-		else
-			this.TopRow = (Rows.Count - MaxVisibleRows) * percent;
+		TopRow = MaxTopRow * Math.Clamp(percent, 0, 1);
 	}
-
-	private static bool isDigit(char c) => c >= '0' && c <= '9';
-	private static bool isHexDigit(char c) => isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-	private static bool isIdentifierStartSymbol(char c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 
 	public enum SkipMode
 	{
@@ -1209,207 +863,50 @@ public class TextEditor : Panel, ITextElement
 		MouseClickSkip,
 	}
 
-
-	private static bool skippable(char c, string row, int i, int len) {
-		switch (c) {
-			case ' ':
-			case ',':
-			case '[':
-			case ']':
-			case '{':
-			case '}':
-			case '(':
-			case ')':
-			case ':':
-			case '"':
-				return true;
-			case '.':
-				if (i <= len - 1 && !char.IsDigit(row[i + 1]))
-					return true;
-				return false;
-		}
-		return false;
-	}
-
+	/// <summary>
+	/// Column of the previous word boundary, like Ctrl+Left
+	/// </summary>
 	public static int? GetSkipGroupLeft(string row, int column, SkipMode mode) {
-		int len = row.Length, ty = -1;
-		// Skip past any whitespace.
-		while (row.Length > 0 && column > 0 && char.IsWhiteSpace(row[column - 1]))
-			column--;
-
-		// If we're on a end character, continue forwards until we arent
-
-		if (column > 0 && skippable(row[column - 1], row, column, len)) {
-			column--;
-			for (; column >= 0; column--) {
-				if (!skippable(row[column], row, column, len))
-					break;
-			}
-			return column + 1;
-		}
-
-		for (int i = column - 1; i >= 0; i--) {
-			var c = row[i];
-			if (skippable(c, row, i, len))
-				return i + 1;
-		}
-
-		return 0;
+		var core = new TextEditingCore();
+		core.Document.SetLines([row]);
+		return core.WordLeft(new(0, Math.Clamp(column, 0, row.Length))).Column;
 	}
-	public static bool CharInRange(char input, char min, char max) => input >= min && input <= max;
+	/// <summary>
+	/// Column of the next word boundary, like Ctrl+Right
+	/// </summary>
 	public static int? GetSkipGroupRight(string row, int column, SkipMode mode) {
-		int len = row.Length, ty = -1;
-		// If we're on a end character, continue forwards until we arent in keyboard mode
-		if (mode == SkipMode.KeyboardSkip && column < len && skippable(row[column], row, column, len)) {
-			column++;
-			for (; column < len; column++) {
-				if (!skippable(row[column], row, column, len))
-					break;
-			}
-		}
-
-		for (int i = column; i < len; i++) {
-			var c = row[i];
-			if (skippable(c, row, i, len)) return i;
-		}
-
-		return len;
+		var core = new TextEditingCore();
+		core.Document.SetLines([row]);
+		return core.WordRight(new(0, Math.Clamp(column, 0, row.Length))).Column;
 	}
 
 	public TextEditorCaret GetCaretBottom() {
-		if (Caret.EndRow > Caret.StartRow)
-			return Caret.ER_EC;
-		else
-			return Caret.SR_SC;
+		var end = core.Primary.End;
+		return new(end.Line, end.Column);
 	}
-	public TextEditorCaret GetCaretBottomRight() {
-		if (Caret.EndRow > Caret.StartRow) {
-			return Caret.ER_EC;
-		}
-		else if (Caret.EndRow == Caret.StartRow) {
-			return new(Caret.StartRow, (int)MathF.Max(Caret.StartCol, Caret.EndCol));
-		}
-		else {
-			return Caret.SR_SC;
-		}
-	}
+	public TextEditorCaret GetCaretBottomRight() => GetCaretBottom();
 	public TextEditorCaret GetCaretTop() {
-		if (Caret.EndRow < Caret.StartRow) {
-			return Caret.ER_EC;
-		}
-		else {
-			return Caret.SR_SC;
-		}
+		var start = core.Primary.Start;
+		return new(start.Line, start.Column);
 	}
-	public TextEditorCaret GetCaretTopLeft() {
-		if (Caret.EndRow < Caret.StartRow)
-			return Caret.ER_EC;
-		else if (Caret.EndRow == Caret.StartRow)
-			return new(Caret.StartRow, (int)MathF.Min(Caret.StartCol, Caret.EndCol));
-		else
-			return Caret.SR_SC;
-	}
-	public void SetSelection(int startCol, int startRow, int endCol, int endRow) {
-		Caret.StartRow = startRow;
-		Caret.StartCol = startCol;
-		Caret.EndCol = endCol;
-		Caret.EndRow = endRow;
-	}
-	public bool HasSelection() => Caret.StartCol != Caret.EndCol || Caret.StartRow != Caret.EndRow;
+	public TextEditorCaret GetCaretTopLeft() => GetCaretTop();
+
+	public void SetSelection(int startCol, int startRow, int endCol, int endRow) => SetCaret(startCol, startRow, endCol, endRow);
+	public bool HasSelection() => core.HasSelection;
 
 	public string GetSelection() {
-		if (!HasSelection())
-			return "";
-
-		TextEditorCaret top = GetCaretTopLeft();
-		TextEditorCaret bottom = GetCaretBottomRight();
-
-		List<string> buf = [Rows[top.Row].Substring(top.Column)];
-
-		if (top.Row != bottom.Row) {
-			for (int i = top.Row + 1; i < bottom.Row; i++) {
-				buf.Add(Rows[i]);
-			}
-		}
-		else {
-			return Rows[top.Row].Substring(top.Column, bottom.Column - top.Column);
-		}
-
-		buf.Add(Rows[bottom.Row].Substring(0, bottom.Column));
-		OnEdit();
-		return string.Join("\n", buf);
+		var selection = core.Primary;
+		return selection.IsEmpty ? "" : core.Document.GetText(selection.Start, selection.End);
 	}
 
 	public bool InsertText(string txt) {
-		if (Readonly) return false;
-		if (txt == null)
+		if (Readonly || txt == null)
 			return false;
-
-		if (HasSelection()) {
-			var top = GetCaretTopLeft();
-			var bottom = GetCaretBottomRight();
-
-			var topPiece = Rows[top.Row].Substring(0, top.Column);
-			var bottomPiece = Rows[bottom.Row].Substring(bottom.Column);
-
-			var newLines = txt.Replace("\r", "").Replace("\t", "    ").Split('\n');
-
-			Rows[top.Row] = topPiece;
-			for (int i = top.Row + 1; i < bottom.Row + 1; i++) {
-				Rows.RemoveAt(top.Row + 1);
-			}
-			int row = top.Row;
-			for (int i = 0; i < newLines.Length - 1; i++) {
-				Rows[row] += newLines[i];
-				Rows.Insert(row + 1, "");
-				row++;
-			}
-			Rows[row] += newLines.Last() + bottomPiece;
-
-			SetCaret(Rows[row].Length - bottomPiece.Length, row);
-		}
-		else {
-			var top = GetCaretTopLeft();
-			var bottom = GetCaretBottomRight();
-
-			var topPiece = Rows[Caret.Row].Substring(0, (int)MathF.Min(Rows[Caret.Row].Length, Caret.Column));
-			var bottomPiece = Rows[Caret.Row].Substring((int)MathF.Min(Rows[Caret.Row].Length, Caret.Column));
-
-			var newLines = txt.Replace("\r", "").Split('\n');
-
-			Rows[top.Row] = topPiece;
-
-			int row = top.Row;
-			for (int i = 0; i < newLines.Length - 1; i++) {
-				Rows[row] += newLines[i];
-				Rows.Insert(row + 1, "");
-				row++;
-			}
-
-			Rows[row] += newLines.Last() + bottomPiece;
-
-			SetCaret(Caret.Column + newLines.Last().Length, row);
-		}
-		return true;
+		bool done = core.Insert(txt);
+		EnsureCaretVisible();
+		return done;
 	}
-	public bool DeleteSelection() {
-		if (Readonly) return false;
-		if (!HasSelection()) return false;
-
-		var top = GetCaretTopLeft();
-		var bottom = GetCaretBottomRight();
-
-		WriteLastCaret();
-
-		Rows[top.Row] = Rows[top.Row].Substring(0, top.Column) + Rows[bottom.Row].Substring(bottom.Column);
-		for (int i = top.Row + 1; i < bottom.Row + 1; i++) {
-			Rows.RemoveAt(top.Row + 1);
-		}
-
-		SetCaret(top.Column, top.Row);
-		OnEdit();
-		return true;
-	}
+	public bool DeleteSelection() => core.DeleteSelection();
 
 	protected override bool OnGainingKeyboardFocus(Element? lastFocus, ref Element? passTo) {
 		passTo = Editor;
@@ -1419,21 +916,23 @@ public class TextEditor : Panel, ITextElement
 	private void Gutter_PaintOverride(Element self, float width, float height) {
 		Graphics2D.SetDrawColor(40, 50, 55, 155);
 		Graphics2D.DrawRectangle(0, 0, width, height);
+		bool focused = this.Editor.IsKeyboardFocused();
 
 		int i = 0, row = (int)TopRow;
 		while (i < MaxVisibleRows) {
 			if (Rows[row] == null)
 				break;
 
-			var str = (row + 1).ToString();
-
 			float y = PaddingTop + i * FontHeight;
-			float x = ((width / FontWidth) - str.Length) * FontWidth - GutterPaddingRight;
 
-			TextEditorCaret t = GetCaretTopLeft(), b = GetCaretBottomRight();
-			var inRange = NMath.InRange(row, t.Row, b.Row);
-
-			Graphics2D.SetDrawColor((inRange && this.Editor.IsKeyboardFocused()) ? new Color(90, 100, 110, 155) : i % 2 == 1 ? new Color(4, 7, 10, 125) : new Color(24, 30, 40, 125));
+			Color rowColor;
+			if (focused && LineHasCaret(row))
+				rowColor = new Color(90, 100, 110, 155);
+			else if (i % 2 == 1)
+				rowColor = new Color(4, 7, 10, 125);
+			else
+				rowColor = new Color(24, 30, 40, 125);
+			Graphics2D.SetDrawColor(rowColor);
 			Graphics2D.DrawRectangle(0, y, width, FontHeight);
 
 			row += 1;
@@ -1451,9 +950,6 @@ public class TextEditor : Panel, ITextElement
 
 			float y = PaddingTop + i * FontHeight;
 			float x = ((width / FontWidth) - str.Length) * FontWidth - GutterPaddingRight;
-
-			TextEditorCaret t = GetCaretTopLeft(), b = GetCaretBottomRight();
-			var inRange = NMath.InRange(row, t.Row, b.Row);
 
 			Graphics2D.SetDrawColor(220, 220, 220, 255);
 			Graphics2D.DrawText(x, y + 2, str, Font, TextSize);
@@ -1473,8 +969,7 @@ public class TextEditor : Panel, ITextElement
 
 		MaxVisibleRows = MathF.Floor(Height / FontHeight - 1);
 		PaddingTop = FontHeight * 0.3f;
-		PaddingLeft = FontWidth * 2f;
-		CaretWidth = FontWidth * 0.2f;
+		PaddingLeft = FontWidth * 1f;
 		GutterPaddingRight = FontWidth * 1f;
 	}
 
@@ -1482,4 +977,28 @@ public class TextEditor : Panel, ITextElement
 		Graphics2D.SetDrawColor(10, 15, 20, 190);
 		Graphics2D.DrawRectangle(0, 0, width, height);
 	}
+
+	#region ITextLayout
+
+	TextPosition ITextLayout.MoveVertically(TextPosition from, int lines, ref float? preferredX) {
+		preferredX ??= from.Column * FontWidth;
+		int target = from.Line + lines;
+		if (target < 0) return core.Document.Start;
+		if (target >= Rows.Count) return core.Document.End;
+		int column = (int)MathF.Round(preferredX.Value / MathF.Max(1, FontWidth));
+		return new(target, Math.Clamp(column, 0, core.Document.GetLine(target).Length));
+	}
+
+	int ITextLayout.PageLines => Math.Max(1, (int)MaxVisibleRows - 1);
+
+	float ITextLayout.GetX(TextPosition position) => position.Column * FontWidth;
+
+	TextPosition ITextLayout.PositionAt(int line, float x) {
+		line = Math.Clamp(line, 0, Rows.Count - 1);
+		int column = (int)MathF.Round(x / MathF.Max(1, FontWidth));
+		return new(line, Math.Clamp(column, 0, core.Document.GetLine(line).Length));
+
+	}
+
+	#endregion
 }

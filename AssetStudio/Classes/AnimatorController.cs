@@ -599,11 +599,16 @@ namespace AssetStudio
 
     public sealed class AnimatorController : RuntimeAnimatorController
     {
-        public List<PPtr<AnimationClip>> m_AnimationClips;
-        public List<KeyValuePair<uint, string>> m_TOS;
-        public ControllerConstant m_ControllerConstant;
+        public List<PPtr<AnimationClip>> m_AnimationClips { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
+        public List<KeyValuePair<uint, string>> m_TOS { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
+        public ControllerConstant m_ControllerConstant { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
 
         public AnimatorController(ObjectReader reader) : base(reader)
+        {
+            ReadLater(reader, ReadBody);
+        }
+
+        private void ReadBody(ObjectReader reader)
         {
             var m_ControllerSize = reader.ReadUInt32();
             m_ControllerConstant = new ControllerConstant(reader);

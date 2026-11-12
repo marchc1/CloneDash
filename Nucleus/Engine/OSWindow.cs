@@ -3,6 +3,7 @@ using Nucleus.Common.Images;
 using Nucleus.Common.Input;
 using Nucleus.Common.OS;
 using Nucleus.Common.Types;
+using Nucleus.Core;
 using Nucleus.Types;
 using Nucleus.Util;
 
@@ -1067,6 +1068,10 @@ public unsafe class OSWindow : IValidatable
 
 	public void BeginMode2D(Camera2D camera) {
 		Rlgl.DrawRenderBatchActive();
+		if (Graphics2D.IsTransformed) {
+			Rlgl.LoadIdentity();
+			Rlgl.MultMatrixf(Raymath.MatrixToFloatV(ScreenScale));
+		}
 		Rlgl.PushMatrix();
 		Rlgl.LoadIdentity();
 		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(Raylib.GetCameraMatrix2D(camera)));
@@ -1078,6 +1083,7 @@ public unsafe class OSWindow : IValidatable
 		Rlgl.PopMatrix();
 		Rlgl.LoadIdentity();
 		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(ScreenScale));
+		Graphics2D.MultTransformMatrix();
 	}
 
 	public void BeginMode3D(Camera3D camera) {
@@ -1119,6 +1125,7 @@ public unsafe class OSWindow : IValidatable
 		Rlgl.MatrixMode(MatrixMode.ModelView);
 		Rlgl.LoadIdentity();
 		Rlgl.MultMatrixf(Raymath.MatrixToFloatV(ScreenScale));
+		Graphics2D.MultTransformMatrix();
 		Rlgl.DisableDepthTest();
 	}
 
@@ -1251,8 +1258,11 @@ public unsafe class OSWindow : IValidatable
 		}
 
 		int k = 0;
-		while (Keyboard.EnqueuedTextInputs.TryDequeue(out string? str))
+		while (k < Nucleus.Input.KeyboardState.MAX_TEXT_INPUTS - 1 && Keyboard.EnqueuedTextInputs.TryDequeue(out string? str))
 			textInputs[k++] = str;
+		// last frame's leftovers
+		for (int i = k; i < Nucleus.Input.KeyboardState.MAX_TEXT_INPUTS; i++)
+			textInputs[i] = null;
 
 		Keyboard.Reset();
 	}

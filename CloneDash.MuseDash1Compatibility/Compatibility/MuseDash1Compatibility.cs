@@ -10,6 +10,7 @@ using CloneDash.Compatibility.CustomAlbums;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
+using CloneDash.Scenes;
 
 using Fmod5Sharp;
 using Fmod5Sharp.FmodTypes;
@@ -20,6 +21,7 @@ using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Images;
+using Nucleus.Common.Localization;
 using Nucleus.Common.Models;
 using Nucleus.Engine;
 using Nucleus.Files;
@@ -31,8 +33,10 @@ using Raylib_cs;
 
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -235,14 +239,27 @@ namespace CloneDash.Compatibility.MuseDash
 		public static bool IsMuseDashInstalled => WhereIsMuseDashInstalled != null;
 
 		public static string NoteManagerAssetBundle { get; private set; } = "";
-		public static Dictionary<string, List<string>> IBMSToDesc { get; private set; } = new();
-		public static Dictionary<string, NoteConfigData> IDToNote { get; private set; } = new();
-		public static Dictionary<string, NoteConfigData> IBMSToNote { get; private set; } = new();
-		public static Dictionary<string, NoteConfigData> UIDToNote { get; private set; } = new();
+		public static FrozenDictionary<string, List<string>> IBMSToDesc { get; private set; } = null!;
+		public static FrozenDictionary<string, NoteConfigData> IDToNote { get; private set; } = null!;
+		public static FrozenDictionary<string, NoteConfigData> IBMSToNote { get; private set; } = null!;
+		public static FrozenDictionary<string, NoteConfigData> UIDToNote { get; private set; } = null!;
 
-		public static List<CharacterConfigData> Characters { get; set; }
-		public static List<CharacterLocalizationData> CharactersEN { get; set; }
-		public static List<NoteConfigData> NoteDataManager { get; set; }
+		public static List<BossConfigData> Bosses { get; set; } = [];
+		public static List<CharacterConfigData> Characters { get; set; } = null!;
+		public static List<CharacterLocalizationData> CharactersEN { get; set; } = [];
+		public static List<CharacterLocalizationData> CharactersZHCN { get; set; } = [];
+		public static List<CharacterLocalizationData> CharactersZHTW { get; set; } = [];
+		public static List<ElfinConfigData> Elfins { get; set; } = [];
+		public static List<ElfinLocalizationData> ElfinsEN { get; set; } = [];
+		public static List<ElfinLocalizationData> ElfinsZHCN { get; set; } = [];
+		public static List<ElfinLocalizationData> ElfinsZHTW { get; set; } = [];
+		public static List<ElfinLocalizationData> ElfinsJP { get; set; } = [];
+		public static List<ElfinLocalizationData> ElfinsKO { get; set; } = [];
+		public static List<FailBarrageConfigData> FailBarrages { get; set; } = [];
+		public static List<FailBarrageConfigData> FailBarragesEN { get; set; } = [];
+		public static List<CharacterLocalizationData> CharactersJP { get; set; } = [];
+		public static List<CharacterLocalizationData> CharactersKO { get; set; } = [];
+		public static List<NoteConfigData> NoteDataManager { get; set; } = null!;
 
 		public static string BuildTarget { get; private set; }
 		public static string StandalonePlatform { get; private set; }
@@ -343,17 +360,25 @@ namespace CloneDash.Compatibility.MuseDash
 		/// </summary>
 		/// <param name="bundlename"></param>
 		/// <returns></returns>
-		public static MD1_GamemodeData ConvertStageInfoToMD1GamemodeData(MD1_Song song, StageInfo MDinfo, IEnumerable<TempoChange>? tempoChanges = null, IEnumerable<TimeSignatureChange>? timeSignatureChanges = null) {
+		public static MD1_GamemodeData ConvertStageInfoToMD1GamemodeData(MD1_Song song, StageInfo MDinfo, IEnumerable<TempoChange>? tempoChanges = null, IEnumerable<TimeSignatureChange>? timeSignatureChanges = null, PathwayLayout? layout = null) {
 			measureFunctionTime.Reset();
 			measureFunctionTime.Start();
 			MD1_GamemodeData gamemodeData = new();
+			if (layout != null)
+				gamemodeData.Layout = layout;
+
+			var topPathway = gamemodeData.Layout.PathwayAt(0);
+			var bottomPathway = gamemodeData.Layout.PathwayAt(gamemodeData.Layout.Count - 1);
 
 			gamemodeData.InitialScene = "scene/musedash1/" + MDinfo.scene;
-			gamemodeData.SceneChanges.AddRange(MDinfo.sceneEvents.Select(x => new ChartSceneChange() {
-				SceneUID = "scene/musedash1/scene_" + x.uid.Split("SceneEvent/")[1],
-				Time = Convert.ToDouble(x.time),
-				Value = x.value
-			}));
+			gamemodeData.SceneChanges.AddRange(MDinfo.sceneEvents
+				.Select(x => (Event: x, Scene: "scene_" + x.uid.Split("SceneEvent/")[1]))
+				.Where(x => MuseDash1SceneInfo.GetSceneInfo(x.Scene) != null)
+				.Select(x => new ChartSceneChange() {
+					SceneUID = "scene/musedash1/" + x.Scene,
+					Time = Convert.ToDouble(x.Event.time),
+					Value = x.Event.value
+				}));
 
 			gamemodeData.TempoChanges.Add(new(0, 0, MDinfo.bpm));
 			if (tempoChanges != null)
@@ -373,16 +398,19 @@ namespace CloneDash.Compatibility.MuseDash
 					var tick_hit = (double)s.configData.time;
 					var tick_show = tick_hit - ((tick_hit - ((double)s.showTick - gamemodeData.StartOffset)) / (double)s.dt);
 
-					PathwaySide pathwayType = PathwaySide.Both;
+					PathwaySet pathwayType = PathwaySet.Any;
 
 					switch (s.noteData.pathway) {
 						case 1:
-							pathwayType = PathwaySide.Top;
+							pathwayType = topPathway.AsSet;
 							break;
 						case 0:
-							pathwayType = PathwaySide.Bottom;
+							pathwayType = bottomPathway.AsSet;
 							break;
 					}
+
+					if (s.configData.pathway_name != null && gamemodeData.Layout.Find(s.configData.pathway_name) is PathwayId namedPathway)
+						pathwayType = namedPathway.AsSet;
 
 					var blood = s.configData.blood;
 
@@ -394,6 +422,12 @@ namespace CloneDash.Compatibility.MuseDash
 							HitTime = tick_hit,
 							ShowTime = tick_show,
 							Dt = (double)s.dt,
+							Layer = s.configData.layer,
+							Curve = s.configData.curve,
+							LeftGreatRange = (double)s.noteData.left_great_range,
+							LeftPerfectRange = (double)s.noteData.left_perfect_range,
+							RightGreatRange = (double)s.noteData.right_great_range,
+							RightPerfectRange = (double)s.noteData.right_perfect_range,
 
 							Fever = s.noteData.fever,
 							Damage = s.noteData.damage,
@@ -515,7 +549,13 @@ namespace CloneDash.Compatibility.MuseDash
 							MD1_SongChartEvent ChartEvent = new() {
 								Type = eventType,
 								Time = tick_hit,
-								Length = (double)s.configData.length
+								Length = (double)s.configData.length,
+								Dt = (double)s.dt,
+								LeftGreatRange = (double)s.noteData.left_great_range,
+								LeftPerfectRange = (double)s.noteData.left_perfect_range,
+								RightGreatRange = (double)s.noteData.right_great_range,
+								RightPerfectRange = (double)s.noteData.right_perfect_range,
+								Speed = s.noteData.speed
 							};
 
 							if (s.noteData.damage > 0)
@@ -618,7 +658,12 @@ namespace CloneDash.Compatibility.MuseDash
 								HitTime = tick_hit,
 								ShowTime = tick_show,
 								Dt = (double)s.dt,
+								Layer = s.configData.layer,
 								Flipped = flipped,
+								LeftGreatRange = (double)s.noteData.left_great_range,
+								LeftPerfectRange = (double)s.noteData.left_perfect_range,
+								RightGreatRange = (double)s.noteData.right_great_range,
+								RightPerfectRange = (double)s.noteData.right_perfect_range,
 
 								Fever = s.noteData.fever,
 								Damage = s.noteData.damage,
@@ -629,6 +674,7 @@ namespace CloneDash.Compatibility.MuseDash
 								Blood = blood,
 
 								RelatedToBoss = isBoss,
+								BossAction = s.noteData.boss_action,
 								DebuggingInfo = $"ib.code: {ib.Code}"
 							});
 						}
@@ -678,47 +724,77 @@ namespace CloneDash.Compatibility.MuseDash
 			public string author;
 		}
 
+		private struct __musedashAlbumJSON
+		{
+			public List<MuseDashSongInfoJSON> songs;
+			public __musedashSong[]? songsEN, songsCN_S, songsCN_T, songsJP, songsKO;
+		}
+
+		static __musedashAlbumJSON[] albumJSONs = [];
+
+		public static void ReadDashStructures() {
+			Albums = ReadJSON<List<MuseDash1Album>>("Assets/Static Resources/Data/Configs/others/albums.json")!;
+			Albums.RemoveAll(x => x.JsonName == "");
+
+			var workAlbumJSONs = new __musedashAlbumJSON[Albums.Count];
+			using (StaticSequentialProfiler.StartStackFrame("Parallel Process Dash Structures"))
+				Parallel.For(0, Albums.Count, (i) => {
+					var album = Albums[i];
+					// var songs_raw = filesystem.ReadAllText($"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
+					// var songsEN_raw = filesystem.ReadAllText($"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
+					workAlbumJSONs[i] = new() {
+						songs = ReadJSON<List<MuseDashSongInfoJSON>>($"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json")!,
+						songsEN = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json"),
+						songsCN_S = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/chineses/{album.JsonName}_ChineseS.json"),
+						songsCN_T = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/chineset/{album.JsonName}_ChineseT.json"),
+						songsJP = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/japanese/{album.JsonName}_Japanese.json"),
+						songsKO = ReadJSON<__musedashSong[]>($"Assets/Static Resources/Data/Configs/korean/{album.JsonName}_Korean.json")
+					};
+				});
+
+			albumJSONs = workAlbumJSONs;
+		}
+
 		public static void BuildDashStructures() {
 			Stopwatch s = new Stopwatch();
 			s.Start();
 
-			Albums = Filesystem.ReadJSON<List<MuseDash1Album>>("musedash", "Assets/Static Resources/Data/Configs/others/albums.json");
-			Albums.RemoveAll(x => x.JsonName == "");
-
 			ConcurrentBag<MD1_Song> workSongs = [];
+			ConcurrentBag<HashSet<char>> workCharCodepoints = [];
 			using (StaticSequentialProfiler.StartStackFrame("Parallel Process Dash Structures"))
-				Parallel.ForEach(Albums, (album) => {
-					// var songs_raw = filesystem.ReadAllText("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
-					// var songsEN_raw = filesystem.ReadAllText("musedash", $"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
-					var songs = Filesystem.ReadJSON<List<MuseDashSongInfoJSON>>("musedash", $"Assets/Static Resources/Data/Configs/others/{album.JsonName}.json");
-					var songsEN = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/english/{album.JsonName}_English.json");
-					var songsCN_S = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/chineses/{album.JsonName}_ChineseS.json");
-					var songsCN_T = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/chineset/{album.JsonName}_ChineseT.json");
-					var songsJP = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/japanese/{album.JsonName}_Japanese.json");
-					var songsKO = Filesystem.ReadJSON<__musedashSong[]>("musedash", $"Assets/Static Resources/Data/Configs/korean/{album.JsonName}_Korean.json");
-					// Debug.Assert(songs.Count == songsEN.Length);
-					// if (songs.Count != songsEN.Length) {
-					// 	Logs.Print($"inconsistency: {album.JsonName} songs length! songs ({songs.Count}) != songsEN ({songsEN.Length})");
-					// 	for (int i = 0; i < songs.Count; i++) Logs.Print($"    song   #{i}: {songs[i].Name}");
-					// 	for (int i = 0; i < songsEN.Length; i++) Logs.Print($"    songEN #{i}: {songsEN[i].name}");
-					// }
+				Parallel.ForEach(albumJSONs, (albumJSON) => {
+					var songs = albumJSON.songs;
+					var songsEN = albumJSON.songsEN;
+					var songsCN_S = albumJSON.songsCN_S;
+					var songsCN_T = albumJSON.songsCN_T;
+					var songsJP = albumJSON.songsJP;
+					var songsKO = albumJSON.songsKO;
+
 					var songsFinal = new MD1_Song[songs.Count];
 
 					for (int i = 0; i < songs.Count; i++) {
 						PatchSong(songs, i);
 						var song = new MD1_Song();
 						song.AddBaseJSONInfo(songs[i]);
-						song.AddLocalizedJSONInfo(HumanLanguage.English, songsEN[i].name, songsEN[i].author);
-						song.AddLocalizedJSONInfo(HumanLanguage.SimplifiedChinese, songsCN_S[i].name, songsCN_S[i].author);
-						song.AddLocalizedJSONInfo(HumanLanguage.TraditionalChinese, songsCN_T[i].name, songsCN_T[i].author);
-						song.AddLocalizedJSONInfo(HumanLanguage.Japanese, songsJP[i].name, songsJP[i].author);
-						song.AddLocalizedJSONInfo(HumanLanguage.Korean, songsKO[i].name, songsKO[i].author);
+
+						if (songsEN != null)
+							song.AddLocalizedInfo(ILocalize.English, songsEN[i].name, songsEN[i].author);
+						if (songsCN_S != null)
+							song.AddLocalizedInfo(ILocalize.ChineseSimplified, songsCN_S[i].name, songsCN_S[i].author);
+						if (songsCN_T != null)
+							song.AddLocalizedInfo(ILocalize.ChineseTraditional, songsCN_T[i].name, songsCN_T[i].author);
+						if (songsJP != null)
+							song.AddLocalizedInfo(ILocalize.Japanese, songsJP[i].name, songsJP[i].author);
+						if (songsKO != null)
+							song.AddLocalizedInfo(ILocalize.Korean, songsKO[i].name, songsKO[i].author);
+
 						workSongs.Add(song);
 					}
 				});
 
+			albumJSONs = [];
 			Songs = [.. workSongs];
-			Songs.Sort((x, y) => x.FetchMetadata(HumanLanguage.Any).Name.CompareTo(y.FetchMetadata(HumanLanguage.Any).Name));
+			Songs.Sort((x, y) => x.FetchMetadata().Name.CompareTo(y.FetchMetadata().Name, StringComparison.InvariantCulture));
 #if I_AM_LAZY_I_WANT_TO_KNOW_THIS_NUMBER
 			Logs.Info($"total songs: {Songs.Count}, charts: {Songs.Sum(x => {
 				if (x.GetInfo() == null)
@@ -732,17 +808,6 @@ namespace CloneDash.Compatibility.MuseDash
 				return count;
 			})}");
 #endif
-			HashSet<char> codepoints = [];
-			foreach (var song in Songs) {
-				foreach (MuseDashSongInfoJSON info in song.GetAvailableInfo()) {
-					string name = info.Name, author = info.Author;
-					for (int i = 0, c = name.Length; i < c; i++)
-						codepoints.Add(name[i]);
-					for (int i = 0, c = author.Length; i < c; i++)
-						codepoints.Add(author[i]);
-				}
-			}
-			CodepointsInUse = codepoints.ToArray();
 		}
 
 		const string CHAOS_UID = "33-4";
@@ -811,15 +876,6 @@ namespace CloneDash.Compatibility.MuseDash
 			return true;
 		}
 
-		public static ITexture ConvertTexture(Level level, AssetStudio.Texture2D tex) {
-			using Raylib.ImageRef img = new Raylib.ImageRef(tex.ToRaylib());
-			ITexture ntex = textures.CreateTexture((Image)img);
-			ntex.SetFilter(TextureFilter.Bilinear);
-			ntex.SetWrap(TextureWrap.Clamp);
-			ntex.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
-			return ntex;
-		}
-
 		public static byte[] GetSoundBytes(Level level, AudioClip audioclip, out string? fileExtension) {
 			fileExtension = null;
 
@@ -844,15 +900,16 @@ namespace CloneDash.Compatibility.MuseDash
 			return audiosystem.CreateStreamAudioClip(ms, $"UnityAudioClip:{clip.m_PathID}/{clip.m_Name}");
 		}
 
-		public static MDAtlas PopulateModelDataTextures(ModelData modelData, TextAsset atlasAsset, Texture2D[] images, Material[] materials) {
-			using var ms = new MemoryStream(atlasAsset.m_Script);
+		public static MDAtlas PopulateModelDataTextures(ModelData modelData, TextAsset? atlasAsset, Texture2D[] images, Material[] materials, bool uploadTextures = true) {
+			using var ms = new MemoryStream(atlasAsset?.m_Script ?? []);
 			using var sr = new StreamReader(ms);
 
 			var text = sr.ReadToEnd();
 			var lines = text.Replace("\r", "").Split('\n');
 
 			AtlasBuilder atlasBuilder = new AtlasBuilder();
-			MDAtlasBuildStep buildStep = MDAtlasBuildStep.Waiting;
+			// Some atlases start right at the page name
+			MDAtlasBuildStep buildStep = MDAtlasBuildStep.ReadyForPage;
 
 			foreach (var dirtyLine in lines) {
 				var line = dirtyLine.Trim();
@@ -866,10 +923,13 @@ namespace CloneDash.Compatibility.MuseDash
 					case MDAtlasBuildStep.ReadyForPage:
 						var imageName = Path.ChangeExtension(line, null);
 						var index = images.IndexOf(x => x != null && x.m_Name == imageName);
-						atlasBuilder.StartPage(line).Texture = new(images[index].ToRaylib());
+						// some materials have no texture (miku_name, empty_spi)
+						atlasBuilder.StartPage(line).Texture = new(index >= 0 ? images[index].ToRaylib() : default);
 						buildStep = MDAtlasBuildStep.ReadingPage;
 
-						atlasBuilder.WorkingPage.StraightAlpha = ((string)materials[index].ToType()["m_ShaderKeywords"]!).Contains("_STRAIGHT_ALPHA_INPUT");
+						if (index >= 0)
+							atlasBuilder.WorkingPage.StraightAlpha =
+								((string)materials[index].ToType()["m_ShaderKeywords"]!).Contains("_STRAIGHT_ALPHA_INPUT");
 						break;
 					case MDAtlasBuildStep.ReadingPage: {
 							if (!tryReadProperty(line, out var key, out var values))
@@ -901,17 +961,39 @@ namespace CloneDash.Compatibility.MuseDash
 
 			foreach (var pageKVP in atlas.Pages) {
 				var page = pageKVP.Value;
+				if (page.Texture.Width == 0) {
+					Logs.Warn($"Atlas page '{page.Name}' has no texture in the game data, using a blank one.");
+					page.Texture = new(Image.GenImageColor(
+						Math.Max(1, page.Parameters.Read<int>("size", 0)),
+						Math.Max(1, page.Parameters.Read<int>("size", 1)),
+						Color.Blank));
+				}
 				page.CheckSizing();
+			}
+
+			if (uploadTextures)
+				UploadAtlasTextures(atlas);
+
+			modelData.TextureAtlas = atlas;
+			modelData.SetupAttachments();
+			return atlas;
+		}
+
+		public static void UploadModelDataTextures(ModelData modelData) {
+			if (modelData.TextureAtlas is MDAtlas atlas)
+				UploadAtlasTextures(atlas);
+		}
+
+		static void UploadAtlasTextures(MDAtlas atlas) {
+			foreach (var page in atlas.Pages.Values) {
+				if (page.GpuTexture != null)
+					continue;
 
 				page.GpuTexture = textures.CreateTexture(page.Texture);
 				page.GpuTexture.SetFilter(TextureFilter.Bilinear);
 				page.GpuTexture.SetWrap(TextureWrap.Clamp);
 				page.GpuTexture.AddPublicFlags(PublicTextureFlags.RequiresFlippedV); // TODO: Do the OSX assets ship differently?
 			}
-
-			modelData.TextureAtlas = atlas;
-			modelData.SetupAttachments();
-			return atlas;
 		}
 
 		public static IAudioClip? LoadSoundFromName(Level level, string audioName) {
@@ -920,6 +1002,11 @@ namespace CloneDash.Compatibility.MuseDash
 			var audioclip = StreamingAssets.FindAssetByName<AudioClip>(audioName);
 			if (audioclip == null) throw new FileNotFoundException();
 
+			return LoadSound(audioclip);
+		}
+
+		public static IAudioClip? LoadSound(AudioClip audioclip) {
+			string audioName = audioclip.m_Name;
 			var audiodata = audioclip.m_AudioData.GetData();
 
 			if (audioclip.m_Type == FMODSoundType.UNKNOWN) {
@@ -933,6 +1020,29 @@ namespace CloneDash.Compatibility.MuseDash
 			}
 
 			throw new NotImplementedException();
+		}
+
+		public static byte[]? RebuildSoundFromName(string audioName, out string clipName) {
+			var audioclip = StreamingAssets.FindAssetByName<AudioClip>(audioName);
+			if (audioclip == null) throw new FileNotFoundException();
+
+			clipName = audioclip.m_Name;
+			var audiodata = audioclip.m_AudioData.GetData();
+			if (audioclip.m_Type == FMODSoundType.UNKNOWN) {
+				FmodSoundBank bank = FsbLoader.LoadFsbFromByteArray(audiodata);
+				bank.Samples[0].RebuildAsStandardFileFormat(out var at, out _);
+				return at;
+			}
+
+			throw new NotImplementedException();
+		}
+
+		public static IAudioClip? CreateSound(byte[]? rebuilt, string clipName) {
+			if (rebuilt == null)
+				return null;
+
+			using var into = new MemoryStream(rebuilt);
+			return audiosystem.CreateStreamAudioClip(into, $"MDAsset:{clipName}");
 		}
 
 		public static IAudioClip? LoadMusicFromName(Level level, string? audioName) {
@@ -1006,8 +1116,38 @@ namespace CloneDash.Compatibility.MuseDash
 }
 
 [MarkForStaticConstruction]
+/// <summary>
+/// What the last conversion kept and dropped
+/// </summary>
+public class MD1ConversionStats
+{
+	// Converted
+	public int IkConstraints;
+	public int TransformConstraints;
+	public int PathConstraints;
+	public int IkTimelines;
+	public int TransformTimelines;
+	public int PathTimelines;
+	public int DeformTimelines, DeformKeys;
+	public int Events, EventKeys;
+	public int Paths;
+	public int LinkedMeshes;
+	public int TwoColorTimelines;
+
+	// Dropped
+	public int BoundingBoxes;
+	public int Points;
+	/// <summary>
+	/// Deforms on attachments that didn't convert
+	/// </summary>
+	public int UnresolvedDeforms;
+	public int UnresolvedLinkedMeshes;
+}
+
 public static class MuseDash1ModelConverter
 {
+	public static MD1ConversionStats LastConversionStats { get; private set; } = new();
+
 
 	public const byte ATTACHMENT_REGION = 0;
 	public const byte ATTACHMENT_BOUNDING_BOX = 1;
@@ -1129,6 +1269,15 @@ public static class MuseDash1ModelConverter
 	public static Color MD_ReadColor(this MemoryStream asset) => MD_ReadNullableColor(asset) ?? throw new NullReferenceException();
 
 	/// <summary>
+	/// Tint black color, 0x00RRGGBB. -1 = none
+	/// </summary>
+	public static Color? MD_ReadDarkColor(this MemoryStream asset) {
+		int rgb = asset.MD_ReadInt();
+		if (rgb == -1) return null;
+		return new((byte)((rgb >> 16) & 0xff), (byte)((rgb >> 8) & 0xff), (byte)(rgb & 0xff), (byte)255);
+	}
+
+	/// <summary>
 	/// Convert a Muse Dash model from Unity assets into a Nucleus Model4System compatible model, or at least tries to.
 	/// </summary>
 	/// <param name="skeletonTA"></param>
@@ -1136,7 +1285,8 @@ public static class MuseDash1ModelConverter
 	/// <param name="image"></param>
 	/// <returns></returns>
 	public static ModelData ConvertMuseDashModelData(ModelData nucleusModelData, TextAsset skeletonTA, MDAtlas mdatlas) {
-		using (MemoryStream skeleton = new(skeletonTA.m_Script))
+		LastConversionStats = new();
+		using (MemoryStream skeleton = new(MD1_SpineJson.IsJson(skeletonTA.m_Script) ? MD1_SpineJson.ToBinary(skeletonTA.m_Script) : skeletonTA.m_Script))
 			//using (Raylib.ImageRef image = new(imageT2D.ToRaylib())) 
 			{
 			string hash = skeleton.MD_ReadString();
@@ -1148,13 +1298,11 @@ public static class MuseDash1ModelConverter
 			skeleton.MD_ReadFloat(); // height
 
 			bool nonessential = skeleton.MD_ReadBoolean();
-			bool hadAudio = false;
-			List<bool> eventDataHasAudio = [];
 			if (nonessential) {
 				skeleton.MD_ReadFloat();
 
 				skeleton.MD_ReadNullableString(); // images
-				hadAudio = !string.IsNullOrWhiteSpace(skeleton.MD_ReadNullableString()); // audio
+				skeleton.MD_ReadNullableString(); // audio
 			}
 
 			string[] refStrings = new string[skeleton.MD_ReadVarInt(true)];
@@ -1183,7 +1331,7 @@ public static class MuseDash1ModelConverter
 					TRANSFORM_NO_SCALE => TransformMode.NoScale,
 					TRANSFORM_NO_SCALE_OR_REFLECTION => TransformMode.NoScaleOrReflection
 				};
-				skeleton.MD_ReadBoolean();
+				boneData.SkinRequired = skeleton.MD_ReadBoolean();
 				if (nonessential)
 					skeleton.MD_ReadInt();
 
@@ -1197,7 +1345,7 @@ public static class MuseDash1ModelConverter
 				slotData.Index = i;
 				slotData.BoneData = nucleusModelData.BoneDatas[skeleton.MD_ReadVarInt(true)];
 				slotData.Color = skeleton.MD_ReadColor();
-				slotData.DarkColor = skeleton.MD_ReadNullableColor();
+				slotData.DarkColor = MD_ReadDarkColor(skeleton);
 				slotData.Attachment = skeleton.MD_ReadRefString(refStrings);
 				slotData.BlendMode = skeleton.MD_ReadByte() switch {
 					BLEND_MODE_ADDITIVE => Nucleus.Models.BlendMode.Additive,
@@ -1209,102 +1357,134 @@ public static class MuseDash1ModelConverter
 				nucleusModelData.SlotDatas.Add(slotData);
 			}
 
-			int iks = skeleton.MD_ReadVarInt(true);
-			Logs.WarnIf(iks != 0, "This model has inverse kinematics! It won't work correctly!");
-			for (int i = 0; i < iks; i++) {
-				skeleton.MD_ReadString();
-				skeleton.MD_ReadVarInt(true);
-				skeleton.MD_ReadBoolean();
-				for (int i2 = 0, n = skeleton.MD_ReadVarInt(true); i2 < n; i2++)
-					skeleton.MD_ReadVarInt(true);
-				skeleton.MD_ReadVarInt(true);
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.ReadByte();
-				skeleton.MD_ReadBoolean();
-				skeleton.MD_ReadBoolean();
-				skeleton.MD_ReadBoolean();
+			for (int i = 0, iks = skeleton.MD_ReadVarInt(true); i < iks; i++) {
+				IkConstraintData ik = new();
+				ik.Name = skeleton.MD_ReadString();
+				ik.Order = skeleton.MD_ReadVarInt(true);
+				ik.SkinRequired = skeleton.MD_ReadBoolean();
+				MD_ReadConstraintBones(skeleton, nucleusModelData, ik);
+				ik.Target = nucleusModelData.BoneDatas[skeleton.MD_ReadVarInt(true)];
+				ik.Mix = skeleton.MD_ReadFloat();
+				ik.Softness = skeleton.MD_ReadFloat();
+				ik.BendDirection = (sbyte)skeleton.MD_ReadByte();
+				ik.Compress = skeleton.MD_ReadBoolean();
+				ik.Stretch = skeleton.MD_ReadBoolean();
+				ik.Uniform = skeleton.MD_ReadBoolean();
+
+				nucleusModelData.IkConstraints.Add(ik);
+				LastConversionStats.IkConstraints++;
 			}
 
-			int transforms = skeleton.MD_ReadVarInt(true);
-			Logs.WarnIf(transforms != 0, "This model has transforms! It won't work correctly!");
-			for (int i = 0; i < transforms; i++) {
-				skeleton.MD_ReadString();
-				skeleton.MD_ReadVarInt(true);
-				skeleton.MD_ReadBoolean();
-				for (int i2 = 0, n = skeleton.MD_ReadVarInt(true); i2 < n; i2++)
-					skeleton.MD_ReadVarInt(true);
-				skeleton.MD_ReadVarInt(true);
-				skeleton.MD_ReadBoolean();
-				skeleton.MD_ReadBoolean();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
+			for (int i = 0, transforms = skeleton.MD_ReadVarInt(true); i < transforms; i++) {
+				TransformConstraintData transform = new();
+				transform.Name = skeleton.MD_ReadString();
+				transform.Order = skeleton.MD_ReadVarInt(true);
+				transform.SkinRequired = skeleton.MD_ReadBoolean();
+				MD_ReadConstraintBones(skeleton, nucleusModelData, transform);
+				transform.Target = nucleusModelData.BoneDatas[skeleton.MD_ReadVarInt(true)];
+				transform.Local = skeleton.MD_ReadBoolean();
+				transform.Relative = skeleton.MD_ReadBoolean();
+				transform.OffsetRotation = skeleton.MD_ReadFloat();
+				transform.OffsetX = skeleton.MD_ReadFloat();
+				transform.OffsetY = skeleton.MD_ReadFloat();
+				transform.OffsetScaleX = skeleton.MD_ReadFloat();
+				transform.OffsetScaleY = skeleton.MD_ReadFloat();
+				transform.OffsetShearY = skeleton.MD_ReadFloat();
+				transform.RotateMix = skeleton.MD_ReadFloat();
+				transform.TranslateMix = skeleton.MD_ReadFloat();
+				transform.ScaleMix = skeleton.MD_ReadFloat();
+				transform.ShearMix = skeleton.MD_ReadFloat();
+
+				nucleusModelData.TransformConstraints.Add(transform);
+				LastConversionStats.TransformConstraints++;
 			}
 
-			int paths = skeleton.MD_ReadVarInt(true);
-			Logs.WarnIf(paths != 0, "This model has paths! It won't work correctly!");
-			for (int i = 0; i < paths; i++) {
-				skeleton.MD_ReadString();
-				skeleton.MD_ReadVarInt(true);
-				skeleton.MD_ReadBoolean();
-				for (int i2 = 0, n = skeleton.MD_ReadVarInt(true); i2 < n; i2++)
-					skeleton.MD_ReadVarInt(true);
-				skeleton.MD_ReadVarInt(true);
-				skeleton.MD_ReadVarInt(true);
-				skeleton.MD_ReadVarInt(true);
-				skeleton.MD_ReadVarInt(true);
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
+			for (int i = 0, paths = skeleton.MD_ReadVarInt(true); i < paths; i++) {
+				PathConstraintData path = new();
+				path.Name = skeleton.MD_ReadString();
+				path.Order = skeleton.MD_ReadVarInt(true);
+				path.SkinRequired = skeleton.MD_ReadBoolean();
+				MD_ReadConstraintBones(skeleton, nucleusModelData, path);
+				path.Target = nucleusModelData.SlotDatas[skeleton.MD_ReadVarInt(true)];
+				path.PositionMode = skeleton.MD_ReadVarInt(true) switch {
+					PATH_POSITION_PERCENT => PositionMode.Percent,
+					_ => PositionMode.Fixed
+				};
+				path.SpacingMode = skeleton.MD_ReadVarInt(true) switch {
+					PATH_SPACING_FIXED => SpacingMode.Fixed,
+					PATH_SPACING_PERCENT => SpacingMode.Percent,
+					_ => SpacingMode.Length
+				};
+				path.RotateMode = skeleton.MD_ReadVarInt(true) switch {
+					PATH_ROTATE_CHAIN => RotateMode.Chain,
+					PATH_ROTATE_CHAIN_SCALE => RotateMode.ChainScale,
+					_ => RotateMode.Tangent
+				};
+				// unscaled
+				path.OffsetRotation = skeleton.MD_ReadFloat();
+				path.Position = skeleton.MD_ReadFloat();
+				path.Spacing = skeleton.MD_ReadFloat();
+				path.RotateMix = skeleton.MD_ReadFloat();
+				path.TranslateMix = skeleton.MD_ReadFloat();
+
+				nucleusModelData.PathConstraints.Add(path);
+				LastConversionStats.PathConstraints++;
 			}
 
+			// Empty default skin comes back null and isn't listed.
 			nucleusModelData.DefaultSkin = MD_ReadSkin(skeleton, nucleusModelData, mdatlas, refStrings, true, nonessential);
-			nucleusModelData.Skins.Add(nucleusModelData.DefaultSkin);
+			if (nucleusModelData.DefaultSkin != null)
+				nucleusModelData.Skins.Add(nucleusModelData.DefaultSkin);
 
 			for (int i = 0, skins = skeleton.MD_ReadVarInt(true); i < skins; i++)
 				nucleusModelData.Skins.Add(MD_ReadSkin(skeleton, nucleusModelData, mdatlas, refStrings, false, nonessential));
 
 			// When all skins/attachments have been read, linked meshes need to be fully linked up
-			for (int i = 0, lmeshes = nucleusModelData.LinkedMeshes.Count; i < lmeshes; i++) {
-				var linked = nucleusModelData.LinkedMeshes[i];
-				Skin skin = (linked.Skin == null ? nucleusModelData.DefaultSkin : nucleusModelData.FindSkin(linked.Skin)) ?? throw new NullReferenceException("Skin was null (corrupt modeldata");
-				Attachment parent = skin.GetAttachment(linked.SlotIndex, linked.Parent) ?? throw new NullReferenceException("Parent attachment was null (corrupt modeldata)");
-				if (parent is not MeshAttachment parentMesh) throw new InvalidCastException("Parent attachment was not a mesh attachment");
-				MeshAttachment mesh = linked.Mesh;
-				mesh.ParentMesh = parentMesh;
-			}
-			nucleusModelData.LinkedMeshes.Clear();
-
-			for (int i = 0, events = skeleton.MD_ReadVarInt(true); i < events; i++) {
-				var name = skeleton.MD_ReadRefString(refStrings);
-				var @int = skeleton.MD_ReadVarInt(false);
-				var @float = skeleton.MD_ReadFloat();
-				var @string = skeleton.MD_ReadNullableString();
-				var @audioPath = skeleton.MD_ReadNullableString();
-				eventDataHasAudio.Add(@audioPath != null);
-				if (@audioPath != null) {
-					skeleton.MD_ReadFloat();
-					skeleton.MD_ReadFloat();
+			nucleusModelData.ResolveLinkedMeshes();
+			HashSet<Attachment> linkedSeen = [];
+			foreach (var skin in nucleusModelData.Skins) {
+				foreach (var entry in skin.Attachments.ToArray()) {
+					if (entry.Value is not MeshAttachment { IsLinked: true } linked) continue;
+					if (linked.ParentMesh != null) {
+						if (linkedSeen.Add(linked))
+							LastConversionStats.LinkedMeshes++;
+						continue;
+					}
+					// no vertices without a parent
+					skin.Attachments.Remove(entry.Key);
+					LastConversionStats.UnresolvedLinkedMeshes++;
+					Logs.Warn($"Linked mesh '{linked.Name}' couldn't find its parent '{linked.ParentKey}' (skin {linked.ParentSkin ?? "default"}), skipping it.");
 				}
 			}
 
+			for (int i = 0, events = skeleton.MD_ReadVarInt(true); i < events; i++) {
+				EventData eventData = new();
+				eventData.Name = skeleton.MD_ReadRefString(refStrings) ?? "";
+				eventData.Int = skeleton.MD_ReadVarInt(false);
+				eventData.Float = skeleton.MD_ReadFloat();
+				eventData.String = skeleton.MD_ReadNullableString();
+				eventData.AudioPath = skeleton.MD_ReadNullableString();
+				if (eventData.AudioPath != null) {
+					eventData.Volume = skeleton.MD_ReadFloat();
+					eventData.Balance = skeleton.MD_ReadFloat();
+				}
+
+				nucleusModelData.Events.Add(eventData);
+				LastConversionStats.Events++;
+			}
+
 			for (int i = 0, animations = skeleton.MD_ReadVarInt(true); i < animations; i++) {
-				MD_ReadAnimation(skeleton, nucleusModelData, refStrings, nonessential, hadAudio, eventDataHasAudio);
+				MD_ReadAnimation(skeleton, nucleusModelData, refStrings, nonessential);
 			}
 
 			return nucleusModelData;
 		}
 	}
+	private static void MD_ReadConstraintBones(MemoryStream skeleton, ModelData nucleusModelData, ConstraintData constraint) {
+		for (int i = 0, n = skeleton.MD_ReadVarInt(true); i < n; i++)
+			constraint.Bones.Add(nucleusModelData.BoneDatas[skeleton.MD_ReadVarInt(true)]);
+	}
+
 	private static void MD_ReadCurve(MemoryStream skeleton, int frame, int frames, out byte curveType, out float c1, out float c2, out float c3, out float c4) {
 		if (frame >= frames - 1) {
 			curveType = 0;
@@ -1336,14 +1516,32 @@ public static class MuseDash1ModelConverter
 
 
 	private static void fillKeyframe(FCurve<float> curve, float time, float value, byte ct, float c1, float c2, byte prevCt, float c3, float c4) {
-		curve.AddKeyframe(new(time, value) { Interpolation = interp(ct), RightHandle = interpKFH(ct, c1, c2), LeftHandle = interpKFH(prevCt, c3, c4) });
+		var key = new Nucleus.Models.Keyframe<float>(time, value) {
+			Interpolation = interp(ct),
+			RightHandle = interpKFH(ct, c1, c2),
+			LeftHandle = interpKFH(prevCt, c3, c4)
+		};
+		// Keys at the same time (a jump) would replace each other here.
+		curve.Recompute();
+		var keys = curve.Keyframes;
+		if (keys.Count > 0 && key.Time - keys[^1].Time <= FCurve<float>.KEYFRAME_TIME_EPSILON) {
+			var last = keys[^1];
+			double moved = key.Time - 2 * FCurve<float>.KEYFRAME_TIME_EPSILON;
+			if (keys.Count >= 2) {
+				var previous = keys[keys.Count - 2];
+				if (previous.Interpolation != KeyframeInterpolation.Constant && last.Time > previous.Time)
+					last.Value = (float)(previous.Value + (last.Value - previous.Value) * (moved - previous.Time) / (last.Time - previous.Time));
+			}
+			last.Time = moved;
+			keys[^1] = last;
+		}
+		curve.AddKeyframe(key);
 	}
 
-	private static void fixCurve(FCurve<float> curve) {
+	private static void FixCurve(FCurve<float> curve, bool angles = false) =>
+		LegacyCurves.ConvertNormalizedHandles(curve, angles);
 
-	}
-
-	private static void MD_ReadAnimation(MemoryStream skeleton, ModelData nucleusModelData, string[] refStrings, bool nonessential, bool hadAudio, List<bool> eventDataHasAudio) {
+	private static void MD_ReadAnimation(MemoryStream skeleton, ModelData nucleusModelData, string[] refStrings, bool nonessential) {
 		Nucleus.Models.Runtime.Animation animation = new Nucleus.Models.Runtime.Animation();
 		animation.Name = skeleton.MD_ReadNullableString() ?? "";
 		nucleusModelData.Animations.Add(animation);
@@ -1359,7 +1557,7 @@ public static class MuseDash1ModelConverter
 					case SLOT_ATTACHMENT: {
 							ActiveAttachmentTimeline tl = new ActiveAttachmentTimeline();
 							tl.SlotIndex = slotIndex;
-							tl.NewCurves();
+							tl.NewCurves(frames);
 
 							for (int frame = 0; frame < frames; frame++)
 								tl.Curve(0).AddKeyframe(new(skeleton.MD_ReadFloat(), skeleton.MD_ReadRefString(refStrings)));
@@ -1371,7 +1569,7 @@ public static class MuseDash1ModelConverter
 					case SLOT_COLOR: {
 							SlotColor4Timeline tl = new SlotColor4Timeline();
 							tl.SlotIndex = slotIndex;
-							tl.NewCurves();
+							tl.NewCurves(frames);
 
 							byte prevCt = CURVE_LINEAR; float lc3 = 0, lc4 = 0;
 							for (int frame = 0; frame < frames; frame++) {
@@ -1389,22 +1587,46 @@ public static class MuseDash1ModelConverter
 								lc3 = c3;
 								lc4 = c4;
 							}
-							fixCurve(tl.Curve(0));
-							fixCurve(tl.Curve(1));
-							fixCurve(tl.Curve(2));
-							fixCurve(tl.Curve(3));
+							FixCurve(tl.Curve(0));
+							FixCurve(tl.Curve(1));
+							FixCurve(tl.Curve(2));
+							FixCurve(tl.Curve(3));
 
 							animation.Timelines.Add(tl);
 							animation.Duration = Math.Max(animation.Duration, tl.Curve(0)?.Last?.Time ?? 0);
 						}
 						break;
 					case SLOT_TWO_COLOR: {
+							LastConversionStats.TwoColorTimelines++;
+							SlotRGBA2Timeline timeline = new SlotRGBA2Timeline();
+							timeline.SlotIndex = slotIndex;
+							timeline.NewCurves(frames);
+
+							byte prevCt = CURVE_LINEAR;
+							float lc3 = 0, lc4 = 0;
 							for (int frame = 0; frame < frames; frame++) {
 								var time = skeleton.MD_ReadFloat();
-								var light = skeleton.MD_ReadInt();
-								var dark = skeleton.MD_ReadInt();
+								var light = skeleton.MD_ReadColor();
+								var dark = MD_ReadDarkColor(skeleton) ?? Color.Black;
 								MD_ReadCurve(skeleton, frame, frames, out var curveType, out var c1, out var c2, out var c3, out var c4);
+
+								fillKeyframe(timeline.Curve(0), time, light.R / 255f, curveType, c1, c2, prevCt, lc3, lc4);
+								fillKeyframe(timeline.Curve(1), time, light.G / 255f, curveType, c1, c2, prevCt, lc3, lc4);
+								fillKeyframe(timeline.Curve(2), time, light.B / 255f, curveType, c1, c2, prevCt, lc3, lc4);
+								fillKeyframe(timeline.Curve(3), time, light.A / 255f, curveType, c1, c2, prevCt, lc3, lc4);
+								fillKeyframe(timeline.Curve(4), time, dark.R / 255f, curveType, c1, c2, prevCt, lc3, lc4);
+								fillKeyframe(timeline.Curve(5), time, dark.G / 255f, curveType, c1, c2, prevCt, lc3, lc4);
+								fillKeyframe(timeline.Curve(6), time, dark.B / 255f, curveType, c1, c2, prevCt, lc3, lc4);
+
+								prevCt = curveType;
+								lc3 = c3;
+								lc4 = c4;
 							}
+							for (int i = 0; i < 7; i++)
+								FixCurve(timeline.Curve(i));
+
+							animation.Timelines.Add(timeline);
+							animation.Duration = Math.Max(animation.Duration, timeline.Curve(0)?.Last?.Time ?? 0);
 						}
 						break;
 				}
@@ -1421,7 +1643,7 @@ public static class MuseDash1ModelConverter
 					case BONE_ROTATE: {
 							RotationTimeline tl = new RotationTimeline();
 							tl.BoneIndex = boneIndex;
-							tl.NewCurves();
+							tl.NewCurves(frames);
 
 							byte prevCt = CURVE_LINEAR; float lc3 = 0, lc4 = 0;
 							for (int frame = 0; frame < frames; frame++) {
@@ -1434,7 +1656,7 @@ public static class MuseDash1ModelConverter
 								lc3 = c3;
 								lc4 = c4;
 							}
-							fixCurve(tl.Curve(0));
+							FixCurve(tl.Curve(0), true);
 							animation.Timelines.Add(tl);
 							animation.Duration = Math.Max(animation.Duration, tl.Curve(0)?.Last?.Time ?? 0);
 						}
@@ -1450,7 +1672,7 @@ public static class MuseDash1ModelConverter
 							};
 
 							tl.BoneIndex = boneIndex;
-							tl.NewCurves();
+							tl.NewCurves(frames);
 
 							byte prevCt = CURVE_LINEAR; float lc3 = 0, lc4 = 0;
 							for (int frame = 0; frame < frames; frame++) {
@@ -1467,8 +1689,8 @@ public static class MuseDash1ModelConverter
 								lc4 = c4;
 							}
 
-							fixCurve(tl.Curve(0));
-							fixCurve(tl.Curve(1));
+							FixCurve(tl.Curve(0));
+							FixCurve(tl.Curve(1));
 
 							animation.Timelines.Add(tl);
 							animation.Duration = Math.Max(animation.Duration, tl.Curve(0)?.Last?.Time ?? 0);
@@ -1478,70 +1700,172 @@ public static class MuseDash1ModelConverter
 			}
 		}
 		for (int ikI = 0, iks = skeleton.MD_ReadVarInt(true); ikI < iks; ikI++) {
-			int ikIndex = skeleton.MD_ReadVarInt(true);
-			int frames = skeleton.MD_ReadVarInt(true);
+			IkConstraintTimeline timeline = new IkConstraintTimeline();
+			timeline.ConstraintIndex = skeleton.MD_ReadVarInt(true);
+			timeline.NewCurves();
 
-			for (int frame = 0; frame < frames; frame++) {
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadByte();
-				skeleton.MD_ReadBoolean();
-				skeleton.MD_ReadBoolean();
-				MD_ReadCurve(skeleton, frame, frames, out _, out _, out _, out _, out _);
+			byte prevCt = CURVE_LINEAR;
+			float lc3 = 0, lc4 = 0;
+			for (int frame = 0, frames = skeleton.MD_ReadVarInt(true); frame < frames; frame++) {
+				var time = skeleton.MD_ReadFloat();
+				var mix = skeleton.MD_ReadFloat();
+				var softness = skeleton.MD_ReadFloat();
+				var bend = (sbyte)skeleton.MD_ReadByte();
+				var compress = skeleton.MD_ReadBoolean();
+				var stretch = skeleton.MD_ReadBoolean();
+				MD_ReadCurve(skeleton, frame, frames, out var curveType, out var c1, out var c2, out var c3, out var c4);
+
+				fillKeyframe(timeline.Curve(0), time, mix, curveType, c1, c2, prevCt, lc3, lc4);
+				fillKeyframe(timeline.Curve(1), time, softness, curveType, c1, c2, prevCt, lc3, lc4);
+				// stepped
+				fillKeyframe(timeline.Curve(2), time, bend, CURVE_STEPPED, 0, 0, CURVE_STEPPED, 0, 0);
+				fillKeyframe(timeline.Curve(3), time, compress ? 1 : 0, CURVE_STEPPED, 0, 0, CURVE_STEPPED, 0, 0);
+				fillKeyframe(timeline.Curve(4), time, stretch ? 1 : 0, CURVE_STEPPED, 0, 0, CURVE_STEPPED, 0, 0);
+
+				prevCt = curveType;
+				lc3 = c3;
+				lc4 = c4;
 			}
+			FixCurve(timeline.Curve(0));
+			FixCurve(timeline.Curve(1));
+
+			animation.Timelines.Add(timeline);
+			animation.Duration = Math.Max(animation.Duration, timeline.Curve(0)?.Last?.Time ?? 0);
+			LastConversionStats.IkTimelines++;
 		}
 
 		for (int trI = 0, transforms = skeleton.MD_ReadVarInt(true); trI < transforms; trI++) {
-			skeleton.MD_ReadVarInt(true);
+			TransformConstraintTimeline timeline = new TransformConstraintTimeline();
+			timeline.ConstraintIndex = skeleton.MD_ReadVarInt(true);
+			timeline.NewCurves();
+
+			byte prevCt = CURVE_LINEAR;
+			float lc3 = 0, lc4 = 0;
 			for (int frame = 0, frames = skeleton.MD_ReadVarInt(true); frame < frames; frame++) {
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
-				if (frame < frames - 1)
-					MD_ReadCurve(skeleton, frame, frames, out _, out _, out _, out _, out _);
+				var time = skeleton.MD_ReadFloat();
+				var rotate = skeleton.MD_ReadFloat();
+				var translate = skeleton.MD_ReadFloat();
+				var scale = skeleton.MD_ReadFloat();
+				var shear = skeleton.MD_ReadFloat();
+				MD_ReadCurve(skeleton, frame, frames, out var curveType, out var c1, out var c2, out var c3, out var c4);
+
+				fillKeyframe(timeline.Curve(0), time, rotate, curveType, c1, c2, prevCt, lc3, lc4);
+				fillKeyframe(timeline.Curve(1), time, translate, curveType, c1, c2, prevCt, lc3, lc4);
+				fillKeyframe(timeline.Curve(2), time, scale, curveType, c1, c2, prevCt, lc3, lc4);
+				fillKeyframe(timeline.Curve(3), time, shear, curveType, c1, c2, prevCt, lc3, lc4);
+
+				prevCt = curveType;
+				lc3 = c3;
+				lc4 = c4;
 			}
+			FixCurve(timeline.Curve(0));
+			FixCurve(timeline.Curve(1));
+			FixCurve(timeline.Curve(2));
+			FixCurve(timeline.Curve(3));
+
+			animation.Timelines.Add(timeline);
+			animation.Duration = Math.Max(animation.Duration, timeline.Curve(0)?.Last?.Time ?? 0);
+			LastConversionStats.TransformTimelines++;
 		}
 
-		// Dummy parse
 		for (int pathI = 0, paths = skeleton.MD_ReadVarInt(true); pathI < paths; pathI++) {
-			Logs.Warn("This model has path animations - which are being dummy-parsed out.");
-			skeleton.MD_ReadVarInt(true);
+			int pathIndex = skeleton.MD_ReadVarInt(true);
 			for (int i = 0, c = skeleton.MD_ReadVarInt(true); i < c; i++) {
 				int type = skeleton.MD_ReadByte(), frames = skeleton.MD_ReadVarInt(true);
+				CurveTimeline<float> timeline = type switch {
+					PATH_POSITION => new PathConstraintPositionTimeline() { ConstraintIndex = pathIndex },
+					PATH_SPACING => new PathConstraintSpacingTimeline() { ConstraintIndex = pathIndex },
+					_ => new PathConstraintMixTimeline() { ConstraintIndex = pathIndex }
+				};
+				timeline.NewCurves(frames);
+
+				byte prevCt = CURVE_LINEAR;
+				float lc3 = 0, lc4 = 0;
 				for (int frame = 0; frame < frames; frame++) {
-					skeleton.MD_ReadFloat();
-					skeleton.MD_ReadFloat();
+					var time = skeleton.MD_ReadFloat();
+					var value = skeleton.MD_ReadFloat();
+					var translate = type == PATH_MIX ? skeleton.MD_ReadFloat() : 0;
+					MD_ReadCurve(skeleton, frame, frames, out var curveType, out var c1, out var c2, out var c3, out var c4);
+
+					fillKeyframe(timeline.Curve(0), time, value, curveType, c1, c2, prevCt, lc3, lc4);
 					if (type == PATH_MIX)
-						skeleton.MD_ReadFloat();
-					if (frame < frames - 1)
-						MD_ReadCurve(skeleton, frame, frames, out _, out _, out _, out _, out _);
+						fillKeyframe(timeline.Curve(1), time, translate, curveType, c1, c2, prevCt, lc3, lc4);
+
+					prevCt = curveType;
+					lc3 = c3;
+					lc4 = c4;
 				}
+				FixCurve(timeline.Curve(0));
+				if (type == PATH_MIX)
+					FixCurve(timeline.Curve(1));
+
+				animation.Timelines.Add(timeline);
+				animation.Duration = Math.Max(animation.Duration, timeline.Curve(0)?.Last?.Time ?? 0);
+				LastConversionStats.PathTimelines++;
 			}
 		}
 
 		for (int deformI = 0, deforms = skeleton.MD_ReadVarInt(true); deformI < deforms; deformI++) {
 			Skin skin = nucleusModelData.Skins[skeleton.MD_ReadVarInt(true)];
-			for (int i2 = 0, c2 = skeleton.MD_ReadVarInt(true); i2 < c2; i2++) {
+			for (int i2 = 0, deformSlots = skeleton.MD_ReadVarInt(true); i2 < deformSlots; i2++) {
 				int slotIndex = skeleton.MD_ReadVarInt(true);
-				for (int i3 = 0, c3 = skeleton.MD_ReadVarInt(true); i3 < c3; i3++) {
-					skeleton.MD_ReadRefString(refStrings);
+				for (int i3 = 0, deformAttachments = skeleton.MD_ReadVarInt(true); i3 < deformAttachments; i3++) {
+					string attachmentName = skeleton.MD_ReadRefString(refStrings) ?? "";
 					int frames = skeleton.MD_ReadVarInt(true);
 
+					// Offsets from setup: one pair per weight when weighted, per vertex otherwise
+					var vertices = (skin.GetAttachment(slotIndex, attachmentName) as VertexAttachment)?.GetVertices();
+					int deformLength = 0;
+					if (vertices != null) {
+						foreach (var vertex in vertices)
+							deformLength += (vertex.Weights?.Length ?? 0) > 0 ? vertex.Weights!.Length * 2 : 2;
+					}
+
+					DeformTimeline? timeline = null;
+					if (vertices != null) {
+						timeline = new DeformTimeline();
+						timeline.SlotIndex = slotIndex;
+						timeline.Skin = skin == nucleusModelData.DefaultSkin ? null : skin.Name;
+						timeline.Attachment = attachmentName;
+					}
+					else {
+						LastConversionStats.UnresolvedDeforms++;
+						Logs.Warn($"Deform timeline in '{animation.Name}' points at '{attachmentName}' (slot {slotIndex}, skin {skin.Name}), which didn't convert, skipping it.");
+					}
+
+					byte prevCt = CURVE_LINEAR;
+					float lc3 = 0, lc4 = 0;
 					for (int frame = 0; frame < frames; frame++) {
-						skeleton.MD_ReadFloat();
+						var time = skeleton.MD_ReadFloat();
+						float[] offsets = new float[deformLength];
 						var end = skeleton.MD_ReadVarInt(true);
 						if (end != 0) {
 							int start = skeleton.MD_ReadVarInt(true);
 							end += start;
-							for (int i4 = start; i4 < end; i4++)
-								skeleton.MD_ReadFloat();
+							for (int i4 = start; i4 < end; i4++) {
+								var value = skeleton.MD_ReadFloat();
+								if (i4 < deformLength)
+									offsets[i4] = value;
+							}
 						}
 
-						MD_ReadCurve(skeleton, frame, frames, out _, out _, out _, out _, out _);
+						MD_ReadCurve(skeleton, frame, frames, out var curveType, out var c1, out var c2, out var c3, out var c4);
+						if (timeline != null) {
+							// index trick, key k = k
+							fillKeyframe(timeline.Curve, time, frame, curveType, c1, c2, prevCt, lc3, lc4);
+							timeline.Offsets.Add(offsets);
+						}
+						prevCt = curveType;
+						lc3 = c3;
+						lc4 = c4;
 					}
+
+					if (timeline == null || frames == 0) continue;
+					FixCurve(timeline.Curve);
+					animation.Timelines.Add(timeline);
+					animation.Duration = Math.Max(animation.Duration, timeline.Curve.Last?.Time ?? 0);
+					LastConversionStats.DeformTimelines++;
+					LastConversionStats.DeformKeys += frames;
 				}
 			}
 		}
@@ -1587,18 +1911,36 @@ public static class MuseDash1ModelConverter
 			animation.Duration = Math.Max(animation.Duration, drawTimeline.Curve(0)?.Last?.Time ?? 0);
 		}
 
-		for (int eventIndex = 0, events = skeleton.MD_ReadVarInt(true); eventIndex < events; eventIndex++) {
-			skeleton.MD_ReadFloat();
-			int eventDataIndex = skeleton.MD_ReadVarInt(true);
-			skeleton.MD_ReadVarInt(false);
-			skeleton.MD_ReadFloat();
+		int eventKeys = skeleton.MD_ReadVarInt(true);
+		if (eventKeys > 0) {
+			EventTimeline eventTimeline = new();
+			for (int eventIndex = 0; eventIndex < eventKeys; eventIndex++) {
+				float time = skeleton.MD_ReadFloat();
+				EventData eventData = nucleusModelData.Events[skeleton.MD_ReadVarInt(true)];
+				ModelEvent modelEvent = new() {
+					Time = time,
+					Data = eventData,
+					Int = skeleton.MD_ReadVarInt(false),
+					Float = skeleton.MD_ReadFloat(),
+					Volume = eventData.Volume,
+					Balance = eventData.Balance
+				};
+				modelEvent.String = skeleton.MD_ReadBoolean() ? skeleton.MD_ReadNullableString() : eventData.String;
+				if (eventData.AudioPath != null) {
+					modelEvent.Volume = skeleton.MD_ReadFloat();
+					modelEvent.Balance = skeleton.MD_ReadFloat();
+				}
 
-			if (skeleton.MD_ReadBoolean()) skeleton.MD_ReadString();
-			if (eventDataHasAudio.Count > eventDataIndex && eventDataHasAudio[eventDataIndex]) {
-				skeleton.MD_ReadFloat();
-				skeleton.MD_ReadFloat();
+				eventTimeline.Events.Add(modelEvent);
+				LastConversionStats.EventKeys++;
 			}
+
+			animation.Timelines.Add(eventTimeline);
+			animation.Duration = Math.Max(animation.Duration, eventTimeline.Events[eventTimeline.Events.Count - 1].Time);
 		}
+
+		foreach (var timeline in animation.Timelines.OfType<CurveTimeline<float>>())
+			LegacyCurves.SplitOverruns(timeline.Curves);
 	}
 	private static AttachmentVertex[] MD_ReadVertices(MemoryStream skeleton, int vertices, out bool weighted) {
 		weighted = skeleton.MD_ReadBoolean();
@@ -1644,19 +1986,19 @@ public static class MuseDash1ModelConverter
 
 			var bonesCount = skeleton.MD_ReadVarInt(true);
 			for (int i2 = 0; i2 < bonesCount; i2++)
-				skeleton.MD_ReadVarInt(true);
+				skin.Bones.Add(nucleusModelData.BoneDatas[skeleton.MD_ReadVarInt(true)]);
 
 			var ikCount = skeleton.MD_ReadVarInt(true);
 			for (int i2 = 0; i2 < ikCount; i2++)
-				skeleton.MD_ReadVarInt(true);
+				skin.Constraints.Add(nucleusModelData.IkConstraints[skeleton.MD_ReadVarInt(true)]);
 
-			var transformCOunt = skeleton.MD_ReadVarInt(true);
-			for (int i2 = 0; i2 < transformCOunt; i2++)
-				skeleton.MD_ReadVarInt(true);
+			var transformCount = skeleton.MD_ReadVarInt(true);
+			for (int i2 = 0; i2 < transformCount; i2++)
+				skin.Constraints.Add(nucleusModelData.TransformConstraints[skeleton.MD_ReadVarInt(true)]);
 
 			var pathCount = skeleton.MD_ReadVarInt(true);
 			for (int i2 = 0; i2 < pathCount; i2++)
-				skeleton.MD_ReadVarInt(true);
+				skin.Constraints.Add(nucleusModelData.PathConstraints[skeleton.MD_ReadVarInt(true)]);
 
 			slots = skeleton.MD_ReadVarInt(true);
 		}
@@ -1672,7 +2014,8 @@ public static class MuseDash1ModelConverter
 				//Logs.Info($"Type: {type}, name: {name}");
 				switch (type) {
 					case ATTACHMENT_REGION: {
-							string path = skeleton.MD_ReadRefString(refStrings) ?? name;
+							// Atlas names are trimmed, the skeleton's keep trailing spaces
+							string path = (skeleton.MD_ReadRefString(refStrings) ?? name)!.Trim();
 							float rotation = skeleton.MD_ReadFloat();
 							float x = skeleton.MD_ReadFloat();
 							float y = skeleton.MD_ReadFloat();
@@ -1689,7 +2032,11 @@ public static class MuseDash1ModelConverter
 							region.Position = new(x, y);
 							region.Rotation = rotation;
 
-							var mdRegion = mdatlas.Regions.First(x => x.Value.Name == region.Path).Value;
+							var mdRegion = mdatlas.Regions.FirstOrDefault(x => x.Value.Name == region.Path).Value;
+							if (mdRegion == null) {
+								Logs.Warn($"Region attachment '{name}' points at '{path}', which isn't in the atlas, skipping it.");
+								break;
+							}
 							var wM = width / mdRegion.OriginalWidth;
 							var hM = height / mdRegion.OriginalHeight;
 							region.Scale = new(scaleX * wM, scaleY * hM);
@@ -1704,7 +2051,7 @@ public static class MuseDash1ModelConverter
 						}
 						break;
 					case ATTACHMENT_MESH: {
-							string path = (skeleton.MD_ReadRefString(refStrings) ?? name)!;
+							string path = (skeleton.MD_ReadRefString(refStrings) ?? name)!.Trim();
 
 							Color color = skeleton.MD_ReadColor();
 
@@ -1744,6 +2091,7 @@ public static class MuseDash1ModelConverter
 							mesh.Color = color;
 							mesh.Vertices = vertices;
 							mesh.Triangles = triangles;
+							mesh.HullCount = hullCount;
 							mesh.Position = new(0);
 							mesh.Rotation = 0;
 							mesh.Scale = new(1);
@@ -1769,9 +2117,8 @@ public static class MuseDash1ModelConverter
 								height = skeleton.MD_ReadFloat();
 							}
 
-							path ??= name;
+							path = (path ?? name)!.Trim();
 
-							LinkedMesh linkedMesh = new();
 							MeshAttachment meshAttachment = new();
 							meshAttachment.Name = name!;
 							meshAttachment.Path = path!;
@@ -1780,25 +2127,32 @@ public static class MuseDash1ModelConverter
 							meshAttachment.Rotation = 0;
 							meshAttachment.Scale = new(1);
 
-							linkedMesh.Mesh = meshAttachment;
-							linkedMesh.Skin = skinname;
-							linkedMesh.SlotIndex = slotIndex;
-							linkedMesh.Deform = deform;
-							linkedMesh.Parent = parent;
+							// parent gets hooked up once every skin is read
+							meshAttachment.ParentKey = parent ?? "";
+							meshAttachment.ParentSkin = skinname;
+							meshAttachment.InheritDeform = deform;
 
-							nucleusModelData.LinkedMeshes.Add(linkedMesh);
 							attachment = meshAttachment;
 						}
 						break;
 					case ATTACHMENT_PATH: {
-							skeleton.MD_ReadBoolean();
-							skeleton.MD_ReadBoolean();
-							int c = skeleton.MD_ReadVarInt(true);
-							MD_ReadVertices(skeleton, c, out _);
-							for (int _ = 0; _ < c / 3; _++)
-								skeleton.MD_ReadFloat();
+							PathAttachment pathAttachment = new();
+							pathAttachment.Name = name!;
+							pathAttachment.Closed = skeleton.MD_ReadBoolean();
+							pathAttachment.ConstantSpeed = skeleton.MD_ReadBoolean();
+							int vertexCount = skeleton.MD_ReadVarInt(true);
+							pathAttachment.Vertices = MD_ReadVertices(skeleton, vertexCount, out _);
+							pathAttachment.Lengths = new float[vertexCount / 3];
+							for (int i3 = 0; i3 < pathAttachment.Lengths.Length; i3++)
+								pathAttachment.Lengths[i3] = skeleton.MD_ReadFloat();
 							if (nonessential)
-								skeleton.MD_ReadInt();
+								pathAttachment.Color = skeleton.MD_ReadColor();
+							pathAttachment.Position = new(0);
+							pathAttachment.Rotation = 0;
+							pathAttachment.Scale = new(1);
+
+							attachment = pathAttachment;
+							LastConversionStats.Paths++;
 						}
 						break;
 					case ATTACHMENT_POINT: {
@@ -1816,6 +2170,7 @@ public static class MuseDash1ModelConverter
 								skeleton.MD_ReadInt();
 
 							ClippingAttachment clip = new ClippingAttachment();
+							clip.Name = name!;
 							clip.EndSlot = nucleusModelData.SlotDatas[endSlot].Name;
 							clip.Vertices = vertices;
 
@@ -1826,10 +2181,14 @@ public static class MuseDash1ModelConverter
 
 				if (attachment != null)
 					skin.SetAttachment(slotIndex, attachmentName, attachment);
-				else {
+				else if (type is ATTACHMENT_BOUNDING_BOX or ATTACHMENT_POINT) {
+					// no runtime types for these yet
+					switch (type) {
+						case ATTACHMENT_BOUNDING_BOX: LastConversionStats.BoundingBoxes++; break;
+						case ATTACHMENT_POINT: LastConversionStats.Points++; break;
+					}
 					Logs.Warn($"Ignoring unsupported attachment type ({type switch {
 						ATTACHMENT_BOUNDING_BOX => "bounding box",
-						ATTACHMENT_PATH => "path",
 						ATTACHMENT_POINT => "point",
 						_ => "???"
 					}})");
@@ -1842,30 +2201,35 @@ public static class MuseDash1ModelConverter
 	// EVERYTHING in Clone Dash should probably go through these methods, or at least those that use in-game/menu assets.
 	// This lets musedash overrides work
 
-	public static ModelData MD_GetModelData(this Level level, MonoBehaviour skeletonData) {
+	public static ModelData MD_GetModelData(this Level level, MonoBehaviour skeletonData, bool uploadTextures = true) {
 		MonoBehaviourReader reader = new(skeletonData);
 		TextAsset skeletonJSON = reader.Get<TextAsset>("skeletonJSON")!;
-		MonoBehaviourReader atlasAssets = new(reader.GetList<MonoBehaviour>("atlasAssets")!.First());
-		TextAsset atlasFile = atlasAssets.Get<TextAsset>("atlasFile")!;
-		List<Material> materials = atlasAssets.GetList<Material>("materials")!;
+		// Placeholder skeletons can come without an atlas or texture.
+		MonoBehaviour? atlasAsset = reader.GetList<MonoBehaviour>("atlasAssets")?.FirstOrDefault();
+		MonoBehaviourReader? atlasAssets = atlasAsset == null ? null : new(atlasAsset);
+		TextAsset? atlasFile = atlasAssets?.Get<TextAsset>("atlasFile");
+		List<Material> materials = atlasAssets?.GetList<Material>("materials") ?? [];
 
 		long[] texturePaths = new long[materials.Count];
 		for (int i = 0; i < materials.Count; i++) {
 			var mat = materials[i];
-			texturePaths[i] = mat.m_SavedProperties.m_TexEnvs.First().Value.m_Texture.m_PathID;
+			texturePaths[i] = mat.m_SavedProperties.m_TexEnvs.FirstOrDefault().Value?.m_Texture.m_PathID ?? 0;
 		}
-		return MD_GetModelData(level, skeletonJSON, atlasFile, texturePaths, materials.ToArray());
+		return MD_GetModelData(level, skeletonJSON, atlasFile, texturePaths, materials.ToArray(), uploadTextures);
 	}
 
-	public static ModelData MD_GetModelData(this Level level, long skeletonPath, long atlasPath, long[] texturePaths, Material[] materialsIn) {
+	public static ModelData MD_GetModelData(this Level level, long skeletonPath, long atlasPath, long[] texturePaths, Material[] materialsIn, bool uploadTextures = true) {
 		var skeleton = MuseDash1Compatibility.StreamingAssets.FindAssetByPathID<TextAsset>(skeletonPath)!;
 		var atlas = MuseDash1Compatibility.StreamingAssets.FindAssetByPathID<TextAsset>(atlasPath)!;
 
-		return MD_GetModelData(level, skeleton, atlas, texturePaths, materialsIn);
+		return MD_GetModelData(level, skeleton, atlas, texturePaths, materialsIn, uploadTextures);
 	}
 
-	public static ModelData MD_GetModelData(this Level level, TextAsset skeleton, TextAsset atlas, long[] texturePaths, Material[] materialsIn) {
+	public static ModelData MD_GetModelData(this Level level, TextAsset skeleton, TextAsset? atlas, long[] texturePaths, Material[] materialsIn, bool uploadTextures = true) {
 		ModelData md_data = new ModelData();
+		// Only this shader draws dark colors, other models carry them unused.
+		md_data.RenderTintBlack = materialsIn.Any(m => MuseDash1Compatibility.StreamingAssets
+			.FindAssetByPathID<AssetStudio.Shader>(m.m_Shader.m_PathID)?.m_ParsedForm?.m_Name == "Spine/Skeleton Tint Black");
 
 		Texture2D[] textures = new Texture2D[texturePaths.Length];
 		for (int i = 0, c = texturePaths.Length; i < c; i++) {
@@ -1875,20 +2239,25 @@ public static class MuseDash1ModelConverter
 		ConvertMuseDashModelData(
 			md_data,
 			skeleton,
-			MuseDash1Compatibility.PopulateModelDataTextures(md_data, atlas, textures, materialsIn)
+			MuseDash1Compatibility.PopulateModelDataTextures(md_data, atlas, textures, materialsIn, uploadTextures)
 		);
 
 		var defaultSkin = md_data.DefaultSkin;
+		// No default skin, merge into a new one
+		if (defaultSkin == null && md_data.Skins.Count > 0) {
+			defaultSkin = md_data.DefaultSkin = new Skin() { Name = "default" };
+			md_data.Skins.Insert(0, defaultSkin);
+		}
 		switch ((MD1_HexieMode)md_hexiemode.GetInt()) {
 			case MD1_HexieMode.Original:
 				var origin = md_data.FindSkin("origin");
 				if (origin != null)
-					defaultSkin.AddSkin(origin);
+					defaultSkin?.AddSkin(origin);
 				break;
 			case MD1_HexieMode.Hexie:
 				var hexie = md_data.FindSkin("hexie");
 				if (hexie != null)
-					defaultSkin.AddSkin(hexie);
+					defaultSkin?.AddSkin(hexie);
 				break;
 		}
 

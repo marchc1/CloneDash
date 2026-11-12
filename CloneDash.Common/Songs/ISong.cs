@@ -1,16 +1,19 @@
-﻿using Nucleus.Common.Audio;
+using CloneDash.Common.Compatibility;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
 
 namespace CloneDash.Common.Songs;
 
 public delegate void OnAsynchronousLoadingCompleteFn(ISong self);
 
-public struct SongMetadata{
-	public string Name;
-	public string Author;
+public ref struct SongMetadata
+{
+	public ReadOnlySpan<char> Name;
+	public ReadOnlySpan<char> Author;
 }
 
-public struct SongCoverInfo{
+public ref struct SongCoverInfo
+{
 	public ITexture? Texture;
 	public bool Flipped;
 }
@@ -18,7 +21,8 @@ public struct SongCoverInfo{
 /// <summary>
 /// Has a lowest difficulty, a highest difficulty, and can return a list of those difficulties.
 /// </summary>
-public interface IHasLowToHighDifficulties {
+public interface IHasLowToHighDifficulties
+{
 	int GetLowestDifficulty();
 	int GetHighestDifficulty();
 	int GetDifficultyCount();
@@ -28,9 +32,9 @@ public interface IHasLowToHighDifficulties {
 /// <summary>
 /// A song.
 /// </summary>
-public interface ISong : IUniquelyIdentifiableObject
+public interface ISong : ICloneDashModDescriptor
 {
-	SongMetadata FetchMetadata(HumanLanguage desiredLanguage);
+	SongMetadata FetchMetadata();
 
 	/// <summary>
 	/// Returns a read-only chart list

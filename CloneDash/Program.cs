@@ -3,13 +3,17 @@
 */
 
 using CloneDash.Common;
+using CloneDash.Common.Compatibility.Valve;
+using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
-using CloneDash.Common.Songs;
+using CloneDash.Common.Systems.Discord;
+using CloneDash.Common.UI.Searching;
 using CloneDash.Compatibility.MuseDash;
 using CloneDash.Compatibility.UnbeatableWhiteLabel;
+using CloneDash.Compatibility.Unity;
 using CloneDash.CustomAlbumsCompatibility.CustomAlbums;
+using CloneDash.MuseDashCustomPlayCompatibility;
 using CloneDash.Game;
-using CloneDash.Menu.Searching;
 using CloneDash.Settings;
 using CloneDash.Systems;
 
@@ -26,6 +30,7 @@ using Nucleus.UI;
 using Nucleus.Util;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 using Velopack;
 using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 
@@ -53,7 +58,7 @@ internal class Program
 		VelopackApp.Build().Run();
 
 		LevelTransitions.OnLoadMainMenu += () => EngineCore.LoadLevel(new MainMenuLevel());
-		LevelTransitions.OnLoadSongChart += (chart, parms) => chart.GetGamemode().Load(chart, parms);
+		LevelTransitions.OnLoadSongChart += (chart, parms) => EngineCore.LoadLevel(chart.GetGamemode().Load(chart, parms));
 		LevelTransitions.OnLoadSongSelector += LevelTransitions_OnLoadSongSelector;
 
 		if (!NucleusSingleton.TryRedirect("Clone Dash", Environment.CommandLine))
@@ -66,6 +71,8 @@ internal class Program
 			.WithComponent<IGameDLL, GameDLL>()
 			.WithStandardComponents()
 			.Build();
+
+		MuseDash1Compatibility.BeginInitializeCompatibilityLayer();
 
 		engineAPI.SetStartupInfo(new() {
 			AppName = "Clone Dash",
@@ -101,16 +108,35 @@ internal class Program
 public class GameDLL : IGameDLL
 {
 	MemorySearchPath? fontSearchpath;
+	DiskSearchPath? fontCache;
 	void NucleusRegisterMDFont(ReadOnlySpan<char> fontName, ReadOnlySpan<char> fontAsset) {
 		if (fontSearchpath == null) {
 			fontSearchpath = new MemorySearchPath();
 			filesystem.AddSearchPath("fonts", fontSearchpath);
 		}
-		AssetStudio.Font font = MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Font>(fontAsset);
+		byte[] fontData = ReadMDFontData(fontAsset);
 		Graphics2D.FontManager.FontNameToFilepath[fontName.Hash(invariant: false)] = new(new(fontAsset), "fonts");
 
 		using (var writer = fontSearchpath.Open(fontAsset, FileAccess.Write, FileMode.Create))
-			writer!.Write(font.m_FontData);
+			writer!.Write(fontData);
+	}
+	byte[] ReadMDFontData(ReadOnlySpan<char> fontAsset) {
+		AddressablesCatalog catalog = MuseDash1Compatibility.StreamingAssets.Catalog;
+		StringBuilder bundleFiles = new();
+		foreach (var entry in catalog.SearchAll(fontAsset))
+			if (entry is UnitySearchAsset searchAsset)
+				foreach (var bundleFile in catalog.ResolveBundleFiles(searchAsset.DependencyKey))
+					bundleFiles.Append(bundleFile).Append('/');
+
+		fontCache ??= DiskSearchPath.Combine(filesystem.GetSearchPathID("appcache").First(), "fonts");
+		string cachePath = fontCache.ResolveToAbsolute($"{fontAsset}_{bundleFiles.ToString().AsSpan().Hash(invariant: false):x16}");
+		if (File.Exists(cachePath))
+			return File.ReadAllBytes(cachePath);
+
+		byte[] fontData = MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Font>(fontAsset)!.m_FontData;
+		File.WriteAllBytes(cachePath + ".tmp", fontData);
+		File.Move(cachePath + ".tmp", cachePath, overwrite: true);
+		return fontData;
 	}
 	public void PreStaticInitialize() {
 		// stupid hack to fix dependency-loading issues...
@@ -119,7 +145,9 @@ public class GameDLL : IGameDLL
 		// This will work better:
 		Assembly.Load("CloneDash.CustomAlbumsCompatibility");
 		Assembly.Load("CloneDash.MuseDash1Compatibility");
+		Assembly.Load("CloneDash.MuseDashCustomPlayCompatibility");
 		Assembly.Load("CloneDash.UnbeatableWhiteLabelCompatibility");
+		Assembly.Load("CloneDash.Adapters");
 	}
 	public void Init() {
 		/*new Platform.MessageBoxBuilder()
@@ -130,6 +158,10 @@ public class GameDLL : IGameDLL
 			.WithButton("Print 'No!'", () => Logs.Print("No!"))
 			.Show();*/
 
+		// Initialize UNBEATABLE compat
+		if (UnbeatableWhiteLabelCompatibility.IsEnabled())
+			UnbeatableWhiteLabelCompatibility.BeginInitializeCompatibilityLayer();
+
 		RichPresenceSystem.Initialize();
 		NucleusSingleton.Request("Clone Dash");
 		InputSettings.Initialize();
@@ -138,31 +170,31 @@ public class GameDLL : IGameDLL
 
 		{
 			Interlude.Spin(submessage: "Initializing the Muse Dash compatibility layer...");
-			MD1CompatLayerInitResult res;
-			if ((res = MuseDash1Compatibility.InitializeCompatibilityLayer()) != MD1CompatLayerInitResult.OK) {
+			AppStatus res;
+			if ((res = MuseDash1Compatibility.InitializeCompatibilityLayer()) != AppStatus.OK) {
 				throw new Exception($"Muse Dash compatibility layer failed to initialize: {res switch {
-					MD1CompatLayerInitResult.SteamNotInstalled => "Steam is not installed or could not be found.",
-					MD1CompatLayerInitResult.MuseDashNotInstalled => "Muse Dash is not installed or could not be found.",
-					MD1CompatLayerInitResult.StreamingAssetsNotFound => "Muse Dash's assets could not be found, try validating MD game files",
-					MD1CompatLayerInitResult.NoteDataManagerNotFound => "Muse Dash's note data could not be found, try validating MD game files",
-					MD1CompatLayerInitResult.OperatingSystemNotCompatible => $"Your operating system, {Environment.OSVersion.ToString()}, is incompatible.",
+					AppStatus.SteamNotInstalled => "Steam is not installed or could not be found.",
+					AppStatus.AppNotInstalled => "Muse Dash is not installed or could not be found.",
+					AppStatus.CriticalPathNotFound => "Muse Dash's assets could not be found, try validating MD game files",
+					AppStatus.OperatingSystemNotCompatible => $"Your operating system, {Environment.OSVersion.ToString()}, is incompatible.",
 					_ => res.ToString()
 				}}");
 			}
 		}
 
-		// Initialize UNBEATABLE compat
-		if (UnbeatableWhiteLabelCompatibility.IsEnabled())
-			UnbeatableWhiteLabelCompatibility.InitializeCompatibilityLayer();
-
 		// Load muse dash fonts
 		{
+			Interlude.Spin(submessage: "fonts: Loading Infinity Font from MD");
 			NucleusRegisterMDFont("Infinity Font", "InfinityFont_midiam_dot");
+			Interlude.Spin(submessage: "fonts: Loading Luckiest Guy from MD");
 			NucleusRegisterMDFont("Luckiest Guy", "LuckiestGuy-Regular");
+			Interlude.Spin(submessage: "fonts: Loading Snaps Taste from MD");
 			NucleusRegisterMDFont("Snaps Taste", "Snaps Taste");
+			Interlude.Spin(submessage: "fonts: Loading Teko from MD");
+			NucleusRegisterMDFont("Teko", "Normal");
 		}
 
-		Interlude.Spin();
+		Interlude.Spin(submessage: "Initializing Nucleus filesystem paths");
 
 		// This sets up some base directories for the filesystem (default assets at the tail, with custom at the head)
 		DiskSearchPath? musedash = null;
@@ -210,7 +242,7 @@ public class GameDLL : IGameDLL
 			InputSettings.offset_visual.AddFlags(FCvar.AlwaysDefault);
 		}
 
-		Interlude.Spin();
+		Interlude.Spin(submessage: "Ready!");
 		Interlude.End();
 
 		// Add an event listener to the singleton
@@ -281,9 +313,9 @@ public class GameDLL : IGameDLL
 			var chart = song.GetSheet(difficulty);
 
 			if (chart != null)
-				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new() {
-					Autoplay = cmd.FindParm("-autoplay") != 0
-				});
+				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new RhythmGameLoadParameters()
+					.Set(RhythmGameLoadParameters.AUTOPLAY, cmd.FindParm("-autoplay") != 0)
+				);
 		}
 
 		else if (cmd.HasParm("-cam_level")) {
@@ -303,11 +335,38 @@ public class GameDLL : IGameDLL
 						break;
 				}
 				if (chart != null)
-					LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new() {
-						Autoplay = cmd.FindParm("-autoplay") != 0,
-						StartMeasure = cmd.ParmValue("-startmeasure", 0)
-					});
+					LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new RhythmGameLoadParameters() 
+						.Set(RhythmGameLoadParameters.AUTOPLAY, cmd.FindParm("-autoplay") != 0)
+						.Set(RhythmGameLoadParameters.START_MEASURE, cmd.ParmValue("-startmeasure", 0))
+					);
 			}
+			else
+				LevelTransitions.LoadMainMenu();
+		}
+
+		else if (cmd.HasParm("-ubwl_level")) {
+			string ubwl_level = cmd.ParmValue("-ubwl_level", "");
+			int difficulty = cmd.ParmValue("-difficulty", 0);
+			BeatmapIndexSong? song = UnbeatableWhiteLabelCompatibility.BeatmapIndex?.Songs.FirstOrDefault(x => x.Name.Equals(ubwl_level, StringComparison.InvariantCultureIgnoreCase));
+
+			if (song != null && difficulty >= 0 && difficulty < song.Beatmaps.Length)
+				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", song.Beatmaps[difficulty], new RhythmGameLoadParameters()
+					.Set(RhythmGameLoadParameters.AUTOPLAY, cmd.FindParm("-autoplay") != 0)
+				);
+			else
+				LevelTransitions.LoadMainMenu();
+		}
+
+		else if (cmd.HasParm("-mdcp_level")) {
+			string mdcp_level = cmd.ParmValue("-mdcp_level", "");
+			Logs.Info($"mdcp_level specified: {mdcp_level}");
+
+			var chart = CustomPlayChartProvider.LoadSong(mdcp_level)?.GetChart();
+			if (chart != null)
+				LevelTransitions.LoadSongChart(first ? "" : "Interprocess load started!", chart, new RhythmGameLoadParameters()
+					.Set(RhythmGameLoadParameters.AUTOPLAY, cmd.FindParm("-autoplay") != 0)
+					.Set(RhythmGameLoadParameters.START_MEASURE, cmd.ParmValue("-startmeasure", 0))
+				);
 			else
 				LevelTransitions.LoadMainMenu();
 		}

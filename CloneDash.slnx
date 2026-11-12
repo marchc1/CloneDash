@@ -1,0 +1,53 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Clone Dash/" />
+  <Folder Name="/Clone Dash/1. Common/">
+    <Project Path="CloneDash.Common/CloneDash.Common.csproj" />
+  </Folder>
+  <Folder Name="/Clone Dash/2. Compat/">
+    <Project Path="CloneDash.CustomAlbumsCompatibility/CloneDash.CustomAlbumsCompatibility.csproj" />
+    <Project Path="CloneDash.MuseDash1Compatibility/CloneDash.MuseDash1Compatibility.csproj" />
+    <Project Path="CloneDash.MuseDashCustomPlayCompatibility/CloneDash.MuseDashCustomPlayCompatibility.csproj" />
+    <Project Path="CloneDash.UnbeatableWhiteLabelCompatibility/CloneDash.UnbeatableWhiteLabelCompatibility.csproj" />
+  </Folder>
+  <Folder Name="/Clone Dash/3. Game/">
+    <Project Path="CloneDash/Clone Dash.csproj" />
+  </Folder>
+  <Folder Name="/Dependencies/">
+    <Project Path="AssetStudio/AssetStudio.csproj" />
+    <Project Path="AssetStudioUtility/AssetStudioUtility.csproj" />
+    <Project Path="Fmod5Sharp/Fmod5Sharp.csproj" />
+    <Project Path="OdinSerializer/OdinSerializer.csproj" />
+  </Folder>
+  <Folder Name="/Nucleus Engine/" />
+  <Folder Name="/Nucleus Engine/Engine Projects/" />
+  <Folder Name="/Nucleus Engine/Engine Projects/0 - Common/">
+    <Project Path="Nucleus.Common/Nucleus.Common.csproj" />
+  </Folder>
+  <Folder Name="/Nucleus Engine/Engine Projects/1 - Pre-Engine Components/">
+    <Project Path="Nucleus.AudioSystem/Nucleus.AudioSystem.csproj" />
+  </Folder>
+  <Folder Name="/Nucleus Engine/Engine Projects/2 - Engine Main/">
+    <Project Path="Nucleus/Nucleus.csproj" />
+  </Folder>
+  <Folder Name="/Nucleus Engine/Engine Projects/3 - Post-Engine Components/">
+    <Project Path="Nucleus.FileSystem/Nucleus.FileSystem.csproj" />
+  </Folder>
+  <Folder Name="/Nucleus Engine/Engine Projects/4 - Standard Components/">
+    <File Path="ApplyNucleusAssemblyAttribute.cs" />
+    <File Path="ApplyNucleusAssemblyAttribute.targets" />
+    <File Path="StandardComponents.cs" />
+    <File Path="StandardComponents.targets" />
+  </Folder>
+  <Folder Name="/Nucleus Engine/Prototypes/">
+    <Project Path="Nucleus.HelloWorld/Nucleus.HelloWorld.csproj" />
+  </Folder>
+  <Folder Name="/Nucleus Engine/Tools/">
+    <Project Path="Nucleus.ModelEditor/Nucleus.ModelEditor.csproj" />
+  </Folder>
+  <Project Path="CloneDash.Adapters/CloneDash.Adapters.csproj" />
+</Solution>

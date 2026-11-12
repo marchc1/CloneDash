@@ -1,18 +1,21 @@
-﻿using CloneDash.Common.Game;
+﻿using CloneDash.Common.Compatibility;
+using CloneDash.Common.Game;
 using CloneDash.Common.Songs;
 using Nucleus.Common.Types;
 
 namespace CloneDash.Common.Gamemodes;
 
-public struct GameLoadGenericParameters{
-	public int? StartMeasure;
-	public bool Autoplay;
+public interface IGamemodeProvider : ICloneDashModProvider<IGamemodeDescriptor> {
+
 }
 
 /// <summary>
 /// Describes a gamemode.
 /// </summary>
-public interface IGamemodeDescriptor : IUniquelyIdentifiableObject
+public interface IGamemodeDescriptor : ICloneDashModDescriptor
 {
-	IGame Load(ISongChart chart, in GameLoadGenericParameters parameters);
+	RhythmGameLevel Load(ISongChart chart, RhythmGameLoadParameters parms);
+
+	IEnumerable<GamemodeInput> GetInputs() => [];
+	IEnumerable<GamemodeInputSwitch> GetInputSwitches() => [];
 }

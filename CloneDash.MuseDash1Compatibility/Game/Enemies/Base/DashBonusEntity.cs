@@ -4,16 +4,18 @@ using Nucleus;
 
 namespace CloneDash.Game
 {
-	public class DashBonusEntity(MuseDash1EntityType type) : DashEnemy(type)
+	public class DashBonusEntity(MuseDash1EntityType type, DashEnemyComponents components) : DashEnemy(type, components)
 	{
+		public override bool KilledPerfect => true;
+
 		public override void DetermineAnimationPlayback(DashEnemyVisuals visuals) {
 			if (Dead) {
-				GetGameLevel().SetEnemyKilledPosition(this);
+				Components.Scenes.SetEnemyKilledPosition(this);
 				visuals.OutAnimation?.Apply(visuals.Model, (GetConductor().Time - LastHitTime));
 				return;
 			}
 
-			GetGameLevel().SetEnemyPosition(this);
+			Components.Scenes.SetEnemyPosition(this);
 			Position = new(Position.X + (float)XPosFromTimeOffset((float)-InputSettings.VisualOffset), Position.Y);
 			visuals.ApproachAnimation?.Apply(visuals.Model, Math.Max(0, AnimationTime));
 		}

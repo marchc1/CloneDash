@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Runtime.ExceptionServices;
 
 namespace Nucleus;
 
@@ -55,7 +56,7 @@ public static class MainThread
 
 	public static void AddCallback(Action a, ThreadExecutionTime when = ThreadExecutionTime.BeforeFrame) => Callbacks.Add(new(a, when));
 
-	public static void Run(ThreadExecutionTime when) {
+	static void RunActions(ThreadExecutionTime when) {
 		lock (Actions) {
 			putBack.Clear();
 
@@ -69,6 +70,12 @@ public static class MainThread
 			for (int i = 0, c = putBack.Count; i < c; i++)
 				Actions.Enqueue(putBack[i]);
 			putBack.Clear();
+		}
+	}
+
+	public static void Run(ThreadExecutionTime when) {
+		lock (Actions) {
+			RunActions(when);
 
 			for (int i = 0, c = Callbacks.Count; i < c; i++) {
 				var callback = Callbacks[i];
@@ -79,4 +86,38 @@ public static class MainThread
 	}
 
 	public static void RunASAP(Action a, ThreadExecutionTime when = ThreadExecutionTime.BeforeFrame) => Actions.Enqueue(new(a, when));
+
+	/// <summary>
+	/// Runs <paramref name="func"/> on the game thread and waits for its result.
+	/// </summary>
+	public static T Invoke<T>(Func<T> func) {
+		if (System.Threading.Thread.CurrentThread == _gamethread)
+			return func();
+
+		T result = default!;
+		ExceptionDispatchInfo? error = null;
+		using ManualResetEventSlim done = new();
+		RunASAP(() => {
+			try {
+				result = func();
+			}
+			catch (Exception e) {
+				error = ExceptionDispatchInfo.Capture(e);
+			}
+			finally {
+				done.Set();
+			}
+		});
+		done.Wait();
+		error?.Throw();
+		return result;
+	}
+
+	/// <summary>
+	/// Waits for <paramref name="task"/> on the game thread, running anything it <see cref="Invoke{T}"/>s meanwhile.
+	/// </summary>
+	public static void WaitFor(Task task) {
+		while (!((IAsyncResult)task).AsyncWaitHandle.WaitOne(1))
+			RunActions(ThreadExecutionTime.BeforeFrame);
+	}
 }

@@ -7,24 +7,21 @@ namespace CloneDash.Game.Entities
 {
 	public class Health : DashBonusEntity
 	{
-		public Health() : base(MuseDash1EntityType.Heart) {
+		public Health(DashEnemyComponents components) : base(MuseDash1EntityType.Heart, components) {
 			Interactivity = EntityInteractivity.SamePath;
 			DeathAddsToCombo = false;
 			DoesDamagePlayer = true;
 		}
 
-		protected override void OnHit(PathwaySide side, double distanceToHit) {
-			// Hack to trick Kill into not calling RewardPlayer without heal.
-			// Set it back right after
-			DoesRewardPlayer = false;
+		protected override void OnHit(PathwayId pathway, double distanceToHit) {
+			GetStats().Pass(this);
 			Kill();
-			DoesRewardPlayer = true;
-			RewardPlayer(true);
 		}
+
+		protected override void OnReward() { }
 
 		public override void OnBuildVisuals(DashEnemyVisuals visuals) {
 			base.OnBuildVisuals(visuals);
-			var level = Level.As<MuseDash1Game>();
 			var scene = visuals.Scene;
 			visuals.Model = scene.GetEnemyModel(this)?.Instantiate();
 			visuals.ApproachAnimation = visuals.Model?.Data.FindAnimation(scene.GetEnemyApproachAnimation(this, out _));

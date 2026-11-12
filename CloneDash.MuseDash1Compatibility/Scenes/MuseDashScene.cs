@@ -1,6 +1,7 @@
-﻿using AssetStudio;
+using AssetStudio;
 using CloneDash.Characters;
 using CloneDash.Common;
+using CloneDash.Common.Compatibility;
 using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash;
@@ -25,6 +26,7 @@ using Nucleus.Core;
 using Nucleus.Engine;
 using Nucleus.ManagedMemory;
 using Nucleus.Models.Runtime;
+using Nucleus.Particles;
 using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.Util;
@@ -33,6 +35,7 @@ using Raylib_cs;
 using SevenZip.CommandLineParser;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -166,7 +169,7 @@ public static class MuseDash1SceneEnemyInfo
 	public const string PATHWAY_AIR = "air";
 	public const string PATHWAY_GROUND = "road";
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] public static string PATHWAY(PathwaySide side) => side == PathwaySide.Top ? PATHWAY_AIR : PATHWAY_GROUND;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] public static string PATHWAY(bool air) => air ? PATHWAY_AIR : PATHWAY_GROUND;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static string DIRECTION(EntityEnterDirection dir) => dir switch {
 		EntityEnterDirection.RightSide => "nor",
@@ -179,63 +182,63 @@ public static class MuseDash1SceneEnemyInfo
 	public static string GetBoss(MuseDash1SceneInfo scene)
 		=> $"{scene.MapIdx:00}{CODE_BOSS}_boss";
 
-	public static string GetSustainTop(MuseDash1SceneInfo scene, PathwaySide side)
-		=> $"{scene.MapIdx:00}{CODE_SUSTAIN}_{PATHWAY(side)}_top";
-	public static string GetSustainBody(MuseDash1SceneInfo scene, PathwaySide side)
-		=> $"{scene.MapIdx:00}{CODE_SUSTAIN}_{PATHWAY(side)}_body";
-	public static string GetSustainNoteUp(MuseDash1SceneInfo scene, PathwaySide side)
-		=> $"{scene.MapIdx:00}{CODE_SUSTAIN}_{PATHWAY(side)}_note_up";
-	public static string GetSustainNoteDown(MuseDash1SceneInfo scene, PathwaySide side)
-		=> $"{scene.MapIdx:00}{CODE_SUSTAIN}_{PATHWAY(side)}_note_down";
+	public static string GetSustainTop(MuseDash1SceneInfo scene, bool air)
+		=> $"{scene.MapIdx:00}{CODE_SUSTAIN}_{PATHWAY(air)}_top";
+	public static string GetSustainBody(MuseDash1SceneInfo scene, bool air)
+		=> $"{scene.MapIdx:00}{CODE_SUSTAIN}_{PATHWAY(air)}_body";
+	public static string GetSustainNoteUp(MuseDash1SceneInfo scene, bool air)
+		=> $"{scene.MapIdx:00}{CODE_SUSTAIN}_{PATHWAY(air)}_note_up";
+	public static string GetSustainNoteDown(MuseDash1SceneInfo scene, bool air)
+		=> $"{scene.MapIdx:00}{CODE_SUSTAIN}_{PATHWAY(air)}_note_down";
 
-	public static string GetGear(MuseDash1SceneInfo scene, PathwaySide side, int speed)
-		=> $"{scene.MapIdx:00}{CODE_GEARS}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
+	public static string GetGear(MuseDash1SceneInfo scene, bool air, int speed)
+		=> $"{scene.MapIdx:00}{CODE_GEARS}{speed + (air ? 3 : 0):00}_{PATHWAY(air)}_nor_{SPEED(speed)}";
 
 	public static string GetMasher(MuseDash1SceneInfo scene, EntityEnterDirection direction, int speed)
 		=> $"{scene.MapIdx:00}{CODE_MASHERS}{speed + (direction == EntityEnterDirection.TopDown ? 3 : 0):00}_{DIRECTION(direction)}_{SPEED(speed)}";
 
-	public static string GetDouble(MuseDash1SceneInfo scene, PathwaySide side, int speed)
-		=> $"{scene.MapIdx:00}{CODE_DOUBLES}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
+	public static string GetDouble(MuseDash1SceneInfo scene, bool air, int speed)
+		=> $"{scene.MapIdx:00}{CODE_DOUBLES}{speed + (air ? 3 : 0):00}_{PATHWAY(air)}_nor_{SPEED(speed)}";
 
-	public static string GetBoss1(MuseDash1SceneInfo scene, PathwaySide side, int speed)
-			=> $"{scene.MapIdx:00}{CODE_BOSS1}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
-	public static string GetBoss2(MuseDash1SceneInfo scene, PathwaySide side, int speed)
-		=> $"{scene.MapIdx:00}{CODE_BOSS2}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
-	public static string GetBoss3(MuseDash1SceneInfo scene, PathwaySide side, int speed)
-		=> $"{scene.MapIdx:00}{CODE_BOSS3}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
+	public static string GetBoss1(MuseDash1SceneInfo scene, bool air, int speed)
+			=> $"{scene.MapIdx:00}{CODE_BOSS1}{speed + (air ? 3 : 0):00}_{PATHWAY(air)}_nor_{SPEED(speed)}";
+	public static string GetBoss2(MuseDash1SceneInfo scene, bool air, int speed)
+		=> $"{scene.MapIdx:00}{CODE_BOSS2}{speed + (air ? 3 : 0):00}_{PATHWAY(air)}_nor_{SPEED(speed)}";
+	public static string GetBoss3(MuseDash1SceneInfo scene, bool air, int speed)
+		=> $"{scene.MapIdx:00}{CODE_BOSS3}{speed + (air ? 3 : 0):00}_{PATHWAY(air)}_nor_{SPEED(speed)}";
 
-	public static string GetBossGear(MuseDash1SceneInfo scene, PathwaySide side, int speed, bool second)
-			=> $"{scene.MapIdx:00}{CODE_BOSSGEARS}{speed + (second ? 6 : 0) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{(second ? 2 : 1)}_nor_{SPEED(speed)}";
+	public static string GetBossGear(MuseDash1SceneInfo scene, bool air, int speed, bool second)
+			=> $"{scene.MapIdx:00}{CODE_BOSSGEARS}{speed + (second ? 6 : 0) + (air ? 3 : 0):00}_{PATHWAY(air)}_{(second ? 2 : 1)}_nor_{SPEED(speed)}";
 
-	public static string GetSmall(MuseDash1SceneInfo scene, PathwaySide side, EntityEnterDirection dir, int speed)
-		=> $"{scene.MapIdx:00}{CODE_SMALL}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 12, EntityEnterDirection.BottomUp => 6, _ => throw new NotImplementedException() }) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{DIRECTION(dir)}_{SPEED(speed)}";
+	public static string GetSmall(MuseDash1SceneInfo scene, bool air, EntityEnterDirection dir, int speed)
+		=> $"{scene.MapIdx:00}{CODE_SMALL}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 12, EntityEnterDirection.BottomUp => 6, _ => throw new NotImplementedException() }) + (air ? 3 : 0):00}_{PATHWAY(air)}_{DIRECTION(dir)}_{SPEED(speed)}";
 
-	public static string GetMedium1(MuseDash1SceneInfo scene, PathwaySide side, EntityEnterDirection dir, int speed)
-		=> $"{scene.MapIdx:00}{CODE_MEDIUM1}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 12, EntityEnterDirection.BottomUp => 6, _ => throw new NotImplementedException() }) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{DIRECTION(dir)}_{SPEED(speed)}";
+	public static string GetMedium1(MuseDash1SceneInfo scene, bool air, EntityEnterDirection dir, int speed)
+		=> $"{scene.MapIdx:00}{CODE_MEDIUM1}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 12, EntityEnterDirection.BottomUp => 6, _ => throw new NotImplementedException() }) + (air ? 3 : 0):00}_{PATHWAY(air)}_{DIRECTION(dir)}_{SPEED(speed)}";
 
-	public static string GetMedium2(MuseDash1SceneInfo scene, PathwaySide side, EntityEnterDirection dir, int speed)
-		=> $"{scene.MapIdx:00}{CODE_MEDIUM2}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 12, EntityEnterDirection.BottomUp => 6, _ => throw new NotImplementedException() }) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{DIRECTION(dir)}_{SPEED(speed)}";
+	public static string GetMedium2(MuseDash1SceneInfo scene, bool air, EntityEnterDirection dir, int speed)
+		=> $"{scene.MapIdx:00}{CODE_MEDIUM2}{speed + (dir switch { EntityEnterDirection.RightSide => 0, EntityEnterDirection.TopDown => 12, EntityEnterDirection.BottomUp => 6, _ => throw new NotImplementedException() }) + (air ? 3 : 0):00}_{PATHWAY(air)}_{DIRECTION(dir)}_{SPEED(speed)}";
 
-	public static string GetLarge1(MuseDash1SceneInfo scene, PathwaySide side, int speed)
-		=> $"{scene.MapIdx:00}{CODE_LARGE1}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
+	public static string GetLarge1(MuseDash1SceneInfo scene, bool air, int speed)
+		=> $"{scene.MapIdx:00}{CODE_LARGE1}{speed + (air ? 3 : 0):00}_{PATHWAY(air)}_nor_{SPEED(speed)}";
 
-	public static string GetLarge2(MuseDash1SceneInfo scene, PathwaySide side, int speed)
-		=> $"{scene.MapIdx:00}{CODE_LARGE2}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
+	public static string GetLarge2(MuseDash1SceneInfo scene, bool air, int speed)
+		=> $"{scene.MapIdx:00}{CODE_LARGE2}{speed + (air ? 3 : 0):00}_{PATHWAY(air)}_nor_{SPEED(speed)}";
 
-	public static string GetHammer(MuseDash1SceneInfo scene, PathwaySide side, int speed, bool reversed)
-		=> $"{scene.MapIdx:00}{CODE_HAMMER}{speed + (reversed ? 6 : 0) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{(reversed ? "up" : "down")}_{SPEED(speed)}";
+	public static string GetHammer(MuseDash1SceneInfo scene, bool air, int speed, bool reversed)
+		=> $"{scene.MapIdx:00}{CODE_HAMMER}{speed + (reversed ? 6 : 0) + (air ? 3 : 0):00}_{PATHWAY(air)}_{(reversed ? "up" : "down")}_{SPEED(speed)}";
 
-	public static string GetRaider(MuseDash1SceneInfo scene, PathwaySide side, int speed, bool reversed)
-		=> $"{scene.MapIdx:00}{CODE_RAIDER}{speed + (reversed ? 6 : 0) + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_{(reversed ? "down" : "up")}_{SPEED(speed)}";
+	public static string GetRaider(MuseDash1SceneInfo scene, bool air, int speed, bool reversed)
+		=> $"{scene.MapIdx:00}{CODE_RAIDER}{speed + (reversed ? 6 : 0) + (air ? 3 : 0):00}_{PATHWAY(air)}_{(reversed ? "down" : "up")}_{SPEED(speed)}";
 
-	public static string GetGhost(MuseDash1SceneInfo scene, PathwaySide side, int speed)
-		=> $"{scene.MapIdx:00}{CODE_GHOST}{speed + (side == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(side)}_nor_{SPEED(speed)}";
+	public static string GetGhost(MuseDash1SceneInfo scene, bool air, int speed)
+		=> $"{scene.MapIdx:00}{CODE_GHOST}{speed + (air ? 3 : 0):00}_{PATHWAY(air)}_nor_{SPEED(speed)}";
 
-	internal static string GetHeart(PathwaySide path, int speed)
-		=> $"0002{speed + (path == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(path)}_nor_{SPEED(speed)}";
+	internal static string GetHeart(bool air, int speed)
+		=> $"0002{speed + (air ? 3 : 0):00}_{PATHWAY(air)}_nor_{SPEED(speed)}";
 
-	internal static string GetScore(PathwaySide path, int speed)
-		=> $"0003{speed + (path == PathwaySide.Top ? 3 : 0):00}_{PATHWAY(path)}_nor_{SPEED(speed)}";
+	internal static string GetScore(bool air, int speed)
+		=> $"0003{speed + (air ? 3 : 0):00}_{PATHWAY(air)}_nor_{SPEED(speed)}";
 }
 
 /// <summary>
@@ -303,75 +306,134 @@ public record class MuseDash1SceneInfo
 	public static readonly MuseDash1SceneInfo Mirrorland = new MuseDash1SceneInfo(10, "Mirrorland", "scene_{0:00}_rin_len");
 	public static readonly MuseDash1SceneInfo Warriorland = new MuseDash1SceneInfo(11, "Warriorland")
 												.MarkUnusable();
-	public static readonly MuseDash1SceneInfo JadeTemple = new MuseDash1SceneInfo(12, "Jade Temple")
-												.MarkUnusable();
+	public static readonly MuseDash1SceneInfo JadeTemple = new MuseDash1SceneInfo(12, "Jade Temple");
 
 	public UIFactoryFn UIFactory = (scene, game) => new MD1SceneUI(scene, game);
 }
-public delegate IMuseDash1SceneUI UIFactoryFn(IMuseDash1SceneInstance scene, IGame game);
-public class MuseDash1SceneDescriptor : IMuseDash1SceneDescriptor
+public delegate IMuseDash1SceneUI UIFactoryFn(IMuseDash1SceneInstance scene, RhythmGameLevel game);
+public class MuseDash1SceneDescriptor : ModDescriptor, IMuseDash1SceneDescriptor
 {
 	public readonly MuseDash1SceneInfo SceneInfo;
+	readonly ICloneDashModProvider provider;
 
-	public MuseDash1SceneDescriptor(MuseDash1SceneInfo info) {
+	public MuseDash1SceneDescriptor(ICloneDashModProvider provider, MuseDash1SceneInfo info) {
+		this.provider = provider;
 		SceneInfo = info;
 	}
 
-	public static MuseDash1SceneDescriptor? GetScene(ReadOnlySpan<char> name) {
+	public const string CRYPTON_SCENE = "scene_10";
+	public const string RIN_LEN_CHARACTER = "char_12_rin";
+
+	public static MuseDash1SceneDescriptor? GetScene(ICloneDashModProvider provider, ReadOnlySpan<char> name) {
+		if (name.SequenceEqual(CRYPTON_SCENE))
+			return GetScene(provider, CharacterMod.Instance.GetActive()?.GetID() == RIN_LEN_CHARACTER ? MuseDash1SceneInfo.Mirrorland.MapName : MuseDash1SceneInfo.Museland.MapName);
+
 		var sceneInfo = MuseDash1SceneInfo.GetSceneInfo(name);
 		if (sceneInfo == null)
 			return null;
 
 		if (sceneInfo.Unusable) {
 			Logs.Warn($"The scene '{sceneInfo.OfficialName}' is currently broken, so 'Space Station' will be selected as a fallback for this scene.");
-			return GetScene("scene_01"); // Fall back to Space Station...
+			return GetScene(provider, "scene_01"); // Fall back to Space Station...
 		}
 
-		return new(sceneInfo);
+		return new(provider, sceneInfo);
 	}
 
-	public T? CreateInGame<T>(IGame game) where T : ISceneInstance {
-		var uuid = game.GetGamemode().GetUUID();
+	public override string GetName() => SceneInfo.OfficialName;
+	public override string GetID() => SceneInfo.MapName;
+	public override ICloneDashModProvider GetProvider() => provider;
 
-		switch (uuid) {
-			case MuseDash1Gamemode.UUID: return (T)(object)(new MuseDash1SceneRuntime(this, (MuseDash1Game)game));
-		}
+	public IGamemodeDescriptor GetGamemode() => ModStores.Get<GamemodeMod>().GetDescriptorByUID(MuseDash1Gamemode.UUID)!;
 
-		return default;
-	}
+	public Type GetRuntimeType() => typeof(MuseDash1SceneRuntime);
 
-	public SceneMetadata FetchMetadata(in HumanLanguage desiredLanguage) {
+	public SceneMetadata FetchMetadata() {
 		return new() {
 			Name = SceneInfo.OfficialName,
 			Artists = "PeroPeroGames",
-			Language = HumanLanguage.English,
 		};
-	}
-
-	public ReadOnlySpan<char> GetUUID() => ISceneDescriptor.ConstructUUID("musedash1", SceneInfo.MapName);
-
-	public bool SupportsGamemode(IGamemodeDescriptor gamemodeDescriptor) {
-		var uuid = gamemodeDescriptor.GetUUID();
-		switch (uuid) {
-			case MuseDash1Gamemode.UUID:
-			case MuseDash1TouhouGamemode.UUID:
-				return true;
-		}
-		return false;
 	}
 }
 
-public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1SceneInstance
+public class MuseDash1SceneRuntime : UnitySimScene, IMuseDash1SceneInstance
 {
-	readonly PathwayInformation[] pathwayInfo = new PathwayInformation[4];
+	const int MIKU_BOSS_SCENE = 10;
+	const int MIKU_BOSS_SCENE_ALT = 9;
+
+	readonly MuseDash1AudioVisualizationComponent audioVisualization;
+	readonly List<MuseDash1BossActionEffect> bossActionEffects = [];
+	bool bossEntered;
+	readonly List<MuseDash1GCClip> clips = [];
+	readonly List<SceneAnimator> mikuBossAnimators = [];
+	readonly List<MuseDash1OffsetGroup> offsetGroups = [];
+	readonly List<MuseDash1SceneScrollableControl> scrollControls = [];
+	readonly PathwayInformation[] pathwayInfo;
+	readonly bool[] pathwayAirAssets;
+	readonly float[] pathwayHueShift;
+	readonly SceneRenderer[][] pathwayMarkerRenderers;
+	readonly Vector2F[] pathwayRenderOffset;
+	PathwayInformation centerInfo;
+	PathwayInformation airAnchor, roadAnchor;
+	readonly Conductor conductor;
+	readonly PathwaysComponent pathways;
+	protected readonly ConcurrentDictionary<long, Lazy<ModelData>> loadedModels = [];
+	readonly ConcurrentQueue<ModelData> preparedModels = [];
+	readonly ConcurrentDictionary<string, (byte[]? Rebuilt, string ClipName)> preparedSounds = [];
+	bool enemyTablesReady;
+	bool preparing;
+	readonly Dictionary<string, MuseDash1ParticleEffect?> particleEffects = [];
+	readonly List<(ParticleMaterial Material, Texture2D Texture)> pendingEffectTextures = [];
+	readonly Dictionary<long, Nucleus.Common.Images.Image> preparedEffectImages = [];
+	bool preparingParticleEffects;
+	readonly HashSet<SerializedFile> pinnedFiles = [];
+
+	static readonly string[] providedAssetSets = [PathwayLayout.ASSETS_AIR, PathwayLayout.ASSETS_ROAD];
 	public readonly MuseDash1SceneDescriptor Descriptor;
-	public readonly MuseDash1Game Game;
+	public readonly RhythmGameLevel Game;
 	public MuseDash1SceneInfo SceneInfo => Descriptor.SceneInfo;
 
 
-	public MuseDash1SceneRuntime(MuseDash1SceneDescriptor descriptor, MuseDash1Game game) {
+	static Task<HashSet<SerializedFile>>? preload;
+
+	internal static void Preload(ISongChart chart) {
+		var descriptor = SceneMod.Instance.GetActive() as MuseDash1SceneDescriptor
+			?? (chart is MD1_SongChart songChart ? SceneMod.Instance.GetDescriptorByUID($"scene/musedash1/{songChart.Song.GetInfo()?.Scene}") as MuseDash1SceneDescriptor : null);
+		if (descriptor == null || preload != null)
+			return;
+
+		var mapName = descriptor.SceneInfo.MapName;
+		preload = Task.Run(() => {
+			var assets = MuseDash1Compatibility.StreamingAssets;
+			HashSet<SerializedFile> pinned = [];
+			try {
+				if (assets.FindAssetByName<GameObject>(mapName) is GameObject scene)
+					UnityParticleConverter.PreloadMaterials(scene, fileName => assets.LoadDependenciesContaining(mapName, new HashSet<string> { fileName }, pinned));
+			}
+			catch (Exception ex) {
+				Logs.Warn($"Scene preload for {mapName} failed: {ex.Message}");
+			}
+			return pinned;
+		});
+	}
+
+	static HashSet<SerializedFile> TakePreload() {
+		var task = preload;
+		preload = null;
+		if (task == null)
+			return [];
+
+		Interlude.SpinUntilComplete(task);
+		return task.Result;
+	}
+
+	public MuseDash1SceneRuntime(MuseDash1SceneDescriptor descriptor, RhythmGameLevel game, Conductor conductor, PathwaysComponent pathways, MuseDash1AudioVisualizationComponent audioVisualization, GameEventManager events) {
 		Descriptor = descriptor;
 		Game = game;
+		this.conductor = conductor;
+		this.pathways = pathways;
+		this.audioVisualization = audioVisualization;
+		var preloaded = TakePreload();
 
 		var sceneGameObject = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(SceneInfo.MapName)!;
 		var sceneSubControl = new MonoBehaviourReader(
@@ -379,6 +441,8 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 			?? throw new NullReferenceException("No scene control?"));
 
 		var scenePoint = sceneSubControl.Get<GameObject>("scenePoint");
+		if (scenePoint == null && sceneSubControl.GetExternalFileName("scenePoint") is string scenePointFile && LoadMissingFile(scenePointFile))
+			scenePoint = sceneSubControl.Get<GameObject>("scenePoint");
 		var transform = scenePoint!.GetFirstComponent<Transform>()!;
 
 		var pathwaysObject = ImportGameObject(scenePoint, null);
@@ -391,36 +455,303 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 
 		if (pathwayChildren.Count >= 2) {
 			pathwayChildren.Sort((a, b) => b.pos.Y.CompareTo(a.pos.Y));
-			AssignPathway(PathwaySide.Top, pathwayChildren[0].obj, pathwayChildren[0].pos);
-			AssignPathway(PathwaySide.Bottom, pathwayChildren[1].obj, pathwayChildren[1].pos);
+			airAnchor = new(pathwayChildren[0].pos.X, pathwayChildren[0].pos.Y, pathwayChildren[0].obj);
+			roadAnchor = new(pathwayChildren[1].pos.X, pathwayChildren[1].pos.Y, pathwayChildren[1].obj);
 		}
 		else if (pathwayChildren.Count == 1) {
-			AssignPathway(PathwaySide.Bottom, pathwayChildren[0].obj, pathwayChildren[0].pos);
+			roadAnchor = new(pathwayChildren[0].pos.X, pathwayChildren[0].pos.Y, pathwayChildren[0].obj);
+		}
+
+		var layout = pathways.Layout;
+		pathwayInfo = new PathwayInformation[layout.Count];
+		pathwayAirAssets = new bool[layout.Count];
+		pathwayHueShift = new float[layout.Count];
+		pathwayMarkerRenderers = new SceneRenderer[layout.Count][];
+		pathwayRenderOffset = new Vector2F[layout.Count];
+		for (int i = 0; i < layout.Count; i++) {
+			var def = layout.Definitions[i];
+			ResolvePathwayAssets(layout, layout.PathwayAt(i), out pathwayAirAssets[i], out pathwayHueShift[i]);
+			var assetAnchor = pathwayAirAssets[i] ? airAnchor : roadAnchor;
+			var normalized = GetNormalizedPosition(def.NormalizedY);
+			pathwayInfo[i] = def.NormalizedY switch {
+				1 => airAnchor,
+				0 => roadAnchor,
+				_ => new(normalized.X, normalized.Y, assetAnchor.UserData)
+			};
+			pathwayInfo[i].Color = def.Color;
+			pathwayRenderOffset[i] = new(pathwayInfo[i].Position.X - assetAnchor.Position.X, assetAnchor.Position.Y - pathwayInfo[i].Position.Y);
 		}
 
 		var rootTransform = sceneGameObject.GetFirstComponent<Transform>()!;
 		root = ImportGameObject(rootTransform.GetGameObject()!, null);
 
-		foreach (var obj in allObjects) obj.Awake();
+		foreach (var obj in allObjects.ToArray()) obj.Awake();
 
-		foreach (var obj in allObjects)
+		foreach (var obj in allObjects) {
 			foreach (var anim in obj.GetComponents<SceneAnimator>())
-				animators.Add(anim);
+				if (!animators.Contains(anim))
+					animators.Add(anim);
+			bossActionEffects.AddRange(obj.GetComponents<MuseDash1BossActionEffect>());
+			clips.AddRange(obj.GetComponents<MuseDash1GCClip>());
+			offsetGroups.AddRange(obj.GetComponents<MuseDash1OffsetGroup>());
+			scrollControls.AddRange(obj.GetComponents<MuseDash1SceneScrollableControl>());
+			if (obj.GetComponent<MuseDash1MikuBossAnimator>() != null)
+				mikuBossAnimators.AddRange(obj.GetComponents<SceneAnimator>());
+		}
+		CollectMikuBossAnimators(sceneSubControl);
+
+		events.Listen<BossAttackChangeGameEvent>(ChangeBossAction);
+		events.Listen<BossAttackEndGameEvent>(EndBossAction);
+		events.Listen<BossAttackStartGameEvent>(StartBossAction);
+		events.Listen<BossInGameEvent>(EnterBoss);
+		events.Listen<BossOutGameEvent>(LeaveBoss);
 
 		BuildRenderOrder();
 
-		pathwayInfo[(int)PathwaySide.Both] = new() {
-			Position = (pathwayInfo[(int)PathwaySide.Top].Position +
-						pathwayInfo[(int)PathwaySide.Bottom].Position) / 2,
-			Color = PathwayExts.PATHWAY_DUAL_COLOR
+		for (int i = 0; i < layout.Count; i++)
+			pathwayMarkerRenderers[i] = pathwayInfo[i].UserData is SceneObject marker ? sortedRenderers.Where(x => IsMarkerRenderer(x, marker)).ToArray() : [];
+		foreach (var markerRenderers in pathwayMarkerRenderers)
+			foreach (var renderer in markerRenderers)
+				sortedRenderers.Remove(renderer);
+
+		centerInfo = new() {
+			Position = (pathwayInfo[0].Position + pathwayInfo[^1].Position) / 2,
+			Color = PathwayLayout.CENTER_COLOR
 		};
-		pathwayInfo[(int)PathwaySide.Top].Color = PathwayExts.PATHWAY_TOP_COLOR;
-		pathwayInfo[(int)PathwaySide.Bottom].Color = PathwayExts.PATHWAY_BOTTOM_COLOR;
+		ReleasePinnedFiles();
+		foreach (var file in preloaded)
+			MuseDash1Compatibility.StreamingAssets.Unpin(file);
 	}
 
-	private void AssignPathway(PathwaySide side, SceneObject obj, Vector3 pos) {
-		pathwayInfo[(int)side] = new(pos.X, pos.Y, obj);
+	void ChangeBossAction(ref BossAttackChangeGameEvent ev) => ChangeBossAction(ev.Action);
+
+	void ChangeBossAction(string action) {
+		foreach (var effect in bossActionEffects)
+			effect.ActionChanged(action);
 	}
+
+	void CollectMikuBossAnimators(MonoBehaviourReader sceneSubControl) {
+		int sceneIndex = sceneSubControl.GetAny<int>("m_SceneIdx");
+		if (sceneIndex is not (MIKU_BOSS_SCENE or MIKU_BOSS_SCENE_ALT))
+			mikuBossAnimators.Clear();
+		if (sceneIndex != MIKU_BOSS_SCENE)
+			return;
+
+		foreach (var parent in sceneSubControl.GetList<Transform>("m_MikuAnimatorParentTransforms"))
+			if (parent?.GetGameObject() is GameObject parentObject && FindImportedObject(parentObject.m_PathID) is SceneObject imported)
+				foreach (var child in imported.Transform.Children)
+					foreach (var animator in child.Object.GetComponents<SceneAnimator>())
+						if (!mikuBossAnimators.Contains(animator))
+							mikuBossAnimators.Add(animator);
+	}
+
+	protected override SceneComponent? CreateBehaviour(MonoBehaviour behaviour, string className) {
+		var data = new MonoBehaviourReader(behaviour);
+		float Float(string key, float fallback) => data.Dict.Contains(key) ? Convert.ToSingle(data.Dict[key]) : fallback;
+		bool Bool(string key) => data.Dict.Contains(key) && Convert.ToBoolean(data.Dict[key]);
+		long PathID(string key) => data.Dict[key] is System.Collections.Specialized.OrderedDictionary pointer ? Convert.ToInt64(pointer["m_PathID"]) : 0;
+
+		return className switch {
+			"AddtiveMikuBossAnimatorController" => new MuseDash1MikuBossAnimator(),
+			"BossActionEffectController" => new MuseDash1BossActionEffect(GameObjectPathID(behaviour, PathID("m_BossVfxObj")), GameObjectPathID(behaviour, PathID("m_BossBombEffect"))),
+			"GCClip" => new MuseDash1GCClip((int)Float("idx", 0), Float("updateInterval", 0.016f), InitialClipValue(behaviour)),
+			"OffsetGroup" => new MuseDash1OffsetGroup(Bool("m_IgnoreZ")),
+			"SceneScrollableControl" => new MuseDash1SceneScrollableControl(Float("m_DefaultStepPerSecond", 8)),
+			"Scrollable" => new MuseDash1Scrollable(Float("m_ScrollLength", 5), Float("m_Anchor", 0.5f), Float("m_Angle", 0), Float("m_SpeedFactor", 1), Bool("m_IsGroup"), behaviour.m_Enabled != 0),
+			"ScrollableGear" => new MuseDash1ScrollableGear(),
+			_ => null
+		};
+	}
+
+	void EndBossAction(ref BossAttackEndGameEvent ev) => ChangeBossAction(ev.Action);
+
+	void EnterBoss(ref BossInGameEvent ev) {
+		foreach (var animator in mikuBossAnimators)
+			animator.Play("in");
+		foreach (var effect in bossActionEffects)
+			effect.Enter(!bossEntered);
+		bossEntered = true;
+	}
+
+	static long GameObjectPathID(MonoBehaviour behaviour, long pathID) {
+		if (pathID == 0 || !behaviour.assetsFile.ObjectsDic.TryGetValue(pathID, out var target))
+			return pathID;
+		return target is Component component && component.m_GameObject.TryGet(out var gameObject) ? gameObject.m_PathID : pathID;
+	}
+
+	static float InitialClipValue(MonoBehaviour behaviour) {
+		if (!behaviour.m_GameObject.TryGet(out var gameObject) || gameObject.GetFirstComponent<SpriteRenderer>() is not SpriteRenderer renderer)
+			return 0;
+		if (renderer.m_Materials == null || renderer.m_Materials.Count == 0 || !renderer.m_Materials[0].TryGet(out var material))
+			return 0;
+		foreach (var (key, value) in material.m_SavedProperties.m_Floats)
+			if (key == "_ClipValue")
+				return value;
+		return 0;
+	}
+
+	void LeaveBoss(ref BossOutGameEvent ev) {
+		foreach (var animator in mikuBossAnimators)
+			animator.Play("out");
+	}
+
+	void StartBossAction(ref BossAttackStartGameEvent ev) => ChangeBossAction(ev.Action);
+
+	string GetBossPrefab() {
+		string fallback = MuseDash1SceneEnemyInfo.GetBoss(SceneInfo);
+		string name = fallback;
+		var song = Game.GetSongChart().GetSong() as MD1_Song;
+		var configured = MuseDash1Compatibility.Bosses.Find(boss => boss.scene_name == SceneInfo.MapName)?.boss_name;
+		if (song?.GetInfo()?.Scene == SceneInfo.MapName && configured != null)
+			name = configured;
+		if (name == "0501_boss" && song?.UID is "0-47" or "38-1" or "43-68")
+			name = "0501_boss_christmas";
+		if (name != fallback && MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(name) == null)
+			name = fallback;
+		if (MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(name) != null)
+			return name;
+		return configured != null && MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(configured) != null ? configured : WithFallbackScene(fallback);
+	}
+
+	static string WithFallbackScene(string name) => $"{MuseDash1SceneInfo.SpaceStation.MapIdx:00}{name[2..]}";
+
+	static T? FindSceneAsset<T>(string name) where T : AssetStudio.Object
+		=> MuseDash1Compatibility.StreamingAssets.FindAssetByName<T>(name) ?? MuseDash1Compatibility.StreamingAssets.FindAssetByName<T>(WithFallbackScene(name));
+
+	ModelData? LoadBossModel(string prefab) {
+		if (prefab == MuseDash1SceneEnemyInfo.GetBoss(SceneInfo))
+			return null;
+
+		var skeleton = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(prefab)?.GetMonoBehaviorByScriptName("SkeletonAnimation");
+		if (skeleton?.ToType()["skeletonDataAsset"] is not System.Collections.Specialized.OrderedDictionary pointer)
+			return null;
+
+		var dataAsset = new PPtr<MonoBehaviour>(Convert.ToInt32(pointer["m_FileID"]), Convert.ToInt64(pointer["m_PathID"]), skeleton.assetsFile);
+		return dataAsset.TryGet(out var asset) ? LoadModel(asset) : null;
+	}
+
+	internal ModelData LoadModel(MonoBehaviour? skeletonAnimation) => loadedModels.GetOrAdd(skeletonAnimation!.m_PathID, _ => new(() => {
+		var model = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, skeletonAnimation, uploadTextures: !preparing);
+		if (preparing)
+			preparedModels.Enqueue(model);
+		return model;
+	})).Value;
+
+	void UploadPreparedModels() {
+		if (preparing)
+			return;
+		while (preparedModels.TryDequeue(out var model))
+			MuseDash1Compatibility.UploadModelDataTextures(model);
+	}
+
+	static void ResolvePathwayAssets(PathwayLayout layout, PathwayId pathway, out bool air, out float hueShift) {
+		foreach (var pref in layout[pathway].Assets) {
+			if (Array.IndexOf(providedAssetSets, pref.AssetSet) < 0) continue;
+			air = pref.AssetSet == PathwayLayout.ASSETS_AIR;
+			hueShift = pref.HueShift;
+			return;
+		}
+		air = layout.IsAirSide(pathway);
+		hueShift = 0;
+	}
+
+	static bool IsMarkerRenderer(SceneRenderer renderer, SceneObject marker) {
+		for (var transform = renderer.Transform; transform != null; transform = transform.Parent)
+			if (transform.Object == marker)
+				return true;
+		return false;
+	}
+
+	bool AirAssets(DashEnemy enemy) => pathwayAirAssets[pathways.PrimaryPathway(enemy.Pathway).Index];
+
+	static GameObject? FindChild(GameObject? parent, string name) {
+		var transform = parent?.GetFirstComponent<Transform>();
+		if (transform == null)
+			return null;
+
+		foreach (var child in transform.GetChildren())
+			if (child.GetGameObject() is GameObject gameObject && gameObject.m_Name == name)
+				return gameObject;
+		return null;
+	}
+
+	string GetNotePrefabName(string code, bool air) => $"{SceneInfo.MapIdx:00}{code}{(air ? "04_air_nor_1" : "01_road_nor_1")}";
+
+	MuseDash1ParticleEffect? LoadParticleEffect(string key, string source, Func<GameObject?> find) {
+		MuseDash1ParticleEffect? effect;
+		if (preparingParticleEffects) {
+			lock (particleEffects)
+				if (particleEffects.TryGetValue(key, out effect))
+					return effect;
+
+			HashSet<SerializedFile> pinned = [];
+			effect = MuseDash1ParticleEffect.Load(find(), PrepareEffectTexture, fileName => MuseDash1Compatibility.StreamingAssets.LoadDependenciesContaining(source, new HashSet<string> { fileName }, pinned));
+			lock (particleEffects) {
+				particleEffects[key] = effect;
+				pinnedFiles.UnionWith(pinned);
+			}
+			return effect;
+		}
+
+		if (pendingEffectTextures.Count > 0) {
+			foreach (var (material, texture) in pendingEffectTextures)
+				material.Texture = textureCache.TryGetValue(texture.m_PathID, out var loaded) ? loaded
+					: preparedEffectImages.Remove(texture.m_PathID, out var image) ? textureCache[texture.m_PathID] = UnityAssetUtils.UploadTexture(image)
+					: LoadTexture(texture);
+			pendingEffectTextures.Clear();
+			ReleasePinnedFiles();
+		}
+
+		if (particleEffects.TryGetValue(key, out effect))
+			return effect;
+
+		particleEffects[key] = effect = MuseDash1ParticleEffect.Load(find(), LoadTexture, fileName => LoadDependency(source, fileName));
+		ReleasePinnedFiles();
+		return effect;
+	}
+
+	void PrepareEffectTexture(ParticleMaterial material, Texture2D texture) {
+		bool decode;
+		lock (pendingEffectTextures) {
+			pendingEffectTextures.Add((material, texture));
+			decode = !textureCache.ContainsKey(texture.m_PathID) && preparedEffectImages.TryAdd(texture.m_PathID, default);
+		}
+		if (!decode)
+			return;
+
+		var image = texture.ToRaylib();
+		lock (pendingEffectTextures)
+			preparedEffectImages[texture.m_PathID] = image;
+	}
+
+	public void PrepareParticleEffects(PathwayLayout layout) {
+		preparingParticleEffects = true;
+		try {
+			List<Action> effects = [];
+			for (int i = 0; i < layout.Count; i++) {
+				var pathway = layout.PathwayAt(i);
+				effects.Add(() => GetEnemyHitEffect(EntityVariant.Small, pathway));
+				effects.Add(() => GetEnemyHitEffect(EntityVariant.Boss1, pathway));
+				effects.Add(() => GetPressEffect(pathway, false));
+				effects.Add(() => GetPressEffect(pathway, true));
+			}
+			Parallel.Invoke([.. effects]);
+		}
+		finally {
+			preparingParticleEffects = false;
+		}
+	}
+
+	bool LoadDependency(string source, string fileName) => MuseDash1Compatibility.StreamingAssets.LoadDependenciesContaining(source, new HashSet<string> { fileName }, pinnedFiles);
+
+	protected override bool LoadMissingFile(string fileName) => LoadDependency(SceneInfo.MapName, fileName);
+
+	void ReleasePinnedFiles() {
+		foreach (var file in pinnedFiles)
+			MuseDash1Compatibility.StreamingAssets.Release(file);
+		pinnedFiles.Clear();
+	}
+	public bool IsAirTarget(PathwaySet pathways) => IsAirPathway(this.pathways.PrimaryPathway(pathways));
 	delegate T? ProducerFn<T>();
 	class NullLazyLoad<T>(ProducerFn<T> producer) where T : class
 	{
@@ -506,35 +837,86 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 	ITexture? AirStartSustainTexture, AirEndSustainTexture, AirBodySustainTexture, AirUpSustainTexture, AirDownSustainTexture;
 	ITexture? RoadStartSustainTexture, RoadEndSustainTexture, RoadBodySustainTexture, RoadUpSustainTexture, RoadDownSustainTexture;
 
+	IShader? HueShiftShader;
+
 	AudioPlaybackHandle pressIdle;
 	int arrayIndex;
+
+	public void Prepare(MD1_GamemodeData data) {
+		preparing = true;
+		try {
+			var sounds = Task.Run(PrepareSounds);
+			SetupEnemyTables();
+
+			HashSet<NullLazyLoad<ModelData>> loads = [BossModel];
+			if (data.Entities.Exists(entity => entity.Blood))
+				loads.Add(HpMountModel);
+			foreach (var entity in data.Entities) {
+				try {
+					if (EnemyModelLoad(entity.Type, entity.Variant, pathwayAirAssets[pathways.PrimaryPathway(entity.Pathway).Index], entity.Flipped) is { } load)
+						loads.Add(load);
+				}
+				catch (NotImplementedException) { }
+			}
+			Parallel.ForEach(loads, load => load.TryLoad());
+			sounds.GetAwaiter().GetResult();
+		}
+		finally {
+			preparing = false;
+		}
+	}
+
+	void PrepareSounds() {
+		var sounds = SceneInfo.Sounds;
+		List<string?> names = [sounds.Begin, sounds.Fever, sounds.Unpause, sounds.FullCombo, sounds.Block, sounds.Crystal, sounds.FailBgm, sounds.Forte2, sounds.Forte3, sounds.Ghost,
+			sounds.Hp, sounds.Jump, sounds.Mezzo1, sounds.Mezzo3, sounds.Piano2, sounds.PressIdle, sounds.PressTop, sounds.Score, sounds.VictoryBgm];
+		for (int i = 0; i < 16; i++)
+			names.Add(sounds.HitSounds[i]);
+		Parallel.ForEach(names.OfType<string>().Distinct(), name => {
+			try {
+				var rebuilt = MuseDash1Compatibility.RebuildSoundFromName(name, out var clipName);
+				preparedSounds[name] = (rebuilt, clipName);
+			}
+			catch (Exception ex) {
+				Logs.Warn($"Couldn't prepare scene sound {name}: {ex.Message}");
+			}
+		});
+	}
+
+	IAudioClip? LoadSceneSound(string name) {
+		var clip = preparedSounds.TryGetValue(name, out var sound) ? MuseDash1Compatibility.CreateSound(sound.Rebuilt, sound.ClipName) : MuseDash1Compatibility.LoadSoundFromName(Game, name);
+		clip?.Preload();
+		return clip;
+	}
+
+	IAudioClip? LoadSceneMusic(string name) => preparedSounds.TryGetValue(name, out var sound) ? MuseDash1Compatibility.CreateSound(sound.Rebuilt, name) : MuseDash1Compatibility.LoadMusicFromName(Game, name);
 
 	public void Initialize() {
 		var game = this.Game;
 
-		BeginSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Begin ?? throw new NullReferenceException());
-		FeverSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Fever ?? throw new NullReferenceException());
-		UnpauseSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Unpause ?? throw new NullReferenceException());
-		FullComboSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.FullCombo ?? throw new NullReferenceException());
-		BlockSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Block ?? throw new NullReferenceException());
-		CrystalSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Crystal ?? throw new NullReferenceException());
-		FailBgmSound = MuseDash1Compatibility.LoadMusicFromName(game, SceneInfo.Sounds.FailBgm ?? throw new NullReferenceException());
-		Forte2Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Forte2 ?? throw new NullReferenceException());
-		Forte3Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Forte3 ?? throw new NullReferenceException());
-		GhostSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Ghost ?? throw new NullReferenceException());
-		HpSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Hp ?? throw new NullReferenceException());
-		JumpSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Jump ?? throw new NullReferenceException());
-		Mezzo1Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Mezzo1 ?? throw new NullReferenceException());
-		Mezzo3Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Mezzo3 ?? throw new NullReferenceException());
-		Piano2Sound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Piano2 ?? throw new NullReferenceException());
-		PressIdleSound = MuseDash1Compatibility.LoadMusicFromName(game, SceneInfo.Sounds.PressIdle ?? throw new NullReferenceException());
-		PressTopSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.PressTop ?? throw new NullReferenceException());
-		ScoreSound = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.Score ?? throw new NullReferenceException());
-		VictoryBgmSound = MuseDash1Compatibility.LoadMusicFromName(game, SceneInfo.Sounds.VictoryBgm ?? throw new NullReferenceException());
+		BeginSound = LoadSceneSound(SceneInfo.Sounds.Begin ?? throw new NullReferenceException());
+		FeverSound = LoadSceneSound(SceneInfo.Sounds.Fever ?? throw new NullReferenceException());
+		UnpauseSound = LoadSceneSound(SceneInfo.Sounds.Unpause ?? throw new NullReferenceException());
+		FullComboSound = LoadSceneSound(SceneInfo.Sounds.FullCombo ?? throw new NullReferenceException());
+		BlockSound = LoadSceneSound(SceneInfo.Sounds.Block ?? throw new NullReferenceException());
+		CrystalSound = LoadSceneSound(SceneInfo.Sounds.Crystal ?? throw new NullReferenceException());
+		FailBgmSound = LoadSceneMusic(SceneInfo.Sounds.FailBgm ?? throw new NullReferenceException());
+		Forte2Sound = LoadSceneSound(SceneInfo.Sounds.Forte2 ?? throw new NullReferenceException());
+		Forte3Sound = LoadSceneSound(SceneInfo.Sounds.Forte3 ?? throw new NullReferenceException());
+		GhostSound = LoadSceneSound(SceneInfo.Sounds.Ghost ?? throw new NullReferenceException());
+		HpSound = LoadSceneSound(SceneInfo.Sounds.Hp ?? throw new NullReferenceException());
+		JumpSound = LoadSceneSound(SceneInfo.Sounds.Jump ?? throw new NullReferenceException());
+		Mezzo1Sound = LoadSceneSound(SceneInfo.Sounds.Mezzo1 ?? throw new NullReferenceException());
+		Mezzo3Sound = LoadSceneSound(SceneInfo.Sounds.Mezzo3 ?? throw new NullReferenceException());
+		Piano2Sound = LoadSceneSound(SceneInfo.Sounds.Piano2 ?? throw new NullReferenceException());
+		PressIdleSound = LoadSceneMusic(SceneInfo.Sounds.PressIdle ?? throw new NullReferenceException());
+		PressTopSound = LoadSceneSound(SceneInfo.Sounds.PressTop ?? throw new NullReferenceException());
+		ScoreSound = LoadSceneSound(SceneInfo.Sounds.Score ?? throw new NullReferenceException());
+		VictoryBgmSound = LoadSceneMusic(SceneInfo.Sounds.VictoryBgm ?? throw new NullReferenceException());
 
 		HitSounds = new IAudioClip?[16];
 		for (int i = 0; i < 16; i++) {
-			HitSounds[i] = MuseDash1Compatibility.LoadSoundFromName(game, SceneInfo.Sounds.HitSounds[i] ?? throw new NullReferenceException());
+			HitSounds[i] = LoadSceneSound(SceneInfo.Sounds.HitSounds[i] ?? throw new NullReferenceException());
 			HitSounds[i]?.BindVolumeToConVar(AudioSettings.snd_hitvolume);
 		}
 
@@ -563,17 +945,17 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		var assets = MuseDash1Compatibility.StreamingAssets;
 
 		string sustainID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_SUSTAIN}";
-		AirStartSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_air_top"));
-		AirEndSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_air_top"));
-		AirBodySustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_air_body"));
-		AirUpSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_air_note_up"));
-		AirDownSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_air_note_down"));
+		AirStartSustainTexture = LoadTexture(FindSceneAsset<Texture2D>($"{sustainID}_air_top"));
+		AirEndSustainTexture = LoadTexture(FindSceneAsset<Texture2D>($"{sustainID}_air_top"));
+		AirBodySustainTexture = LoadTexture(FindSceneAsset<Texture2D>($"{sustainID}_air_body"));
+		AirUpSustainTexture = LoadTexture(FindSceneAsset<Texture2D>($"{sustainID}_air_note_up"));
+		AirDownSustainTexture = LoadTexture(FindSceneAsset<Texture2D>($"{sustainID}_air_note_down"));
 
-		RoadStartSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_top"));
-		RoadEndSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_top"));
-		RoadBodySustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_body"));
-		RoadUpSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_note_up"));
-		RoadDownSustainTexture = LoadTexture(assets.FindAssetByName<Texture2D>($"{sustainID}_road_note_down"));
+		RoadStartSustainTexture = LoadTexture(FindSceneAsset<Texture2D>($"{sustainID}_road_top"));
+		RoadEndSustainTexture = LoadTexture(FindSceneAsset<Texture2D>($"{sustainID}_road_top"));
+		RoadBodySustainTexture = LoadTexture(FindSceneAsset<Texture2D>($"{sustainID}_road_body"));
+		RoadUpSustainTexture = LoadTexture(FindSceneAsset<Texture2D>($"{sustainID}_road_note_up"));
+		RoadDownSustainTexture = LoadTexture(FindSceneAsset<Texture2D>($"{sustainID}_road_note_down"));
 
 		AirBodySustainTexture.SetWrap(TextureWrap.Repeat);
 		AirUpSustainTexture.SetWrap(TextureWrap.Repeat);
@@ -582,7 +964,20 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		RoadUpSustainTexture.SetWrap(TextureWrap.Repeat);
 		RoadDownSustainTexture.SetWrap(TextureWrap.Repeat);
 
+		if (Array.Exists(pathwayHueShift, x => x != 0))
+			HueShiftShader = game.Shaders.LoadFragmentShaderFromFile("shaders", "hue_shift.fs");
+
+		if (!enemyTablesReady)
+			SetupEnemyTables();
+		UploadPreparedModels();
+		preparedSounds.Clear();
+	}
+
+	void SetupEnemyTables() {
+		var assets = MuseDash1Compatibility.StreamingAssets;
+
 		string bossID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_BOSS}";
+		string bossPrefab = GetBossPrefab();
 		string gearAirID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GEARS}_air";
 		string gearRoadID = SceneInfo.MapIdx switch {
 			// :(
@@ -624,81 +1019,81 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		string ghostRoadID = $"{SceneInfo.MapIdx:00}{MuseDash1SceneEnemyInfo.CODE_GHOST}_road";
 
 		// Populate models
-		BossModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossID}_SkeletonData")!));
+		BossModel = new ProducerFn<ModelData>(() => LoadBossModel(bossPrefab) ?? LoadModel(FindSceneAsset<MonoBehaviour>($"{bossID}_SkeletonData")!));
 		AirHeartModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>("0002_hp_SkeletonData")!));
 		RoadHeartModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>("0002_hp_SkeletonData")!));
 		AirScoreModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>("0003_score_SkeletonData")!));
 		RoadScoreModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>("0003_score_SkeletonData")!));
-		AirGearModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearAirID}_SkeletonData")!));
-		RoadGearModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{gearRoadID}_SkeletonData")!));
-		MasherModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{masherID}_SkeletonData")!));
-		AirDoubleModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{doubleAirID}_SkeletonData")!));
-		RoadDoubleModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{doubleRoadID}_SkeletonData")!));
-		AirBoss1Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss1AirID}_SkeletonData")!));
-		RoadBoss1Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss1RoadID}_SkeletonData")!));
-		AirBoss2Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss2AirID}_SkeletonData")!));
-		RoadBoss2Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss2RoadID}_SkeletonData")!));
-		AirBoss3Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss3AirID}_SkeletonData")!));
-		RoadBoss3Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{boss3RoadID}_SkeletonData")!));
-		AirBossGearModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossGearAirID}_SkeletonData")!));
-		RoadBossGearModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{bossGearRoadID}_SkeletonData")!));
-		AirSmallModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{smallAirID}_SkeletonData")!));
-		RoadSmallModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{smallRoadID}_SkeletonData")!));
-		AirMedium1Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium1AirID}_SkeletonData")!));
-		RoadMedium1Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium1RoadID}_SkeletonData")!));
-		AirMedium2Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium2AirID}_SkeletonData")!));
-		RoadMedium2Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{medium2RoadID}_SkeletonData")!));
-		AirLarge1Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large1AirID}_SkeletonData")!));
-		RoadLarge1Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large1RoadID}_SkeletonData")!));
-		AirLarge2Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large2AirID}_SkeletonData")!));
-		RoadLarge2Model = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{large2RoadID}_SkeletonData")!));
-		AirHammerModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerAirID}_SkeletonData")!));
-		RoadHammerModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerRoadID}_SkeletonData")!));
-		AirHammerBModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerAirBID}_SkeletonData")!));
-		RoadHammerBModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{hammerRoadBID}_SkeletonData")!));
-		AirRaiderModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderAirID}_SkeletonData")!));
-		RoadRaiderModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderRoadID}_SkeletonData")!));
-		AirRaiderBModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderAirBID}_SkeletonData")!));
-		RoadRaiderBModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{raiderRoadBID}_SkeletonData")!));
-		AirGhostModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostAirID}_SkeletonData")!));
-		RoadGhostModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"{ghostRoadID}_SkeletonData")!));
+		AirGearModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{gearAirID}_SkeletonData")!));
+		RoadGearModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{gearRoadID}_SkeletonData")!));
+		MasherModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{masherID}_SkeletonData")!));
+		AirDoubleModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{doubleAirID}_SkeletonData")!));
+		RoadDoubleModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{doubleRoadID}_SkeletonData")!));
+		AirBoss1Model = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{boss1AirID}_SkeletonData")!));
+		RoadBoss1Model = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{boss1RoadID}_SkeletonData")!));
+		AirBoss2Model = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{boss2AirID}_SkeletonData")!));
+		RoadBoss2Model = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{boss2RoadID}_SkeletonData")!));
+		AirBoss3Model = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{boss3AirID}_SkeletonData")!));
+		RoadBoss3Model = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{boss3RoadID}_SkeletonData")!));
+		AirBossGearModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{bossGearAirID}_SkeletonData")!));
+		RoadBossGearModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{bossGearRoadID}_SkeletonData")!));
+		AirSmallModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{smallAirID}_SkeletonData")!));
+		RoadSmallModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{smallRoadID}_SkeletonData")!));
+		AirMedium1Model = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{medium1AirID}_SkeletonData")!));
+		RoadMedium1Model = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{medium1RoadID}_SkeletonData")!));
+		AirMedium2Model = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{medium2AirID}_SkeletonData")!));
+		RoadMedium2Model = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{medium2RoadID}_SkeletonData")!));
+		AirLarge1Model = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{large1AirID}_SkeletonData")!));
+		RoadLarge1Model = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{large1RoadID}_SkeletonData")!));
+		AirLarge2Model = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{large2AirID}_SkeletonData")!));
+		RoadLarge2Model = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{large2RoadID}_SkeletonData")!));
+		AirHammerModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{hammerAirID}_SkeletonData")!));
+		RoadHammerModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{hammerRoadID}_SkeletonData")!));
+		AirHammerBModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{hammerAirBID}_SkeletonData")!));
+		RoadHammerBModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{hammerRoadBID}_SkeletonData")!));
+		AirRaiderModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{raiderAirID}_SkeletonData")!));
+		RoadRaiderModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{raiderRoadID}_SkeletonData")!));
+		AirRaiderBModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{raiderAirBID}_SkeletonData")!));
+		RoadRaiderBModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{raiderRoadBID}_SkeletonData")!));
+		AirGhostModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{ghostAirID}_SkeletonData")!));
+		RoadGhostModel = new ProducerFn<ModelData>(() => LoadModel(FindSceneAsset<MonoBehaviour>($"{ghostRoadID}_SkeletonData")!));
 		HpMountModel = new ProducerFn<ModelData>(() => LoadModel(assets.FindAssetByName<MonoBehaviour>($"0002_hp_SkeletonData")!));
 
 		// Populate animations
 
-		BossAnims = new(getSpineController(MuseDash1SceneEnemyInfo.GetBoss(SceneInfo)));
-		PopulateThreeSpeedPathwayAnimations(AirHeartAnims, RoadHeartAnims, static (in req) => MuseDash1SceneEnemyInfo.GetHeart(req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirScoreAnims, RoadScoreAnims, static (in req) => MuseDash1SceneEnemyInfo.GetScore(req.path, req.speed));
+		BossAnims = new(getSpineController(bossPrefab));
+		PopulateThreeSpeedPathwayAnimations(AirHeartAnims, RoadHeartAnims, static (in req) => MuseDash1SceneEnemyInfo.GetHeart(req.air, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirScoreAnims, RoadScoreAnims, static (in req) => MuseDash1SceneEnemyInfo.GetScore(req.air, req.speed));
 		PopulateThreeSpeedAnimations(MasherAnims, [EntityEnterDirection.RightSide, EntityEnterDirection.TopDown], static (in req) => MuseDash1SceneEnemyInfo.GetMasher(req.scene, req.dir, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirGearAnims, RoadGearAnims, static (in req) => MuseDash1SceneEnemyInfo.GetGear(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirDoubleAnims, RoadDoubleAnims, static (in req) => MuseDash1SceneEnemyInfo.GetDouble(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirBoss1Anims, RoadBoss1Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss1(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirBoss2Anims, RoadBoss2Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss2(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirBoss3Anims, RoadBoss3Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss3(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirBoss3Anims, RoadBoss3Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss3(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirBossGearA_Anims, RoadBossGearA_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBossGear(req.scene, req.path, req.speed, false));
-		PopulateThreeSpeedPathwayAnimations(AirBossGearB_Anims, RoadBossGearB_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBossGear(req.scene, req.path, req.speed, true));
-		PopulateThreeSpeedAllDirsAnimations(AirSmallAnims, RoadSmallAnims, static (in req) => MuseDash1SceneEnemyInfo.GetSmall(req.scene, req.path, req.dir, req.speed));
-		PopulateThreeSpeedAllDirsAnimations(AirMedium1Anims, RoadMedium1Anims, static (in req) => MuseDash1SceneEnemyInfo.GetMedium1(req.scene, req.path, req.dir, req.speed));
-		PopulateThreeSpeedAllDirsAnimations(AirMedium2Anims, RoadMedium2Anims, static (in req) => MuseDash1SceneEnemyInfo.GetMedium2(req.scene, req.path, req.dir, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirLarge1Anims, RoadLarge1Anims, static (in req) => MuseDash1SceneEnemyInfo.GetLarge1(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirLarge2Anims, RoadLarge2Anims, static (in req) => MuseDash1SceneEnemyInfo.GetLarge2(req.scene, req.path, req.speed));
-		PopulateThreeSpeedPathwayAnimations(AirHammerA_Anims, RoadHammerA_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetHammer(req.scene, req.path, req.speed, false));
-		PopulateThreeSpeedPathwayAnimations(AirHammerB_Anims, RoadHammerB_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetHammer(req.scene, req.path, req.speed, true));
-		PopulateThreeSpeedPathwayAnimations(AirRaiderA_Anims, RoadRaiderA_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetRaider(req.scene, req.path, req.speed, false));
-		PopulateThreeSpeedPathwayAnimations(AirRaiderB_Anims, RoadRaiderB_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetRaider(req.scene, req.path, req.speed, true));
-		PopulateThreeSpeedPathwayAnimations(AirGhostAnims, RoadGhostAnims, static (in req) => MuseDash1SceneEnemyInfo.GetGhost(req.scene, req.path, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirGearAnims, RoadGearAnims, static (in req) => MuseDash1SceneEnemyInfo.GetGear(req.scene, req.air, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirDoubleAnims, RoadDoubleAnims, static (in req) => MuseDash1SceneEnemyInfo.GetDouble(req.scene, req.air, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirBoss1Anims, RoadBoss1Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss1(req.scene, req.air, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirBoss2Anims, RoadBoss2Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss2(req.scene, req.air, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirBoss3Anims, RoadBoss3Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBoss3(req.scene, req.air, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirBossGearA_Anims, RoadBossGearA_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBossGear(req.scene, req.air, req.speed, false));
+		PopulateThreeSpeedPathwayAnimations(AirBossGearB_Anims, RoadBossGearB_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetBossGear(req.scene, req.air, req.speed, true));
+		PopulateThreeSpeedAllDirsAnimations(AirSmallAnims, RoadSmallAnims, static (in req) => MuseDash1SceneEnemyInfo.GetSmall(req.scene, req.air, req.dir, req.speed));
+		PopulateThreeSpeedAllDirsAnimations(AirMedium1Anims, RoadMedium1Anims, static (in req) => MuseDash1SceneEnemyInfo.GetMedium1(req.scene, req.air, req.dir, req.speed));
+		PopulateThreeSpeedAllDirsAnimations(AirMedium2Anims, RoadMedium2Anims, static (in req) => MuseDash1SceneEnemyInfo.GetMedium2(req.scene, req.air, req.dir, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirLarge1Anims, RoadLarge1Anims, static (in req) => MuseDash1SceneEnemyInfo.GetLarge1(req.scene, req.air, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirLarge2Anims, RoadLarge2Anims, static (in req) => MuseDash1SceneEnemyInfo.GetLarge2(req.scene, req.air, req.speed));
+		PopulateThreeSpeedPathwayAnimations(AirHammerA_Anims, RoadHammerA_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetHammer(req.scene, req.air, req.speed, false));
+		PopulateThreeSpeedPathwayAnimations(AirHammerB_Anims, RoadHammerB_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetHammer(req.scene, req.air, req.speed, true));
+		PopulateThreeSpeedPathwayAnimations(AirRaiderA_Anims, RoadRaiderA_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetRaider(req.scene, req.air, req.speed, false));
+		PopulateThreeSpeedPathwayAnimations(AirRaiderB_Anims, RoadRaiderB_Anims, static (in req) => MuseDash1SceneEnemyInfo.GetRaider(req.scene, req.air, req.speed, true));
+		PopulateThreeSpeedPathwayAnimations(AirGhostAnims, RoadGhostAnims, static (in req) => MuseDash1SceneEnemyInfo.GetGhost(req.scene, req.air, req.speed));
+		enemyTablesReady = true;
 	}
 
 	public struct RequestInfo
 	{
 		public MuseDash1SceneInfo scene;
-		public PathwaySide path;
+		public bool air;
 		public EntityEnterDirection dir;
 		public int speed;
 	}
 
-	MonoBehaviourReader getSpineController(string name) => new(MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(name)!.GetComponentByName<MonoBehaviour>("SpineActionController")!);
+	MonoBehaviourReader getSpineController(string name) => new(FindSceneAsset<GameObject>(name)!.GetComponentByName<MonoBehaviour>("SpineActionController")!);
 
 	public delegate string ResolverFn(in RequestInfo info);
 
@@ -743,7 +1138,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 				dir = dir
 			};
 
-			req.path = PathwaySide.Top;
+			req.air = true;
 			for (int i = 0; i < 3; i++) {
 				req.speed = i + 1;
 				string name = resolver(in req);
@@ -751,7 +1146,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 				ProcessThreeSpeedAnimations(top, in req, spine);
 			}
 
-			req.path = PathwaySide.Bottom;
+			req.air = false;
 			for (int i = 0; i < 3; i++) {
 				req.speed = i + 1;
 				string name = resolver(in req);
@@ -765,7 +1160,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 			scene = SceneInfo
 		};
 
-		req.path = PathwaySide.Top;
+		req.air = true;
 		for (int i = 0; i < 3; i++) {
 			req.speed = i + 1;
 			string name = resolver(in req);
@@ -773,7 +1168,7 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 			ProcessThreeSpeedAnimations(top, in req, spine);
 		}
 
-		req.path = PathwaySide.Bottom;
+		req.air = false;
 		for (int i = 0; i < 3; i++) {
 			req.speed = i + 1;
 			string name = resolver(in req);
@@ -788,24 +1183,69 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		Rlgl.PopMatrix();
 	}
 
-	public void RenderPathway(PathwaySide side, float alpha, float size, float rotation) {
-		var obj = ((SceneObject)pathwayInfo[(int)side].UserData!);
+	public void RenderPathway(PathwayId pathway, float alpha, float size, float rotation) {
+		if (pathwayInfo[pathway.Index].UserData is not SceneObject obj) return;
 		var transform = obj.Transform;
 		transform.LocalRotationX = 0; transform.LocalRotationY = 0;
 		transform.LocalRotationZ = NMath.Remap(rotation, 0, 1, -1, 1);
 		transform.LocalRotationW = 1;
 		transform.LocalScaleX = size; transform.LocalScaleY = size;
 		obj.Color.W = alpha / 255f;
+
+		var offset = pathwayRenderOffset[pathway.Index];
+		var hueShifted = BeginPathwayHueShift(pathway);
+		Rlgl.PushMatrix();
+		Rlgl.Translatef(offset.X, offset.Y, 0);
+		foreach (var renderer in pathwayMarkerRenderers[pathway.Index]) renderer.Render(this);
+		Rlgl.PopMatrix();
+		if (hueShifted)
+			EndPathwayHueShift();
 	}
+
+	public bool BeginPathwayHueShift(PathwayId pathway) {
+		var hueShift = pathwayHueShift[pathway.Index];
+		if (hueShift == 0 || HueShiftShader == null)
+			return false;
+
+		HueShiftShader.Activate();
+		HueShiftShader.SetUniform("hueShift", hueShift);
+		return true;
+	}
+
+	public void EndPathwayHueShift() => HueShiftShader?.Deactivate();
 
 	public void Think(double scrollSpeed) {
 		RunThinkFuncs(globals.CurTimeDelta * scrollSpeed);
+
+		float scrollStep = (float)(globals.CurTimeDelta * scrollSpeed);
+		foreach (var control in scrollControls)
+			control.Update(scrollStep);
+		foreach (var group in offsetGroups)
+			group.Update();
+		foreach (var clip in clips)
+			clip.Update((float)globals.CurTimeDelta, audioVisualization.BandBuffer, audioVisualization.Visualizing);
+		foreach (var effect in bossActionEffects)
+			effect.Update((float)globals.CurTimeDelta);
 
 		if (!Game.Paused && IValidatable.IsValid(pressIdle))
 			audiosystem.UpdatePlayback(pressIdle);
 	}
 
 	public void Refresh() { }
+
+	enum KeyAudioChannel { Hit, Touch, Hold, Bass }
+
+	readonly AudioPlaybackHandle[] keyAudioPlaybacks = new AudioPlaybackHandle[4];
+
+	void PlayKeyAudio(IAudioClip? clip, KeyAudioChannel channel) {
+		if (clip == Forte2Sound || clip == Forte3Sound || clip == Piano2Sound)
+			channel = KeyAudioChannel.Bass;
+
+		ref var playback = ref keyAudioPlaybacks[(int)channel];
+		audiosystem.StopSound(playback);
+		playback = audiosystem.PlaySound(clip, in AudioPlaybackSettings.Unaltered);
+	}
+
 	public void PlaySound(SceneSound sound, int hits) {
 		switch (sound) {
 			case SceneSound.Begin: audiosystem.PlaySound(BeginSound, in AudioPlaybackSettings.Unaltered); break;
@@ -813,102 +1253,29 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 			case SceneSound.Unpause: audiosystem.PlaySound(UnpauseSound, in AudioPlaybackSettings.Unaltered); break;
 			case SceneSound.FullCombo: audiosystem.PlaySound(FullComboSound, in AudioPlaybackSettings.Unaltered); break;
 
-			case SceneSound.HitSmall: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitMedium1: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitMedium2: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitLarge1: audiosystem.PlaySound(Piano2Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitLarge2: audiosystem.PlaySound(Forte2Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitRaider: audiosystem.PlaySound(Piano2Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitHammer: audiosystem.PlaySound(Forte3Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitGemini: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.StartedHold: audiosystem.PlaySound(PressTopSound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitMasher: audiosystem.PlaySound(HitSounds![Math.Min(hits, HitSounds!.Length - 1)], in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitBoss1: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitBoss2: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitBoss3: audiosystem.PlaySound(Mezzo1Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitGhost: audiosystem.PlaySound(GhostSound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.GotHeart: audiosystem.PlaySound(HpSound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.GotScore: audiosystem.PlaySound(ScoreSound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitBossFast: audiosystem.PlaySound(Forte2Sound, in AudioPlaybackSettings.Unaltered); break;
-			case SceneSound.HitBossSlow: audiosystem.PlaySound(Forte2Sound, in AudioPlaybackSettings.Unaltered); break;
+			case SceneSound.HitSmall: PlayKeyAudio(Mezzo1Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitMedium1: PlayKeyAudio(Mezzo1Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitMedium2: PlayKeyAudio(Mezzo1Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitLarge1: PlayKeyAudio(Piano2Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitLarge2: PlayKeyAudio(Forte2Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitRaider: PlayKeyAudio(Piano2Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitHammer: PlayKeyAudio(Forte3Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitGemini: PlayKeyAudio(Mezzo1Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.StartedHold: PlayKeyAudio(PressTopSound, KeyAudioChannel.Hold); break;
+			case SceneSound.HitMasher: PlayKeyAudio(HitSounds![Math.Min(hits, HitSounds!.Length - 1)], KeyAudioChannel.Hit); break;
+			case SceneSound.HitBoss1: PlayKeyAudio(Mezzo1Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitBoss2: PlayKeyAudio(Mezzo1Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitBoss3: PlayKeyAudio(Mezzo1Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitGhost: PlayKeyAudio(GhostSound, KeyAudioChannel.Hit); break;
+			case SceneSound.GotHeart: PlayKeyAudio(HpSound, KeyAudioChannel.Touch); break;
+			case SceneSound.GotScore: PlayKeyAudio(ScoreSound, KeyAudioChannel.Touch); break;
+			case SceneSound.HitBossFast: PlayKeyAudio(Forte2Sound, KeyAudioChannel.Hit); break;
+			case SceneSound.HitBossSlow: PlayKeyAudio(Forte2Sound, KeyAudioChannel.Hit); break;
 			case SceneSound.Victory: audiosystem.PlaySound(VictoryBgmSound, in AudioPlaybackSettings.Unaltered); break;
 		}
 	}
 
-	public double GetBossAnimationTime(BossAnimationType type, AnimationHandler anim) {
-		MD_ActionData? actions = GetBossAnimation(type);
-
-		string? animation = actions?.ActionIdx?.FirstOrDefault() ?? type switch {
-			BossAnimationType.MultiAttack => ActionKeys.BOSS_MULTI_ATK,
-			BossAnimationType.MultiAttackEnd => ActionKeys.BOSS_MULTI_ATK_END,
-			BossAnimationType.MultiAttackHurt => ActionKeys.BOSS_MULTI_HURT,
-			BossAnimationType.MultiAttackHurtEnd => ActionKeys.BOSS_MULTI_ATK_END,
-			_ => null
-		};
-
-		if (animation == null)
-			return 0;
-
-		var animObj = anim.GetModelData()?.FindAnimation(animation);
-		// This is a REALLY dumb way of doing it. There *has* to be a better way.
-		// I don't think these frame times are standardized. I also don't know where they're stored.
-		// if you run into this code and know, let me know =)
-		if (TryFindFirstTwoDigitNumber(animObj?.Name, out int value, out _))
-			// Muse Dash uses 30fps as a reference
-			return value / 30d;
-		return 0;
-	}
-
-	public double PlayBossAnimation(int channel, BossAnimationType type, AnimationHandler anim) {
-		MD_ActionData? actions = GetBossAnimation(type);
-		if (actions == null) {
-			// This is a hack... figure out why this happens
-			string? animation = type switch {
-				BossAnimationType.MultiAttack => ActionKeys.BOSS_MULTI_ATK,
-				BossAnimationType.MultiAttackEnd => ActionKeys.BOSS_MULTI_ATK_END,
-				BossAnimationType.MultiAttackHurt => ActionKeys.BOSS_MULTI_HURT,
-				BossAnimationType.MultiAttackHurtEnd => ActionKeys.BOSS_MULTI_ATK_END,
-				_ => null
-			};
-
-			if (animation == null)
-				return 0;
-
-			anim.SetAnimation(channel, animation);
-			return anim.GetModelData()?.FindAnimation(animation)?.Duration ?? 0;
-		}
-		anim.ClearAnimation(channel);
-		for (int i = 0; i < actions.ActionIdx.Length; i++)
-			if (i == 0)
-				anim.SetAnimation(channel, actions.ActionIdx[i], i == (actions.ActionIdx.Length - 1));
-			else
-				anim.AddAnimation(channel, actions.ActionIdx[i], i == (actions.ActionIdx.Length - 1));
-
-		return anim.GetModelData()?.FindAnimation(actions?.ActionIdx?.FirstOrDefault())?.Duration ?? 0;
-	}
-
-	public MD_ActionData? GetBossAnimation(BossAnimationType type) {
-		MD_ActionData? actions = null;
-		switch (type) {
-			case BossAnimationType.Standby0: actions = BossAnims.Get(ActionKeys.STAND); break;
-			case BossAnimationType.In: actions = BossAnims.Get(ActionKeys.COMEIN); break;
-			case BossAnimationType.Out: actions = BossAnims.Get(ActionKeys.COMEOUT); break;
-			case BossAnimationType.CloseAttackSlow: actions = BossAnims.Get(ActionKeys.NEAR_ATTACK_1); break;
-			case BossAnimationType.CloseAttackFast: actions = BossAnims.Get(ActionKeys.NEAR_ATTACK_2); break;
-			case BossAnimationType.Hurt: actions = BossAnims.Get(ActionKeys.BOSS_HURT); break;
-			case BossAnimationType.From0To1: actions = BossAnims.Get(ActionKeys.FAR_ATTACK1_START); break;
-			case BossAnimationType.AttackAir1: actions = BossAnims.Get(ActionKeys.FAR_ATTACK1_LEFT); break;
-			case BossAnimationType.AttackGround1: actions = BossAnims.Get(ActionKeys.FAR_ATTACK1_RIGHT); break;
-			case BossAnimationType.From1To0: actions = BossAnims.Get(ActionKeys.FAR_ATTACK1_END); break;
-			case BossAnimationType.From0To2: actions = BossAnims.Get(ActionKeys.FAR_ATTACK2_START); break;
-			case BossAnimationType.AttackAir2: actions = BossAnims.Get(ActionKeys.FAR_ATTACK2); break;
-			case BossAnimationType.AttackGround2: actions = BossAnims.Get(ActionKeys.FAR_ATTACK2); break;
-			case BossAnimationType.From2To0: actions = BossAnims.Get(ActionKeys.FAR_ATTACK2_END); break;
-			case BossAnimationType.From1To2: actions = BossAnims.Get(ActionKeys.BOSS_ATK_1_TO_2); break;
-			case BossAnimationType.From2To1: actions = BossAnims.Get(ActionKeys.BOSS_ATK_2_TO_1); break;
-		}
-		return actions;
-	}
+	public MD1_SpineActionControllerData GetBossActions() => BossAnims;
 
 	public string? GetEnemyApproachAnimation(DashEnemy enemy, out double time) {
 		time = 0;
@@ -918,17 +1285,17 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		switch (enemy.Type) {
 			case MuseDash1EntityType.Single: {
 					anim = enemy.Variant switch {
-						EntityVariant.Boss1 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBoss1Anims, RoadBoss1Anims).GetSpeed(enemy.Speed),
-						EntityVariant.Boss2 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBoss2Anims, RoadBoss2Anims).GetSpeed(enemy.Speed),
-						EntityVariant.Boss3 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBoss3Anims, RoadBoss3Anims).GetSpeed(enemy.Speed),
+						EntityVariant.Boss1 => (AirAssets(enemy) ? AirBoss1Anims : RoadBoss1Anims).GetSpeed(enemy.Speed),
+						EntityVariant.Boss2 => (AirAssets(enemy) ? AirBoss2Anims : RoadBoss2Anims).GetSpeed(enemy.Speed),
+						EntityVariant.Boss3 => (AirAssets(enemy) ? AirBoss3Anims : RoadBoss3Anims).GetSpeed(enemy.Speed),
 
-						EntityVariant.Small => Pathway.ValueDependantOnPathway(enemy.Pathway, AirSmallAnims, RoadSmallAnims).GetSpeed(enemy.Speed, enemy.EnterDirection),
+						EntityVariant.Small => (AirAssets(enemy) ? AirSmallAnims : RoadSmallAnims).GetSpeed(enemy.Speed, enemy.EnterDirection),
 
-						EntityVariant.Medium1 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirMedium1Anims, RoadMedium1Anims).GetSpeed(enemy.Speed, enemy.EnterDirection),
-						EntityVariant.Medium2 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirMedium2Anims, RoadMedium2Anims).GetSpeed(enemy.Speed, enemy.EnterDirection),
+						EntityVariant.Medium1 => (AirAssets(enemy) ? AirMedium1Anims : RoadMedium1Anims).GetSpeed(enemy.Speed, enemy.EnterDirection),
+						EntityVariant.Medium2 => (AirAssets(enemy) ? AirMedium2Anims : RoadMedium2Anims).GetSpeed(enemy.Speed, enemy.EnterDirection),
 
-						EntityVariant.Large1 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirLarge1Anims, RoadLarge1Anims).GetSpeed(enemy.Speed),
-						EntityVariant.Large2 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirLarge2Anims, RoadLarge2Anims).GetSpeed(enemy.Speed),
+						EntityVariant.Large1 => (AirAssets(enemy) ? AirLarge1Anims : RoadLarge1Anims).GetSpeed(enemy.Speed),
+						EntityVariant.Large2 => (AirAssets(enemy) ? AirLarge2Anims : RoadLarge2Anims).GetSpeed(enemy.Speed),
 
 						_ => null
 					};
@@ -936,9 +1303,9 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 				}
 			case MuseDash1EntityType.Gear: {
 					anim = enemy.Variant switch {
-						EntityVariant.Boss1 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBossGearA_Anims, RoadBossGearA_Anims).GetSpeed(enemy.Speed),
-						EntityVariant.Boss2 => Pathway.ValueDependantOnPathway(enemy.Pathway, AirBossGearB_Anims, RoadBossGearB_Anims).GetSpeed(enemy.Speed),
-						_ => Pathway.ValueDependantOnPathway(enemy.Pathway, AirGearAnims, RoadGearAnims).GetSpeed(enemy.Speed)
+						EntityVariant.Boss1 => (AirAssets(enemy) ? AirBossGearA_Anims : RoadBossGearA_Anims).GetSpeed(enemy.Speed),
+						EntityVariant.Boss2 => (AirAssets(enemy) ? AirBossGearB_Anims : RoadBossGearB_Anims).GetSpeed(enemy.Speed),
+						_ => (AirAssets(enemy) ? AirGearAnims : RoadGearAnims).GetSpeed(enemy.Speed)
 					};
 					break;
 				}
@@ -946,21 +1313,21 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 					anim = MasherAnims.GetSpeed(enemy.Speed, enemy.EnterDirection);
 					break;
 				}
-			case MuseDash1EntityType.Double: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirDoubleAnims, RoadDoubleAnims).GetSpeed(enemy.Speed); break;
-			case MuseDash1EntityType.Heart: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHeartAnims, RoadHeartAnims).GetSpeed(enemy.Speed); break;
-			case MuseDash1EntityType.Score: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirScoreAnims, RoadScoreAnims).GetSpeed(enemy.Speed); break;
-			case MuseDash1EntityType.Ghost: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirGhostAnims, RoadGhostAnims).GetSpeed(enemy.Speed); break;
+			case MuseDash1EntityType.Double: anim = (AirAssets(enemy) ? AirDoubleAnims : RoadDoubleAnims).GetSpeed(enemy.Speed); break;
+			case MuseDash1EntityType.Heart: anim = (AirAssets(enemy) ? AirHeartAnims : RoadHeartAnims).GetSpeed(enemy.Speed); break;
+			case MuseDash1EntityType.Score: anim = (AirAssets(enemy) ? AirScoreAnims : RoadScoreAnims).GetSpeed(enemy.Speed); break;
+			case MuseDash1EntityType.Ghost: anim = (AirAssets(enemy) ? AirGhostAnims : RoadGhostAnims).GetSpeed(enemy.Speed); break;
 			case MuseDash1EntityType.Hammer:
 				if (enemy.Flipped)
-					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHammerB_Anims, RoadHammerB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
+					anim = (AirAssets(enemy) ? AirHammerB_Anims : RoadHammerB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
 				else
-					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHammerA_Anims, RoadHammerA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
+					anim = (AirAssets(enemy) ? AirHammerA_Anims : RoadHammerA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
 				break;
 			case MuseDash1EntityType.Raider:
 				if (enemy.Flipped)
-					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirRaiderB_Anims, RoadRaiderB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
+					anim = (AirAssets(enemy) ? AirRaiderB_Anims : RoadRaiderB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
 				else
-					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirRaiderA_Anims, RoadRaiderA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
+					anim = (AirAssets(enemy) ? AirRaiderA_Anims : RoadRaiderA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection);
 				break;
 				// default: throw new NotImplementedException($"{enemy.Type} isn't implemented yet");
 		}
@@ -995,18 +1362,18 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		return false;
 	}
 
-	private MD1_Animations3Speed fromVariantSHE(EntityVariant variant, PathwaySide pathway) => variant switch {
-		EntityVariant.Boss1 => pathway == PathwaySide.Top ? AirBoss1Anims : RoadBoss1Anims,
-		EntityVariant.Boss2 => pathway == PathwaySide.Top ? AirBoss2Anims : RoadBoss2Anims,
-		EntityVariant.Boss3 => pathway == PathwaySide.Top ? AirBoss3Anims : RoadBoss3Anims,
+	private MD1_Animations3Speed fromVariantSHE(EntityVariant variant, bool air) => variant switch {
+		EntityVariant.Boss1 => air ? AirBoss1Anims : RoadBoss1Anims,
+		EntityVariant.Boss2 => air ? AirBoss2Anims : RoadBoss2Anims,
+		EntityVariant.Boss3 => air ? AirBoss3Anims : RoadBoss3Anims,
 
-		EntityVariant.Small => pathway == PathwaySide.Top ? AirSmallAnims : RoadSmallAnims,
+		EntityVariant.Small => air ? AirSmallAnims : RoadSmallAnims,
 
-		EntityVariant.Medium1 => pathway == PathwaySide.Top ? AirMedium1Anims : RoadMedium1Anims,
-		EntityVariant.Medium2 => pathway == PathwaySide.Top ? AirMedium2Anims : RoadMedium2Anims,
+		EntityVariant.Medium1 => air ? AirMedium1Anims : RoadMedium1Anims,
+		EntityVariant.Medium2 => air ? AirMedium2Anims : RoadMedium2Anims,
 
-		EntityVariant.Large1 => pathway == PathwaySide.Top ? AirLarge1Anims : RoadLarge1Anims,
-		EntityVariant.Large2 => pathway == PathwaySide.Top ? AirLarge2Anims : RoadLarge2Anims,
+		EntityVariant.Large1 => air ? AirLarge1Anims : RoadLarge1Anims,
+		EntityVariant.Large2 => air ? AirLarge2Anims : RoadLarge2Anims,
 
 		_ => throw new Exception()
 	};
@@ -1022,31 +1389,31 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 
 		MD_ActionData? anim = null;
 		switch (enemy.Type) {
-			case MuseDash1EntityType.Single: anim = fromVariantSHE(enemy.Variant, enemy.Pathway).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
-			case MuseDash1EntityType.Double: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirDoubleAnims, RoadDoubleAnims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
+			case MuseDash1EntityType.Single: anim = fromVariantSHE(enemy.Variant, AirAssets(enemy)).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
+			case MuseDash1EntityType.Double: anim = (AirAssets(enemy) ? AirDoubleAnims : RoadDoubleAnims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
 			case MuseDash1EntityType.Gear:
 				anim = (enemy.Variant switch {
-					EntityVariant.Boss1 => enemy.Pathway == PathwaySide.Top ? AirBossGearA_Anims : RoadBossGearA_Anims,
-					EntityVariant.Boss2 => enemy.Pathway == PathwaySide.Top ? AirBossGearA_Anims : RoadBossGearB_Anims,
-					_ => enemy.Pathway == PathwaySide.Top ? AirGearAnims : RoadGearAnims,
+					EntityVariant.Boss1 => AirAssets(enemy) ? AirBossGearA_Anims : RoadBossGearA_Anims,
+					EntityVariant.Boss2 => AirAssets(enemy) ? AirBossGearB_Anims : RoadBossGearB_Anims,
+					_ => AirAssets(enemy) ? AirGearAnims : RoadGearAnims,
 				}).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
 				break;
 			case MuseDash1EntityType.Masher: anim = MasherAnims.GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
-			case MuseDash1EntityType.Ghost: anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirGhostAnims, RoadGhostAnims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
+			case MuseDash1EntityType.Ghost: anim = (AirAssets(enemy) ? AirGhostAnims : RoadGhostAnims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request); break;
 			case MuseDash1EntityType.Hammer:
 				if (enemy.Flipped)
-					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHammerB_Anims, RoadHammerB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
+					anim = (AirAssets(enemy) ? AirHammerB_Anims : RoadHammerB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
 				else
-					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirHammerA_Anims, RoadHammerA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
+					anim = (AirAssets(enemy) ? AirHammerA_Anims : RoadHammerA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
 				break;
 			case MuseDash1EntityType.Heart:
 			case MuseDash1EntityType.Score:
 				return "out"; // todo
 			case MuseDash1EntityType.Raider:
 				if (enemy.Flipped)
-					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirRaiderB_Anims, RoadRaiderB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
+					anim = (AirAssets(enemy) ? AirRaiderB_Anims : RoadRaiderB_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
 				else
-					anim = Pathway.ValueDependantOnPathway(enemy.Pathway, AirRaiderA_Anims, RoadRaiderA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
+					anim = (AirAssets(enemy) ? AirRaiderA_Anims : RoadRaiderA_Anims).GetSpeed(enemy.Speed, enemy.EnterDirection).Get(request);
 				break;
 		}
 
@@ -1057,37 +1424,63 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 	}
 
 	public ModelData? GetEnemyModel(DashEnemy enemy) {
-		switch (enemy.Type) {
+		UploadPreparedModels();
+		return EnemyModelLoad(enemy.Type, enemy.Variant, AirAssets(enemy), enemy.Flipped)?.TryLoad();
+	}
+
+	NullLazyLoad<ModelData>? EnemyModelLoad(MuseDash1EntityType type, EntityVariant variant, bool air, bool flipped) {
+		switch (type) {
 			case MuseDash1EntityType.Boss: return BossModel;
 			case MuseDash1EntityType.Single:
-				return enemy.Variant switch {
-					EntityVariant.Boss1 => enemy.Pathway == PathwaySide.Top ? AirBoss1Model : RoadBoss1Model,
-					EntityVariant.Boss2 => enemy.Pathway == PathwaySide.Top ? AirBoss2Model : RoadBoss2Model,
-					EntityVariant.Boss3 => enemy.Pathway == PathwaySide.Top ? AirBoss3Model : RoadBoss3Model,
-					EntityVariant.Small => enemy.Pathway == PathwaySide.Top ? AirSmallModel : RoadSmallModel,
-					EntityVariant.Medium1 => enemy.Pathway == PathwaySide.Top ? AirMedium1Model : RoadMedium1Model,
-					EntityVariant.Medium2 => enemy.Pathway == PathwaySide.Top ? AirMedium2Model : RoadMedium2Model,
-					EntityVariant.Large1 => enemy.Pathway == PathwaySide.Top ? AirLarge1Model : RoadLarge1Model,
-					EntityVariant.Large2 => enemy.Pathway == PathwaySide.Top ? AirLarge2Model : RoadLarge2Model,
+				return variant switch {
+					EntityVariant.Boss1 => air ? AirBoss1Model : RoadBoss1Model,
+					EntityVariant.Boss2 => air ? AirBoss2Model : RoadBoss2Model,
+					EntityVariant.Boss3 => air ? AirBoss3Model : RoadBoss3Model,
+					EntityVariant.Small => air ? AirSmallModel : RoadSmallModel,
+					EntityVariant.Medium1 => air ? AirMedium1Model : RoadMedium1Model,
+					EntityVariant.Medium2 => air ? AirMedium2Model : RoadMedium2Model,
+					EntityVariant.Large1 => air ? AirLarge1Model : RoadLarge1Model,
+					EntityVariant.Large2 => air ? AirLarge2Model : RoadLarge2Model,
 					_ => throw new NotImplementedException()
 				};
 			case MuseDash1EntityType.Gear:
-				return enemy.Variant switch {
-					EntityVariant.Boss1 => enemy.Pathway == PathwaySide.Top ? AirBossGearModel : RoadBossGearModel,
-					EntityVariant.Boss2 => enemy.Pathway == PathwaySide.Top ? AirBossGearModel : RoadBossGearModel,
-					_ => enemy.Pathway == PathwaySide.Top ? AirGearModel : RoadGearModel,
+				return variant switch {
+					EntityVariant.Boss1 => air ? AirBossGearModel : RoadBossGearModel,
+					EntityVariant.Boss2 => air ? AirBossGearModel : RoadBossGearModel,
+					_ => air ? AirGearModel : RoadGearModel,
 				};
-			case MuseDash1EntityType.Double: return enemy.Pathway == PathwaySide.Top ? AirDoubleModel : RoadDoubleModel;
-			case MuseDash1EntityType.Ghost: return enemy.Pathway == PathwaySide.Top ? AirGhostModel : RoadGhostModel;
-			case MuseDash1EntityType.Hammer: return enemy.Flipped ? (enemy.Pathway == PathwaySide.Top ? AirHammerBModel : RoadHammerBModel) : (enemy.Pathway == PathwaySide.Top ? AirHammerModel : RoadHammerModel);
+			case MuseDash1EntityType.Double: return air ? AirDoubleModel : RoadDoubleModel;
+			case MuseDash1EntityType.Ghost: return air ? AirGhostModel : RoadGhostModel;
+			case MuseDash1EntityType.Hammer: return flipped ? (air ? AirHammerBModel : RoadHammerBModel) : (air ? AirHammerModel : RoadHammerModel);
 			case MuseDash1EntityType.Masher: return MasherModel;
-			case MuseDash1EntityType.Raider: return enemy.Flipped ? (enemy.Pathway == PathwaySide.Top ? AirRaiderBModel : RoadRaiderBModel) : (enemy.Pathway == PathwaySide.Top ? AirRaiderModel : RoadRaiderModel);
-			case MuseDash1EntityType.Heart: return enemy.Pathway == PathwaySide.Top ? AirHeartModel : RoadHeartModel;
-			case MuseDash1EntityType.Score: return enemy.Pathway == PathwaySide.Top ? AirScoreModel : RoadScoreModel;
+			case MuseDash1EntityType.Raider: return flipped ? (air ? AirRaiderBModel : RoadRaiderBModel) : (air ? AirRaiderModel : RoadRaiderModel);
+			case MuseDash1EntityType.Heart: return air ? AirHeartModel : RoadHeartModel;
+			case MuseDash1EntityType.Score: return air ? AirScoreModel : RoadScoreModel;
 			default: throw new NotImplementedException();
 		}
 	}
+	public MuseDash1ParticleEffect? GetEnemyHitEffect(EntityVariant variant, PathwayId pathway) {
+		var code = variant switch {
+			EntityVariant.Small => MuseDash1SceneEnemyInfo.CODE_SMALL,
+			EntityVariant.Boss1 => MuseDash1SceneEnemyInfo.CODE_BOSS1,
+			_ => null
+		};
+		if (code == null)
+			return null;
+
+		var prefab = GetNotePrefabName(code, pathwayAirAssets[pathway.Index]);
+		return LoadParticleEffect($"{prefab}/out_fx", prefab, () => FindChild(MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(prefab), "out_fx"));
+	}
+	public MuseDash1ParticleEffect? GetPressEffect(PathwayId pathway, bool top) {
+		var prefab = GetNotePrefabName(MuseDash1SceneEnemyInfo.CODE_SUSTAIN, pathwayAirAssets[pathway.Index]);
+		var field = top ? "destroyEffect" : "clipEffect";
+		return LoadParticleEffect($"{prefab}/{field}", prefab, () => {
+			var controller = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(prefab)?.GetMonoBehaviorByScriptName("SpineActionController");
+			return controller == null ? null : new MonoBehaviourReader(controller).Get<GameObject>(field);
+		});
+	}
 	public ModelData? GetHP(out string? mountAnimation) {
+		UploadPreparedModels();
 		if (HpMountModel == null)
 			mountAnimation = null;
 		else
@@ -1099,29 +1492,32 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 		var s = MasherAnims.GetSpeed(speed, dir).Get(ActionKeys.MUL_HURT)?.ActionIdx;
 		return s?[Random.Shared.Next(0, s.Length)] ?? "";
 	}
-	public ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway) => ref pathwayInfo[(int)pathway];
-	public Color GetPathwayColor(PathwaySide side) => GetPathwayInformation(side).Color;
-	public Vector2F GetPathwayPosition(PathwaySide side) => GetPathwayInformation(side).Position;
+	public ref readonly PathwayInformation GetPathwayInformation(PathwayId pathway) => ref pathwayInfo[pathway.Index];
+	public ref readonly PathwayInformation GetCenterInformation() => ref centerInfo;
+	public Color GetPathwayColor(PathwayId pathway) => pathwayInfo[pathway.Index].Color;
+	public Vector2F GetPathwayPosition(PathwayId pathway) => pathwayInfo[pathway.Index].Position;
+	public Vector2F GetCenterPosition() => centerInfo.Position;
+	public Vector2F GetNormalizedPosition(float normalizedY) => new(PathwayLayout.LerpY(normalizedY, roadAnchor.Position.X, airAnchor.Position.X), PathwayLayout.LerpY(normalizedY, roadAnchor.Position.Y, airAnchor.Position.Y));
+	public bool UsesAirAssets(PathwayId pathway) => pathwayAirAssets[pathway.Index];
+	public float GetPathwayHueShift(PathwayId pathway) => pathwayHueShift[pathway.Index];
+	public Vector2F GetPathwayRenderOffset(PathwayId pathway) => pathwayRenderOffset[pathway.Index];
+	public bool IsAirPathway(PathwayId pathway) => pathways.Layout.IsAirSide(pathway);
 	public IAudioClip? GetPressIdleSound() => PressIdleSound;
-	public void GetSustainResources(PathwaySide pathway, out ITexture? start, out ITexture? end, out ITexture? body, out ITexture? up, out ITexture? down, out float rotationDegsPerSecond) {
+	public void GetSustainResources(PathwayId pathway, out ITexture? start, out ITexture? end, out ITexture? body, out ITexture? up, out ITexture? down, out float rotationDegsPerSecond) {
 		rotationDegsPerSecond = 120;
-		switch (pathway) {
-			case PathwaySide.Top:
-				start = AirStartSustainTexture;
-				end = AirEndSustainTexture;
-				body = AirBodySustainTexture;
-				up = AirUpSustainTexture;
-				down = AirDownSustainTexture;
-				break;
-			case PathwaySide.Bottom:
-				start = RoadStartSustainTexture;
-				end = RoadEndSustainTexture;
-				body = RoadBodySustainTexture;
-				up = RoadUpSustainTexture;
-				down = RoadDownSustainTexture;
-				break;
-			default:
-				throw new Exception();
+		if (pathwayAirAssets[pathway.Index]) {
+			start = AirStartSustainTexture;
+			end = AirEndSustainTexture;
+			body = AirBodySustainTexture;
+			up = AirUpSustainTexture;
+			down = AirDownSustainTexture;
+		}
+		else {
+			start = RoadStartSustainTexture;
+			end = RoadEndSustainTexture;
+			body = RoadBodySustainTexture;
+			up = RoadUpSustainTexture;
+			down = RoadDownSustainTexture;
 		}
 	}
 
@@ -1145,15 +1541,16 @@ public class MuseDash1SceneRuntime : BaseMuseDash1UnitySimScene, IMuseDash1Scene
 			animator.ResetTime();
 			animator.Rebind();
 		}
+		foreach (var control in scrollControls)
+			control.ResetScrollProgress();
 	}
 	public void Deactivate(IMuseDash1SceneInstance? transitioningFrom) { }
 	public int GetSceneArrayIndex() => arrayIndex;
 	public void SetSceneArrayIndex(int idx) => arrayIndex = idx;
-	public IGame GetGame() => Game;
+	public RhythmGameLevel GetGame() => Game;
 	public ISceneDescriptor GetScene() => Descriptor;
 
 	public void RenderOverlay() {
-		Conductor conductor = Game.Conductor;
 		var time = conductor.Time;
 
 

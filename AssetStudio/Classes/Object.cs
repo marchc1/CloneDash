@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace AssetStudio
 {
@@ -99,7 +101,18 @@ namespace AssetStudio
             if (m_Type == null)
                 return null;
 
-            return TypeTreeHelper.ReadType(m_Type, reader);
+            lock (reader)
+                return TypeTreeHelper.ReadType(m_Type, reader);
+        }
+
+        public OrderedDictionary ToType(IReadOnlySet<string> fields)
+        {
+            var m_Type = serializedType?.m_Type;
+            if (m_Type == null)
+                return null;
+
+            lock (reader)
+                return TypeTreeHelper.ReadType(m_Type, reader, fields);
         }
 
         public JsonDocument ToJsonDoc(TypeTree m_Type = null)
@@ -129,8 +142,79 @@ namespace AssetStudio
 
         public byte[] GetRawData()
         {
-            reader.Reset();
-            return reader.ReadBytes((int)byteSize);
+            lock (reader)
+            {
+                reader.Reset();
+                return reader.ReadBytes((int)byteSize);
+            }
+        }
+
+        protected void ReadLater(ObjectReader reader, Action<ObjectReader> read)
+        {
+            if (!reader.IsPrivateView)
+            {
+                read(reader);
+                return;
+            }
+            deferredRead = new DeferredRead(read, reader.Position - reader.byteStart);
+        }
+
+        protected void EnsureRead()
+        {
+            var pending = Volatile.Read(ref deferredRead);
+            if (pending == null)
+                return;
+            lock (pending)
+            {
+                if (pending.Reading || deferredRead == null)
+                    return;
+                pending.Reading = true;
+                try
+                {
+                    lock (reader)
+                    {
+                        reader.Position = reader.byteStart + pending.Offset;
+                        pending.Read(reader);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger.Error($"Unable to read {type} {m_PathID} in {assetsFile?.fileName}\n{e}");
+                }
+                finally
+                {
+                    Volatile.Write(ref deferredRead, null);
+                }
+            }
+        }
+
+        internal void DetachReader()
+        {
+            var pending = Volatile.Read(ref deferredRead);
+            if (pending == null)
+                return;
+            lock (pending)
+            {
+                if (pending.Reading || deferredRead == null)
+                    return;
+                lock (reader)
+                    reader = reader.Detach();
+            }
+        }
+
+        private DeferredRead deferredRead;
+
+        private sealed class DeferredRead
+        {
+            public readonly Action<ObjectReader> Read;
+            public readonly long Offset;
+            public bool Reading;
+
+            public DeferredRead(Action<ObjectReader> read, long offset)
+            {
+                Read = read;
+                Offset = offset;
+            }
         }
 
 		internal static Object Read(ObjectReader objectReader, bool loadViaTypeTree = false, ObjectInfo objectInfo = null) {
@@ -162,14 +246,29 @@ namespace AssetStudio
 				case ClassIDType.Avatar:
 					obj = new Avatar(objectReader);
 					break;
+				case ClassIDType.BoxCollider:
+					obj = new BoxCollider(objectReader);
+					break;
+				case ClassIDType.BoxCollider2D:
+					obj = new BoxCollider2D(objectReader);
+					break;
 				case ClassIDType.BuildSettings:
 					obj = new BuildSettings(objectReader);
+					break;
+				case ClassIDType.CanvasRenderer:
+					obj = new CanvasRenderer(objectReader);
+					break;
+				case ClassIDType.CapsuleCollider:
+					obj = new CapsuleCollider(objectReader);
 					break;
 				case ClassIDType.Font:
 					obj = new Font(objectReader);
 					break;
 				case ClassIDType.GameObject:
 					obj = new GameObject(objectReader);
+					break;
+				case ClassIDType.Light:
+					obj = new Light(objectReader);
 					break;
 				case ClassIDType.Material:
 					obj = objectReader.serializedType?.m_Type != null && loadViaTypeTree
@@ -178,6 +277,9 @@ namespace AssetStudio
 					break;
 				case ClassIDType.Mesh:
 					obj = new Mesh(objectReader);
+					break;
+				case ClassIDType.MeshCollider:
+					obj = new MeshCollider(objectReader);
 					break;
 				case ClassIDType.MeshFilter:
 					obj = new MeshFilter(objectReader);
@@ -208,6 +310,9 @@ namespace AssetStudio
 					break;
 				case ClassIDType.RectTransform:
 					obj = new RectTransform(objectReader);
+					break;
+				case ClassIDType.Rigidbody:
+					obj = new Rigidbody(objectReader);
 					break;
 				case ClassIDType.Shader:
 					if (objectReader.version < 2021)
@@ -240,6 +345,9 @@ namespace AssetStudio
 					break;
 				case ClassIDType.Transform:
 					obj = new Transform(objectReader);
+					break;
+				case ClassIDType.TrailRenderer:
+					obj = new TrailRenderer(objectReader);
 					break;
 				case ClassIDType.VideoClip:
 					obj = new VideoClip(objectReader);

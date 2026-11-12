@@ -1,15 +1,19 @@
-﻿using CloneDash.Characters;
+using CloneDash.Characters;
 using CloneDash.Common;
 using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Songs;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 using CloneDash.Game.Statistics;
+using CloneDash.Settings;
 using CommunityToolkit.HighPerformance;
 using Nucleus;
+using Nucleus.Common.Audio;
 using Nucleus.Common.Graphics;
+using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.ManagedMemory;
@@ -19,6 +23,7 @@ using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.Util;
 using Raylib_cs;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Velopack.Sources;
@@ -29,13 +34,14 @@ namespace CloneDash.Scenes;
 public class StatisticsPanel : Panel
 {
 	ICharacterVictoryInstance victory = null!;
+	MuseDash1VictoryScreen? screen;
 	ISongChart? chart;
 	double start = 0;
 	double Time() => globals.CurTime - start;
-	IGame game;
+	RhythmGameLevel? game;
 	StatisticsData stats;
 
-	public StatisticsPanel(Element? parent, IGame game, StatisticsData stats) : base(parent){
+	public StatisticsPanel(Element? parent, RhythmGameLevel game, StatisticsData stats, MuseDash1VictoryAssets? assets) : base(parent){
 		this.game = game;
 		this.stats = stats;
 
@@ -43,97 +49,62 @@ public class StatisticsPanel : Panel
 		if (chart == null) return;
 		start = globals.CurTime;
 
-		ICharacterDescriptor? character = CharacterMod.GetCharacterData();
+		stats.Compute();
+		Open(assets, game.GetParameters().Get<bool>(RhythmGameLoadParameters.AUTOPLAY), Restart, LevelTransitions.LoadMainMenu);
+	}
+
+	public StatisticsPanel(Element? parent, StatisticsData stats, MuseDash1VictoryAssets? assets, Action onClose) : base(parent) {
+		this.stats = stats;
+		start = globals.CurTime;
+
+		Open(assets, false, onClose, onClose);
+	}
+
+	void Open(MuseDash1VictoryAssets? assets, bool autoplay, Action onRestart, Action onContinue) {
+		ICharacterDescriptor? character = CharacterMod.Instance.GetActive();
 		if (character == null) return;
 
 		victory = character.CreateVictory();
 		victory.Initialize(game);
 		victory.PlayAudio();
-		stats.Compute();
 
-		var bottom = new Panel(this);
-		bottom.SetPaintBackgroundEnabled(false);
-
-		bottom.DynamicallySized = true;
-		bottom.		Size = new(0.07f);
-		bottom.		Dock = Dock.Bottom;
-
-		var restart = new Button(bottom);
-		restart.DynamicallySized = true;
-		restart.		Size = new(.2f);
-		restart.		Text = "Restart";
-		restart.		Dock = Dock.Left;
-		restart.OnButtonClick += (_,  _) => {
-			// TODO: Probably should just hard restart it...
-			// Maybe seeking is stable enough now to justify this though?
-			game.Restart();
-			this.Remove();
-		};
-
-		var back = new Button(bottom);
-		back.DynamicallySized = true;
-		back.		Size = new(.2f);
-		back.		Text = "Main Menu";
-		back.		Dock = Dock.Right;
-		back.OnButtonClick += (_, _) => LevelTransitions.LoadMainMenu();
+		if (assets != null) {
+			var canvasPanel = new UnityCanvasPanel(this, assets.Canvas);
+			canvasPanel.Dock = Dock.Fill;
+			if (assets.Like != null)
+				canvasPanel.Overlays.Add(assets.Like);
+			assets.Canvas.Play("", "PnlVictoryIn");
+			screen = new MuseDash1VictoryScreen(assets, stats, chart, null, false, false, null, autoplay, victory, onRestart, onContinue);
+			canvasPanel.Clicked = screen.Click;
+		}
 
 		BorderSize = 0;
+		DockPadding = RectangleF.Zero;
+		SetPaintBackgroundEnabled(false);
 	}
-	void RenderOneLine(ReadOnlySpan<char> line, int fs, ref int y) {
-		Graphics2D.DrawText(16, 16 + y, line, Graphics2D.UI_FONT_NAME, fs);
-		y += fs + 4;
+	void Restart() {
+		// TODO: Probably should just hard restart it...
+		// Maybe seeking is stable enough now to justify this though?
+		game?.Restart();
+		this.Remove();
 	}
-	public override void Paint(float width, float height) {
-		SetBgColor(new Color(0, 0, 0, (int)(220 * (float)NMath.Ease.OutQuad(NMath.Remap(Time(), 0, 0.5, 0, 1, true)))));
-		base.Paint(width, height);
 
-		Vector2F position = new(width / 2, (1 - (float)NMath.Ease.OutElastic(Math.Clamp(Time() * 0.2, 0, 1))) * (height));
-		EngineCore.Window.BeginMode2D(new() {
-			Zoom = height / 900 / 2.4f,
-			Offset = (new Vector2F(width / 2, height / 1)).ToNumerics()
-		});
-		victory.Render();
-		EngineCore.Window.EndMode2D();
-
-		var chart = this.chart;
-		if (chart == null) return;
-		if (stats == null) return;
-
-		Graphics2D.SetDrawColor(255, 255, 255);
-		stats.Compute();
-		var fs = 24;
-		var y = 0;
-
-		var metadata = chart.GetSong().FetchMetadata(HumanLanguage.GetCurrentLanguage());
-
-		Match boldRegexMatch = Util.BoldRegex.Match(metadata.Name);
-		Graphics2D.DrawText(16, 16 + y,
-							boldRegexMatch.Success ? boldRegexMatch.Groups[1].Value : metadata.Name,
-							boldRegexMatch.Success ? Graphics2D.UI_MONO_BOLD_FONT_NAME : Graphics2D.UI_CN_JP_FONT_NAME,
-							fs);
-		y += fs + 4;
-
-		RenderOneLine($"      Rating: {chart.GetRatingNumber()}", fs, ref y);
-		RenderOneLine($"      Grade: {stats.Grade}", fs, ref y);
-		RenderOneLine($"      Accuracy: {stats.Accuracy}", fs, ref y);
-		RenderOneLine($"      Score: {stats.Score}", fs, ref y);
-		RenderOneLine($"      Max Combo: {stats.MaxCombo}", fs, ref y);
-		RenderOneLine("", fs, ref y);
-		RenderOneLine($"      Perfects: {stats.Perfects}", fs, ref y);
-		RenderOneLine($"      Greats: {stats.Greats}", fs, ref y);
-		RenderOneLine($"      Passes: {stats.Passes}", fs, ref y);
-		RenderOneLine($"      Misses: {stats.Misses}", fs, ref y);
-		RenderOneLine("", fs, ref y);
-		RenderOneLine($"      Earlys: {stats.Earlys}", fs, ref y);
-		RenderOneLine($"      Exacts: {stats.Exacts}", fs, ref y);
-		RenderOneLine($"      Lates: {stats.Lates}", fs, ref y);
-		RenderOneLine("", fs, ref y);
-		RenderOneLine($"      Registered: {stats.OrderedEnemies.Count}", fs, ref y);
-	}
 	protected override void OnThink() {
 		base.OnThink();
-		if (victory != null) 
+		if (victory != null)
 			victory.Think();
+		if (screen == null)
+			return;
+
+		screen.Update(Math.Min(Level.RealtimeDeltaF, 0.1f));
+		if (Level.FrameState.Keyboard.WasKeyPressed(ButtonCode.KeyR))
+			screen.Restart();
+		else if (Level.FrameState.Keyboard.WasKeyPressed(ButtonCode.KeyEnter))
+			screen.Continue();
+		if (Level.FrameState.Keyboard.WasKeyPressed(ButtonCode.KeySpace))
+			screen.PressLike();
+		if (Level.FrameState.Keyboard.WasKeyReleased(ButtonCode.KeySpace))
+			screen.ReleaseLike();
 	}
 }
 
@@ -253,6 +224,8 @@ public static class UITextAnimationFns
 
 public delegate void RenderTextAnimationFn(TextImageRenderItem self, double curtime);
 
+public readonly record struct MuseDash1TextGlow(Color Top, Color Bottom, Color Color, float Offset, float Inner, float Outer, float Power);
+
 public class TextImageRenderItem
 {
 	public double StartTime;
@@ -271,6 +244,7 @@ public class TextImageRenderItem
 	public Vector2F Scale = new(1, 1);
 	public Color Color = new(255, 255, 255, 255);
 	public Color? borderColor;
+	public MuseDash1TextGlow? Glow;
 
 	public string? Text;
 	public string? Font;
@@ -310,14 +284,71 @@ public class TextImageRenderItem
 	public bool IsOver(double curtime) => curtime >= (StartTime + Length);
 	public void Dispose() {
 		if (textRT != null)
-			Graphics2D.DestroyRenderTarget(textRT);
+			ReturnTextRT(textRT);
+		textRT = null;
 	}
-	float FontResolution = 90;
+
+	const int TextRTPoolLimit = 32;
+	static readonly List<IRenderTexture> freeTextRTs = [];
+
+	static IRenderTexture RentTextRT(int w, int h) {
+		w = (w + 63) & ~63;
+		h = (h + 63) & ~63;
+
+		int best = -1;
+		for (int i = 0; i < freeTextRTs.Count; i++) {
+			var rt = freeTextRTs[i];
+			if (rt.GetWidth() < w || rt.GetHeight() < h)
+				continue;
+			if (best < 0 || rt.GetWidth() * rt.GetHeight() < freeTextRTs[best].GetWidth() * freeTextRTs[best].GetHeight())
+				best = i;
+		}
+
+		if (best >= 0) {
+			var rt = freeTextRTs[best];
+			freeTextRTs.RemoveAt(best);
+			return rt;
+		}
+
+		return CreateTextRT(w, h);
+	}
+
+	static IRenderTexture CreateTextRT(int w, int h) {
+		var rt = Graphics2D.CreateRenderTarget(w, h);
+		rt.SetFilter(TextureFilter.Bilinear);
+		return rt;
+	}
+
+	public static void PrewarmTextRTs(string font, string widestText, int count) {
+		var sample = new TextImageRenderItem(0, 0, new(0, 0), 0, new(1, 1), "0123456789", font, Color.White);
+		sample.GetTextSize();
+		sample.Text = widestText;
+		var size = sample.GetTextSize();
+		int w = ((int)size.W + 63) & ~63, h = ((int)size.H + 63) & ~63;
+		for (int i = freeTextRTs.Count; i < count; i++)
+			freeTextRTs.Add(CreateTextRT(w, h));
+	}
+
+	static void ReturnTextRT(IRenderTexture rt) {
+		if (freeTextRTs.Count < TextRTPoolLimit)
+			freeTextRTs.Add(rt);
+		else
+			Graphics2D.DestroyRenderTarget(rt);
+	}
+
+	public static void ClearTextRTPool() {
+		foreach (var rt in freeTextRTs)
+			Graphics2D.DestroyRenderTarget(rt);
+		freeTextRTs.Clear();
+	}
+	public float FontResolution = 90;
 	public float BorderSize = 2.6f;
 	public float DarkenAmount = 0.3f;
 	public float DesaturateAmount = 0.35f;
 	public float SplitY = 0.55f;
-	int RTPadding => (int)MathF.Ceiling(BorderSize) + 2;
+	float GlowReach => Glow is MuseDash1TextGlow glow ? (glow.Offset + glow.Outer) * FontResolution : 0;
+	public int Padding => RTPadding;
+	int RTPadding => (int)MathF.Ceiling(MathF.Max(BorderSize, GlowReach)) + 2;
 	public void Render(double curtime, IShader? styledTextShader) {
 		if (Fn != null)
 			Fn(this, curtime);
@@ -380,15 +411,13 @@ public class TextImageRenderItem
 		bool requiresResize = textRT == null || (textRT.GetWidth() < rtSize.W || textRT.GetHeight() < rtSize.H);
 		if (requiresResize) {
 			if (textRT != null) {
-				Graphics2D.DestroyRenderTarget(textRT);
+				ReturnTextRT(textRT);
 				textRT = null;
 			}
 		}
 
-		if (textRT == null) {
-			textRT = Graphics2D.CreateRenderTarget(rtSize.W, rtSize.H);
-			textRT.SetFilter(TextureFilter.Bilinear);
-		}
+		if (textRT == null)
+			textRT = RentTextRT((int)rtSize.W, (int)rtSize.H);
 
 		if (requiresRedraw) {
 			IRenderTexture rt = textRT;
@@ -427,7 +456,11 @@ public class TextImageRenderItem
 			Rlgl.Scalef(scale.x, scale.y, 1);
 
 		Color borderC = borderColor ?? color.Multiply(0.5f);
-		if (shader != null) {
+		if (shader != null && Glow is MuseDash1TextGlow glow) {
+			SetGlowUniforms(shader, glow, rtW, rtH, alpha);
+			shader.Activate();
+		}
+		else if (shader != null) {
 			shader.SetUniform("uTexelSize", new System.Numerics.Vector2(1.0f / rtW, 1.0f / rtH));
 			shader.SetUniform("uTextColor", new System.Numerics.Vector3(color.R / 255f, color.G / 255f, color.B / 255f));
 			shader.SetUniform("uBorderColor", new System.Numerics.Vector3(borderC.R / 255f, borderC.G / 255f, borderC.B / 255f));
@@ -442,7 +475,11 @@ public class TextImageRenderItem
 			Graphics2D.SetDrawColor(color);
 		}
 		float drawX, drawY;
-		if (TopLeftAligned) {
+		if (TopLeftAligned && Glow != null) {
+			drawX = -RTPadding;
+			drawY = -RTPadding;
+		}
+		else if (TopLeftAligned) {
 			drawX = 0;
 			drawY = 0;
 		}
@@ -464,6 +501,26 @@ public class TextImageRenderItem
 		Rlgl.PopMatrix();
 	}
 
+	void SetGlowUniforms(IShader shader, MuseDash1TextGlow glow, int rtW, int rtH, float alpha) {
+		int size = Graphics2D.QuantizeFontSize(FontResolution);
+		var state = Graphics2D.FontManager["0", Font!, size];
+		var digit = state.GetGlyph('0');
+		float glyphScale = state.Size > 0 ? size / (float)state.Size : 1;
+		float top = RTPadding + digit.OffsetY * glyphScale;
+		float bottom = top + digit.Rec.Height * glyphScale;
+
+		shader.SetUniform("uTexelSize", new System.Numerics.Vector2(1.0f / rtW, 1.0f / rtH));
+		shader.SetUniform("uGradientRange", new System.Numerics.Vector2(1 - top / rtH, 1 - bottom / rtH));
+		shader.SetUniform("uTopColor", new System.Numerics.Vector3(glow.Top.R / 255f, glow.Top.G / 255f, glow.Top.B / 255f));
+		shader.SetUniform("uBottomColor", new System.Numerics.Vector3(glow.Bottom.R / 255f, glow.Bottom.G / 255f, glow.Bottom.B / 255f));
+		shader.SetUniform("uGlowColor", new System.Numerics.Vector3(glow.Color.R / 255f, glow.Color.G / 255f, glow.Color.B / 255f));
+		shader.SetUniform("uGlowOffset", glow.Offset * FontResolution);
+		shader.SetUniform("uGlowInner", glow.Inner * FontResolution);
+		shader.SetUniform("uGlowOuter", glow.Outer * FontResolution);
+		shader.SetUniform("uGlowPower", glow.Power);
+		shader.SetUniform("uAlpha", alpha);
+	}
+
 	static Vector2F RotatePoint(Vector2F p, float angle) {
 		float cos = MathF.Cos(angle);
 		float sin = MathF.Sin(angle);
@@ -475,10 +532,11 @@ public enum ComboGrade
 {
 	NotApplicable = 0,
 	Low = 5,
-	High = 30
+	Middle = 20,
+	High = 50
 }
 
-public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1SceneUI
+public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : IMuseDash1SceneUI
 {
 	protected StatisticsPanel? CurrentStatisticsPanel;
 
@@ -486,6 +544,12 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	protected readonly List<TextImageRenderItem> ForegroundItems = [];
 
 	protected virtual Color ScoreColor => new(165, 254, 254);
+	protected virtual Color ScoreLabelColor => new(165, 254, 254);
+	protected virtual Vector2F ScoreLabelPosition => new(100, -96);
+	protected virtual string ScoreLabelTexture => "score_English";
+	protected virtual Vector2F ScoreNumberPosition => new(100, -16);
+	protected virtual float ScoreNumberScale => 0.9f;
+	protected virtual IShader? ScoreNumberShader => StyledTextShader;
 
 	protected TextImageRenderItem? ScoreNumber = null;
 	protected TextImageRenderItem? ScoreLabel = null;
@@ -512,30 +576,49 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	protected ITexture? ScorePerfect;
 	protected ITexture? ScorePass;
 
-	protected ITexture? MultiHitTip;
-	protected ITexture? MultiHitTipDialog;
+	protected MuseDash1MultiHitCombo? MultiHitCombo;
+	protected MuseDash1MultiHitTip? MultiHitTip;
 	protected ITexture? HitsBase;
 	protected ITexture? BelowBase;
+	protected ITexture? BtnPause;
+	protected ITexture? Early;
 	protected ITexture? hp_icon;
+	protected ITexture? hp_icon_light;
 	protected ITexture? hp_icon_mistake;
+	protected ITexture? icon_ap;
+	protected ITexture? Late;
+	protected ITexture? MissReaction;
 	protected ITexture? hp_slider;
 	protected ITexture? hp_slider_base;
 	protected ITexture? HpFeverBase;
 	protected ITexture? slider_light;
 	protected ITexture? power_slider;
-	protected ITexture? power_slider_white;
 	protected ITexture? Fever;
+	protected MuseDash1FeverTips? FeverTips;
 	protected ITexture? bubble;
 	protected ITexture? score_English;
 	protected ModelData? fx_combo_1;
 	protected ModelData? fx_combo_2;
+	protected MuseDash1HudPanel? FullComboText;
+	protected MuseDash1HudPanel? ReadyGo;
+	protected MuseDash1HudPanel? Resume321;
+	protected virtual MuseDash1ComboTextClips ComboTextClips => MuseDash1HudAnimations.ComboText;
+	MuseDash1FailScreen? CurrentFailScreen;
+	MuseDash1FailAssets? failAssets;
+	Task<MuseDash1FailAssets?>? failImport;
+	MuseDash1PauseButton? PauseButton;
+	Task<MuseDash1VictoryAssets?>? victoryImport;
 
 	public virtual void Dispose() {
+		PauseButton?.Remove();
+		PauseButton = null;
 		foreach (var item in BackgroundItems) item.Dispose();
 		foreach (var item in ForegroundItems) item.Dispose();
 		ScoreNumber?.Dispose();
 		ScoreLabel?.Dispose();
 		ComboNumber?.Dispose();
+		MultiHitCombo?.Dispose();
+		TextImageRenderItem.ClearTextRTPool();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -553,27 +636,37 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		CleanupList(ForegroundItems, curtime);
 	}
 
-	protected double Time => scene.GetGame().GetConductor().GetTime();
+	protected double Time => scene.GetGame().Component<IConductor>().GetTime();
 	bool AllPerfect, FullCombo;
 	int Combo;
 	double CurrentFever, MaxFever;
 	double HP, MaxHP;
 	bool InFever;
-	double EnterFeverTime = -20000;
 	double FeverRemainingTime, FeverTotalTime;
-	double LastHitTime = -2000000;
+	double HpAddTime = -2000000;
+	double HpFillStart, HpTrailStart;
+	float HpFillFrom = 1, HpFillTo = 1, HpTrailFrom = 1, HpTrailTo = 1;
+	double HurtTime = -2000000;
+	bool SnapHealth = true;
 	int MultiHits = 0;
 	bool InMultiHit;
 	double Score = 0;
-	bool Warning;
 	bool Seeking;
 	ComboGrade ComboGrade;
 	double ComboGradeUpdateTime = -200000;
+	MuseDash1ComboTextState ComboText;
+	protected ComboGrade ComboTextGrade;
+	double ComboTextStart;
+	bool BattleIntro, BattleOut;
+	long BattleOutStart;
+	long ReadyGoStart;
+	double Resume321Start;
 
 	public static float MinorTextScale => 0.65f;
 	public static float TextScale => 0.85f;
 
-	protected ITexture? LoadTextureByName(ReadOnlySpan<char> name) => MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(name)!);
+	internal static void PreloadAssets() => Task.Run(() => MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("score_English"));
+	protected ITexture? LoadTextureByName(ReadOnlySpan<char> name) => UnityAssetUtils.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(name)!);
 	public void SetSeeking(bool seeking) => Seeking = seeking;
 	public virtual void Initialize() {
 		SetupScoreNumber();
@@ -582,16 +675,166 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		StyledTextShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "styled_text.fs");
 		UIAlphatestShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "ui_alphatest.fs");
 
-		score_English = MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("score_English")!);
-		ScoreLabel = new(0, 0, new(0, 0), 0, new(1, 1), score_English, new(165, 254, 254), null);
+		score_English = UnityAssetUtils.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(ScoreLabelTexture)!);
+		ScoreLabel = new(0, 0, new(0, 0), 0, new(1, 1), score_English, ScoreLabelColor, null);
 
 		LoadScoreAssets();
 		LoadMultiHitAssets();
 		LoadHealthBarAssets();
+		LoadBattlePanelAssets();
+		LoadBattleTextAssets();
+		LoadEarlyLateAssets();
+		FullComboText?.Initialize(name => LoadTextureByName(name));
+		ReadyGo?.Initialize(name => LoadTextureByName(name));
+		Resume321?.Initialize(name => LoadTextureByName(name));
+
+		TextImageRenderItem.PrewarmTextRTs("Snaps Taste", "88888", 16);
 		LoadComboModels();
+		victoryImport = Task.Run(ImportVictoryCanvasInBackground);
+		failImport = Task.Run(ImportFailCanvas);
 
 		ForceDeactivateCombo1();
 		ForceDeactivateCombo2();
+
+		PauseButton = new MuseDash1PauseButton(EngineCore.Level.RootPanel);
+		PauseButton.Clicked = ClickPause;
+	}
+
+	void ClickPause() {
+		if (!game.Paused && !ShowingVictoryScreen() && !ShowingFailureScreen())
+			game.Component<PauseComponent>().TogglePauseMenu();
+	}
+
+	static AssetStudio.Transform? FindChild(AssetStudio.Transform? transform, string name)
+		=> transform?.GetChildren().FirstOrDefault(child => child.GetGameObject()?.m_Name == name);
+
+	internal static MuseDash1FailAssets? ImportFailCanvas() {
+		UnitySearchPathV2 assets = new(MuseDash1Compatibility.StreamingAssets);
+		try {
+			return ImportFailCanvas(assets);
+		}
+		finally {
+			assets.UnloadAll();
+		}
+	}
+
+	static MuseDash1FailAssets? ImportFailCanvas(UnitySearchPathV2 assets) {
+		const string SCENE = "GameMain";
+		static bool IsFailPanel(AssetStudio.GameObject gameObject) => gameObject.m_Name == "PnlFail" && gameObject.GetMonoBehaviorByScriptName("PnlFail") != null;
+
+		var text = assets.FindAssetByName<AssetStudio.GameObject>(SCENE, "PnlFailText");
+		var panel = text?.assetsFile.Objects.OfType<AssetStudio.GameObject>().FirstOrDefault(IsFailPanel);
+		if (panel == null || text == null)
+			return null;
+
+		HashSet<AssetStudio.SerializedFile> pinned = [];
+		var script = panel.GetMonoBehaviorByScriptName("PnlFail");
+		var data = script?.ToType();
+		var settings = new UnityCanvasSettings("GameMain.unity UI_2D canvas (CanvasScaler) + Camera_2D", false, 60, 100, new(1920, 1080), 0);
+		UnityCanvas ImportCanvas(AssetStudio.GameObject gameObject, MuseDash1CanvasBehaviours behaviours) {
+			var canvas = UnityCanvas.Import(gameObject, settings,
+				files => assets.LoadDependenciesContaining(SCENE, files, pinned),
+				(canvas, node, behaviour, className, data) => MuseDash1Localization.Apply(canvas, node, behaviour, className, data) || behaviours.Capture(canvas, node, behaviour, className, data));
+			MuseDash1Localization.ApplyGlobalFonts(canvas, assets.Assets.AssetsFileList);
+			canvas.Report();
+			return canvas;
+		}
+
+		var behaviours = new MuseDash1CanvasBehaviours();
+		var canvas = ImportCanvas(panel, behaviours);
+		var textCanvas = ImportCanvas(text, new MuseDash1CanvasBehaviours());
+
+		IAudioClip? LoadClip(string field) {
+			if (script == null || data?[field] is not System.Collections.Specialized.OrderedDictionary pointer)
+				return null;
+
+			var pptr = new AssetStudio.PPtr<AssetStudio.AudioClip>(Convert.ToInt32(pointer["m_FileID"]), Convert.ToInt64(pointer["m_PathID"]), script.assetsFile);
+			if (!pptr.TryGet(out var clip) && pptr.m_FileID > 0 && pptr.m_FileID <= script.assetsFile.m_Externals.Count)
+				assets.LoadDependenciesContaining(SCENE, new HashSet<string> { Path.GetFileName(script.assetsFile.m_Externals[pptr.m_FileID - 1].fileName) }, pinned);
+			return pptr.TryGet(out clip) ? MainThread.Invoke(() => MuseDash1Compatibility.LoadSound(clip)) : null;
+		}
+
+		float failInShowDelay = data?["m_FailInShowDelay"] is object delay ? Convert.ToSingle(delay) : 0.1f;
+		return new MuseDash1FailAssets(canvas, behaviours, textCanvas, LoadClip("m_FailMusic"),
+			MainThread.Invoke(() => MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1FailScreen.CLICK_SOUND)),
+			MainThread.Invoke(() => MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1VictoryScreen.LIKE_SOUND)),
+			MainThread.Invoke(() => MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1VictoryScreen.UNLIKE_SOUND)),
+			failInShowDelay);
+	}
+
+	static MuseDash1VictoryAssets? ImportVictoryCanvasInBackground() {
+		UnitySearchPathV2 assets = new(MuseDash1Compatibility.StreamingAssets);
+		try {
+			return ImportVictoryCanvas(assets);
+		}
+		finally {
+			assets.UnloadAll();
+		}
+	}
+
+	internal static MuseDash1VictoryAssets? ImportVictoryCanvas() => ImportVictoryCanvas(MuseDash1Compatibility.StreamingAssets);
+
+	internal static MuseDash1VictoryAssets? ImportVictoryCanvas(UnitySearchPathV2 assets) {
+		var found = assets.FindAssetByName<AssetStudio.GameObject>("PnlVictory");
+		if (found == null)
+			return null;
+
+		HashSet<AssetStudio.SerializedFile> pinned = [found.assetsFile];
+		assets.Pin(found.assetsFile);
+		try {
+			var root = found.assetsFile.Objects.OfType<AssetStudio.Transform>().FirstOrDefault(transform => !transform.m_Father.TryGet(out _) && transform.GetGameObject()?.m_Name == "PnlVictory");
+			var panel = FindChild(FindChild(root, "Default"), "PnlVictory")?.GetGameObject();
+			if (panel == null)
+				return null;
+
+			var script = root!.GetGameObject()?.GetMonoBehaviorByScriptName("PnlVictory");
+			var data = script?.ToType();
+			var settings = new UnityCanvasSettings("GameMain.unity UI_3D canvas (CanvasScaler) + Camera_3D", true, 60, 100, new(1920, 1080), 1);
+			UnityCanvas ImportCanvas(AssetStudio.GameObject gameObject, MuseDash1CanvasBehaviours behaviours) {
+				var canvas = UnityCanvas.Import(gameObject, settings,
+					files => assets.LoadDependenciesContaining("PnlVictory", files, pinned),
+					(canvas, node, behaviour, className, data) => MuseDash1Localization.Apply(canvas, node, behaviour, className, data) || behaviours.Capture(canvas, node, behaviour, className, data));
+				MuseDash1Localization.ApplyGlobalFonts(canvas, assets.Assets.AssetsFileList);
+				if (data?["btnDownloadReports"] is System.Collections.IList reports)
+					foreach (System.Collections.Specialized.OrderedDictionary pointer in reports)
+						if (canvas.TryResolve<AssetStudio.MonoBehaviour>(script!, pointer, out var button) && canvas.FindNode(button) is CanvasNode reportNode)
+							reportNode.Active = false;
+				canvas.Report();
+				return canvas;
+			}
+
+			var behaviours = new MuseDash1CanvasBehaviours();
+			var canvas = ImportCanvas(panel, behaviours);
+
+			UnityCanvas? likeCanvas = null;
+			var likeBehaviours = new MuseDash1CanvasBehaviours();
+			if (data?["pnlControls"] is System.Collections.IList controls)
+				foreach (System.Collections.Specialized.OrderedDictionary control in controls)
+					if (control["mainPnl"] is System.Collections.Specialized.OrderedDictionary mainPnl && Convert.ToInt64(mainPnl["m_PathID"]) == panel.m_PathID
+						&& control["tglLike"] is System.Collections.Specialized.OrderedDictionary tglLike && canvas.TryResolve<AssetStudio.GameObject>(script!, tglLike, out var likeObject)) {
+						likeCanvas = ImportCanvas(likeObject, likeBehaviours);
+						break;
+					}
+
+			IAudioClip? LoadClip(string field) {
+				if (script == null || data?[field] is not System.Collections.Specialized.OrderedDictionary pointer)
+					return null;
+
+				var pptr = new AssetStudio.PPtr<AssetStudio.AudioClip>(Convert.ToInt32(pointer["m_FileID"]), Convert.ToInt64(pointer["m_PathID"]), script.assetsFile);
+				if (!pptr.TryGet(out var clip) && pptr.m_FileID > 0 && pptr.m_FileID <= script.assetsFile.m_Externals.Count)
+					assets.LoadDependenciesContaining("PnlVictory", new HashSet<string> { Path.GetFileName(script.assetsFile.m_Externals[pptr.m_FileID - 1].fileName) }, pinned);
+				return pptr.TryGet(out clip) ? MainThread.Invoke(() => MuseDash1Compatibility.LoadSound(clip)) : null;
+			}
+
+			return new MuseDash1VictoryAssets(canvas, behaviours, likeCanvas, likeBehaviours.LikeButton, LoadClip("victoryBgm"), LoadClip("sfxClip"),
+				MainThread.Invoke(() => MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1VictoryScreen.LIKE_SOUND)), MainThread.Invoke(() => MuseDash1Compatibility.LoadSoundFromName(EngineCore.Level, MuseDash1VictoryScreen.UNLIKE_SOUND)));
+		}
+		finally {
+			foreach (var file in pinned)
+				if (file != found.assetsFile)
+					assets.Release(file);
+			assets.Unpin(found.assetsFile);
+		}
 	}
 
 	public virtual void LoadScoreAssets() {
@@ -603,23 +846,45 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	}
 
 	public virtual void LoadMultiHitAssets() {
-		MultiHitTip = LoadTextureByName("MultiHitTip");
-		MultiHitTipDialog = LoadTextureByName("MultiHitTipDialog");
+		MultiHitCombo = new();
+		MultiHitCombo.Initialize();
+		MultiHitTip = new();
+		MultiHitTip.Initialize();
 		HitsBase = LoadTextureByName("HitsBase");
 	}
 
 	public virtual void LoadHealthBarAssets() {
 		BelowBase = LoadTextureByName("BelowBase");
 		hp_icon = LoadTextureByName("hp_icon");
+		hp_icon_light = LoadTextureByName("hp_icon_light");
 		hp_icon_mistake = LoadTextureByName("hp_icon_mistake");
 		hp_slider = LoadTextureByName("hp_slider");
 		hp_slider_base = LoadTextureByName("hp_slider_base");
 		HpFeverBase = LoadTextureByName("HpFeverBase");
 		slider_light = LoadTextureByName("slider_light");
 		power_slider = LoadTextureByName("power_slider");
-		power_slider_white = LoadTextureByName("power_slider_white");
 		Fever = LoadTextureByName("Fever");
 		bubble = LoadTextureByName("bubble");
+		bubble?.SetWrap(TextureWrap.Repeat);
+		FeverTips = new();
+		FeverTips.Initialize(name => LoadTextureByName(name));
+	}
+
+	public virtual void LoadBattlePanelAssets() {
+		BtnPause = LoadTextureByName("BtnPause");
+		icon_ap = LoadTextureByName("icon_ap");
+		MissReaction = LoadTextureByName("MissReaction");
+	}
+
+	public virtual void LoadEarlyLateAssets() {
+		Early = LoadTextureByName("Early");
+		Late = LoadTextureByName("Late");
+	}
+
+	public virtual void LoadBattleTextAssets() {
+		FullComboText = MuseDash1BattleTexts.FullCombo();
+		ReadyGo = MuseDash1BattleTexts.ReadyGo();
+		Resume321 = MuseDash1BattleTexts.Resume321();
 	}
 
 	public virtual void LoadComboModels() {
@@ -627,45 +892,67 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		combo2model = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.MonoBehaviour>("fx_combo_2_SkeletonData")!)?.Instantiate();
 	}
 
-	public virtual void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
+	Vector2F TextPosition(PathwaySet pathways) => pathways.Count == 1 ? scene.GetPathwayPosition(pathways.First) : scene.GetCenterPosition();
+	bool IsAirText(PathwaySet pathways) => pathways.Count == 1 && scene.IsAirPathway(pathways.First);
+
+	public virtual void CreateGreatHitText(double precision, PathwaySet pathways, bool inFever, EarlyLate earlylate) {
 		Color color = inFever ? new(255, 108, 0) : new(146, 55, 255);
-		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), inFever ? GoldGreat : ScoreGreat, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : pathway == PathwaySide.Top ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
+		var text = new TextImageRenderItem(Time, 0.5, TextPosition(pathways), 0, new(TextScale), inFever ? GoldGreat : ScoreGreat, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : IsAirText(pathways) ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
+		text.Worldspace = true;
+		BackgroundItems.Add(text);
+		CreateEarlyLateText(text, inFever, earlylate);
+	}
+
+	void CreateEarlyLateText(TextImageRenderItem judgement, bool inFever, EarlyLate earlylate) {
+		var texture = earlylate switch {
+			EarlyLate.Early => Early,
+			EarlyLate.Late => Late,
+			_ => null
+		};
+		if (texture == null)
+			return;
+
+		float offset = (inFever ? -0.47f : -0.4f) * TextScale;
+		var text = new TextImageRenderItem(judgement.StartTime, judgement.Length, judgement.StartPosition + new Vector2F(0, offset), 0, judgement.StartScale, texture, Color.White, judgement.Fn);
 		text.Worldspace = true;
 		BackgroundItems.Add(text);
 	}
 
-	public virtual void CreateHealthText(float healthGiven, PathwaySide pathway) {
-		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(MinorTextScale), $"{Math.Round(healthGiven)}", "Snaps Taste", new(107, 226, 0), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
+	public virtual void CreateHealthText(float healthGiven, PathwaySet pathways) {
+		var text = new TextImageRenderItem(Time, 0.5, TextPosition(pathways), 0, new(MinorTextScale), $"{Math.Round(healthGiven)}", "Snaps Taste", new(107, 226, 0), IsAirText(pathways) ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
 		text.Worldspace = true;
 		ForegroundItems.Add(text);
 	}
 
-	public virtual void CreatePassText(double precision, PathwaySide pathway) {
-		var pos = scene.GetPathwayPosition(pathway);
+	public virtual void CreatePassText(double precision, PathwaySet pathways) {
+		var pos = TextPosition(pathways);
 		pos.X -= 0.8f;
 		var text = new TextImageRenderItem(Time, 0.5, pos, 0, new(TextScale), ScorePass, Color.White, UITextAnimationFns.UpwardFadeoutMoveLeft);
 		text.Worldspace = true;
 		BackgroundItems.Add(text);
 	}
 
-	public virtual void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate) {
-		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(TextScale), inFever ? GoldPerfect : ScorePerfect, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : pathway == PathwaySide.Top ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
+	public virtual void CreatePerfectHitText(double precision, PathwaySet pathways, bool inFever, EarlyLate earlylate) {
+		var text = new TextImageRenderItem(Time, 0.5, TextPosition(pathways), 0, new(TextScale), inFever ? GoldPerfect : ScorePerfect, Color.White, inFever ? UITextAnimationFns.VibrateAndMoveLeft : IsAirText(pathways) ? UITextAnimationFns.UpwardFadeout : UITextAnimationFns.UpwardFadeoutCurved);
 		text.Worldspace = true;
 		BackgroundItems.Add(text);
+		CreateEarlyLateText(text, inFever, earlylate);
 	}
 
-	public virtual void CreateScoreText(int scoreGiven, PathwaySide pathway) {
-		var text = new TextImageRenderItem(Time, 0.5, scene.GetPathwayPosition(pathway), 0, new(MinorTextScale), $"{scoreGiven}", "Snaps Taste", new(0, 191, 255), pathway == PathwaySide.Top ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
+	public virtual void CreateScoreText(int scoreGiven, PathwaySet pathways) {
+		var text = new TextImageRenderItem(Time, 0.5, TextPosition(pathways), 0, new(MinorTextScale), $"{scoreGiven}", "Snaps Taste", new(0, 191, 255), IsAirText(pathways) ? UITextAnimationFns.FadeoutInv : UITextAnimationFns.UpwardFadeoutInv);
 		text.Worldspace = true;
 		ForegroundItems.Add(text);
 	}
 
 	public void EndMultiHitText() {
 		InMultiHit = false;
+		MultiHits = 0;
+		MultiHitCombo?.SetCount(0);
 	}
 
 	public void EndWarning() {
-		Warning = false;
+		MultiHitTip?.Hide();
 	}
 
 	public void OpenVictory(StatisticsData stats) {
@@ -682,11 +969,41 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	}
 
 	public void OpenFailure() {
+		if (BattleOut)
+			return;
 
+		BattleOut = true;
+		BattleOutStart = Stopwatch.GetTimestamp();
+		if (IValidatable.IsValid(CurrentFailScreen))
+			return;
+
+		if (failImport != null) {
+			MainThread.WaitFor(failImport);
+			failAssets = failImport.GetAwaiter().GetResult();
+			failImport = null;
+		}
+		failAssets ??= ImportFailCanvas();
+		if (failAssets == null)
+			return;
+
+		game.Component<ScreenEffectsComponent>().Reset();
+		CurrentFailScreen = new MuseDash1FailScreen(EngineCore.Level.RootPanel, failAssets, game.GetSongChart(), game.Component<MusicComponent>(), true, false, false, game.Restart, LevelTransitions.LoadMainMenu);
+	}
+
+	void CloseFailure() {
+		CurrentFailScreen?.Close();
+		CurrentFailScreen = null;
 	}
 
 	protected virtual StatisticsPanel? LoadPanel(StatisticsData stats) {
-		var panel = new StatisticsPanel(EngineCore.Level.RootPanel, game, stats);
+		MuseDash1VictoryAssets? canvas = null;
+		if (victoryImport != null) {
+			MainThread.WaitFor(victoryImport);
+			canvas = victoryImport.GetAwaiter().GetResult();
+		}
+		canvas ??= ImportVictoryCanvas();
+		victoryImport = null;
+		var panel = new StatisticsPanel(EngineCore.Level.RootPanel, game, stats, canvas);
 		return panel;
 	}
 
@@ -695,8 +1012,9 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		CurrentStatisticsPanel = null;
 	}
 
-	public void UpdateHit() {
-		LastHitTime = Time;
+	public void RenderFailText() {
+		if (IValidatable.IsValid(CurrentFailScreen))
+			CurrentFailScreen.RenderText();
 	}
 
 	public void PreRenderWorldspace() {
@@ -709,12 +1027,20 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		var t = Time;
 		foreach (var text in ForegroundItems)
 			text.Render(t, StyledTextShader);
+		MultiHitTip?.Render();
+		MultiHitCombo?.Render(StyledTextShader);
 	}
 
 	public void RenderUI() {
 		float width = EngineCore.Level.FrameState.WindowWidth;
 		float height = EngineCore.Level.FrameState.WindowHeight;
+		RenderHurtFlash(width, height);
 		DrawUI(width, height);
+		FullComboText?.Render(width, height);
+		ReadyGo?.Time = (float)Stopwatch.GetElapsedTime(ReadyGoStart).TotalSeconds;
+		ReadyGo?.Render(width, height);
+		Resume321?.Time = (float)(EngineCore.Level.Realtime - Resume321Start);
+		Resume321?.Render(width, height);
 	}
 
 	Vector2F GetTextureSize(ITexture? tex) => tex == null ? default : new(tex.GetWidth(), tex.GetHeight());
@@ -811,11 +1137,12 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		UIAlphatestShader?.Activate();
 
 		float resize = (h / 1080f);
+		SampleBattlePanel(out float below, out float up, out float score);
 		// Draw the health/fever bars
 		{
 			Rlgl.PushMatrix();
 
-			Rlgl.Translatef(w / 2, h, 0);
+			Rlgl.Translatef(w / 2, h - below * resize, 0);
 			Rlgl.Scalef(resize, resize, 1);
 
 			RenderHealth();
@@ -827,13 +1154,15 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		{
 			Rlgl.PushMatrix();
 
-			Rlgl.Translatef(0, 0, 0);
+			Rlgl.Translatef(0, -score * resize, 0);
 			Rlgl.Scalef(resize, resize, 1);
 			RenderScore();
 			Rlgl.PopMatrix();
 		}
 
 		UIAlphatestShader?.Deactivate();
+
+		RenderPauseButton(w, -up * resize, resize);
 
 		// Draw combo
 
@@ -847,8 +1176,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.PopMatrix();
 
-		if (ComboGrade != ComboGrade.NotApplicable) {
-			PrepareComboColors(ComboGrade, out var borderColor, out var color);
+		if (ComboText != MuseDash1ComboTextState.None) {
+			PrepareComboColors(ComboTextGrade, out var borderColor, out var color);
 			SetComboColors(borderColor, color);
 
 			Rlgl.PushMatrix();
@@ -872,6 +1201,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	protected virtual void PrepareComboColors(ComboGrade comboGrade, out Color borderColor, out Color color) {
 		switch (comboGrade) {
 			case ComboGrade.Low:
+			case ComboGrade.Middle:
 				borderColor = ComboLowBorderColor;
 				color = ComboLowColor;
 				break;
@@ -891,7 +1221,6 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		Vector2F hpFeverBaseSize = GetTextureSize(HpFeverBase);
 		Vector2F hp_sliderSize = GetTextureSize(hp_slider);
 		Vector2F power_sliderSize = GetTextureSize(power_slider);
-		Vector2F power_slider_whiteSize = GetTextureSize(power_slider_white);
 
 		Graphics2D.SetDrawColor(255, 255, 255, 255);
 		Graphics2D.SetTexture(BelowBase);
@@ -901,12 +1230,19 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		Graphics2D.SetTexture(HpFeverBase);
 		Graphics2D.DrawTexturedRectangle(new(-(hpFeverBaseSize.W / 2), -hpFeverBaseSize.H), hpFeverBaseSize);
 
-		float hpRatio = (float)(HP / MaxHP);
+		float hpRatio = SampleHpFill();
 		float feverRatio;
 		if (!InFever)
 			feverRatio = (float)(CurrentFever / MaxFever);
 		else
 			feverRatio = (float)(FeverRemainingTime / FeverTotalTime);
+
+		if (hp_slider_base != null) {
+			Vector2F hp_slider_baseSize = GetTextureSize(hp_slider_base);
+			Graphics2D.SetTexture(hp_slider_base);
+			Graphics2D.SetDrawColor(255, 255, 255);
+			Graphics2D.DrawTexturedProgress(new(-(hp_slider_baseSize.W / 2) - 56, -(hp_sliderSize.H / 2) - (hp_slider_baseSize.H / 2) - 4), hp_slider_baseSize, SampleHpTrail(), Axis.Horizontal);
+		}
 
 		Graphics2D.SetTexture(hp_slider);
 		Graphics2D.SetDrawColor(255, 53, 133);
@@ -919,12 +1255,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		DrawSomeBubbles(power_slider, power_sliderSize, (float)feverRatio, 0.3f, new(61, -4), new(87, 181, 245));
 		DrawSliderLight(power_slider, power_sliderSize, (float)feverRatio, (float)NMath.Remap(Time - LastFeverUpdateTime, 0, 0.3, 1, 0, clampInput: true), new(61, -4), new(180, 229, 255));
 
-		float feverActivated = Math.Clamp((float)(Time - EnterFeverTime) * 1, 0, 1);
-		if (feverActivated < 1) {
-			Graphics2D.SetDrawColor(255, 255, 255, (int)((float)NMath.Ease.InQuart(1 - feverActivated) * 255));
-			Graphics2D.SetTexture(power_slider_white);
-			Graphics2D.DrawTexturedRectangle(new Vector2F(-(power_slider_whiteSize.W / 2) + 0, -power_slider_whiteSize.H + 16), power_slider_whiteSize);
-		}
+		FeverTips?.Render();
 
 		Graphics2D.SetDrawColor(255, 255, 255, 255);
 		float fontSize = 32;
@@ -935,16 +1266,37 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		}
 		if (hp_icon != null) {
 			Graphics2D.SetTexture(hp_icon);
-			float lastHitTime = Math.Clamp((float)(Time - LastHitTime) * 1, 0, 1);
-			float size = (float)NMath.Remap(lastHitTime, 0, 0.3, 1, 1.15, clampInput: true);
+			float hpAdd = SampleHpAdd();
+			float size = 1 + (MuseDash1HudAnimations.HP_ADD_SCALE - 1) * hpAdd;
 
 			Vector2F sizeOfHeart = new(hp_icon.GetWidth() * size, hp_icon.GetHeight() * size);
 			Graphics2D.DrawTexturedRectangle(new(-328, -38f), sizeOfHeart, origin: sizeOfHeart / 2);
+
+			if (hp_icon_light != null && hpAdd > 0) {
+				Vector2F sizeOfLight = new(hp_icon_light.GetWidth() * size, hp_icon_light.GetHeight() * size);
+				Graphics2D.SetTexture(hp_icon_light);
+				Graphics2D.SetDrawColor(255, 255, 255, (int)(Math.Clamp(hpAdd, 0, 1) * 255));
+				Graphics2D.DrawTexturedRectangle(new(-328, -38f), sizeOfLight, origin: sizeOfLight / 2);
+				Graphics2D.SetDrawColor(255, 255, 255, 255);
+			}
 		}
 	}
 	public virtual void RenderScore() {
-		ScoreNumber?.Render(Time, StyledTextShader);
+		ScoreNumber?.Render(Time, ScoreNumberShader);
 		ScoreLabel?.Render(Time, StyledTextShader);
+		RenderApIcon();
+	}
+
+	void RenderApIcon() {
+		if (!AllPerfect || !GameSettings.gp_apindicator.GetBool() || icon_ap == null || ScoreNumber == null)
+			return;
+
+		float textWidth = ScoreNumber.GetTextSize().X * ScoreNumber.StartScale.X;
+		if (ScoreNumber.Glow != null)
+			textWidth -= ScoreNumber.Padding * 2 * ScoreNumber.StartScale.X;
+		Graphics2D.SetDrawColor(255, 255, 255, 255);
+		Graphics2D.SetTexture(icon_ap);
+		Graphics2D.DrawTexturedRectangle(new Vector2F(ScoreNumber.StartPosition.X + textWidth, -ScoreNumber.StartPosition.Y), new Vector2F(68, 66));
 	}
 	// allows setting up custom transforms in inheritors
 	public virtual void PreRenderCombo() {
@@ -954,15 +1306,11 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		if (ShouldRenderCombo1()) renderOneCombo(combo1model, animations_1);
 		if (ShouldRenderCombo2()) renderOneCombo(combo2model, animations_2);
 	}
-	public float GetSizeForComboHit() {
-		float sizeT = (float)NMath.Remap(Time - LastComboUpdateTime, 0, 0.25, 0, 1, clampInput: true);
-		float size = (float)NMath.Remap(NMath.Ease.OutQuad(sizeT), 0, 1, 1.2, 1, clampInput: true);
-		return size;
-	}
+	public Vector2F GetComboTextScale() => ComboTextClips.Sample(ComboText, (float)Math.Max(0, Time - ComboTextStart));
 	public virtual void RenderComboForeground() {
 		ComboNumber?.SplitY = 1;
 		ComboNumber?.StartPosition = new(0, -180);
-		ComboNumber?.Scale = new(GetSizeForComboHit());
+		ComboNumber?.Scale = GetComboTextScale();
 		ComboNumber?.Render(Time, StyledTextShader);
 	}
 	void renderOneCombo(ModelInstance? model, AnimationHandler anims) {
@@ -983,6 +1331,15 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 
 		animations_1.AddDeltaTime(dt);
 		animations_2.AddDeltaTime(dt);
+		if (!game.Paused) {
+			MultiHitCombo?.Think(dt);
+			MultiHitTip?.Think(dt);
+			FeverTips?.Think(dt);
+			FullComboText?.Think((float)dt);
+		}
+
+		if (ComboText == MuseDash1ComboTextState.Out && Time - ComboTextStart >= ComboTextClips.OutLength)
+			ComboText = MuseDash1ComboTextState.None;
 
 		if (ScoreLabel != null && ScoreNumber != null) {
 			ScoreLabel.TopLeftAligned = ScoreNumber.TopLeftAligned = true;
@@ -993,18 +1350,18 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		}
 		ComboNumber?.BorderSize = 4;
 
-		ScoreNumber?.StartPosition = new(100, -16);
-		ScoreLabel?.StartPosition = new(100, -96);
+		ScoreNumber?.StartPosition = ScoreNumberPosition;
+		ScoreLabel?.StartPosition = ScoreLabelPosition;
 		ScoreNumber?.borderColor = new Color(173, 173, 255) * new Color(200, 255);
 
 		ScoreNumber?.StartScale = new(1f);
-		ScoreNumber?.StartScale = new(0.9f);
+		ScoreNumber?.StartScale = new(ScoreNumberScale);
 		ScoreNumber?.DetermineRenderTexture();
 		ComboNumber?.DetermineRenderTexture();
 	}
 
 	public bool ShowingVictoryScreen() => IValidatable.IsValid(CurrentStatisticsPanel);
-	public bool ShowingFailureScreen() => false; // todo
+	public bool ShowingFailureScreen() => IValidatable.IsValid(CurrentFailScreen);
 
 
 	public void StartMultiHitText() {
@@ -1012,10 +1369,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		MultiHits = 0;
 	}
 
-	double LastComboUpdateTime = -2000000;
-
 	public void StartWarning() {
-		Warning = true;
+		MultiHitTip?.Play();
 	}
 
 	public void UpdateAllPerfect(bool allPerfect) {
@@ -1025,6 +1380,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	public static ComboGrade GetGrade(int combo) {
 		if (combo >= (int)ComboGrade.High)
 			return ComboGrade.High;
+		if (combo >= (int)ComboGrade.Middle)
+			return ComboGrade.Middle;
 		if (combo >= (int)ComboGrade.Low)
 			return ComboGrade.Low;
 		return ComboGrade.NotApplicable;
@@ -1033,9 +1390,17 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	public void UpdateCombo(int currentCombo) {
 		if (Combo == currentCombo) return;
 		Combo = currentCombo;
-		ComboNumber?.Text = $"{Combo}";
-		LastComboUpdateTime = Time;
 		var currentComboGrade = GetGrade(currentCombo);
+		if (currentComboGrade != ComboGrade.NotApplicable) {
+			ComboNumber?.Text = $"{Combo}";
+			ComboText = MuseDash1ComboTextState.In;
+			ComboTextGrade = currentComboGrade;
+			ComboTextStart = Time;
+		}
+		else if (ComboText == MuseDash1ComboTextState.In) {
+			ComboText = MuseDash1ComboTextState.Out;
+			ComboTextStart = Time;
+		}
 		if (currentComboGrade != ComboGrade)
 			UpdateComboGrade(currentComboGrade);
 	}
@@ -1051,6 +1416,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 			case ComboGrade.NotApplicable:
 				switch (lastComboGrade) {
 					case ComboGrade.Low:
+					case ComboGrade.Middle:
 						DeactivateCombo1();
 						break;
 					case ComboGrade.High:
@@ -1059,12 +1425,17 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 				}
 				break;
 			case ComboGrade.Low:
+			case ComboGrade.Middle:
 				switch (lastComboGrade) {
 					case ComboGrade.NotApplicable:
 						ActivateCombo1();
 						break;
+					case ComboGrade.Low:
+						HideCombo1();
+						ActivateCombo1();
+						break;
 					case ComboGrade.High:
-						DeactivateCombo2();
+						HideCombo2();
 						ActivateCombo1();
 						break;
 				}
@@ -1075,7 +1446,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 						ActivateCombo2();
 						break;
 					case ComboGrade.Low:
-						DeactivateCombo1();
+					case ComboGrade.Middle:
+						HideCombo1();
 						ActivateCombo2();
 						break;
 				}
@@ -1103,6 +1475,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 		animations_2.ClearAllAnimation();
 		animations_2.SetAnimation(0, "end");
 	}
+	void HideCombo1() => animations_1.ClearAllAnimation();
+	void HideCombo2() => animations_2.ClearAllAnimation();
 	void ForceDeactivateCombo1() {
 		animations_1.ClearAllAnimation();
 		animations_1.SetAnimation(0, "end");
@@ -1133,19 +1507,126 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	public void UpdateHP(double hp, double maxHP) {
 		HP = hp;
 		MaxHP = maxHP;
+
+		float rate = maxHP > 0 ? (float)(hp / maxHP) : 0;
+		if (SnapHealth || Seeking) {
+			SnapHealth = false;
+			HpFillFrom = HpFillTo = HpTrailFrom = HpTrailTo = rate;
+			return;
+		}
+		if (rate == HpFillTo)
+			return;
+
+		if (rate < HpFillTo)
+			HpFillFrom = HpFillTo = rate;
+		else {
+			HpFillFrom = SampleHpFill();
+			HpFillTo = rate;
+			HpFillStart = Time;
+		}
+		HpTrailFrom = SampleHpTrail();
+		HpTrailTo = rate;
+		HpTrailStart = Time;
+	}
+
+	float SampleHpAdd() {
+		float time = (float)(Time - HpAddTime);
+		return time < 0 || time >= MuseDash1HudAnimations.HP_ADD_LENGTH ? 0 : MuseDash1HudAnimations.SampleHpAdd(time);
+	}
+
+	float SampleHpFill() {
+		float t = (float)((Time - HpFillStart) / MuseDash1HudAnimations.HP_FILL_LENGTH);
+		if (t < 0 || t >= 1)
+			return HpFillTo;
+		return HpFillFrom + (HpFillTo - HpFillFrom) * (1 - (1 - t) * (1 - t));
+	}
+
+	float SampleHpTrail() {
+		float t = (float)((Time - HpTrailStart - MuseDash1HudAnimations.HP_TRAIL_DELAY) / MuseDash1HudAnimations.HP_TRAIL_LENGTH);
+		if (t <= 0)
+			return HpTrailFrom;
+		if (t >= 1)
+			return HpTrailTo;
+		return HpTrailFrom + (HpTrailTo - HpTrailFrom) * MuseDash1HudAnimations.HpTrail.Evaluate(t);
+	}
+
+	void SampleBattlePanel(out float below, out float up, out float score) {
+		below = up = score = 0;
+		if (BattleOut) {
+			float time = (float)Stopwatch.GetElapsedTime(BattleOutStart).TotalSeconds;
+			below = MuseDash1HudAnimations.BattleOutBelow.Evaluate(time) - MuseDash1HudAnimations.BELOW_REST;
+			up = MuseDash1HudAnimations.BattleOutUp.Evaluate(time) - MuseDash1HudAnimations.UP_REST;
+			score = MuseDash1HudAnimations.BattleOutScore.Evaluate(time) - MuseDash1HudAnimations.SCORE_REST;
+		}
+		else if (BattleIntro) {
+			float time = (float)Stopwatch.GetElapsedTime(ReadyGoStart).TotalSeconds;
+			below = MuseDash1HudAnimations.BattleInBelow.Evaluate(time) - MuseDash1HudAnimations.BELOW_REST;
+			up = MuseDash1HudAnimations.BattleInUp.Evaluate(time) - MuseDash1HudAnimations.UP_REST;
+			score = MuseDash1HudAnimations.BattleInScore.Evaluate(time) - MuseDash1HudAnimations.SCORE_REST;
+		}
+	}
+
+	void RenderHurtFlash(float width, float height) {
+		float time = (float)(Time - HurtTime);
+		if (MissReaction == null || time < 0 || time >= MuseDash1HudAnimations.HURT_LENGTH)
+			return;
+
+		Graphics2D.SetTexture(MissReaction);
+		Graphics2D.SetDrawColor(154, 0, 0, (int)(MuseDash1HudAnimations.HURT_ALPHA * (1 - time / MuseDash1HudAnimations.HURT_LENGTH) * 255));
+		Graphics2D.DrawTexturedRectangle(new Vector2F(0, 0), new Vector2F(width, height));
+		Graphics2D.SetDrawColor(255, 255, 255, 255);
+	}
+
+	void RenderPauseButton(float width, float top, float resize) {
+		if (PauseButton != null) {
+			PauseButton.Position = new(width - 180 * resize, top);
+			PauseButton.Size = new(120 * resize, 120 * resize);
+		}
+		if (BtnPause == null)
+			return;
+
+		Graphics2D.SetTexture(BtnPause);
+		Graphics2D.SetDrawColor(255, 255, 255, (int)(MuseDash1HudAnimations.PAUSE_ALPHA * 255));
+		Graphics2D.DrawTexturedRectangle(new Vector2F(width - 150 * resize, top + 20 * resize), new Vector2F(60 * resize, 60 * resize));
+		Graphics2D.SetDrawColor(255, 255, 255, 255);
+	}
+
+	public void PlayFeverTips(MuseDash1FeverTipsClip clip) => FeverTips?.Play(clip);
+
+	public void PlayFullComboText() => FullComboText?.Play();
+
+	public void PlayHpAdd() {
+		if (!Seeking)
+			HpAddTime = Time;
+	}
+
+	public void PlayHurtFlash() {
+		if (!Seeking)
+			HurtTime = Time;
+	}
+
+	public void PlayReadyGo() {
+		ReadyGoStart = Stopwatch.GetTimestamp();
+		BattleIntro = true;
+		ReadyGo?.Play();
+	}
+
+	public void PlayResume321() {
+		Resume321Start = EngineCore.Level.Realtime;
+		Resume321?.Play();
 	}
 
 	public void UpdateInFever(double feverRemainingTime, double feverTotalTime) {
-		if (!InFever) {
-			EnterFeverTime = Time;
-		}
 		InFever = true;
 		FeverRemainingTime = feverRemainingTime;
 		FeverTotalTime = feverTotalTime;
 	}
 
 	public void UpdateMultiHitText(int hits) {
+		if (!InMultiHit || hits == MultiHits)
+			return;
 		MultiHits = hits;
+		MultiHitCombo?.SetCount(hits);
 	}
 
 	public void UpdateScore(double score) {
@@ -1156,39 +1637,63 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, IGame game) : IMuseDash1S
 	public void Reset() {
 		BackgroundItems.Clear();
 		ForegroundItems.Clear();
-		EnterFeverTime = -2000000;
-		LastHitTime = -2000000;
-		LastComboUpdateTime = -2000000;
+		BattleIntro = false;
+		BattleOut = false;
+		ComboText = MuseDash1ComboTextState.None;
+		HpAddTime = -2000000;
+		HurtTime = -2000000;
+		SnapHealth = true;
 		ComboGrade = ComboGrade.NotApplicable;
 		Combo = 0;
 		FeverRemainingTime = 0;
 		FeverTotalTime = 0;
 		CloseVictory();
+		CloseFailure();
+		EndWarning();
+		InMultiHit = false;
+		MultiHits = 0;
+		MultiHitCombo?.Hide();
+		FeverTips?.Reset();
+		FullComboText?.Stop();
+		ReadyGo?.Stop();
+		Resume321?.Stop();
 
 		ForceDeactivateCombo1();
 		ForceDeactivateCombo2();
 	}
 }
 
-public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, IGame game) : MD1SceneUI(scene, game)
+public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, RhythmGameLevel game) : MD1SceneUI(scene, game)
 {
-	protected TextImageRenderItem ComboLabel = null!;
+	const float COMBO_FONT_SCALE = 95f / 110f;
+	const float COMBO_LABEL_OFFSET = 96.6f;
+	const float COMBO_NUMBER_Y = 146;
+	const float SCORE_FONT_SIZE = 48;
+
+	static readonly MuseDash1TextGlow ScoreGlow = new(new(16, 186, 255), new(181, 247, 255), new(138, 240, 255), 0.036f, 0.204f, 0.123f, 0.185f);
+
+	protected ITexture? combo_high_gc;
+	protected ITexture? combo_normal_gc;
+	protected IShader? GlowTextShader;
+
+	protected override MuseDash1ComboTextClips ComboTextClips => MuseDash1HudAnimations.ComboTextGrooveCoaster;
+	protected override Color ScoreLabelColor => new(255, 255, 255);
+	protected override Vector2F ScoreLabelPosition => new(104, -96);
+	protected override string ScoreLabelTexture => "score_English_GC";
+	protected override Vector2F ScoreNumberPosition => new(102, -36);
+	protected override float ScoreNumberScale => SCORE_FONT_SIZE / (ScoreNumber?.FontResolution ?? 90);
+	protected override IShader? ScoreNumberShader => GlowTextShader;
 
 	public override void SetupComboNumber() {
 		base.SetupComboNumber();
 		ComboNumber?.Font = "Infinity Font";
-		ComboLabel = new(0, 0, new(0, 0), 0, new(1, 1), "COMBO", "Snaps Taste", new(165, 254, 254), null);
-	}
-
-	protected override void SetComboColors(Color borderColor, Color color) {
-		base.SetComboColors(borderColor, color);
-		ComboLabel.borderColor = borderColor;
-		ComboLabel.StartColor = color;
 	}
 
 	public override void SetupScoreNumber() {
 		base.SetupScoreNumber();
 		ScoreNumber?.Font = "Infinity Font";
+		ScoreNumber?.Glow = ScoreGlow;
+		GlowTextShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "glow_text.fs");
 	}
 
 	public override void LoadScoreAssets() {
@@ -1199,9 +1704,16 @@ public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, IGame game) 
 		ScorePass = LoadTextureByName("ScorePassGC");
 	}
 
-	public override void PreRenderCombo() {
-		float value = GetSizeForComboHit();
-		Rlgl.Scalef(value, value, 1);
+	public override void LoadBattleTextAssets() {
+		FullComboText = MuseDash1BattleTexts.FullComboGrooveCoaster();
+		ReadyGo = MuseDash1BattleTexts.ReadyGoGrooveCoaster();
+		Resume321 = MuseDash1BattleTexts.Resume321();
+	}
+
+	public override void LoadComboModels() {
+		base.LoadComboModels();
+		combo_high_gc = LoadTextureByName("combo_high_gc");
+		combo_normal_gc = LoadTextureByName("combo_normal_gc");
 	}
 
 	public override void RenderComboBackground() {
@@ -1210,19 +1722,22 @@ public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, IGame game) 
 
 	public override void RenderComboForeground() {
 		if (ComboNumber == null) return;
-		if (ComboLabel == null) return;
-		float dist = 180;
+		Vector2F scale = GetComboTextScale();
 		ComboNumber.SplitY = 1;
-		ComboNumber.StartPosition = new(0, -dist);
+		ComboNumber.StartPosition = new(0, -COMBO_NUMBER_Y);
+		ComboNumber.Scale = scale * COMBO_FONT_SCALE;
 		ComboNumber.Render(Time, StyledTextShader);
 
-		ComboLabel.SplitY = 1;
-		ComboLabel.StartPosition = new(0, dist);
-		ComboLabel.Render(Time, StyledTextShader);
+		var label = ComboTextGrade == ComboGrade.High ? combo_high_gc : combo_normal_gc;
+		if (label == null) return;
+		Vector2F size = new(512 * scale.X, 140 * scale.Y);
+		Graphics2D.SetDrawColor(255, 255, 255, 255);
+		Graphics2D.SetTexture(label);
+		Graphics2D.DrawTexturedRectangle(new Vector2F(-size.W / 2, COMBO_NUMBER_Y + COMBO_LABEL_OFFSET * scale.Y - size.H / 2), size);
 	}
 }
 
-public class CloneDashMD1SceneUIArknights(IMuseDash1SceneInstance scene, IGame game) : MD1SceneUI(scene, game)
+public class CloneDashMD1SceneUIArknights(IMuseDash1SceneInstance scene, RhythmGameLevel game) : MD1SceneUI(scene, game)
 {
 
 }

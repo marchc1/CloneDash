@@ -1,7 +1,4 @@
-﻿using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Bmp;
-using SixLabors.ImageSharp.Formats.Tga;
-using SixLabors.ImageSharp.Formats.Webp;
+﻿using Nucleus.Common.Images;
 using System.IO;
 
 namespace AssetStudio
@@ -13,31 +10,16 @@ namespace AssetStudio
             switch (imageFormat)
             {
                 case ImageFormat.Jpeg:
-                    image.SaveAsJpeg(stream);
+                    Image.ExportImageToStream(image, stream, ".jpg");
                     break;
                 case ImageFormat.Png:
-                    image.SaveAsPng(stream);
+                    Image.ExportImageToStream(image, stream, ".png");
                     break;
                 case ImageFormat.Bmp:
-                    image.Save(stream, new BmpEncoder
-                    {
-                        BitsPerPixel = BmpBitsPerPixel.Pixel32,
-                        SupportTransparency = true
-                    });
+                    Image.ExportImageToStream(image, stream, ".bmp");
                     break;
                 case ImageFormat.Tga:
-                    image.Save(stream, new TgaEncoder
-                    {
-                        BitsPerPixel = TgaBitsPerPixel.Pixel32,
-                        Compression = TgaCompression.None
-                    });
-                    break;
-                case ImageFormat.Webp:
-                    image.Save(stream, new WebpEncoder
-                    {
-                        FileFormat = WebpFileFormatType.Lossless,
-                        Quality = 50
-                    });
+                    Image.ExportImageToStream(image, stream, ".tga");
                     break;
             }
         }

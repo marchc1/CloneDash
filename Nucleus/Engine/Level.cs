@@ -581,8 +581,11 @@ public abstract class Level : IValidatable
 				CalcView2D(frameState, ref cam2d);
 				RunEventPreRenderBackground(frameState);
 
+				cam2d.Offset += Graphics2D.Offset.ToNumerics();
 				EngineCore.Window.BeginMode2D(cam2d);
 			}
+			var drawOffset = Graphics2D.Offset;
+			Graphics2D.ResetDrawingOffset();
 			//Raylib.DrawLine3D(new(0, 0, 0), new(256, 0, 0), new Color(255, 70, 60, 200));
 			//Raylib.DrawLine3D(new(0, 0, 0), new(0, 256, 0), new Color(80, 255, 70, 200));
 
@@ -593,6 +596,7 @@ public abstract class Level : IValidatable
 				EngineCore.Window.EndMode3D();
 			else
 				EngineCore.Window.EndMode2D();
+			Graphics2D.SetOffset(drawOffset);
 			//Graphics.ScissorRect();
 
 			//Raylib.EndTextureMode();
@@ -610,13 +614,16 @@ public abstract class Level : IValidatable
 			RootPanel.Painting.Paint(RootPanel, ref solveState, ElementPaintPopupMode.NoPopups);
 			RootPanel.Painting.Paint(RootPanel, ref solveState, ElementPaintPopupMode.OnlyPopups);
 
+			Graphics2D.ResetDrawingOffset();
+			RootPanel.PaintTooltip();
+
 			RunEventPostRenderUI(frameState);
 
 			DebugOverlay.Render();
 
 			if (ui_hoverresult.GetBool() && RootPanel.GetHoveredElement() != null) {
 				var uiPosition = RootPanel.GetHoveredElement()!.GetGlobalPosition();
-				var uiSize = RootPanel.GetHoveredElement()!.GetRenderBounds().Size;
+				var uiSize = RootPanel.GetHoveredElement()!.GetRenderBounds().Size * RootPanel.GetHoveredElement()!.GetEffectiveScale();
 				Graphics2D.SetDrawColor(255, 255, 255);
 				Graphics2D.DrawRectangleOutline(RectangleF.FromPosAndSize(uiPosition, uiSize), 1);
 
@@ -657,7 +664,7 @@ public abstract class Level : IValidatable
 			if (delta > 1) continue;
 
 			Graphics2D.SetDrawColor(255, 50, 50, (int)(150f * delta));
-			Graphics2D.DrawRectangle(element.GetGlobalPosition(), element.GetRenderBounds().Size);
+			Graphics2D.DrawRectangle(element.GetGlobalPosition(), element.GetRenderBounds().Size * element.GetEffectiveScale());
 		}
 	}
 
@@ -665,7 +672,7 @@ public abstract class Level : IValidatable
 		foreach (var element in e.Children) {
 			if (!element.IsVisible()) continue;
 			Graphics2D.SetDrawColor(255, 255, 255);
-			Graphics2D.DrawRectangleOutline(element.GetGlobalPosition() + EngineCore.GetGlobalScreenOffset(), element.GetRenderBounds().Size);
+			Graphics2D.DrawRectangleOutline(element.GetGlobalPosition() + EngineCore.GetGlobalScreenOffset(), element.GetRenderBounds().Size * element.GetEffectiveScale());
 			VisRenderBounds(element);
 		}
 	}

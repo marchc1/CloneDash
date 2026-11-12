@@ -57,12 +57,11 @@ public class SkeletonEntry
 		if (LoadAttempted) return CachedModelData;
 		LoadAttempted = true;
 		try {
+			// Bundle cache may have unloaded the old one.
+			Asset = MuseDash1Compatibility.StreamingAssets.FindAssetByName<MonoBehaviour>(AssetName) ?? Asset;
 			if (Asset == null) {
-				Asset = MuseDash1Compatibility.StreamingAssets.FindAssetByName<MonoBehaviour>(AssetName);
-				if (Asset == null) {
-					LoadFailed = true;
-					return null;
-				}
+				LoadFailed = true;
+				return null;
 			}
 			CachedModelData = MuseDash1ModelConverter.MD_GetModelData(EngineCore.Level, Asset);
 		}
@@ -363,7 +362,7 @@ public class MD_ModelThumbnailCard : Button
 
 	bool IsVisibleInViewport() {
 		if (Viewport == null) return true;
-		var viewportPos = Viewport.GetGlobalPosition() - Viewport.ChildRenderOffset;
+		var viewportPos = Viewport.GetGlobalPosition() - Viewport.RenderOffset;
 		var viewportRect = RectangleF.FromPosAndSize(viewportPos, Viewport.GetRenderBounds().Size);
 		viewportRect = viewportRect + new RectangleF(-PREFETCH_MARGIN, -PREFETCH_MARGIN, PREFETCH_MARGIN * 2, PREFETCH_MARGIN * 2);
 		var cardRect = RectangleF.FromPosAndSize(GetGlobalPosition(), GetRenderBounds().Size);

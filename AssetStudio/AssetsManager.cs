@@ -131,6 +131,16 @@ namespace AssetStudio
 
         private void Load(string[] files)
         {
+            LoadHeaders(files);
+            if (AssetsFileList.Count == 0)
+                return;
+
+            ReadAssets(AssetsFileList);
+            ProcessAssets(AssetsFileList);
+        }
+
+        private void LoadHeaders(string[] files)
+        {
             foreach (var file in files)
             {
                 importFiles.Add(file);
@@ -155,11 +165,6 @@ namespace AssetStudio
             importFilesHash.Clear();
             noexistFiles.Clear();
             assetsFileListHash.Clear();
-            if (AssetsFileList.Count == 0)
-                return;
-
-            ReadAssets();
-            ProcessAssets();
         }
 
         public bool LoadFile(string fullName)
@@ -265,9 +270,9 @@ namespace AssetStudio
             return true;
         }
 
-        private bool LoadAssetsFromMemory(FileReader reader, string originalPath, UnityVersion assetBundleUnityVer = null)
+        private bool LoadAssetsFromMemory(FileReader reader, string originalPath, UnityVersion assetBundleUnityVer = null, PreparedBundle prepared = null)
         {
-            if (!assetsFileListHash.Contains(reader.FileName))
+            if (prepared != null || !assetsFileListHash.Contains(reader.FileName))
             {
                 try
                 {
@@ -278,6 +283,11 @@ namespace AssetStudio
                         assetsFile.version = assetBundleUnityVer;
                     }
                     CheckStrippedVersion(assetsFile, assetBundleUnityVer);
+                    if (prepared != null)
+                    {
+                        prepared.AssetsFiles.Add(assetsFile);
+                        return true;
+                    }
                     AssetsFileList.Add(assetsFile);
                     assetsFileListHash.Add(assetsFile.fileName);
                     assetsFileByName[assetsFile.fileName] = assetsFile;
@@ -291,7 +301,10 @@ namespace AssetStudio
                 catch (Exception e)
                 {
                     Logger.Warning($"Failed to read assets file \"{reader.FullPath}\" from {Path.GetFileName(originalPath)}\n{e}");
-                    resourceFileReaders.TryAdd(reader.FileName, reader);
+                    if (prepared != null)
+                        prepared.ResourceReaders.Add((reader.FileName, reader, false));
+                    else
+                        resourceFileReaders.TryAdd(reader.FileName, reader);
                 }
             }
             else
@@ -301,7 +314,7 @@ namespace AssetStudio
             return true;
         }
 
-        private bool LoadBundleFile(FileReader reader, string originalPath = null)
+        private bool LoadBundleFile(FileReader reader, string originalPath = null, PreparedBundle prepared = null)
         {
             Logger.Info($"Loading \"{reader.FullPath}\"");
             Logger.Debug($"Bundle offset: {reader.Position}");
@@ -312,7 +325,7 @@ namespace AssetStudio
             try
             {
                 var bundleFile = new BundleFile(bundleReader, Options.BundleOptions);
-                isLoaded = LoadBundleFiles(bundleReader, bundleFile, originalPath);
+                isLoaded = LoadBundleFiles(bundleReader, bundleFile, originalPath, prepared);
                 if (!isLoaded)
                     return false;
 
@@ -334,7 +347,7 @@ namespace AssetStudio
                     }
                     Logger.Info($"[MultiBundle] Loading \"{reader.FileName}\" from offset: 0x{bundleStream.Offset:X}");
                     bundleFile = new BundleFile(bundleReader, Options.BundleOptions, isMultiBundle: true);
-                    isLoaded = LoadBundleFiles(bundleReader, bundleFile, originalPath ?? reader.FullPath);
+                    isLoaded = LoadBundleFiles(bundleReader, bundleFile, originalPath ?? reader.FullPath, prepared);
                 }
                 return isLoaded;
             }
@@ -360,7 +373,7 @@ namespace AssetStudio
             }
         }
 
-        private bool LoadBundleFiles(FileReader reader, BundleFile bundleFile, string originalPath = null)
+        private bool LoadBundleFiles(FileReader reader, BundleFile bundleFile, string originalPath = null, PreparedBundle prepared = null)
         {
             foreach (var file in bundleFile.fileList)
             {
@@ -371,12 +384,17 @@ namespace AssetStudio
                 var subReader = new FileReader(dummyPath, file.stream);
                 if (subReader.FileType == FileType.AssetsFile)
                 {
-                    if (!LoadAssetsFromMemory(subReader, originalPath ?? reader.FullPath, bundleFile.m_Header.unityRevision))
+                    if (!LoadAssetsFromMemory(subReader, originalPath ?? reader.FullPath, bundleFile.m_Header.unityRevision, prepared))
                         return false;
+                }
+                else if (prepared != null)
+                {
+                    prepared.ResourceReaders.Add((file.fileName, subReader, true));
                 }
                 else
                 {
-                    resourceFileReaders.TryAdd(file.fileName, subReader);
+                    // a reloaded bundle replaces the reader its unloaded copy closed
+                    resourceFileReaders[file.fileName] = subReader;
                 }
             }
             return true;
@@ -606,6 +624,8 @@ namespace AssetStudio
 
         public void UnloadFile(SerializedFile assetsFile)
         {
+            foreach (var obj in assetsFile.Objects)
+                obj.DetachReader();
             assetsFile.Objects.Clear();
             assetsFile.ObjectsDic.Clear();
             assetsFile.reader.Close();
@@ -617,6 +637,11 @@ namespace AssetStudio
 
         public void Clear()
         {
+            foreach (var assetsFile in AssetsFileList)
+            {
+                foreach (var obj in assetsFile.Objects)
+                    obj.DetachReader();
+            }
             foreach (var assetsFile in AssetsFileList)
             {
                 assetsFile.Objects.Clear();
@@ -635,7 +660,7 @@ namespace AssetStudio
             assetsFileListHash.Clear();
         }
 
-        private void ReadAssets()
+        private void ReadAssets(List<SerializedFile> files)
         {
             Logger.Info("Read assets...");
 
@@ -647,10 +672,10 @@ namespace AssetStudio
                 IncludeFields = true,
             };
 
-            var progressCount = AssetsFileList.Sum(x => x.m_Objects.Count);
+            var progressCount = files.Sum(x => x.m_Objects.Count);
             var i = 0;
             Progress.Reset();
-            foreach (var assetsFile in AssetsFileList)
+            foreach (var assetsFile in files)
             {
                 JsonConverterHelper.AssetsFile = assetsFile;
                 foreach (var objectInfo in assetsFile.m_Objects)
@@ -684,11 +709,11 @@ namespace AssetStudio
             }
         }
 
-        private void ProcessAssets()
+        private void ProcessAssets(List<SerializedFile> files)
         {
             Logger.Info("Process assets...");
 
-            foreach (var assetsFile in AssetsFileList)
+            foreach (var assetsFile in files)
             {
                 foreach (var obj in assetsFile.Objects)
                 {
@@ -791,6 +816,60 @@ namespace AssetStudio
 			var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).ToList();
 			var toReadFile = ProcessingSplitFiles(files);
 			Load(toReadFile);
+		}
+
+		public void LoadFolderHeaders(string path) {
+			MergeSplitAssets(path, true);
+			var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).ToList();
+			var toReadFile = ProcessingSplitFiles(files);
+			LoadHeaders(toReadFile);
+		}
+
+		public void ReadFiles(List<SerializedFile> files) {
+			ReadAssets(files);
+			ProcessAssets(files);
+		}
+
+		public PreparedBundle? PrepareBundleFile(string fullName) {
+			var reader = new FileReader(fullName);
+			if (reader.FileType != FileType.BundleFile) {
+				reader.Dispose();
+				return null;
+			}
+
+			PreparedBundle prepared = new();
+			if (!LoadBundleFile(reader, prepared: prepared))
+				return null;
+
+			foreach (var assetsFile in prepared.AssetsFiles)
+				assetsFile.ReadAssets();
+			return prepared;
+		}
+
+		public List<SerializedFile> AttachPreparedBundle(PreparedBundle prepared) {
+			if (prepared.AssetsFiles.Exists(assetsFile => assetsFileListHash.Contains(assetsFile.fileName))) {
+				foreach (var assetsFile in prepared.AssetsFiles)
+					assetsFile.reader.Dispose();
+				foreach (var (_, reader, _) in prepared.ResourceReaders)
+					reader.Dispose();
+				return [];
+			}
+
+			List<SerializedFile> attached = [];
+			foreach (var assetsFile in prepared.AssetsFiles) {
+				AssetsFileList.Add(assetsFile);
+				assetsFileListHash.Add(assetsFile.fileName);
+				assetsFileByName[assetsFile.fileName] = assetsFile;
+				attached.Add(assetsFile);
+			}
+
+			foreach (var (name, reader, replace) in prepared.ResourceReaders) {
+				if (replace)
+					resourceFileReaders[name] = reader;
+				else
+					resourceFileReaders.TryAdd(name, reader);
+			}
+			return attached;
 		}
 	}
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -38,24 +39,38 @@ namespace AssetStudio
             if (encoding?.CodePage == 1200) //Unicode (UTF-16LE)
                 return reader.ReadUnicodeStringToNull(maxLength * 2);
 
-            Span<byte> bytes = stackalloc byte[maxLength];
+            var stream = reader.BaseStream;
+            var length = stream.Length;
+            Span<byte> bytes = stackalloc byte[256];
+            byte[] rented = null;
             var count = 0;
-            while (reader.BaseStream.Position != reader.BaseStream.Length && count < maxLength)
+            while (stream.Position != length && count < maxLength)
             {
                 var b = reader.ReadByte();
                 if (b == 0)
                 {
                     break;
                 }
+                if (count == bytes.Length)
+                {
+                    var grown = ArrayPool<byte>.Shared.Rent(Math.Min(bytes.Length * 2, maxLength));
+                    bytes.CopyTo(grown);
+                    if (rented != null)
+                        ArrayPool<byte>.Shared.Return(rented);
+                    rented = grown;
+                    bytes = grown;
+                }
                 bytes[count] = b;
                 count++;
             }
-            bytes = bytes.Slice(0, count);
 #if NETFRAMEWORK
-            return encoding?.GetString(bytes.ToArray()) ?? Encoding.UTF8.GetString(bytes.ToArray());
+            var result = encoding?.GetString(bytes.Slice(0, count).ToArray()) ?? Encoding.UTF8.GetString(bytes.Slice(0, count).ToArray());
 #else
-            return encoding?.GetString(bytes) ?? Encoding.UTF8.GetString(bytes);
+            var result = encoding?.GetString(bytes.Slice(0, count)) ?? Encoding.UTF8.GetString(bytes.Slice(0, count));
 #endif
+            if (rented != null)
+                ArrayPool<byte>.Shared.Return(rented);
+            return result;
         }
 
         private static string ReadUnicodeStringToNull(this BinaryReader reader, int maxLength)

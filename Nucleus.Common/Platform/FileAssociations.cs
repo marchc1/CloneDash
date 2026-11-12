@@ -19,6 +19,13 @@ public static partial class Platform
 			extension = "." + extension;
 
 		try {
+			// already pointing at us
+			using (var existingExt = Registry.CurrentUser.OpenSubKey($@"Software\Classes\{extension}"))
+			using (var existingCmd = Registry.CurrentUser.OpenSubKey($@"Software\Classes\{progId}\shell\open\command"))
+				if (existingExt?.GetValue("") as string == progId
+					&& existingCmd?.GetValue("") as string == $"\"{appPath}\" \"%1\"")
+					return;
+
 			using (var extKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{extension}"))
 				if (extKey != null)
 					extKey.SetValue("", progId);

@@ -36,7 +36,7 @@ namespace CloneDash.Menu.Character
 		private readonly Image _image;
 		private readonly Label _label;
 
-		public CharacterIconLabel(CharacterSelector parent, string texture) : base(parent) {
+		public CharacterIconLabel(Element parent, string texture) : base(parent) {
 			Size = new Vector2F(Width, Height);
 			Clipping = false;
 

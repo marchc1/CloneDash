@@ -1,9 +1,11 @@
-﻿using AssetStudio;
+using AssetStudio;
 using CloneDash.Common;
+using CloneDash.Common.Compatibility;
 using CloneDash.Common.Game;
 using CloneDash.Common.Gamemodes;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
 using CloneDash.Compatibility.MuseDash;
+using CloneDash.Compatibility.Unity;
 using CloneDash.Game;
 using Nucleus;
 using Nucleus.Commands;
@@ -13,27 +15,28 @@ using Nucleus.Engine;
 using Nucleus.Models.Runtime;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace CloneDash.Characters;
 
 public class MuseDash1CharacterExpression : ICharacterMainMenuExpression
 {
-	private CharacterExpression Expression;
+	private string AnimName;
 	private string Talk;
 	private string AudioName;
 
-	public MuseDash1CharacterExpression(CharacterExpression expression, string talk, string audioName) {
-		Expression = expression;
+	public MuseDash1CharacterExpression(string animName, string talk, string audioName) {
+		AnimName = animName;
 		Talk = talk;
 		AudioName = audioName;
 	}
 
 	string ICharacterMainMenuExpression.GetEndAnimationName() {
-		return $"{Expression.AnimName}_end";
+		return $"{AnimName}_end";
 	}
 
 	string ICharacterMainMenuExpression.GetIdleAnimationName() {
-		return $"{Expression.AnimName}_standby";
+		return $"{AnimName}_standby";
 	}
 
 	void ICharacterMainMenuExpression.GetSpeech(Level level, out string text, out IAudioClip? voice) {
@@ -42,40 +45,57 @@ public class MuseDash1CharacterExpression : ICharacterMainMenuExpression
 	}
 
 	string ICharacterMainMenuExpression.GetStartAnimationName() {
-		return $"{Expression.AnimName}_start";
+		return $"{AnimName}_start";
 	}
 
-	public static MuseDash1CharacterExpression From(CharacterConfigData data) {
-		int i = Random.Shared.Next(0, data.Expressions.Count);
+	// Weighted like ExpressionContainer.RefreshRandom. Weight 0 never plays (the "t" transform voicelines use this)
+	public static MuseDash1CharacterExpression? From(CharacterConfigData data, int form) {
+		var expressions = data.Expressions;
 
-		var expr = data.Expressions[i];
-		var audioNames = expr.AudioNames;
+		double total = 0;
+		foreach (var expr in expressions)
+			if (expr.Weight > 0 && expr.IsAvailableForForm(form))
+				total += expr.Weight;
+
+		if (total <= 0)
+			return null;
+
+		double roll = Random.Shared.NextDouble() * total;
+		int i = -1;
+		for (int j = 0; j < expressions.Count; j++) {
+			var expr = expressions[j];
+			if (expr.Weight <= 0 || !expr.IsAvailableForForm(form)) continue;
+
+			i = j;
+			roll -= expr.Weight;
+			if (roll < 0) break;
+		}
+
+		var picked = expressions[i];
+		var audioNames = picked.AudioNames;
 		var audioI = Random.Shared.Next(0, audioNames.Count);
 
-		return new MuseDash1CharacterExpression(expr, data.Localization["english"].Expressions[i][audioI], audioNames[audioI]);
+		return new MuseDash1CharacterExpression(picked.AnimName, data.Localization[localize.GetCurrentCulture()].Expressions[i][audioI], audioNames[audioI]);
 	}
 }
 
-public class MuseDash1CharacterRetriever : ICharacterProvider
+public class MuseDash1CharacterRetriever() : ModProvider<ICharacterDescriptor>("Muse Dash 1", "musedash1"), ICharacterProvider
 {
-	int ICharacterProvider.Priority => 0;
+	public static string GetID(CharacterConfigData cfd) => cfd.BGM.Replace("_bgm", "");
 
-	public string GetName(CharacterConfigData cfd) => $"character/musedash1/{cfd.BGM.Replace("_bgm", "")}";
-
-	IEnumerable<string> ICharacterProvider.GetAvailable() {
-		foreach (var character in MuseDash1Compatibility.Characters) {
-			yield return GetName(character);
-		}
+	public override IEnumerable<string> GetAvailableIDs() {
+		foreach (var character in MuseDash1Compatibility.Characters)
+			yield return GetID(character);
 	}
 
-	ICharacterDescriptor? ICharacterProvider.FindByName(string name) {
-		if (MuseDash1Compatibility.Characters == null)
+	public override ICharacterDescriptor? FindByID(ReadOnlySpan<char> id) {
+		if (!MuseDash1Compatibility.Initialized)
 			return null;
 
 		foreach (var character in MuseDash1Compatibility.Characters) {
-			if (name != GetName(character)) continue;
+			if (!id.Equals(GetID(character), StringComparison.Ordinal)) continue;
 
-			return new MuseDash1CharacterDescriptor(character, name);
+			return new MuseDash1CharacterDescriptor(character, this);
 		}
 
 		return null;
@@ -83,19 +103,24 @@ public class MuseDash1CharacterRetriever : ICharacterProvider
 }
 
 [Nucleus.MarkForStaticConstruction]
-public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string name) : ICharacterDescriptor
+public class MuseDash1CharacterDescriptor(CharacterConfigData configData, ICloneDashModProvider provider) : ModDescriptor, ICharacterDescriptor
 {
 	internal readonly CharacterConfigData ConfigData = configData;
 
-	public ReadOnlySpan<char> GetUUID() => name;
+	public override string GetID() => MuseDash1CharacterRetriever.GetID(ConfigData);
+	public override ICloneDashModProvider GetProvider() => provider;
 
 	public static ConCommand nextmdchar = new(nameof(nextmdchar), (_, in _) => {
-		var chvar = cvar.FindVar(nameof(CharacterMod.character))!;
+		var store = CharacterMod.Instance;
+		var provider = store.GetProviderByID("musedash1");
+		if (provider == null) return;
+
+		var chvar = CharacterMod.character;
 		var clonedash_character_value = chvar.GetString();
-		ICharacterProvider retriever = new MuseDash1CharacterRetriever();
 		bool next = false;
-		foreach (var character in retriever.GetAvailable()) {
-			if (character == clonedash_character_value) next = true;
+		foreach (var id in provider.GetAvailableIDs()) {
+			var character = store.BuildUID(provider, id);
+			if (clonedash_character_value.Equals(character, StringComparison.Ordinal)) next = true;
 			else if (next) {
 				chvar.SetValue(character);
 				Logs.Info($"Selecting '{character}'");
@@ -105,83 +130,113 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 		Logs.Warn("No more characters available.");
 	});
 
-	static ReadOnlySpan<char> LocalizationLookup(
-		CharacterConfigData configData,
-		in HumanLanguage desiredLanguage,
-		out HumanLanguage returnedLanguage,
-		Func<CharacterLocalizationData, string> fetchLocalization,
-		Func<CharacterConfigData, string> fetchFallback) {
+	public static ConVar md_rinthief = new(nameof(md_rinthief), "0", FCvar.Saved, "Phantom Thief Rin's form", 0, 1);
+	public static ConVar md_bloodheirbig = new(nameof(md_bloodheirbig), "0", FCvar.Saved, "Nocturne Bloodheir Buro's form", 0, 1);
 
-		string? key = desiredLanguage.Culture.TwoLetterISOLanguageName switch {
-			"en" => "english",
-			_ => null
-		};
+	private sealed record CharacterForm(string Standby, string? ExpressingStandby, string ApplyAnimKey, string ApplySoundKey, string? Bgm);
 
-		if (key != null && configData.Localization.TryGetValue(key, out var localization)) {
-			returnedLanguage = desiredLanguage;
-			return fetchLocalization(localization);
+	private bool formsResolved;
+	private CharacterForm[]? forms;
+	private ConVar? formVar;
+
+	private static string mbString(OrderedDictionary mb, string key, string fallback)
+		=> mb[key] is string { Length: > 0 } value ? value : fallback;
+
+	private CharacterForm[]? GetForms() {
+		if (formsResolved)
+			return forms;
+
+		formsResolved = true;
+		var mainShow = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(ConfigData.MainShow);
+		if (mainShow == null)
+			return null;
+
+		var thief = mainShow.GetMonoBehaviorByScriptName("ThiefTransformGenerator")?.ToType();
+		if (thief != null) {
+			var police = mbString(thief, "m_PoliceStandbyAnim", "standby_police");
+			var kaito = mbString(thief, "m_KaitoStandbyAnim", "standby_thief");
+
+			formVar = md_rinthief;
+			forms = [
+				new(police, $"{police}_B", "m_PoliceApplyAnimName", "m_PoliceApplySoundName", null),
+				new(kaito, $"{kaito}_B", "m_ThiefApplyAnimName", "m_ThiefApplySoundName", $"{ConfigData.BGM}_mask"),
+			];
+		}
+		else if (mainShow.GetMonoBehaviorByScriptName("BloodheirTransformGenerator") != null) {
+			formVar = md_bloodheirbig;
+			forms = [
+				new("standby_A", null, "m_SmallApplyAnimName", "m_SmallApplySoundName", null),
+				new("standby_B", null, "m_BigApplyAnimName", "m_BigApplySoundName", null),
+			];
 		}
 
-		if (key != "english" && configData.Localization.TryGetValue("english", out localization)) {
-			returnedLanguage = HumanLanguage.English;
-			return fetchLocalization(localization);
-		}
+		return forms;
+	}
 
-		returnedLanguage = HumanLanguage.Any;
-		return fetchFallback(configData);
+	public int GetForm() => GetForms() == null ? 0 : formVar!.GetBool() ? 2 : 1;
+
+	private CharacterForm? GetActiveForm() {
+		int form = GetForm();
+		return form == 0 ? null : forms![form - 1];
 	}
 
 	// cosplay name and character name clash over returnedLanguage, this should be fixed...
-	public ReadOnlySpan<char> GetName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
-		=> $"{GetCosplayName(desiredLanguage, out returnedLanguage)} {GetCharacterName(desiredLanguage, out returnedLanguage)}";
+	public override string GetName() => $"{GetCosplayName()} {GetCharacterName()}";
+	public ReadOnlySpan<char> GetCosplayName() => ConfigData.CosName;
+	public ReadOnlySpan<char> GetCharacterName() => ConfigData.CharacterName;
+	public ITexture? GetThumbnailTexture() => UnityAssetUtils.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<Texture2D>(ConfigData.Skins.First().HeadName)!);
+	public ReadOnlySpan<char> GetDescription() => ConfigData.Description;
+	public ReadOnlySpan<char> GetAuthor() => ConfigData.Cv;
+	public ReadOnlySpan<char> GetPerk() => ConfigData.Skill;
 
-	public ReadOnlySpan<char> GetCosplayName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
-		=> LocalizationLookup(ConfigData, desiredLanguage, out returnedLanguage, x => x.CosName, x => x.CosName);
+	public ICharacterMainMenuExpression? GetMainShowExpression() => MuseDash1CharacterExpression.From(ConfigData, GetForm());
 
-	public ReadOnlySpan<char> GetCharacterName(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
-		=> LocalizationLookup(ConfigData, desiredLanguage, out returnedLanguage, x => x.CharacterName, x => x.CharacterName);
+	// Thief/Bloodheir/Pirate/Spectre all subclass CharacterApply
+	private static MonoBehaviour? FindCharacterApply(GameObject obj) {
+		foreach (var compPtr in obj.m_Components) {
+			if (!compPtr.TryGet(out var comp)) continue;
+			if (comp is not MonoBehaviour mb) continue;
+			if (!mb.m_Script.TryGet(out var script)) continue;
 
-	public ITexture? GetThumbnailTexture() => MuseDash1Compatibility.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<Texture2D>(ConfigData.Skins.First().HeadName)!);
+			if (script.m_Name.EndsWith("CharacterApply"))
+				return mb;
+		}
 
-	public ReadOnlySpan<char> GetDescription(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
-		=> LocalizationLookup(ConfigData, desiredLanguage, out returnedLanguage, x => x.Description, x => x.Description);
-	public ReadOnlySpan<char> GetAuthor(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
-		=> LocalizationLookup(ConfigData, desiredLanguage, out returnedLanguage, x => x.CV, x => x.Cv);
-	public ReadOnlySpan<char> GetPerk(in HumanLanguage desiredLanguage, out HumanLanguage returnedLanguage)
-		=> LocalizationLookup(ConfigData, desiredLanguage, out returnedLanguage, x => x.Skill, x => x.Skill);
-
-	public ICharacterMainMenuExpression? GetMainShowExpression() {
-		MuseDash1CharacterExpression expression = MuseDash1CharacterExpression.From(ConfigData);
-		return expression;
+		return null;
 	}
 
 	public ICharacterMainMenuExpression? GetMainShowApplyExpression() {
 		// probably need a better way to figure out the folder name
 		var assets = MuseDash1Compatibility.StreamingAssets;
 		var mainShow = assets.FindAssetByName<GameObject>(ConfigData.MainShow);
-		var apply = mainShow?.GetMonoBehaviorByScriptName("CharacterApply")?.ToType();
+		if (mainShow == null) return null;
+
+		var apply = FindCharacterApply(mainShow)?.ToType();
 		if (apply is null) return null;
 
-		var animation = (string)apply["characterAnimation"]!;
-		var voiceline = (string)apply["characterSound"]!;
+		var form = GetActiveForm();
+		string animKey = form?.ApplyAnimKey ?? "characterAnimation";
+		string soundKey = form?.ApplySoundKey ?? "characterSound";
 
-		var exp = ConfigData.Expressions.FindIndex(x => animation.StartsWith(x.AnimName));
-		if (exp == -1)
+		if (apply[animKey] is not string animation || animation.Length == 0)
 			return null;
 
+		if (animation.EndsWith("_start"))
+			animation = animation[..^"_start".Length];
+
 		return new MuseDash1CharacterExpression(
-			ConfigData.Expressions[exp],
+			animation,
 			string.Empty,
-			voiceline
+			(string)apply[soundKey]!
 		);
 	}
 
-	public void ApplyQuirks(ref MuseDash1GameplayQuirks quirks){
-		MuseDash1GameplayQuirks.ApplyCharacterQuirks(name, ref quirks);
+	public void ApplyQuirks(ref MuseDash1GameplayQuirks quirks) {
+		MuseDash1GameplayQuirks.ApplyCharacterQuirks(GetUniqueID(), ref quirks);
 	}
 
 	// I hate this!
-	public static ModelData PullModelDataFromSkeletonMecanim(Level level, MonoBehaviour skeletonMecanim) {
+	public static ModelData PullModelDataFromSkeletonMecanim(Level level, MonoBehaviour skeletonMecanim, bool uploadTextures = true) {
 		var assets = MuseDash1Compatibility.StreamingAssets;
 
 		// This pulls out skeletonDataAsset m_PathID
@@ -222,38 +277,79 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 			i++;
 		}
 
-		return MuseDash1ModelConverter.MD_GetModelData(level, jsonPathID, atlasPathID, textureIDs, materialsIn);
+		return MuseDash1ModelConverter.MD_GetModelData(level, jsonPathID, atlasPathID, textureIDs, materialsIn, uploadTextures);
 	}
 
-	public static ModelData PullModelDataFromGameObject(Level level, ReadOnlySpan<char> name) {
+	public static ModelData PullModelDataFromGameObject(Level level, ReadOnlySpan<char> name, bool uploadTextures = true)
+		=> PullModelDataFromSkeletonMecanim(level, FindSkeletonBehaviour(name)!, uploadTextures);
+
+	public static float GetSkeletonScale(ReadOnlySpan<char> name) {
+		var skeleton = FindSkeletonBehaviour(name);
+		var pointer = skeleton?.ToType()["skeletonDataAsset"] as System.Collections.Specialized.OrderedDictionary;
+		if (skeleton == null || pointer == null)
+			return 1;
+
+		var dataAsset = new PPtr<MonoBehaviour>(Convert.ToInt32(pointer["m_FileID"]), Convert.ToInt64(pointer["m_PathID"]), skeleton.assetsFile);
+		return dataAsset.TryGet(out var asset) && asset.ToType()["scale"] is float scale ? scale : 1;
+	}
+
+	static MonoBehaviour? FindSkeletonBehaviour(ReadOnlySpan<char> name) {
 		var assets = MuseDash1Compatibility.StreamingAssets;
 
 		var mainshowObject = assets.FindAssetByName<GameObject>(name);
-		var skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonMecanim");
-		if (skeletonMecanim == null)
-			skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonAnimation");
-		if (skeletonMecanim == null)
-			skeletonMecanim = mainshowObject!.GetMonoBehaviorByScriptName("SkeletonGraphic");
+		var skeletonMecanim = FindSkeletonOn(mainshowObject!);
 		if (skeletonMecanim == null) {
 			// OK time to go through the depths of hell for a victory model
-			var rectTransform = mainshowObject.GetFirstComponent<RectTransform>()!;
-			rectTransform.m_Children[0].TryGet(out rectTransform!);
-			rectTransform.m_GameObject.TryGet(out mainshowObject);
-			skeletonMecanim = mainshowObject.GetMonoBehaviorByScriptName("SkeletonGraphic");
+			var transform = mainshowObject!.GetFirstComponent<Transform>()!;
+			transform.m_Children[0].TryGet(out transform!);
+			transform.m_GameObject.TryGet(out mainshowObject);
+			skeletonMecanim = FindSkeletonOn(mainshowObject!);
 		}
 
-		return PullModelDataFromSkeletonMecanim(level, skeletonMecanim!);
+		return skeletonMecanim;
 	}
+
+	static MonoBehaviour? FindSkeletonOn(GameObject gameObject)
+		=> gameObject.GetMonoBehaviorByScriptName("SkeletonMecanim")
+		?? gameObject.GetMonoBehaviorByScriptName("SkeletonAnimation")
+		?? gameObject.GetMonoBehaviorByScriptName("SkeletonGraphic");
+
+	public bool GetFailIn() => ConfigData.Skins?.FirstOrDefault()?.FailIn ?? false;
+
+	public float GetFailModelScale() => GetSkeletonScale(ConfigData.FailShow);
+
+	public string? GetFailStandby() => GetStartingAnimation(ConfigData.FailShow);
+
+	public static string? GetStartingAnimation(ReadOnlySpan<char> name) => FindSkeletonBehaviour(name)?.ToType()["startingAnimation"] as string;
+
+	public float GetVictoryModelScale() => GetSkeletonScale(ConfigData.VictoryShow);
 
 	public ModelData GetMainShowModel(Level level) => PullModelDataFromGameObject(level, ConfigData.MainShow);
 
-	public IAudioClip? GetMainShowMusic(Level level) => MuseDash1Compatibility.LoadMusicFromName(level, ConfigData.BGM);
-	public string GetMainShowStandby() => "BgmStandby";
+	public IAudioClip? GetMainShowMusic(Level level) => MuseDash1Compatibility.LoadMusicFromName(level, GetActiveForm()?.Bgm ?? ConfigData.BGM);
+
+	// The looping body animation on the main show.
+	// NOTE: Thief Rin swaps to a _B variant while an expression plays (ThiefCharacterApply.PreCharacterApply)!!!
+	// This probably deserves its own interface to handle main-show behavior separately... kinda getting crowded in here frankly
+	public string GetMainShowStandby(bool expressing = false) {
+		var form = GetActiveForm();
+		if (form == null)
+			return "BgmStandby";
+
+		return expressing && form.ExpressingStandby != null ? form.ExpressingStandby : form.Standby;
+	}
 
 	private static MD1_SpineActionControllerData? black_girl_battle;
 	private MD1_SpineActionControllerData? anims;
 	private MD1_SpineActionControllerData? ghostanims;
-
+	private MuseDash1ComeInMotion? comeInMotion;
+	private bool comeInResolved;
+	private MuseDash1ComeInMotion? ghostComeInMotion;
+	private bool ghostComeInResolved;
+	private MuseDash1GhostMaterial ghostMaterial = MuseDash1GhostMaterial.Default;
+	private MuseDash1GhostMotion? ghostMotion;
+	private string? ghostName;
+	private bool ghostResolved;
 
 	[MemberNotNull(nameof(black_girl_battle))]
 	private static void convertBaseAnimationData() {
@@ -280,10 +376,65 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 		}
 
 		if (ghostanims == null) {
-			var mainshowObject = assets.FindAssetByName<GameObject>(ConfigData.GetBattleShowGhost());
+			var mainshowObject = assets.FindAssetByName<GameObject>(GetPlayGhostName());
 			var actionController = mainshowObject!.GetMonoBehaviorByScriptName("SpineActionController")!;
 			ghostanims = new(new(actionController), black_girl_battle);
 		}
+	}
+
+	private static MuseDash1ComeInMotion? convertComeIn(string name) {
+		var assets = MuseDash1Compatibility.StreamingAssets;
+		var girl = assets.FindAssetByName<GameObject>(name);
+		if (girl == null)
+			return null;
+
+		HashSet<SerializedFile> pinned = [];
+		try {
+			var animator = girl.GetFirstComponent<Animator>();
+			if (animator != null && resolvePinned(name, animator, animator.m_Controller, pinned, out var controller) && controller is AnimatorController animatorController)
+				return MuseDash1ComeInMotion.From(animatorController);
+			return null;
+		}
+		finally {
+			foreach (var file in pinned)
+				assets.Release(file);
+		}
+	}
+
+	private void convertGhost() {
+		if (ghostResolved)
+			return;
+
+		ghostResolved = true;
+		if (ConfigData.BattleShow.Contains(','))
+			return;
+
+		var assets = MuseDash1Compatibility.StreamingAssets;
+		var name = GetPlayGhostName();
+		var ghost = assets.FindAssetByName<GameObject>(name);
+		if (ghost == null)
+			return;
+
+		HashSet<SerializedFile> pinned = [];
+		try {
+			var renderer = ghost.GetFirstComponent<MeshRenderer>();
+			if (renderer != null && renderer.m_Materials.Count > 0 && resolvePinned(name, renderer, renderer.m_Materials[0], pinned, out var material))
+				ghostMaterial = MuseDash1GhostMaterial.From(material);
+
+			var animator = ghost.GetFirstComponent<Animator>();
+			if (animator != null && resolvePinned(name, animator, animator.m_Controller, pinned, out var controller) && controller is AnimatorController animatorController)
+				ghostMotion = new(animatorController);
+		}
+		finally {
+			foreach (var file in pinned)
+				assets.Release(file);
+		}
+	}
+
+	private static bool resolvePinned<T>(string name, AssetStudio.Object owner, PPtr<T> pointer, HashSet<SerializedFile> pinned, out T result) where T : AssetStudio.Object {
+		if (!pointer.TryGet(out result!) && pointer.m_FileID > 0 && pointer.m_FileID <= owner.assetsFile.m_Externals.Count)
+			MuseDash1Compatibility.StreamingAssets.LoadDependenciesContaining(name, new HashSet<string> { Path.GetFileName(owner.assetsFile.m_Externals[pointer.m_FileID - 1].fileName) }, pinned);
+		return pointer.TryGet(out result!);
 	}
 
 	public MD1_SpineActionControllerData GetPlayAnimationData() {
@@ -291,9 +442,47 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 		return anims;
 	}
 
+	public MuseDash1ComeInMotion? GetPlayComeInMotion(bool ghost) {
+		if (!ghost) {
+			if (!comeInResolved) {
+				comeInResolved = true;
+				comeInMotion = convertComeIn(ConfigData.GetBattleShow().ToString());
+			}
+			return comeInMotion;
+		}
+
+		if (!ghostComeInResolved) {
+			ghostComeInResolved = true;
+			if (ConfigData.BattleShow.Contains(','))
+				ghostComeInMotion = convertComeIn(GetPlayGhostName());
+		}
+		return ghostComeInMotion;
+	}
+
 	public MD1_SpineActionControllerData GetPlayGhostAnimationData() {
 		convertAnimations();
 		return ghostanims;
+	}
+
+	public float? GetPlayGhostHeight(CharacterAnimationType animationType, double time) {
+		convertGhost();
+		return ghostMotion?.GetHeight(convertAnimationTypeToName(animationType), time);
+	}
+
+	public MuseDash1GhostMaterial GetPlayGhostMaterial() {
+		convertGhost();
+		return ghostMaterial;
+	}
+
+	private string GetPlayGhostName() {
+		if (ghostName != null)
+			return ghostName;
+
+		if (ConfigData.BattleShow.Contains(','))
+			return ghostName = ConfigData.GetBattleShowGhost().ToString();
+
+		var ghost = $"{ConfigData.GetBattleShow()}_ghost";
+		return ghostName = MuseDash1Compatibility.StreamingAssets.FindAssetByName<GameObject>(ghost) != null ? ghost : ConfigData.GetBattleShow().ToString();
 	}
 
 	public void PlayCharacterAnimation(CharacterAnimationType animationType, MD1_SpineActionController handler) {
@@ -308,6 +497,11 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 
 	private void playCharacterAnimation(CharacterAnimationType animationType, MD1_SpineActionController handler) {
 		string? name = convertAnimationTypeToName(animationType);
+		if (animationType == CharacterAnimationType.Die && !ConfigData.BattleShow.Contains(',')) {
+			handler.Animation.ClearAllAnimation();
+			handler.Animation.SetAnimation(0, ActionKeys.CHAR_DEAD_CLIP, false);
+			return;
+		}
 		handler.PlaySkeletonAction(new() {
 			ActionName = name,
 			CustomCompleteEvent = (a) => {
@@ -352,29 +546,17 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, string
 		return name;
 	}
 
-	public ModelData GetPlayModel(Level level) => PullModelDataFromGameObject(level, ConfigData.GetBattleShow());
-	public ModelData GetPlayGhostModel(Level level) => PullModelDataFromGameObject(level, ConfigData.GetBattleShowGhost());
+	public ModelData GetPlayModel(Level level, bool uploadTextures = true) => PullModelDataFromGameObject(level, ConfigData.GetBattleShow(), uploadTextures);
+	public ModelData GetPlayGhostModel(Level level, bool uploadTextures = true) => PullModelDataFromGameObject(level, GetPlayGhostName(), uploadTextures);
+	public ModelData GetFailModel(Level level) => PullModelDataFromGameObject(level, ConfigData.FailShow);
 	public ModelData GetVictoryModel(Level level) => PullModelDataFromGameObject(level, ConfigData.VictoryShow);
 	public string GetVictoryStandby() => "standby";
-
-	public bool SupportsGamemode(IGamemodeDescriptor gamemodeDescriptor) {
-		return false;
-	}
-
-	public object? GetGamemodeParameters(IGamemodeDescriptor gamemodeDescriptor) {
-		throw new NotImplementedException();
-	}
 
 	public ICharacterMainMenuInstance CreateMainMenu() => new MuseDashCharacterMainMenuInstance(this);
 	public ICharacterVictoryInstance CreateVictory() => new MuseDashCharacterVictoryInstance(this);
 	public ICharacterFailureInstance CreateFailure() => new MuseDashCharacterFailureInstance(this);
 
-	public T? CreateInGame<T>(IGame game) where T : ICharacterInGameInstance {
-		switch (game.GetGamemode().GetUUID()) {
-			case MuseDash1Gamemode.UUID: return (T)(object)(new MuseDash1CharacterInstance(this, (MuseDash1Game)game));
-			case MuseDash1TouhouGamemode.UUID: return (T)(object)(new MuseDash1CharacterInstance(this, (MuseDash1Game)game));
-		}
+	public IGamemodeDescriptor GetGamemode() => ModStores.Get<GamemodeMod>().GetDescriptorByUID(MuseDash1Gamemode.UUID)!;
 
-		return default; // not supported
-	}
+	public Type GetRuntimeType() => typeof(MuseDash1CharacterInstance);
 }

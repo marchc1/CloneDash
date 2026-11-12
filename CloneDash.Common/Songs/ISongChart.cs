@@ -1,4 +1,5 @@
-﻿using CloneDash.Common.Gamemodes;
+﻿using CloneDash.Common.Data;
+using CloneDash.Common.Gamemodes;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Types;
 
@@ -6,11 +7,6 @@ namespace CloneDash.Common.Songs;
 
 public struct SongChartMetadata
 {
-	/// <summary>
-	/// The language this metadata is in
-	/// </summary>
-	public HumanLanguage ReturnedLanguage;
-
 	/// <summary>
 	/// The human-friendly difficulty ID of the chart. For example, Muse Dash has difficulties for "easy", "hard", "master", "hidden", etc.
 	/// </summary>
@@ -49,8 +45,11 @@ public interface ISongChart
 
 	IAudioClip GetAudioTrack();
 
+	ChartTiming GetTiming();
+
 	/// <summary>
-	/// The gamemode this chart targets
+	/// The gamemode this chart targets. An adapter can attempt to convert to a different gamemode;
+	/// this just tells you what the chart was made for
 	/// </summary>
 	IGamemodeDescriptor GetGamemode();
 	/// <summary>
@@ -61,6 +60,6 @@ public interface ISongChart
 	/// <summary>
 	/// Gathers a bunch of chart metadata
 	/// </summary>
-	SongChartMetadata FetchMetadata(HumanLanguage desiredLanguage);
+	SongChartMetadata FetchMetadata();
 	int GetRatingNumber();
 }

@@ -264,19 +264,6 @@ public static class EngineCore
 			OpenGL.Import(Platform.OpenGL_GetProc);
 			gfxHardwareConfig.ConfirmCapabilities();
 
-			// English language
-			Graphics2D.RegisterCodepoints(@"`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:""ZXCVBNM<>?");
-			//Graphics2D.RegisterCodepoints(@"`1234567890");
-
-			// Japanese (hiragana, katakana)
-			Graphics2D.RegisterCodepoints(@"あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ");
-			Graphics2D.RegisterCodepoints(@"アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポ");
-
-			// Some korean
-			Graphics2D.RegisterCodepoints(@"하고는을이다의에지게도한안가나의되사아그수과보있어서것같시으로와더는지기요내나또만주잘어서면때자게해이제여어야전라중좀거그래되것들이에게해요정말");
-
-			Graphics2D.RegisterCodepoints(string.Join("", PanicSystem.ErrorMessages.Keys));
-
 			// Set GameThread_GLReady flag so the main thread can finish its work
 		}
 
@@ -444,7 +431,7 @@ public static class EngineCore
 
 		s.Stop();
 
-		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Aggressive, true);
+		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
 		GC.WaitForPendingFinalizers();
 
 		Logs.Info($"{level.GetType().Name} loaded in {s.Elapsed.TotalSeconds:0.####} seconds");
@@ -480,7 +467,7 @@ public static class EngineCore
 
 		ConsoleSystem.ClearScreenBlockers();
 
-		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced | GCCollectionMode.Aggressive, true);
+		GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
 
 		LoadingLevel = false;
 	}
@@ -653,11 +640,13 @@ public static class EngineCore
 		}
 	}
 
+	static char[]? formattedTextBuffer;
 	private static void PerWindowFrame() {
 		NProfiler.Reset();
 
 		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
 
+		Graphics2D.ClearTransformStack();
 		Rlgl.LoadIdentity();
 		unsafe {
 			var c = Raymath.MatrixToFloatV(Window.ScreenScale);
@@ -698,11 +687,10 @@ public static class EngineCore
 			Span<int> offsets = stackalloc int[msgCount];
 			int found = msgList.GetMessages(offsets, out _);
 
-			Span<char> formatted = stackalloc char[512];
-
 			for (int j = found - 1; j >= 0; j--) {
 				if (!msgList.GetMessageAt(offsets, j, out var cmsg, out var msgText))
 					continue;
+
 
 				int lineCount = 1;
 				for (int ci = 0; ci < msgText.Length; ci++) {
@@ -714,9 +702,16 @@ public static class EngineCore
 						lineCount++;
 				}
 
+				var levelStr = Logs.LevelToConsoleString(cmsg.Level);
+
+				int textLength = 1 + levelStr.Length + 2 + msgText.Length;
+				if (formattedTextBuffer == null || formattedTextBuffer.Length < textLength)
+					formattedTextBuffer = new char[textLength];
+
+				Span<char> formatted = formattedTextBuffer;
+
 				int pos = 0;
 				formatted[pos++] = '[';
-				var levelStr = Logs.LevelToConsoleString(cmsg.Level);
 				levelStr.CopyTo(formatted[pos..]);
 				pos += levelStr.Length;
 				formatted[pos++] = ']';
@@ -861,6 +856,11 @@ public static class EngineCore
 				}
 			}
 			catch (Exception ex) {
+				if (Environment.GetCommandLineArgs().Contains("-nopanic")) {
+					Console.Error.WriteLine($"PANIC: {ex}");
+					Environment.Exit(1);
+				}
+
 				ExceptionDispatchInfo edi = ExceptionDispatchInfo.Capture(ex);
 				if (!PanicSystem.Panic(edi)) {
 					edi.Throw();

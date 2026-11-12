@@ -5,7 +5,7 @@ public interface IUniquelyIdentifiableObject
 	/// <summary>
 	/// Get the unique ID (should be unique across anything, NOT just within the context of the type!)
 	/// </summary>
-	ReadOnlySpan<char> GetUUID();
+	ReadOnlySpan<char> GetUniqueID();
 }
 
 public static class IUniquelyIdentifiableObjectExts
@@ -14,13 +14,13 @@ public static class IUniquelyIdentifiableObjectExts
 		if (obj1 == null) return obj2 == null;
 		if (obj2 == null) return false; // obj1 being not null, but obj2 being null, means no match
 
-		return obj1.GetUUID().Equals(obj2.GetUUID(), StringComparison.Ordinal);
+		return obj1.GetUniqueID().Equals(obj2.GetUniqueID(), StringComparison.Ordinal);
 	}
 
 	public static bool UUIDEquals(this IUniquelyIdentifiableObject? obj1, ReadOnlySpan<char> match) {
 		if (obj1 == null) return match.IsEmpty;
 		if (match.IsEmpty) return false; // obj1 being not null, but obj2 being null, means no match
 
-		return obj1.GetUUID().Equals(match, StringComparison.Ordinal);
+		return obj1.GetUniqueID().Equals(match, StringComparison.Ordinal);
 	}
 }

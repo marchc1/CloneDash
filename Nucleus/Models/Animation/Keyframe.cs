@@ -1,4 +1,5 @@
-﻿using Nucleus.Types;
+﻿using Newtonsoft.Json;
+using Nucleus.Types;
 using System.Runtime.CompilerServices;
 
 namespace Nucleus.Models;
@@ -29,8 +30,17 @@ public interface IKeyframe
 	public void SetValue<T>(T? value);
 }
 
-public class Keyframe<T> : IKeyframe
+public static class KeyframeSettings
 {
+	/// <summary>
+	/// Interpolation to use when none is passed, for stepped playback in the editor
+	/// </summary>
+	[ThreadStatic] public static KeyframeInterpolation? InterpolationOverride;
+}
+
+public struct Keyframe<T>
+{
+	[JsonConstructor]
 	public Keyframe() {
 		Time = 0;
 		Value = default;
@@ -49,9 +59,10 @@ public class Keyframe<T> : IKeyframe
 		Easing = KeyframeEasing.Automatic;
 	}
 
-	public Keyframe<T> Copy(double scale = 1) {
+	public readonly Keyframe<T> Copy(double scale = 1) {
 		Keyframe<T> copy = new Keyframe<T>();
 
+		copy.Id = Id;
 		copy.Time = Time * scale;
 		copy.Value = Value;
 		copy.Interpolation = Interpolation;
@@ -70,6 +81,7 @@ public class Keyframe<T> : IKeyframe
 		return copy;
 	}
 
+	[JsonIgnore] public int Id;
 	public double Time;
 	public T? Value;
 	public KeyframeHandle<T>? LeftHandle;
@@ -77,128 +89,74 @@ public class Keyframe<T> : IKeyframe
 	public KeyframeInterpolation Interpolation;
 	public KeyframeEasing Easing;
 
-	public double GetTime() => Time;
-
-	public object? GetValue() => Value;
-
-	public T2? GetValue<T2>() => Value is T2 tV ? tV : default;
-
-	public Type GetValueType() => typeof(T);
-
-	public void SetTime(double time) => Time = time;
-
-	public void SetValue(object? value) => Value = value is T tV ? tV : (T?)value;
-
-	public void SetValue<T2>(T2? value) => SetValue((object?)value);
-
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-	private static T? LinearInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-		if (typeof(T) == typeof(float))
-			return (T)(object)(float)NMath.Remap(time, ((Keyframe<float>)(object)leftmostOfTime).Time, ((Keyframe<float>)(object)rightmostOfTime).Time, ((Keyframe<float>)(object)leftmostOfTime).Value, ((Keyframe<float>)(object)rightmostOfTime).Value, true);
+	private static T? LinearInterpolator(double time, in Keyframe<T> leftmostOfTime, in Keyframe<T> rightmostOfTime) {
+		if (typeof(T) == typeof(float)) {
+			ref readonly Keyframe<float> left = ref Unsafe.As<Keyframe<T>, Keyframe<float>>(ref Unsafe.AsRef(in leftmostOfTime));
+			ref readonly Keyframe<float> right = ref Unsafe.As<Keyframe<T>, Keyframe<float>>(ref Unsafe.AsRef(in rightmostOfTime));
+			return (T)(object)(float)NMath.Remap(time, left.Time, right.Time, left.Value, right.Value, true);
+		}
 		else
 			return leftmostOfTime.Value;
 	}
 
+	/// <summary>
+	/// Evaluates the bezier segment between two float keyframes at <paramref name="time"/>.
+	/// Handles are absolute, a missing one is a third of the way to the other key.
+	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-	private static float CubicBezierYForX(in Vector2F ip1, in Vector2F ic2, in Vector2F ic3, in Vector2F ip4, float targetX, float epsilon = 1e-5f) {
-		float tLow = 0f;
-		float tHigh = 1f;
+	public static float EvaluateBezier(double time, in Keyframe<float> a, in Keyframe<float> b) {
+		double t0 = a.Time, t1 = b.Time;
+		double dt = t1 - t0;
+		double v0 = a.Value, v1 = b.Value;
+		if (dt <= 0) return b.Value;
 
-		for (int i = 0; i < 17; i++) {
-			float tMid = (tLow + tHigh) * 0.5f;
-			float u = 1 - tMid;
-			float x = u * u * u * 0f + 3f * u * u * tMid * ic2.X + 3f * u * tMid * tMid * ic3.X + tMid * tMid * tMid * 1f;
+		double h1t = a.RightHandle?.Time ?? t0 + dt / 3;
+		double h1v = a.RightHandle?.Value ?? v0 + (v1 - v0) / 3;
+		double h2t = b.LeftHandle?.Time ?? t1 - dt / 3;
+		double h2v = b.LeftHandle?.Value ?? v1 - (v1 - v0) / 3;
 
-			if (x < targetX)
-				tLow = tMid;
+		// Handle times inside the segment keep the curve from looping back in time
+		h1t = Math.Clamp(h1t, t0, t1);
+		h2t = Math.Clamp(h2t, t0, t1);
+
+		double x = Math.Clamp(time, t0, t1);
+		double lo = 0, hi = 1;
+		double s = (x - t0) / dt;
+		for (int i = 0; i < 40; i++) {
+			double u = 1 - s;
+			double bx = u * u * u * t0 + 3 * u * u * s * h1t + 3 * u * s * s * h2t + s * s * s * t1;
+			if (Math.Abs(bx - x) < 1e-12) break;
+			if (bx < x)
+				lo = s;
 			else
-				tHigh = tMid;
+				hi = s;
+
+			double dx = 3 * u * u * (h1t - t0) + 6 * u * s * (h2t - h1t) + 3 * s * s * (t1 - h2t);
+			double next = dx > 1e-12 ? s - (bx - x) / dx : (lo + hi) / 2;
+			s = next > lo && next < hi ? next : (lo + hi) / 2;
 		}
 
-		float t = (tLow + tHigh) * 0.5f;
-		float u2 = 1 - t;
-		return u2 * u2 * u2 * 0f + 3f * u2 * u2 * t * ic2.Y + 3f * u2 * t * t * ic3.Y + t * t * t * 1f;
+		double w = 1 - s;
+		return (float)(w * w * w * v0 + 3 * w * w * s * h1v + 3 * w * s * s * h2v + s * s * s * v1);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveOptimization)] private static Vector2F KeyframeToVector2F(Keyframe<float> kf) => new((float)kf.Time, kf.Value);
-
-	[MethodImpl(MethodImplOptions.AggressiveOptimization)] private static Vector2F KeyframeToVector2F(in KeyframeHandle<float>? kf) => kf.HasValue ? new((float)kf.Value.Time, kf.Value.Value) : Vector2F.Zero;
-
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-	private static T? BezierInterpolator(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-		if (typeof(T) == typeof(float)) {
-			Keyframe<float> kfL = (Keyframe<float>)(object)leftmostOfTime;
-			Keyframe<float> kfR = (Keyframe<float>)(object)rightmostOfTime;
-
-			var factor = CubicBezierYForX(
-					KeyframeToVector2F(kfL),
-					KeyframeToVector2F(in kfL.RightHandle),
-					KeyframeToVector2F(in kfR.LeftHandle),
-					KeyframeToVector2F(kfR),
-					(float)NMath.Remap(time, kfL.Time, kfR.Time, 0, 1, clampOutput: true)
-				);
-
-			return (T)(object)factor;
-		}
+	private static T? BezierInterpolator(double time, in Keyframe<T> leftmostOfTime, in Keyframe<T> rightmostOfTime) {
+		if (typeof(T) == typeof(float))
+			return (T)(object)EvaluateBezier(time, in Unsafe.As<Keyframe<T>, Keyframe<float>>(ref Unsafe.AsRef(in leftmostOfTime)), in Unsafe.As<Keyframe<T>, Keyframe<float>>(ref Unsafe.AsRef(in rightmostOfTime)));
 		else
 			return leftmostOfTime.Value;
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-	private static T? BezierInterpolatorLerped(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-		if (typeof(T) == typeof(float)) {
-			Keyframe<float> kfL = (Keyframe<float>)(object)leftmostOfTime;
-			Keyframe<float> kfR = (Keyframe<float>)(object)rightmostOfTime;
-
-			var factor = CubicBezierYForX(
-					KeyframeToVector2F(kfL),
-					KeyframeToVector2F(in kfL.RightHandle),
-					KeyframeToVector2F(in kfR.LeftHandle),
-					KeyframeToVector2F(kfR),
-					(float)NMath.Remap(time, kfL.Time, kfR.Time, 0, 1, clampOutput: true)
-				);
-
-			factor = NMath.Lerp(factor, kfL.Value, kfR.Value);
-
-			return (T)(object)factor;
-		}
-		else
-			return leftmostOfTime.Value;
-	}
-
-	private static readonly Keyframe<float> DUMMY_LEFT = new();
-	private static readonly Keyframe<float> DUMMY_RIGHT = new();
-
-	public static float GetPercentage(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime) {
-		if (time < leftmostOfTime.Time)
-			return 0;
-
-		if (time > rightmostOfTime.Time)
-			return 1;
-
-		var interpolation = leftmostOfTime.Interpolation;
-		DUMMY_LEFT.SetTime(leftmostOfTime.Time); DUMMY_LEFT.SetValue(0f);
-		DUMMY_RIGHT.SetTime(rightmostOfTime.Time); DUMMY_RIGHT.SetValue(1f);
-		if (typeof(T) == typeof(float)) {
-			DUMMY_LEFT.RightHandle = ((Keyframe<float>)(object)leftmostOfTime).RightHandle;
-			DUMMY_RIGHT.LeftHandle = ((Keyframe<float>)(object)rightmostOfTime).LeftHandle;
-		}
-		switch (interpolation) {
-			case KeyframeInterpolation.Constant: return 0;
-			case KeyframeInterpolation.Linear: return Keyframe<float>.LinearInterpolator(time, DUMMY_LEFT, DUMMY_RIGHT);
-			case KeyframeInterpolation.Bezier: return Keyframe<float>.BezierInterpolator(time, DUMMY_LEFT, DUMMY_RIGHT);
-			default: return 0;
-		}
-	}
-
-	public static T? DetermineValue(double time, Keyframe<T> leftmostOfTime, Keyframe<T> rightmostOfTime, KeyframeInterpolation? interpolationOverride = null) {
+	public static T? DetermineValue(double time, in Keyframe<T> leftmostOfTime, in Keyframe<T> rightmostOfTime, KeyframeInterpolation? interpolationOverride = null) {
 		if (time < leftmostOfTime.Time)
 			return leftmostOfTime.Value;
 
-		if (time > rightmostOfTime.Time)
+		if (time >= rightmostOfTime.Time)
 			return rightmostOfTime.Value;
 
-		var interpolation = interpolationOverride ?? leftmostOfTime.Interpolation;
+		var interpolation = interpolationOverride ?? KeyframeSettings.InterpolationOverride ?? leftmostOfTime.Interpolation;
 		switch (interpolation) {
 			case KeyframeInterpolation.Constant:
 				return leftmostOfTime.Value;
@@ -207,7 +165,7 @@ public class Keyframe<T> : IKeyframe
 				return LinearInterpolator(time, leftmostOfTime, rightmostOfTime);
 
 			case KeyframeInterpolation.Bezier:
-				return BezierInterpolatorLerped(time, leftmostOfTime, rightmostOfTime);
+				return BezierInterpolator(time, leftmostOfTime, rightmostOfTime);
 
 			default: return leftmostOfTime.Value;
 		}

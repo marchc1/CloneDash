@@ -1,6 +1,8 @@
 ﻿using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Common.Gamemodes.MuseDash.V1;
+using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Common.Scenes;
+using CloneDash.Compatibility.MuseDash;
 using CloneDash.Game;
 using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
@@ -11,6 +13,7 @@ namespace CloneDash.Scenes;
 
 public interface IMuseDash1SceneInstance : ISceneInstance
 {
+	void Prepare(MD1_GamemodeData data) { }
 	void Initialize();
 	void Refresh();
 
@@ -21,8 +24,11 @@ public interface IMuseDash1SceneInstance : ISceneInstance
 
 	void Think(double scrollSpeed);
 	void RenderBackground();
-	void RenderPathway(PathwaySide side, float alpha, float size, float rotation);
+	void RenderPathway(PathwayId pathway, float alpha, float size, float rotation);
 	void RenderOverlay();
+
+	bool BeginPathwayHueShift(PathwayId pathway);
+	void EndPathwayHueShift();
 
 	void Activate(IMuseDash1SceneInstance? transitioningTo);
 	void Deactivate(IMuseDash1SceneInstance? transitioningFrom);
@@ -37,20 +43,25 @@ public interface IMuseDash1SceneInstance : ISceneInstance
 	void SetSceneArrayIndex(int idx);
 
 	ModelData? GetEnemyModel(DashEnemy enemy);
+	MuseDash1ParticleEffect? GetEnemyHitEffect(EntityVariant variant, PathwayId pathway);
+	MuseDash1ParticleEffect? GetPressEffect(PathwayId pathway, bool top);
+	void PrepareParticleEffects(PathwayLayout layout) { }
 	ModelData? GetHP(out string? mountAnimation);
 	string? GetMasherHitAnimation(int speed, EntityEnterDirection dir);
-	double GetBossAnimationTime(BossAnimationType type, AnimationHandler anim);
-	double PlayBossAnimation(int channel, BossAnimationType type, AnimationHandler anim);
-	public double PlayBossAnimation(BossAnimationType type, AnimationHandler anim) => PlayBossAnimation(0, type, anim);
-	public double PlayBossAnimation(int channel, DashEnemy fired, AnimationHandler anim) =>
-		fired.Variant == EntityVariant.Boss1
-			? fired.Pathway == PathwaySide.Top ? PlayBossAnimation(BossAnimationType.AttackAir1, anim) : PlayBossAnimation(BossAnimationType.AttackGround1, anim)
-			: fired.Pathway == PathwaySide.Top ? PlayBossAnimation(BossAnimationType.AttackAir2, anim) : PlayBossAnimation(BossAnimationType.AttackGround2, anim);
+	MD1_SpineActionControllerData GetBossActions();
 	string? GetEnemyApproachAnimation(DashEnemy enemy, out double time);
-	ref readonly PathwayInformation GetPathwayInformation(PathwaySide pathway);
+	ref readonly PathwayInformation GetPathwayInformation(PathwayId pathway);
+	ref readonly PathwayInformation GetCenterInformation();
 	string? GetEnemyHitAnimation(DashEnemy enemy, HitAnimationType hitType);
 	BoneInstance? GetHPMount(DashEnemyVisuals enemy);
-	void GetSustainResources(PathwaySide pathway, out ITexture? start, out ITexture? end, out ITexture? body, out ITexture? up, out ITexture? down, out float rotationDegsPerSecond);
-	Color GetPathwayColor(PathwaySide side);
-	Vector2F GetPathwayPosition(PathwaySide side);
+	void GetSustainResources(PathwayId pathway, out ITexture? start, out ITexture? end, out ITexture? body, out ITexture? up, out ITexture? down, out float rotationDegsPerSecond);
+	Color GetPathwayColor(PathwayId pathway);
+	Vector2F GetPathwayPosition(PathwayId pathway);
+	Vector2F GetCenterPosition();
+	Vector2F GetNormalizedPosition(float normalizedY);
+	bool UsesAirAssets(PathwayId pathway);
+	float GetPathwayHueShift(PathwayId pathway);
+	Vector2F GetPathwayRenderOffset(PathwayId pathway);
+	bool IsAirPathway(PathwayId pathway);
+	bool IsAirTarget(PathwaySet pathways);
 }

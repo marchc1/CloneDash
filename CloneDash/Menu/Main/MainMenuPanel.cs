@@ -1,9 +1,9 @@
-﻿using CloneDash.Charts;
-using CloneDash.Common.Songs;
+using CloneDash.Charts;
+using CloneDash.Common.Systems.Discord;
+using CloneDash.Common.UI.Searching;
 using CloneDash.Game;
 using CloneDash.Menu.Character;
-using CloneDash.Menu.Searching;
-using CloneDash.Systems;
+using CloneDash.Menu.Elfin;
 using Nucleus;
 using Nucleus.Common.Types;
 using Nucleus.Extensions;
@@ -11,7 +11,6 @@ using Nucleus.Types;
 using Nucleus.UI;
 using Nucleus.UI.Elements;
 using System.Numerics;
-using static CloneDash.CustomAlbumsCompatibility.CustomAlbums.CustomAlbumsCompatibility;
 
 namespace CloneDash.Menu.Main;
 
@@ -102,7 +101,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 
 		CreateNavigationMenu();
 
-		foreach (var provider in ChartMod.GetAll()) {
+		foreach (var provider in ChartMod.Instance.GetAllProviders()) {
 			if (!provider.IsEnabled())
 				continue;
 
@@ -116,6 +115,11 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		MakeNavigationButton(
 			"Change Character", "Select a character to play as.", 20,
 			"icons/person-simple-run.png", menu => menu.PushActiveElement(new CharacterSelector(Level.Content))
+		);
+
+		MakeNavigationButton(
+			"Change Elfin", "Select an elfin to accompany you.", 300,
+			"icons/star.png", menu => menu.PushActiveElement(new ElfinSelector(Level.Content))
 		);
 
 		// Hidden because there is not really any functional stuff here
@@ -164,6 +168,19 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 			Position = new Vector2F(width * .75f, height / 2f + y * (MainMenuButton.Height + MainMenuButton.Spacing));
 			btn.Origin = Anchor.Center;
 		}
+	}
+
+	public float GetButtonsLeft() {
+		if (!buttons.TryPeek(out List<MainMenuButton>? current) || current.Count == 0)
+			return float.MaxValue;
+
+		float left = float.MaxValue;
+		foreach (MainMenuButton btn in current)
+			left = MathF.Min(left, btn.GetRenderBounds().X - MainMenuButton.HoverOffset);
+		if (back.IsVisible())
+			left = MathF.Min(left, back.GetRenderBounds().X);
+
+		return ToScreenSpace(new Vector2F(left, 0)).X;
 	}
 
 	IMainMenuLevel mainMenu = null!;

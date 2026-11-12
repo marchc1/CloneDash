@@ -77,10 +77,11 @@ public class DeveloperOverlay(Level level)
 			DebugRecords.Write("Collections Gen1", GC.CollectionCount(0));
 			DebugRecords.Write("Collections Gen2", GC.CollectionCount(1));
 			DebugRecords.Write("Collections Gen3", GC.CollectionCount(2));
-			DebugRecords.Write("Size Gen1", GcMemoryInfo.GenerationInfo[0].SizeAfterBytes);
-			DebugRecords.Write("Size Gen2", GcMemoryInfo.GenerationInfo[1].SizeAfterBytes);
-			DebugRecords.Write("Size Gen3", GcMemoryInfo.GenerationInfo[2].SizeAfterBytes);
-			DebugRecords.Write("Finalization Queue", GcMemoryInfo.FinalizationPendingCount);
+			GCMemoryInfo gcMemoryInfo = GcMemoryInfo;
+			DebugRecords.Write("Size Gen1", gcMemoryInfo.GenerationInfo[0].SizeAfterBytes);
+			DebugRecords.Write("Size Gen2", gcMemoryInfo.GenerationInfo[1].SizeAfterBytes);
+			DebugRecords.Write("Size Gen3", gcMemoryInfo.GenerationInfo[2].SizeAfterBytes);
+			DebugRecords.Write("Finalization Queue", gcMemoryInfo.FinalizationPendingCount);
 		}
 		DebugRecords.ExitScope();
 

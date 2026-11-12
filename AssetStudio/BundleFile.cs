@@ -80,7 +80,9 @@ namespace AssetStudio
 
         public List<StreamFile> fileList;
 
-        public BundleFile(FileReader reader, CustomBundleOptions bundleOptions, bool isMultiBundle = false)
+        public IEnumerable<string> DirectoryPaths => m_DirectoryInfo?.Select(node => node.path) ?? [];
+
+        public BundleFile(FileReader reader, CustomBundleOptions bundleOptions, bool isMultiBundle = false, bool directoryOnly = false)
         {
             _bundleOptions = bundleOptions;
             m_Header = new Header();
@@ -130,6 +132,12 @@ namespace AssetStudio
                     
                     ReadBlocksInfoAndDirectory(reader, unityVer);
 
+                    if (directoryOnly)
+                    {
+                        reader.Close();
+                        break;
+                    }
+
                     if (IsUncompressedBundle && !IsDataAfterBundle && !isMultiBundle)
                     {
                         Logger.Debug($"[Uncompressed bundle] BlockData count: {m_BlocksInfo.Length}");
@@ -137,7 +145,7 @@ namespace AssetStudio
                         break;
                     }
                     
-                    ReadFiles(ReadBlocks(reader));
+                    ReadFiles(CreateLazyBlocksStream(reader, isMultiBundle) ?? ReadBlocks(reader));
                     if (!IsDataAfterBundle)
                         reader.Close();
 
@@ -245,7 +253,9 @@ namespace AssetStudio
                 file.fileName = Path.GetFileName(node.path);
                 try
                 {
-                    file.stream = new OffsetStream(inputStream, node.offset + blocksOffset, node.size);
+                    file.stream = inputStream is BlockStream blockStream
+                        ? blockStream.CreateNodeStream(node.offset + blocksOffset, node.size)
+                        : new OffsetStream(inputStream, node.offset + blocksOffset, node.size);
                 }
                 catch (IOException e)
                 {
@@ -402,6 +412,24 @@ namespace AssetStudio
             if ((m_Header.flags & ArchiveFlags.BlockInfoNeedPaddingAtStart) != 0)
             {
                 reader.AlignStream(16);
+            }
+        }
+
+        private BlockStream CreateLazyBlocksStream(FileReader reader, bool isMultiBundle)
+        {
+            if (isMultiBundle || IsDataAfterBundle || _bundleOptions.DecompressToDisk || _bundleOptions.CustomBlockCompression != CompressionType.Auto)
+                return null;
+            if (!m_BlocksInfo.All(x => BlockStream.Supports((CompressionType)(x.flags & StorageBlockFlags.CompressionTypeMask))))
+                return null;
+
+            switch (reader.BaseStream)
+            {
+                case FileStream file:
+                    return new BlockStream(file.Name, file.Position, m_BlocksInfo);
+                case OffsetStream { BaseStream: FileStream file } offsetStream:
+                    return new BlockStream(file.Name, offsetStream.BasePosition, m_BlocksInfo);
+                default:
+                    return null;
             }
         }
 

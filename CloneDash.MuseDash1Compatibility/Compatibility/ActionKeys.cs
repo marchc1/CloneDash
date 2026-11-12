@@ -53,6 +53,7 @@ public struct ActionKeys {
 	public const string JUMP_HURT = "char_jump_hurt";
 	public const string JUMP = "char_jump";
 	public const string CHAR_DEAD = "char_die";
+	public const string CHAR_DEAD_CLIP = "die";
 	public const string PET_SKILL = "servant_skill";
 	public const string OUTSIDE = "outside";
 	public const string JUMP_ATTACK = "char_jumphit";

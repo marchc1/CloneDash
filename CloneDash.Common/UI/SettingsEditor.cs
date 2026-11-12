@@ -1,13 +1,18 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common.Compatibility;
+using CloneDash.Common.Gamemodes;
+using CloneDash.Common.Systems;
+using CloneDash.Common.Systems.Discord;
 using CloneDash.Game;
+using CloneDash.Game.Input;
 using CloneDash.Settings;
-using CloneDash.Systems;
 using Nucleus;
 using Nucleus.Audio;
 using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Input;
+using Nucleus.Common.Types;
 using Nucleus.Core;
+using Nucleus.Engine;
 using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Types;
@@ -51,8 +56,19 @@ public class SettingsCategory(Element? parent) : Button(parent)
 public class SettingsPanel : ScrollPanel
 {
 	public SettingsCategory Category;
+	readonly List<Element> rows = [];
+
 	public SettingsPanel(Element? parent) : base(parent) {
 		SetPaintBorderEnabled(false);
+	}
+
+	public int RowCount => rows.Count;
+
+	public void RemoveRows(int start) {
+		for (int i = rows.Count - 1; i >= start; i--) {
+			rows[i].Remove();
+			rows.RemoveAt(i);
+		}
 	}
 
 	private (Panel Top, Panel Bottom, Label Name, Label Description) buildBackPanel(string nameTxt, string descTxt) {
@@ -62,6 +78,7 @@ public class SettingsPanel : ScrollPanel
 		panel.DynamicallySized = true;
 		panel.Dock = Dock.Top;
 		panel.Size = new(0.08f);
+		rows.Add(panel);
 
 		var top = new Panel(panel);
 		top.DynamicallySized = true;
@@ -105,6 +122,7 @@ public class SettingsPanel : ScrollPanel
 		name.DockMargin = RectangleF.TLRB(16);
 		name.TextOverflowMode = TextOverflowMode.WordWrap;
 		name.TextSize = 20;
+		rows.Add(name);
 		return name;
 	}
 
@@ -128,12 +146,20 @@ public class SettingsPanel : ScrollPanel
 	}
 	public NumSlider PercentageNumber(ConVar cv, string name) => Number(cv, name, "{0:P0}");
 
-	public InputActionKeybindingButtonsPanel InputActionKeybindingButtonsPanel(InputAction action, string name) {
+	public Checkbox Switch(ConVar cv, string name) {
+		var back = buildBackPanel(name, cv.HelpString);
+		var holder = new SettingsSwitch(back.Bottom);
+		holder.Dock = Dock.Fill;
+		holder.Checkbox.BindToConVar(cv);
+		return holder.Checkbox;
+	}
+
+	public InputActionKeybindingButtonsPanel InputActionKeybindingButtonsPanel(string set, InputAction action, Color color, string name) {
 		var back = buildBackPanel(name, "");
 		var buttons = new InputActionKeybindingButtonsPanel(back.Bottom);
 		back.Bottom.Size = new Vector2F(0, 0.13f);
 		buttons.Dock = Dock.Fill;
-		buttons.SetInputAction(action);
+		buttons.SetInputAction(set, action, color);
 		return buttons;
 	}
 }
@@ -234,6 +260,7 @@ public class SettingsEditor : Panel, IMainMenuPanel
 
 		BuildAudioPanel(Category("Audio", "oxygen/preferences-desktop-sound.png"));
 		BuildDisplayPanel(Category("Display", "oxygen/video-display.png"));
+		BuildGameplayPanel(Category("Gameplay", "oxygen/audio-midi.png"));
 		BuildInputPanel(Category("Input", "oxygen/input-keyboard.png"));
 	}
 
@@ -244,6 +271,10 @@ public class SettingsEditor : Panel, IMainMenuPanel
 		panel.PercentageNumber(AudioSettings.snd_hitvolume, "Hit-sound Volume");
 	}
 	private void BuildDisplayPanel(SettingsPanel panel) { }
+	private void BuildGameplayPanel(SettingsPanel panel) {
+		panel.Switch(GameSettings.gp_apindicator, "All Perfect Indicator");
+		panel.Switch(GameSettings.gp_earlylate, "Early/Late Indicator");
+	}
 
 	public void OpenOffsetWizard() {
 		// TODO: Make offset wizard level-agnostic
@@ -305,10 +336,30 @@ public class SettingsEditor : Panel, IMainMenuPanel
 			}
 		};
 
+		var gamemodeRow = panel.Blank("Gamemode", "The gamemode whose keys you're editing.");
+		var gamemodes = new DropdownSelector<IGamemodeDescriptor>(gamemodeRow);
+		gamemodes.Dock = Dock.Fill;
+		gamemodes.OnToString += gamemode => gamemode?.GetName();
+		foreach (var gamemode in ModStores.Get<GamemodeMod>().GetAllDescriptors())
+			if (gamemode.GetInputs().Any())
+				gamemodes.Items.Add(gamemode);
+
 		panel.Label("Left-click an existing key to rebind the key.\nRight-click an existing key to unbind the key.\nUse the Add button to add a new key.");
 
-		var topButtons = panel.InputActionKeybindingButtonsPanel(InputAction.AirAttack, "Top Keys");
-		var bottomButtons = panel.InputActionKeybindingButtonsPanel(InputAction.GroundAttack, "Bottom Keys");
+		int gamemodeRowsStart = panel.RowCount;
+		gamemodes.OnSelectionChanged += (_, _, gamemode) => BuildGamemodeInputs(panel, gamemodeRowsStart, gamemode);
+		gamemodes.Selected = gamemodes.Items.FirstOrDefault();
+		BuildGamemodeInputs(panel, gamemodeRowsStart, gamemodes.Selected);
+	}
+
+	private static void BuildGamemodeInputs(SettingsPanel panel, int start, IGamemodeDescriptor? gamemode) {
+		panel.RemoveRows(start);
+		if (gamemode == null) return;
+
+		foreach (var input in gamemode.GetInputs())
+			panel.InputActionKeybindingButtonsPanel(input.Set, input.Action, input.Color, $"{input.Name} Keys");
+		foreach (var toggle in gamemode.GetInputSwitches())
+			panel.Switch(toggle.ConVar, toggle.Name);
 	}
 
 
@@ -317,9 +368,29 @@ public class SettingsEditor : Panel, IMainMenuPanel
 	public void SetMainMenu(IMainMenuLevel level) => mainMenu = level;
 }
 
+public class SettingsSwitch : Panel
+{
+	public readonly Checkbox Checkbox;
+
+	public SettingsSwitch(Element? parent) : base(parent) {
+		SetPaintBackgroundEnabled(false);
+		SetPaintBorderEnabled(false);
+		Checkbox = new Checkbox(this);
+	}
+
+	protected override void PerformLayout(float width, float height) {
+		base.PerformLayout(width, height);
+		int padding = 4;
+		float side = height - (padding * 2);
+		Checkbox.Position = new(padding, padding);
+		Checkbox.Size = new(side, side);
+	}
+}
+
 public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 {
-	InputAction action = 0;
+	InputAction action;
+	string set = Key.COMMON;
 	readonly List<ButtonCode> keys = [];
 	readonly List<Button> buttons = [];
 
@@ -394,39 +465,40 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 
 	private void AddSubmittedHandler(ButtonCode key) {
 		// Confirm that key isn't bound.
-		if (InputSettings.IsKeyBound(key, out InputAction action)) {
-			Logs.Warn($"Keyboard key {key} is already bound to {action}. TODO: notification");
+		if (Key.GetSet(set).GetCommand(key) is string command) {
+			Logs.Warn($"Keyboard key {key} is already bound to {command}. TODO: notification");
 			return;
 		}
 
-		InputSettings.BindKey(key, this.action);
+		Key.Bind(set, key, action.Command);
 
 		InvalidateKeys();
 	}
 
 	private void EditSubmittedHandler(ButtonCode keyTarget, ButtonCode keyReplace) {
-		if (!InputSettings.IsKeyBound(keyTarget, out _)) {
+		if (Key.GetSet(set).GetCommand(keyTarget) == null) {
 			Logs.Warn($"Keyboard key target {keyTarget} is not bound. TODO: notification");
 			return;
 		}
 
-		if (InputSettings.IsKeyBound(keyReplace, out InputAction action)) {
-			Logs.Warn($"Keyboard key replacement {keyReplace} is already bound to {action}. TODO: notification");
+		if (Key.GetSet(set).GetCommand(keyReplace) is string command) {
+			Logs.Warn($"Keyboard key replacement {keyReplace} is already bound to {command}. TODO: notification");
 			return;
 		}
 
-		InputSettings.RebindKey(keyTarget, keyReplace, this.action);
+		Key.Unbind(set, keyTarget);
+		Key.Bind(set, keyReplace, action.Command);
 
 		InvalidateKeys();
 	}
 
 	private void RemoveSubmittedHandler(ButtonCode key) {
-		if (!InputSettings.IsKeyBound(key, out _)) {
+		if (Key.GetSet(set).GetCommand(key) == null) {
 			Logs.Warn($"Keyboard key target {key} is not bound. TODO: notification");
 			return;
 		}
 
-		InputSettings.UnbindKey(key);
+		Key.Unbind(set, key);
 
 		InvalidateKeys();
 	}
@@ -460,26 +532,17 @@ public class InputActionKeybindingButtonsPanel(Element? parent) : Panel(parent)
 		}
 	}
 
-	public void SetInputAction(InputAction action) {
+	public void SetInputAction(string set, InputAction action, Color color) {
 		this.action = action;
+		this.set = set;
 
-		switch (action) {
-			case InputAction.AirAttack:
-				SetBgColor(PathwayExts.GetColor(PathwaySide.Top).Adjust(0, -0.2, -0.5));
-				SetFgColor(PathwayExts.GetColor(PathwaySide.Top));
-				InvalidateKeys();
-				break;
-			case InputAction.GroundAttack:
-				SetBgColor(PathwayExts.GetColor(PathwaySide.Bottom).Adjust(0, -0.2, -0.5));
-				SetFgColor(PathwayExts.GetColor(PathwaySide.Bottom));
-				InvalidateKeys();
-				break;
-			default: throw new InvalidOperationException($"Unsupported {nameof(InputAction)} provided to {nameof(InputActionKeybindingButtonsPanel)}.{nameof(SetInputAction)}");
-		}
+		SetBgColor(color.Adjust(0, -0.2, -0.5));
+		SetFgColor(color);
+		InvalidateKeys();
 	}
 
 	private void InvalidateKeys() {
-		LoadButtons(InputSettings.GetKeysOfAction(action));
+		LoadButtons(Key.GetSet(set).ButtonsOf(action.Slot));
 	}
 }
 

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\CloneDash.MuseDash1Compatibility\CloneDash.MuseDash1Compatibility.csproj" />
+		<ProjectReference Include="..\CloneDash.CustomAlbumsCompatibility\CloneDash.CustomAlbumsCompatibility.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="NVorbis" Version="0.10.5" />
+	</ItemGroup>
+
+	<Import Project="..\ApplyNucleusAssemblyAttribute.targets" />
+
+	<ItemGroup>
+		<Compile Include="..\GlobalUsings.cs" Link="Usings\Globals\GlobalUsings.cs" />
+	</ItemGroup>
+</Project>

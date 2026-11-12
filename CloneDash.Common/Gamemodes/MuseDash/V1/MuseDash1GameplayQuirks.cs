@@ -45,7 +45,7 @@ public struct MuseDash1GameplayQuirks()
 
 	public int MaxHP = DEFAULT_MAX_HP;
 	public int MaxFever = DEFAULT_MAX_FEVER;
-	public double FeverDuration = 6;
+	public double FeverDuration = 5;
 
 	public bool Autoplay;
 
@@ -78,9 +78,30 @@ public struct MuseDash1GameplayQuirks()
 	/// <summary>
 	/// How long an invincibility frame lasts
 	/// </summary>
-	public double IFrameLength = 1.25;
+	public double IFrameLength = 1.2;
+
+	public bool BloodGivesIFrame;
 
 	public EntityTypeLookupArray<double> ScoreMultipliers = EntityTypeLookupArray.Create<double>(1);
+
+	public float BossAttackScoreRate = 1;
+	public float FeverScoreRate = 1;
+	public float HideNoteRate = 1;
+	public float PerfectScoreExtra = 1;
+	public float ScoreExtraRate = 1;
+
+	public int MusicNoteAddHp;
+	public int PerfectHpRevive;
+
+	public bool HoldMissToGreat;
+	public int MissToGreat;
+	public bool NeonEgg;
+	public int ReviveDeadline;
+	public double ReviveDuration = 15;
+	public float ReviveHeal = 1;
+	public double ReviveIFrame = 2;
+	public double ReviveTick = 0.1;
+	public bool RhythmElfin;
 	/// <summary>
 	/// Not actually used right now, but provided for completions sake
 	/// </summary>
@@ -116,11 +137,7 @@ public struct MuseDash1GameplayQuirks()
 	/// </summary>
 	public int MissComboForgiveness;
 
-	/// <summary>
-	/// Threshold for forgiveness. If accuracy is less than this number, <see cref="ForgivenAccuracy"/> is granted.
-	/// </summary>
-	public double MaximumApplicableResultAccuracy;
-	public double ForgivenAccuracy;
+	public Func<float, float>? AccuracyFunction;
 
 	/// <summary>
 	/// Can forgive up to this many greats (except for sustain beams and mashers)
@@ -242,8 +259,7 @@ public struct MuseDash1GameplayQuirks()
 			// todo
 		});
 		AddCharacterQuirks("character/musedash1/char_1_santa", (ref MuseDash1GameplayQuirks quirks) => {
-			quirks.MaximumApplicableResultAccuracy = 90;
-			quirks.ForgivenAccuracy = 5;
+			quirks.AccuracyFunction = static accuracy => accuracy > .9f ? accuracy * .5f + .5f : accuracy + .05f;
 		});
 		AddCharacterQuirks("character/musedash1/char_2_jk", (ref MuseDash1GameplayQuirks quirks) => {
 			// todo
@@ -367,11 +383,11 @@ public struct MuseDash1GameplayQuirks()
 		// Angela
 		AddElfinQuirks("elfin/musedash1/elfin_angel", (ref MuseDash1GameplayQuirks quirks) => {
 			quirks.DamageModifier += (in state, ref damage) => {
-				damage -= 6;
+				damage = Math.Max(1, Math.Abs(damage - 6));
 			};
 		});
-		AddElfinQuirks("elfin/musedash1/elfin_carrot", (ref MuseDash1GameplayQuirks quirks) => {
-			
+		AddElfinQuirks("elfin/musedash1/elfin_carrot_robot", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.MissToGreat = 5;
 		});
 		// Mio Sir
 		AddElfinQuirks("elfin/musedash1/elfin_cat", (ref MuseDash1GameplayQuirks quirks) => {
@@ -379,40 +395,44 @@ public struct MuseDash1GameplayQuirks()
 		});
 		// Thanatos
 		AddElfinQuirks("elfin/musedash1/elfin_death_god", (ref MuseDash1GameplayQuirks quirks) => {
-
+			quirks.IFrameLength = 2;
+			quirks.BloodGivesIFrame = true;
 		});
 		AddElfinQuirks("elfin/musedash1/elfin_devil", (ref MuseDash1GameplayQuirks quirks) => {
-			
+			quirks.PerfectScoreExtra = 1.05f;
 		});
 		AddElfinQuirks("elfin/musedash1/elfin_doctor", (ref MuseDash1GameplayQuirks quirks) => {
-			
+			quirks.RhythmElfin = true;
 		});
 		AddElfinQuirks("elfin/musedash1/elfin_dragon_girl", (ref MuseDash1GameplayQuirks quirks) => {
-			
+			quirks.BossAttackScoreRate = 1.3f;
 		});
 		AddElfinQuirks("elfin/musedash1/elfin_egg", (ref MuseDash1GameplayQuirks quirks) => {
-			
+			quirks.NeonEgg = true;
 		});
 		AddElfinQuirks("elfin/musedash1/elfin_fan_robot", (ref MuseDash1GameplayQuirks quirks) => {
-			
+			quirks.ReviveDeadline = 50;
 		});
 		AddElfinQuirks("elfin/musedash1/elfin_ghost", (ref MuseDash1GameplayQuirks quirks) => {
 			
 		});
 		AddElfinQuirks("elfin/musedash1/elfin_lin", (ref MuseDash1GameplayQuirks quirks) => {
-			
+			quirks.HoldMissToGreat = true;
 		});
 		AddElfinQuirks("elfin/musedash1/elfin_magic_girl", (ref MuseDash1GameplayQuirks quirks) => {
-			
+			quirks.FeverScoreRate = 1.2f;
 		});
 		AddElfinQuirks("elfin/musedash1/elfin_r6", (ref MuseDash1GameplayQuirks quirks) => {
-			
+			quirks.DamageModifier += (in state, ref damage) => {
+				damage *= 0.5;
+			};
 		});
 		AddElfinQuirks("elfin/musedash1/elfin_saya", (ref MuseDash1GameplayQuirks quirks) => {
-			
+			quirks.PerfectScoreExtra = 1.05f;
 		});
-		AddElfinQuirks("elfin/musedash1/elfin_TV_dog", (ref MuseDash1GameplayQuirks quirks) => {
-			
+		AddElfinQuirks("elfin/musedash1/elfin_tv_dog", (ref MuseDash1GameplayQuirks quirks) => {
+			quirks.PlayableAfterDeath = true;
+			quirks.XpMultiplier += 0.5;
 		});
 	}
 

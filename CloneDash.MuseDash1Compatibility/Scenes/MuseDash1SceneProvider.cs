@@ -1,27 +1,17 @@
-﻿using CloneDash.Common.Scenes;
+using CloneDash.Common.Compatibility;
+using CloneDash.Common.Scenes;
 using CloneDash.Scenes;
-
-using Nucleus.Files;
 
 namespace CloneDash.Characters;
 
-public class MuseDash1SceneProvider : ISceneProvider
+public class MuseDash1SceneProvider() : ModProvider<ISceneDescriptor>("Muse Dash 1", "musedash1"), ISceneProvider
 {
-	int ISceneProvider.Priority => 10000000;
+	public override int GetSortIndex() => 10000000;
 
-	IEnumerable<string> ISceneProvider.GetAvailable() {
+	public override IEnumerable<string> GetAvailableIDs() {
 		foreach (var scene in MuseDash1SceneInfo.GetScenes())
-			yield return "scene/musedash1/" + scene.MapName;
+			yield return scene.MapName;
 	}
 
-	ISceneDescriptor? ISceneProvider.FindByName(ReadOnlySpan<char> name) {
-		if (!name.StartsWith("scene/musedash1/"))
-			return null;
-		Span<Range> pieces = stackalloc Range[10];
-		var parts = name.Split(pieces, '/');
-		MuseDash1SceneDescriptor? descriptor = MuseDash1SceneDescriptor.GetScene(name[pieces[2]]);
-		if (descriptor == null) return null;
-
-		return descriptor;
-	}
+	public override ISceneDescriptor? FindByID(ReadOnlySpan<char> id) => MuseDash1SceneDescriptor.GetScene(this, id);
 }

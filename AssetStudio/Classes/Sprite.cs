@@ -196,7 +196,7 @@ namespace AssetStudio
 		public KeyValuePair<Guid, long> m_RenderDataKey;
 		public string[] m_AtlasTags;
 		public PPtr<SpriteAtlas> m_SpriteAtlas;
-		public SpriteRenderData m_RD;
+		public SpriteRenderData m_RD { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
 		public Vector2[][] m_PhysicsShape;
 
 #nullable enable
@@ -235,7 +235,7 @@ namespace AssetStudio
 				m_SpriteAtlas = new PPtr<SpriteAtlas>(reader);
 			}
 
-			m_RD = new SpriteRenderData(reader);
+			ReadLater(reader, bodyReader => m_RD = new SpriteRenderData(bodyReader));
 			/*
             if (version >= 2017) //2017 and up
             {

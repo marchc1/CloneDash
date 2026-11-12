@@ -73,6 +73,8 @@ public class ScrollPanel : Panel
 	public virtual bool ShouldItemBeVisible(Element e) {
 		return true;
 	}
+	
+	protected virtual bool FiltersItems => false;
 	protected override void OnThink() {
 		base.OnThink();
 
@@ -98,11 +100,12 @@ public class ScrollPanel : Panel
 		VerticalScrollbar.Update(GetAddParent().GetSizeOfAllChildren(), GetAddParent().GetRenderBounds().Size);
 		HorizontalScrollbar.Update(GetAddParent().GetSizeOfAllChildren(), GetAddParent().GetRenderBounds().Size);
 
-		foreach (Element child in MainPanel.Children)
-			child.SetVisible(ShouldItemBeVisible(child));
+		if (FiltersItems)
+			foreach (Element child in MainPanel.Children)
+				child.SetVisible(ShouldItemBeVisible(child));
 
 		MainPanel.
-		ChildRenderOffset = new Vector2F(HorizontalScrollbar.Scroll, -VerticalScrollbar.Scroll).Round();
+		ChildRenderOffset = new Vector2F(-HorizontalScrollbar.Scroll, -VerticalScrollbar.Scroll).Round();
 	}
 	protected override void PostLayoutChild(Element element) {
 

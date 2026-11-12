@@ -16,5 +16,13 @@ public enum KeyframeProperty {
 	Slot_Attachment,
 	Slot_Color,
 
-	Model_DrawOrder
+	Model_DrawOrder,
+
+	Event,
+	Deform,
+	Ik_Constraint,
+	Transform_Constraint,
+	Path_Position,
+	Path_Spacing,
+	Path_Mix
 }

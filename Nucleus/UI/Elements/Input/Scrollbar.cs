@@ -1,4 +1,5 @@
 ﻿using Nucleus.Common.Graphics;
+using Nucleus.Common.Input;
 using Nucleus.Core;
 using Nucleus.Types;
 namespace Nucleus.UI.Elements;
@@ -42,40 +43,40 @@ public class Scrollbar : Panel
 			SetPaintBorderEnabled(false);
 			BorderSize = 0;
 		}
-		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
-			// Remap the new mouse pos
-			var map = state.Mouse.MousePos - self.GetGlobalPosition();
-			//Console.WriteLine(map);
-			var newScroll = (float)NMath.Remap(
-				scrollbar.Alignment == ScrollbarAlignment.Horizontal ? map.X : map.Y,
-				0, scrollbar.Alignment == ScrollbarAlignment.Horizontal ? self.GetRenderBounds().W : self.GetRenderBounds().H,
-				0, scrollbar.MaxScroll
-				);
+		bool Vertical => scrollbar.Alignment == ScrollbarAlignment.Vertical;
+		float Axis(Vector2F v) => Vertical ? v.Y : v.X;
+		float TrackLength => Vertical ? GetRenderBounds().H : GetRenderBounds().W;
+		float ThumbLength => MathF.Min(TrackLength, MathF.Max(16, TrackLength / MathF.Max(1, scrollbar.GetOverflow())));
+		float ThumbStart => scrollbar.MaxScroll <= 0 ? 0 : scrollbar.Scroll / scrollbar.MaxScroll * (TrackLength - ThumbLength);
 
-			scrollbar.Scroll = newScroll;
+		float grabOffset;
+		protected override bool MouseClick(FrameState state, ButtonCode button) {
+			base.MouseClick(state, button);
+			float m = Axis(GetMousePos());
+			bool onThumb = m >= ThumbStart && m <= ThumbStart + ThumbLength;
+			grabOffset = onThumb ? m - ThumbStart : ThumbLength / 2;
+			if (!onThumb)
+				ScrollToThumbAt(m);
 			return true;
+		}
+		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
+			ScrollToThumbAt(Axis(GetMousePos()));
+			return true;
+		}
+		void ScrollToThumbAt(float mouseAxis) {
+			float travel = TrackLength - ThumbLength;
+			scrollbar.Scroll = travel <= 0 ? 0 : (mouseAxis - grabOffset) / travel * scrollbar.MaxScroll;
 		}
 		public override void Paint(float width, float height) {
 			var fore = MixColorBasedOnMouseState(this, GetTextColor(), new(0, 1f, 1.22f, 1f), new(0, 1f, 0.6f, 1f));
 			var gripThickness = 4;
 			Graphics2D.SetDrawColor(fore, 200);
 
-			var gripMinSize = 16;
-			var gripSize = Math.Max((scrollbar.Alignment == ScrollbarAlignment.Vertical ? height : width) / scrollbar.GetOverflow(), gripMinSize);
-
-			// Scrollbar height calculation
-			if (scrollbar.Alignment == ScrollbarAlignment.Vertical)
-				Graphics2D.DrawRectangle(
-					(width / 2) - (gripThickness / 2),
-					(float)NMath.Remap(scrollbar.Scroll, 0, scrollbar.MaxScroll, 0, height - (height / scrollbar.GetOverflow())),
-					gripThickness,
-					gripSize);
+			float inset = GetContentInset();
+			if (Vertical)
+				Graphics2D.DrawRectangle((width / 2) - (gripThickness / 2), ThumbStart - inset, gripThickness, ThumbLength);
 			else
-				Graphics2D.DrawRectangle(
-					(float)NMath.Remap(scrollbar.Scroll, 0, scrollbar.MaxScroll, 0, width - (width / scrollbar.GetOverflow())),
-					(height / 2) - (gripThickness / 2),
-					gripSize,
-					gripThickness);
+				Graphics2D.DrawRectangle(ThumbStart - inset, (height / 2) - (gripThickness / 2), ThumbLength, gripThickness);
 		}
 	}
 	public float ScrollbarSize { get; set; } = 8;
@@ -95,9 +96,11 @@ public class Scrollbar : Panel
 	public float Scroll {
 		get => _scroll;
 		set {
-			_scroll = value;
-			OnScrolled?.Invoke(value);
-			ValidateScroll();
+			float v = Math.Clamp(value, 0, MaxScroll);
+			if (v == _scroll)
+				return;
+			_scroll = v;
+			OnScrolled?.Invoke(v);
 		}
 	}
 
@@ -121,12 +124,12 @@ public class Scrollbar : Panel
 	}
 	protected override void PerformLayout(float width, float height) {
 		if (Alignment == ScrollbarAlignment.Vertical) {
-			Up.			Dock = Dock.Top;
-			Down.			Dock = Dock.Bottom;
+			Up.Dock = Dock.Top;
+			Down.Dock = Dock.Bottom;
 		}
 		else {
-			Up.			Dock = Dock.Left;
-			Down.			Dock = Dock.Right;
+			Up.Dock = Dock.Left;
+			Down.Dock = Dock.Right;
 		}
 	}
 	public Scrollbar(Element? parent) : base(parent) {
@@ -136,21 +139,23 @@ public class Scrollbar : Panel
 		Down = new ScrollbarButton(this);
 		Grip = new ScrollbarGrip(this);
 
-		Up.
-		Size = new(18, 18);
-		Down.		Size = new(18, 18);
+		Up.	Size = new(18, 18);
+		Down.Size = new(18, 18);
 
-		Up.
-		Dock = Dock.Top;
-		Down.		Dock = Dock.Bottom;
-		Grip.		Dock = Dock.Fill;
+		Up.Dock = Dock.Top;
+		Down.Dock = Dock.Bottom;
+		Grip.Dock = Dock.Fill;
+
+		Up.OnButtonClick += (_, _) => Scroll -= ScrollDelta;
+		Down.OnButtonClick += (_, _) => Scroll += ScrollDelta;
 
 		SetVisible(false);
 		SetPaintBackgroundEnabled(false);
 	}
 
 	internal bool MouseScrolled(Element self, FrameState state, Vector2F delta) {
-		Scroll += delta.Y * -ScrollDelta;
+		float d = Alignment == ScrollbarAlignment.Horizontal ? (delta.X != 0 ? delta.X : delta.Y) : delta.Y;
+		Scroll += d * -ScrollDelta;
 		return true;
 	}
 	protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) => MouseScrolled(self, state, delta);
@@ -164,7 +169,7 @@ public class Scrollbar : Panel
 		PageContents = contents;
 		PageSize = size;
 
-		var overflowing = contents.Y - size.Y;
+		var overflowing = Alignment == ScrollbarAlignment.Horizontal ? contents.X - size.X : contents.Y - size.Y;
 		if (Scroll > overflowing && Scroll > 0) {
 			Scroll = Math.Max(0, overflowing);
 		}

@@ -1,12 +1,10 @@
-﻿using FftSharp.Windows;
-using Nucleus.Common.Graphics;
+﻿using Nucleus.Common.Graphics;
 using Nucleus.Common.Input;
 using Nucleus.Common.Types;
 using Nucleus.Core;
 using Nucleus.Extensions;
 using Nucleus.Types;
 using Nucleus.UI;
-using System.Diagnostics;
 
 
 namespace Nucleus.ModelEditor.UI;
@@ -30,7 +28,7 @@ public abstract class BaseTimelineView : View
 	public float ScrollOffset {
 		get => scrollOffset;
 		set {
-			scrollOffset = Math.Max(0, value);
+			scrollOffset = Math.Clamp(value, 0, MaxScrollOffset);
 			TimeInfoPanel.InvalidateLayout();
 			OnZoomsChanged();
 		}
@@ -41,13 +39,16 @@ public abstract class BaseTimelineView : View
 	public double Zoom {
 		get => zoom;
 		set {
-			zoom = Math.Clamp(value, MinZoom, MaxZoom);
+			zoom = Math.Clamp(value, MinZoom, ZoomLimit);
 			TimeInfoPanel.InvalidateLayout();
 			OnZoomsChanged();
 
 			ZoomSlider.SetValueNoUpdate(zoom);
 		}
 	}
+
+	protected virtual float MaxScrollOffset => float.MaxValue;
+	protected virtual double ZoomLimit => MaxZoom;
 
 	protected virtual void OnZoomsChanged() {
 
@@ -62,45 +63,26 @@ public abstract class BaseTimelineView : View
 	public FlexPanel Buttons;
 	protected TimelineTimeInfoPanel TimeInfoPanel;
 	protected TimelineKeyframeOverlay KeyframeOverlay;
-	public Panel KeyframeChannelsPanel;
 	public NumSlider ZoomSlider;
+	protected Panel BottomPanel;
 
 	public abstract bool LockDragDirection { get; }
-	// TODO (for consideration): Should this just be default Nucleus
-	// functionality?
-	public void ClipChildrenVisibility(Element parentOfALotOfChildren) {
-		var selfH = GetRenderBounds().H;
-		foreach (var child in parentOfALotOfChildren.GetChildren()) {
-			child.SetVisible(
-				// Check if it's overflowing the top...
-				child.GetRenderBounds().Y > (ScrollOffset - child.GetRenderBounds().H) &&
-				// ... and then the bottom
-				child.GetRenderBounds().Y < (ScrollOffset + selfH)
-			);
-		}
-	}
-	protected override void OnThink() {
-		base.OnThink();
-		KeyframeChannelsPanel.		ChildRenderOffset = new(0, -ScrollOffset);
-		ClipChildrenVisibility(KeyframeChannelsPanel);
-		CheckIfNewChannels();
-	}
 
 	private void SetupButton(Button button, bool smallVertical, bool leftPad, bool rightPad) {
-		button.		Text = "";
+		button.Text = "";
 		button.BorderSize = 1;
 
 		var hP = 3;
 		var vY = smallVertical ? 8 : 4;
-		button.		DockMargin = RectangleF.TLRB(vY, leftPad ? hP : 0, rightPad ? hP : 0, vY);
+		button.DockMargin = RectangleF.TLRB(vY, leftPad ? hP : 0, rightPad ? hP : 0, vY);
 	}
 
 	protected static Nucleus.UI.Elements.Image SetButtonImage(Button button, ITexture texture) {
 		var img = new Nucleus.UI.Elements.Image(button);
-		img.		Texture = texture;
-		img.		ImageOrientation = ImageOrientation.Fit;
+		img.Texture = texture;
+		img.ImageOrientation = ImageOrientation.Fit;
 		img.SetPassthru(true);
-		img.		Dock = Dock.Fill;
+		img.Dock = Dock.Fill;
 		return img;
 	}
 	protected virtual void PaintTimeOverlay(float width, float height) {
@@ -118,70 +100,61 @@ public abstract class BaseTimelineView : View
 		SetBgColor(GetBgColor().Adjust(0, -.4, 2));
 		// Create the initial panels
 		TopButtonPanel = new(this);
-		TopButtonPanel.		Dock = Dock.Top;
-		TopButtonPanel.		Size = new(44);
-		TopButtonPanel.		DockMargin = RectangleF.TLRB(6);
+		TopButtonPanel.Dock = Dock.Top;
+		TopButtonPanel.Size = new(44);
+		TopButtonPanel.DockMargin = RectangleF.TLRB(6);
 		TopButtonPanel.SetPaintBackgroundEnabled(false);
-		TopButtonPanel.		DockPadding = RectangleF.Zero;
+		TopButtonPanel.DockPadding = RectangleF.Zero;
 
-		Panel bottomPanel = new(this);
-		bottomPanel.		Dock = Dock.Bottom;
-		bottomPanel.		Size = new(16);
-		bottomPanel.		DockMargin = RectangleF.TLRB(0);
-		bottomPanel.BorderSize = 0;
-		bottomPanel.SetPaintBackgroundEnabled(true);
-		bottomPanel.		DockPadding = RectangleF.Zero;
+		BottomPanel = new(this);
+		BottomPanel.Dock = Dock.Bottom;
+		BottomPanel.Size = new(26);
+		BottomPanel.DockMargin = RectangleF.TLRB(0);
+		BottomPanel.BorderSize = 0;
+		BottomPanel.SetPaintBackgroundEnabled(true);
+		BottomPanel.DockPadding = RectangleF.Zero;
 
-		ZoomSlider = new(bottomPanel);
+		ZoomSlider = new(BottomPanel);
 		ZoomSlider.MinimumValue = MinZoom;
 		ZoomSlider.MaximumValue = MaxZoom;
 		ZoomSlider.Value = Zoom;
 		ZoomSlider.SetTextColor(Color.Blank);
-		ZoomSlider.		Dock = Dock.Left;
-		ZoomSlider.		Size = new(230);
+		ZoomSlider.Dock = Dock.Left;
+		ZoomSlider.Size = new(230);
 		ZoomSlider.SetBgColor(new Color(1, 3, 5));
 		ZoomSlider.OnValueChanged += (_, _, v) => {
 			var oob = FrameOutOfBounds(GetCurFrame());
-			var xpos = oob ? TimeInfoPanel.GetRenderBounds().W / 2 : FrameToX(GetCurFrame());
-			var centerXBefore = XToFrameExact(xpos);
-			Zoom = v;
-			var centerXAfter = XToFrameExact(xpos);
-			var deltaFrame = centerXAfter - centerXBefore;
-			var frameScaling = centerXAfter / centerXBefore;
-			Console.WriteLine($"{xpos}, {deltaFrame}");
-
-			if (FrameOffset > 0) {
-				FrameOffset = (FrameOffset - deltaFrame) / frameScaling;
-			}
+			ZoomAround(v, oob ? TimeInfoPanel.GetRenderBounds().W / 2 : FrameToX(GetCurFrame()));
 		};
 
+		var zoomKeys = new Button(BottomPanel);
+		zoomKeys.Dock = Dock.Left;
+		zoomKeys.Size = new(110);
+		zoomKeys.Text = "Zoom Keys";
+		zoomKeys.TextSize = 18;
+		zoomKeys.BorderSize = 0;
+		zoomKeys.TooltipText = "Zoom so every key is visible";
+		zoomKeys.OnButtonClick += (_, _) => ZoomKeys();
+
 		ButtonsAndNames = new(this);
-		ButtonsAndNames.		Dock = Dock.Left;
-		ButtonsAndNames.		Size = new(230);
-		ButtonsAndNames.		DockMargin = RectangleF.TLRB(0);
-		ButtonsAndNames.		DockPadding = RectangleF.Zero;
+		ButtonsAndNames.Dock = Dock.Left;
+		ButtonsAndNames.Size = new(230);
+		ButtonsAndNames.DockMargin = RectangleF.TLRB(0);
+		ButtonsAndNames.DockPadding = RectangleF.Zero;
 		ButtonsAndNames.BorderSize = 0;
 		ButtonsAndNames.SetPaintBorderEnabled(false);
 		ButtonsAndNames.SetPaintBackgroundEnabled(false);
 
 		Buttons = new(ButtonsAndNames);
-		Buttons.		Dock = Dock.Top;
-		Buttons.		Size = new(36);
-		Buttons.		DockMargin = RectangleF.TLRB(0);
-		Buttons.		DockPadding = RectangleF.Zero;
+		Buttons.Dock = Dock.Top;
+		Buttons.Size = new(36);
+		Buttons.DockMargin = RectangleF.TLRB(0);
+		Buttons.DockPadding = RectangleF.Zero;
 		Buttons.BorderSize = 0;
 		Buttons.SetPaintBorderEnabled(false);
 		Buttons.SetPaintBackgroundEnabled(false);
 		Buttons.Direction = Axis.Horizontal;
 		Buttons.ChildrenResizingMode = FlexChildrenResizingMode.StretchToFit;
-
-		KeyframeChannelsPanel = new(ButtonsAndNames);
-		KeyframeChannelsPanel.		Dock = Dock.Fill;
-		KeyframeChannelsPanel.		DockMargin = RectangleF.TLRB(0);
-		KeyframeChannelsPanel.		DockPadding = RectangleF.Zero;
-		KeyframeChannelsPanel.BorderSize = 0;
-		KeyframeChannelsPanel.SetPaintBorderEnabled(false);
-		KeyframeChannelsPanel.SetPaintBackgroundEnabled(false);
 
 		// Setup buttons
 		{
@@ -214,6 +187,15 @@ public abstract class BaseTimelineView : View
 				s.SetBgColor(timeline.PlayingForwards ? Color.SkyBlue : GetScheme()?.GetColor("Nucleus.Background") ?? DefaultBackgroundColor);
 			};
 
+			jumpStart.OnButtonClick += (_, _) => ModelEditor.Active.JumpToStart();
+			jumpPrevious.OnButtonClick += (_, _) => ModelEditor.Active.JumpKey(-1);
+			jumpNext.OnButtonClick += (_, _) => ModelEditor.Active.JumpKey(1);
+			jumpEnd.OnButtonClick += (_, _) => ModelEditor.Active.JumpToEnd();
+
+			loop.Thinking +=(s) => s.SetBgColor(ModelEditor.Active.File.Timeline.Repeat ? Color.SkyBlue
+				: GetScheme()?.GetColor("Nucleus.Background") ?? DefaultBackgroundColor);
+			loop.OnButtonClick += (_, _) => ModelEditor.Active.File.Timeline.Repeat = !ModelEditor.Active.File.Timeline.Repeat;
+
 			playBackward.OnButtonClick += (_, _) => {
 				var timeline = ModelEditor.Active.File.Timeline;
 				timeline.TogglePlayBackwards();
@@ -226,22 +208,28 @@ public abstract class BaseTimelineView : View
 		}
 
 		TimeInfoPanel = new(this);
-		TimeInfoPanel.		Dock = Dock.Top;
-		TimeInfoPanel.		Size = new(36);
-		TimeInfoPanel.		DockMargin = RectangleF.TLRB(0);
-		TimeInfoPanel.		DockPadding = RectangleF.Zero;
+		TimeInfoPanel.Dock = Dock.Top;
+		TimeInfoPanel.Size = new(36);
+		TimeInfoPanel.DockMargin = RectangleF.TLRB(0);
+		TimeInfoPanel.DockPadding = RectangleF.Zero;
 		TimeInfoPanel.BorderSize = 0;
 		TimeInfoPanel.SetPaintBorderEnabled(false);
 		TimeInfoPanel.SetPaintBackgroundEnabled(false);
 
 		KeyframeOverlay = new(this);
 		KeyframeOverlay.SetPassthru(true);
-		KeyframeOverlay.		Dock = Dock.Fill;
-		KeyframeOverlay.		DockMargin = RectangleF.TLRB(0);
-		KeyframeOverlay.		DockPadding = RectangleF.Zero;
+		KeyframeOverlay.Dock = Dock.Fill;
+		KeyframeOverlay.DockMargin = RectangleF.TLRB(0);
+		KeyframeOverlay.DockPadding = RectangleF.Zero;
 		KeyframeOverlay.BorderSize = 0;
 		KeyframeOverlay.SetPaintBorderEnabled(false);
 		KeyframeOverlay.SetPaintBackgroundEnabled(false);
+	}
+
+	public void ZoomAround(double newZoom, double x) {
+		var before = XToFrameExact(x);
+		Zoom = newZoom;
+		FrameOffset = defaultXOffset + before * Zoom - x;
 	}
 
 	protected class TimelineTimeInfoPanel(BaseTimelineView timeline) : Panel(timeline)
@@ -251,7 +239,7 @@ public abstract class BaseTimelineView : View
 			timeline.DraggingFrame = button == ButtonCode.Mouse1;
 
 			if (timeline.DraggingFrame)
-				timeline.SetCurFrame();
+				timeline.SetCurFrame(true);
 			return true;
 		}
 		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
@@ -263,6 +251,10 @@ public abstract class BaseTimelineView : View
 		protected override bool MouseRelease(Element self, FrameState state, ButtonCode button) {
 			timeline.ResetDragDirection(false, Vector2F.Zero);
 			timeline.DraggingFrame = false;
+			return true;
+		}
+		protected override bool MouseScroll(Element self, FrameState state, Vector2F delta) {
+			timeline.ZoomAround(timeline.Zoom * Math.Pow(1.15, delta.Y), GetMousePos().X);
 			return true;
 		}
 		public override void Paint(float width, float height) {
@@ -311,6 +303,8 @@ public abstract class BaseTimelineView : View
 				}
 			}
 
+			timeline.PaintTimeOverlay(width, height);
+
 			var textX = (float)Math.Clamp(curframeX, 10, width - 10);
 
 			Graphics2D.SetDrawColor(FrameMarkerColor);
@@ -323,18 +317,16 @@ public abstract class BaseTimelineView : View
 			if (!oob)
 				Graphics2D.DrawTriangle(new(curframeX, height / 1.4f), new(curframeX + tX, height / 2), new(curframeX - tX, height / 2));
 
-			timeline.PaintTimeOverlay(width, height);
 			timeline.drawGradient(height);
 		}
 	}
 	protected class TimelineKeyframeOverlay(BaseTimelineView timeline) : Panel(timeline)
 	{
 		public override void Paint(float width, float height) {
-			var tl = ModelEditor.Active.File.Timeline;
-			var xstart = timeline.defaultXOffset - timeline.FrameOffset;
-
 			timeline.SetBgColor(new Color(13, 16, 20));
 			timeline.BorderSize = 0;
+
+			timeline.PaintPanelOverlay(width, height);
 
 			var curframe = timeline.GetCurFrame();
 			float curframeX = (float)timeline.FrameToX(curframe);
@@ -342,34 +334,29 @@ public abstract class BaseTimelineView : View
 			Graphics2D.SetDrawColor(FrameMarkerColor);
 			Graphics2D.DrawLine(curframeX, 0, curframeX, height);
 
-			timeline.PaintPanelOverlay(width, height);
 			timeline.drawGradient(height);
 		}
 	}
 
-	private Button lastButton;
-	private float divisionSpace = 0;
-
 	public Button AddTopButton(string icon) {
 		Button button = new(TopButtonPanel);
-		button.		Dock = Dock.Left;
-		button.		Size = new(32);
-		button.		DockMargin = RectangleF.TLRB(2, 0, 0, 2);
-		button.		Text = "";
+		button.Dock = Dock.Left;
+		button.Size = new(32);
+		button.DockMargin = RectangleF.TLRB(2, 0, 0, 2);
+		button.Text = "";
 		var img = SetButtonImage(button, textures.LoadTextureFromFile(icon));
-		img.		ImageOrientation = ImageOrientation.Zoom;
-		img.		ImagePadding = new(4);
+		img.ImageOrientation = ImageOrientation.Zoom;
+		img.ImagePadding = new(4);
 		button.BorderSize = 1;
 
-		lastButton = button;
 		return button;
 	}
 
 	public void AddTopSpace(float width = 32) {
 		Panel panel = new(TopButtonPanel);
-		panel.		Dock = Dock.Left;
-		panel.		DockMargin = RectangleF.Zero;
-		panel.		Size = new(width);
+		panel.Dock = Dock.Left;
+		panel.DockMargin = RectangleF.Zero;
+		panel.Size = new(width);
 		panel.SetVisible(false);
 	}
 
@@ -432,21 +419,44 @@ public abstract class BaseTimelineView : View
 		}
 	}
 	public double GetCurFrame() => ModelEditor.Active.File.Timeline.GetVisualPlayhead(true);
-	public void SetCurFrame() {
+	public void ZoomKeys() {
+		var animation = ModelEditor.Active.File.ActiveAnimation;
+		if (animation == null) return;
+		double first = double.MaxValue, last = double.MinValue;
+		foreach (var timeline in animation.Timelines) {
+			foreach (var time in timeline.GetKeyframeTimes()) {
+				first = Math.Min(first, time);
+				last = Math.Max(last, time);
+			}
+		}
+		if (first > last) return;
+
+		const float MARGIN = 24;
+		double fps = ModelEditor.Active.File.Timeline.GetReferenceFPS();
+		double width = TimeInfoPanel.GetRenderBounds().W - defaultXOffset - MARGIN * 2;
+		Zoom = width / Math.Max((last - first) * fps, 1);
+		FrameOffset = first * fps * Zoom - MARGIN;
+	}
+
+	bool scrubStartedBeforeEnd;
+	public void SetCurFrame(bool startingScrub = false) {
 		var xLocal = TimeInfoPanel.GetMousePos();
 		var precise = EngineCore.Level.FrameState.Keyboard.ShiftDown;
-		ModelEditor.Active.File.Timeline.SetFrame(precise ? XToFrameExact(xLocal.X) : XToFrame(xLocal.X));
+		var manager = ModelEditor.Active.File.Timeline;
+		double frame = precise ? XToFrameExact(xLocal.X) : XToFrame(xLocal.X);
+		double end = (ModelEditor.Active.File.ActiveAnimation?.CalculateMaxTime() ?? 0) * manager.GetReferenceFPS();
+		// With repeat on, scrubbing past the last frame loops, only if the scrub started before it
+		if (startingScrub)
+			scrubStartedBeforeEnd = frame < end;
+		else if (manager.Repeat && scrubStartedBeforeEnd && end > 0 && frame > end)
+			frame %= end;
+		manager.SetFrame(frame);
 	}
 
 	private void drawGradient(float height) {
 		var r = (float)NMath.Remap(frameOffset, 0f, 30f, 0f, 1f, false, true);
 		var c = new Color(0, 0, 0, (int)(r * 150));
 		Graphics2D.DrawGradient(new(0, 0), new(12, height), c, Color.Blank, Dock.Right);
-	}
-
-	private void Buttons_PaintOverride(Element self, float width, float height) {
-		Graphics2D.SetDrawColor(130, 135, 142);
-		Graphics2D.DrawLine(0, height, width, height);
 	}
 
 	// Shared offset from leftmost -> frame 0.
@@ -501,13 +511,13 @@ public abstract class BaseTimelineView : View
 	}
 
 	/// <summary>
-	/// Determines if the dopesheet listens to hooks relating
+	/// Determines if the view listens to selection and timeline changes
 	/// </summary>
 	public bool ShouldListenToHooks { get; private set; }
 
 	private void File_AnimationDeactivated(EditorFile file, EditorModel model, EditorAnimation animation) {
-		KeyframeChannelsPanel.ClearChildren();
 		ShouldListenToHooks = false;
+		CreateChannels();
 	}
 
 	private void File_AnimationActivated(EditorFile file, EditorModel model, EditorAnimation animation) {
@@ -521,186 +531,16 @@ public abstract class BaseTimelineView : View
 		ModelEditor.Active.File.TimelineRemoved += (_, _) => Active_SelectedChanged();
 		ModelEditor.Active.File.TimelineCombined += (_, _, _, _) => Active_SelectedChanged();
 		ModelEditor.Active.File.TimelineSeparated += (_, _, _, _) => Active_SelectedChanged();
-	}
-	public static Color HEADER_SELECTED_COLOR => new(115, 145, 145);
-	public static Color HEADER_UNSELECTED_COLOR => new(104, 119, 119);
-
-
-	protected virtual void CreateChannelPanels(out Button header, out Panel keyframes, object? target = null) {
-		header = new(KeyframeChannelsPanel);
-		keyframes = null!;
-
-		header.
-		Dock = Dock.Top;
-		header.		DockMargin = RectangleF.Zero;
-		header.BorderSize = 1;
-		header.		Size = new(24);
-		header.SetFgColor(new Color(10, 10, 10));
-		header.SetTextAlignment(Anchor.CenterLeft);
-	}
-	public void SetupBoneChannel(object target) {
-		CreateChannelPanels(out Button header, out Panel keyframes, target);
-		switch (target) {
-			case EditorAnimation animation:
-				header.SetBgColor(HEADER_SELECTED_COLOR);
-				header.SetTextPadding(new(16, 0));
-				header.				Text = animation.Name;
-				header.				TextSize = 17;
-
-				if (ModelEditor.Active.SelectedObjectsCount > 0) {
-					HashSet<EditorBone> foundBones = [];
-
-					foreach (var selected in ModelEditor.Active.SelectedObjects) {
-						EditorBone? representingBone = null;
-
-						if (selected is EditorBone bone)
-							representingBone = bone;
-						else if (selected is EditorSlot slot)
-							representingBone = slot.Bone;
-
-						if (representingBone != null && foundBones.Add(representingBone))
-							SetupBoneChannel(representingBone);
-					}
-				}
-				else {
-					List<EditorBone> bones = animation.GetAffectedBones();
-					foreach (var bone in bones) {
-						SetupBoneChannel(bone);
-					}
-				}
-				break;
-			case EditorBone bone:
-				header.SetBgColor(bone.Selected ? HEADER_SELECTED_COLOR : HEADER_UNSELECTED_COLOR);
-
-				header.
-				Text = bone.Name;
-				header.SetTextPadding(new(48, 0));
-				header.				TextSize = 16;
-				var boneImg = new Nucleus.UI.Elements.Image(header);
-				boneImg.				Texture = textures.LoadTextureFromFile("models/bone.png");
-				boneImg.				ImageOrientation = ImageOrientation.Centered;
-				boneImg.SetPassthru(true);
-				boneImg.				Dock = Dock.Left;
-				boneImg.				Size = new(24);
-
-				header.OnButtonClick += (_, _) => {
-					ModelEditor.Active.SelectObject(bone);
-				};
-
-				// Get timelines in order
-				var anim = ModelEditor.Active.File.ActiveAnimation;
-				Debug.Assert(anim != null);
-				SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Rotation, -1);
-
-				SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Translation, -1);
-				SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Translation, 0);
-				SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Translation, 1);
-
-				SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Scale, -1);
-				SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Scale, 0);
-				SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Scale, 1);
-
-				SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Shear, -1);
-				SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Shear, 0);
-				SearchPropertyThenCreatePanel(anim, bone, KeyframeProperty.Bone_Shear, 1);
-
-				foreach (var slot in bone.Slots) {
-					SearchPropertyThenCreatePanel(anim, slot, KeyframeProperty.Slot_Attachment, -1);
-					SearchPropertyThenCreatePanel(anim, slot, KeyframeProperty.Slot_Color, -1);
-				}
-
-				break;
-		}
+		ModelEditor.Active.File.AnimationEdited += (_) => Active_SelectedChanged();
 	}
 
-	private void SearchPropertyThenCreatePanel(EditorAnimation anim, IEditorType target, KeyframeProperty property, int arrayIndex = -1) {
-		var timeline = anim.SearchTimelineByProperty(target, property, arrayIndex, false);
-		if (timeline == null) return;
+	/// <summary>
+	/// The rows need rebuilding
+	/// </summary>
+	public virtual void CreateChannels() { }
 
-		CreateChannelPanels(out Button header, out Panel keyframes, timeline);
-
-		header.
-		Text = $"{property switch {
-			KeyframeProperty.Bone_Rotation => "Rotate",
-			KeyframeProperty.Bone_Translation => "Translate",
-			KeyframeProperty.Bone_Scale => "Scale",
-			KeyframeProperty.Bone_Shear => "Shear",
-
-			KeyframeProperty.Slot_Attachment => $"Attach: {target.GetName()}",
-			KeyframeProperty.Slot_Color => $"RGBA: {target.GetName()}",
-			_ => "N/A",
-		}}{(arrayIndex == -1 ? "" : $" {arrayIndex switch {
-			0 => "X",
-			1 => "Y",
-			_ => throw new Exception($"Invalid array index (expected 0 for X, 1 for Y, but got {arrayIndex})")
-		}}")}";
-
-		var headerImg = new Nucleus.UI.Elements.Image(header);
-		headerImg.SetPassthru(true);
-		headerImg.		Dock = Dock.Left;
-		headerImg.		Size = new(24);
-		headerImg.		ImagePadding = property switch {
-			KeyframeProperty.Slot_Attachment => new(8),
-			_ => new(6)
-		};
-		headerImg.		Texture = textures.LoadTextureFromFile($"models/{property switch {
-			KeyframeProperty.Bone_Rotation => "rotate_color",
-			KeyframeProperty.Bone_Translation => "translate_color",
-			KeyframeProperty.Bone_Scale => "scale_color",
-			KeyframeProperty.Bone_Shear => "shear_color",
-
-			KeyframeProperty.Slot_Attachment => "paperclip",
-			KeyframeProperty.Slot_Color => "rgba",
-			_ => "N/A",
-		}}{(arrayIndex == -1 ? "" : $"_{arrayIndex switch {
-			0 => "x",
-			1 => "y",
-			_ => throw new Exception($"Invalid array index (expected 0 for X, 1 for Y, but got {arrayIndex})")
-		}}")}.png");
-		headerImg.		ImageOrientation = ImageOrientation.Centered;
-		header.SetTextPadding(new(76, 0));
-
-		header.Thinking += (s) => {
-			bool selected = ModelEditor.Active.SelectedObjectsCount > 0 && property switch {
-				KeyframeProperty.Bone_Rotation => ModelEditor.Active.Editor.DefaultOperatorType == EditorDefaultOperator.RotateSelection,
-				KeyframeProperty.Bone_Translation => ModelEditor.Active.Editor.DefaultOperatorType == EditorDefaultOperator.TranslateSelection,
-				KeyframeProperty.Bone_Scale => ModelEditor.Active.Editor.DefaultOperatorType == EditorDefaultOperator.ScaleSelection,
-				KeyframeProperty.Bone_Shear => ModelEditor.Active.Editor.DefaultOperatorType == EditorDefaultOperator.ShearSelection,
-				KeyframeProperty.Slot_Attachment => ModelEditor.Active.IsObjectSelected(target),
-				_ => false
-			};
-			var selectedInt = selected ? 80 : 45;
-			var color = new Color(selectedInt, selectedInt + 3, selectedInt + 7);
-			header.SetBgColor(color);
-		};
-
-	}
-
-	public virtual void CreateChannels() {
-		KeyframeChannelsPanel.ClearChildren();
-
-		var animation = ModelEditor.Active.File.ActiveAnimation;
-		if (animation == null) return;
-
-		SetupBoneChannel(animation);
-	}
-	private bool newChannels = false;
-	private void MarkForNewChannels() {
-		newChannels = true;
-	}
-	private void CheckIfNewChannels() {
-		if (newChannels) {
-			newChannels = false;
-			CreateChannels();
-		}
-	}
 	private void Active_SelectedChanged() {
 		if (!ShouldListenToHooks) return;
-		if (ModelEditor.Active.SelectedObjectsCount > 0) {
-			newChannels = true;
-			CheckIfNewChannels();
-		}
-		else
-			MarkForNewChannels();
+		CreateChannels();
 	}
 }

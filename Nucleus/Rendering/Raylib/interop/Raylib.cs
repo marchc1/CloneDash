@@ -1094,8 +1094,9 @@ public static unsafe partial class Raylib
 		int dataSize,
 		int fontSize,
 		int* fontChars,
-		int glyphCount,
-		FontType type
+		int codepointCount,
+		FontType type,
+		int* glyphCount
 	);
 
 	/// <summary>Generate image font atlas using chars info</summary>

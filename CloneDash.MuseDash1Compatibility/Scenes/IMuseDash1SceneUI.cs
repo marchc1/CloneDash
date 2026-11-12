@@ -14,26 +14,32 @@ public interface IMuseDash1SceneUI : IDisposable
 	bool ShowingFailureScreen();
 	void PreRenderWorldspace();
 	void PostRenderWorldspace();
+	void RenderFailText();
 	void RenderUI();
 	void UpdateHP(double hp, double maxHP);
 	void UpdateFeverProgress(double fever, double maxFever);
 	void UpdateInFever(double feverRemainingTime, double feverTotalTime);
+	void PlayFeverTips(MuseDash1FeverTipsClip clip);
+	void PlayFullComboText();
+	void PlayHpAdd();
+	void PlayHurtFlash();
+	void PlayReadyGo();
+	void PlayResume321();
 	void UpdateScore(double score);
 	void UpdateAllPerfect(bool allPerfect);
 	void UpdateFullCombo(bool fullCombo);
 	void UpdateCombo(int currentCombo);
 
-	void CreatePerfectHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate);
-	void CreateGreatHitText(double precision, PathwaySide pathway, bool inFever, EarlyLate earlylate);
-	void CreatePassText(double precision, PathwaySide pathway);
+	void CreatePerfectHitText(double precision, PathwaySet pathways, bool inFever, EarlyLate earlylate);
+	void CreateGreatHitText(double precision, PathwaySet pathways, bool inFever, EarlyLate earlylate);
+	void CreatePassText(double precision, PathwaySet pathways);
 	void StartMultiHitText();
 	void UpdateMultiHitText(int hits);
 	void EndMultiHitText();
-	void CreateScoreText(int scoreGiven, PathwaySide pathway);
-	void CreateHealthText(float healthGiven, PathwaySide pathway);
+	void CreateScoreText(int scoreGiven, PathwaySet pathways);
+	void CreateHealthText(float healthGiven, PathwaySet pathways);
 	void StartWarning();
 	void EndWarning();
 	void SetSeeking(bool seeking);
 	void Reset();
-	void UpdateHit();
 }

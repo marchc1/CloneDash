@@ -35,6 +35,10 @@ namespace Nucleus.ModelEditor.UI
 		public virtual void Drag(ModelEditor editor, Vector2F startPos, Vector2F mousePos) { }
 		public virtual void DragRelease(ModelEditor editor, Vector2F mousePos) { }
 		/// <summary>
+		/// Right click without dragging the camera
+		/// </summary>
+		public virtual void RightClicked(ModelEditor editor, Vector2F mousePos) { }
+		/// <summary>
 		/// Final-say hovertest.
 		/// </summary>
 		/// <param name="type"></param>
@@ -56,6 +60,10 @@ namespace Nucleus.ModelEditor.UI
 
 		public virtual bool OverrideSelection => false;
 		public virtual bool SelectMultiple => false;
+		/// <summary>
+		/// Clicking empty space goes to <see cref="Clicked"/>
+		/// </summary>
+		public virtual bool AcceptsEmptyClick => false;
 		/// <summary>
 		/// If null; all types are selectable. If empty, no types are selectable.
 		/// </summary>
@@ -84,5 +92,7 @@ namespace Nucleus.ModelEditor.UI
 		protected void Deactivate(bool cancel = false) => ModelEditor.Active.File.DeactivateOperator(cancel);
 
 		public virtual bool RenderOverride() => false;
+
+		public virtual RectangleF? SelectionBox => null;
 	}
 }

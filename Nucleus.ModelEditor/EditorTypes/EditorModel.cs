@@ -26,6 +26,37 @@ namespace Nucleus.ModelEditor
 		/// </summary>
 		public List<EditorSlot> Slots { get; } = [];
 
+		[JsonIgnore] public List<EditorSlot>? AnimatedDrawOrder;
+		[JsonIgnore] public List<EditorSlot> DrawOrder => AnimatedDrawOrder ?? Slots;
+
+		public List<EditorIkConstraint> IkConstraints { get; set; } = [];
+		public List<EditorTransformConstraint> TransformConstraints { get; set; } = [];
+		public List<EditorPathConstraint> PathConstraints { get; set; } = [];
+		public List<EditorEvent> Events { get; set; } = [];
+		/// <summary>
+		/// Made by hand, not from animation names
+		/// </summary>
+		public List<string> AnimationFolders { get; set; } = [];
+
+		public IEnumerable<EditorConstraint> GetAllConstraints() {
+			var all = new List<EditorConstraint>(
+				IkConstraints.Count + TransformConstraints.Count + PathConstraints.Count);
+			all.AddRange(IkConstraints);
+			all.AddRange(TransformConstraints);
+			all.AddRange(PathConstraints);
+			var order = new List<int>(all.Count);
+			for (int i = 0; i < all.Count; i++)
+				order.Add(i);
+			order.Sort((first, second) => {
+				int compare = all[first].Order.CompareTo(all[second].Order);
+				return compare != 0 ? compare : first.CompareTo(second);
+			});
+			var sorted = new List<EditorConstraint>(all.Count);
+			foreach (int index in order)
+				sorted.Add(all[index]);
+			return sorted;
+		}
+
 		public void InvalidateBonesList() => allBonesInvalid = true;
 		private void addBoneAndChildrenIntoBones(EditorBone bone) {
 			allbones.Add(bone);
@@ -113,7 +144,12 @@ namespace Nucleus.ModelEditor
 		public bool CanDelete() => true;
 		public bool HoverTest(Vector2F gridPos) => false;
 		public void BuildTopOperators(Panel props, PreUIDeterminations determinations) { }
-		public void BuildProperties(Panel props, PreUIDeterminations determinations) { }
+		public void BuildProperties(Panel props, PreUIDeterminations determinations) {
+			var row = PropertiesPanel.NewRow(props, "Options", "models/model.png");
+			var export = PropertiesPanel.AddLabeledCheckbox(row, "Export", Export);
+			export.OnCheckedChanged += (s)
+				=> ModelEditor.Active.File.SetProperty(this, "export", s.Checked, () => Export, v => Export = v);
+		}
 		public void BuildOperators(Panel buttons, PreUIDeterminations determinations) { }
 		public string SingleName => "model";
 		public string PluralName => "models";
@@ -128,6 +164,59 @@ namespace Nucleus.ModelEditor
 		public void ResetToSetupPose() {
 			foreach (var bone in GetAllBones()) bone.ResetToSetupPose();
 			foreach (var slot in Slots) slot.ResetToSetupPose();
+			ResetAnimatedValues();
+		}
+
+		/// <summary>
+		/// Puts constraint values back to setup and drops deforms.
+		/// </summary>
+		public void ResetAnimatedValues() {
+			AnimatedDrawOrder = null;
+			foreach (var constraint in IkConstraints)
+				constraint.ResetToSetupPose();
+			foreach (var constraint in TransformConstraints)
+				constraint.ResetToSetupPose();
+			foreach (var constraint in PathConstraints)
+				constraint.ResetToSetupPose();
+			foreach (var editorEvent in Events)
+				editorEvent.ResetToSetupPose();
+			foreach (var slot in Slots) {
+				foreach (var attachment in slot.Attachments) {
+					if (attachment is EditorVertexAttachment vertexAttachment) {
+						vertexAttachment.CurrentDeform = null;
+						vertexAttachment.CurrentBoneDeform = null;
+					}
+				}
+			}
+		}
+
+		[JsonIgnore] internal EditorConstraintSolver? solver;
+		public void UpdateConstraints() => (solver ??= new(this)).Update();
+
+		[JsonIgnore] HashSet<string> usedImages = [];
+		[JsonIgnore] double usedImagesTime = -1;
+		/// <summary>
+		/// Is an image used by any region or mesh?
+		/// </summary>
+		public bool IsImageUsed(string name) {
+			double now = Nucleus.EngineCore.Level.Realtime;
+			if (now != usedImagesTime) {
+				usedImagesTime = now;
+				usedImages.Clear();
+				foreach (var slot in Slots) {
+					foreach (var attachment in slot.Attachments) {
+						switch (attachment) {
+							case EditorRegionAttachment { Path: string path }:
+								usedImages.Add(path);
+								break;
+							case EditorMeshAttachment { Path: string path }:
+								usedImages.Add(path);
+								break;
+						}
+					}
+				}
+			}
+			return usedImages.Contains(name);
 		}
 
 		public void RemoveUnusedImages() {

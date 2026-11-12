@@ -88,7 +88,7 @@ public class Label : Element, ITextElement
 	private Anchor textAlignment = Anchor.Center;
 	readonly List<TextRange> textRanges = [];
 	Vector2F fullTextSize;
-	TextOverflowMode textOverflowMode;
+	TextOverflowMode textOverflowMode = TextOverflowMode.CharTruncate;
 	bool textInvalid = true;
 	SchemeableSetting<Color> textColor = SchemeableSetting<Color>.Default(DefaultTextColor);
 
@@ -113,32 +113,41 @@ public class Label : Element, ITextElement
 		ValidateText();
 
 		ReadOnlySpan<char> font = Font;
-		float curTextSize = TextSize;
+		float curTextSize = GetRenderTextSize();
 		Span<TextRange> ranges = textRanges.AsSpan();
+		ReadOnlySpan<char> text = localize.Find(Text);
 
 		Vector2F size;
 		if (ranges.Length <= 0) {
-			size = Graphics2D.GetTextSize(Text, font, curTextSize);
+			size = Graphics2D.GetTextSize(text, font, curTextSize);
 		}
 		else {
 			size = default;
 			foreach (var range in ranges) {
-				ReadOnlySpan<char> subtext = range.Truncate ? range.TruncateText : Text[range.Start..range.End];
+				ReadOnlySpan<char> subtext = range.Truncate ? range.TruncateText : text[range.Start..range.End];
 				var rangeSize = Graphics2D.GetTextSize(subtext, font, curTextSize);
 				size = new(Math.Max(size.X, rangeSize.X), size.Y + rangeSize.Y);
-				if (range.Truncate)
+				if (range.Truncate && textOverflowMode.IsWrap())
 					break;
 			}
 		}
 
 		Vector2F finalSize = size + (GetTextPadding());
-		// We have to expand ourselves by dock margins!
-		// This is weird, but its the only way to make docking happy
-		RectangleF margin = DockMargin;
-		finalSize.X += margin.Left + margin.Right;
-		finalSize.Y += margin.Top + margin.Bottom;
+		if (Dock != Dock.None) {
+			RectangleF margin = DockMargin;
+			finalSize.X += margin.Left + margin.Right;
+			finalSize.Y += margin.Top + margin.Bottom;
+		}
 
 		return finalSize;
+	}
+
+	void InvalidateAutosize() {
+		if (!__autosize)
+			return;
+		InvalidateLayout();
+		if (Dock != Dock.None)
+			GetParent()?.InvalidateLayout();
 	}
 
 
@@ -156,11 +165,14 @@ public class Label : Element, ITextElement
 		if (__autosize == value) return;
 		__autosize = value;
 		InvalidateLayout();
+		if (Dock != Dock.None)
+			GetParent()?.InvalidateLayout();
 	}
 
 	public Vector2F GetTextPadding() => textPadding;
 	public void SetTextPadding(Vector2F value) {
 		textPadding = value;
+		InvalidateAutosize();
 		InvalidateText();
 	}
 
@@ -176,8 +188,7 @@ public class Label : Element, ITextElement
 	}
 
 	protected virtual void TextChanged(ReadOnlySpan<char> text) {
-		if (__autosize)
-			InvalidateLayout();
+		InvalidateAutosize();
 		InvalidateText();
 	}
 
@@ -186,6 +197,7 @@ public class Label : Element, ITextElement
 		set {
 			__Font.SetUserValue(new(value));
 			InvalidateLayout();
+			InvalidateAutosize();
 			InvalidateText();
 		}
 	}
@@ -195,6 +207,7 @@ public class Label : Element, ITextElement
 		set {
 			__TextSize.SetUserValue(value);
 			InvalidateLayout();
+			InvalidateAutosize();
 			InvalidateText();
 		}
 	}
@@ -213,7 +226,43 @@ public class Label : Element, ITextElement
 	private void InvalidateText() {
 		textInvalid = true;
 	}
+	float lastWrapWidth = -1;
+
+	/// <summary>
+	/// The area text lays out in. Fixed-size labels use their laid-out bounds (so docked labels wrap to their docked
+	/// width). Auto-sized labels that wrap and are docked across their parent wrap to the width the parent gives them,
+	/// and grow vertically to fit; otherwise auto-sized labels are unconstrained.
+	/// </summary>
+	private Vector2F GetTextWorkingArea() {
+		if (!__autosize) {
+			RectangleF content = GetContentRect();
+			if (content.W <= 0 || content.H <= 0) {
+				float inset = GetContentInset();
+				content = RectangleF.XYWH(inset, inset, Size.W - inset * 2, Size.H - inset * 2);
+			}
+			return content.Size - GetTextPadding() * 2;
+		}
+
+		if (textOverflowMode.IsWrap() && Dock is Dock.Top or Dock.Bottom or Dock.Fill && GetParent() is Element parent) {
+			RectangleF parentPadding = parent.DockPadding, margin = DockMargin;
+			float width = parent.GetRenderBounds().W - parentPadding.X - parentPadding.W - margin.X - margin.W - GetTextPadding().X - GetContentInset() * 2;
+			if (width > 0)
+				return new Vector2F(width, float.MaxValue);
+		}
+
+		return new Vector2F(EngineCore.GetWindowWidth(), EngineCore.GetWindowHeight());
+	}
+
 	private void ValidateText() {
+		// Wrapping/truncation depends on the available width; redo it when that changes (docking, resizing).
+		if (textOverflowMode != TextOverflowMode.None) {
+			float wrapWidth = GetTextWorkingArea().W;
+			if (wrapWidth != lastWrapWidth) {
+				lastWrapWidth = wrapWidth;
+				textInvalid = true;
+			}
+		}
+
 		if (!textInvalid)
 			return;
 
@@ -223,22 +272,27 @@ public class Label : Element, ITextElement
 		if (textOverflowMode == TextOverflowMode.None)
 			return;
 
-		ReadOnlySpan<char> text = Text;
+		ReadOnlySpan<char> text = localize.Find(Text);
 		ReadOnlySpan<char> font = Font;
 		float textSize = GetRenderTextSize();
 		TextRange workingRange = new() { };
-		Vector2F workingArea = __autosize ? new Vector2F(EngineCore.GetWindowWidth(), EngineCore.GetWindowHeight()) : Size - GetTextPadding() - new Vector2F(4, 4);
+		Vector2F workingArea = GetTextWorkingArea();
 
-		if (textOverflowMode.IsTruncate())
-			workingArea.W -= Graphics2D.GetTextSize("...", font, textSize).X;
+		if (textOverflowMode.IsTruncate()) {
+			BuildTruncatedRanges(text, font, textSize, workingArea.W);
+			textInvalid = false;
+			return;
+		}
 
 		float lineHeight = Graphics2D.GetTextSize(" ", font, textSize).H;
 
 		int wordPos = 0;
 
-		bool pushWorkingRange(bool notForced = false) {
-			if (workingRange.Length > 0)
-				workingRange.End -= textOverflowMode.TargetsWord() ? 1 : 0;
+		bool pushWorkingRange(ReadOnlySpan<char> text, bool notForced = false) {
+			// Drop the trailing separator (word modes include the following space) and any line breaks, in every mode
+			workingRange.End = Math.Min(workingRange.End, text.Length);
+			while (workingRange.End > workingRange.Start && text[workingRange.End - 1] is ' ' or '\n' or '\r')
+				workingRange.End--;
 
 			if (workingRange.Height <= 0)
 				workingRange.Height = lineHeight;
@@ -251,7 +305,7 @@ public class Label : Element, ITextElement
 
 			workingRange.Truncate = truncating;
 			if (truncating) {
-				workingRange.TruncateText = $"{Text[workingRange.Start..workingRange.End]}...";
+				workingRange.TruncateText = $"{text[workingRange.Start..workingRange.End]}...";
 				workingRange.Width += Graphics2D.GetTextSize("...", Font, textSize).W;
 			}
 
@@ -267,9 +321,9 @@ public class Label : Element, ITextElement
 
 		while (wordPos < text.Length) {
 			if (text[wordPos] == '\n') {
+				workingRange.End = wordPos; // exclude the newline itself
 				wordPos++;
-				workingRange.End = wordPos;
-				if (!pushWorkingRange(true))
+				if (!pushWorkingRange(text, true))
 					break;
 				continue;
 			}
@@ -299,7 +353,7 @@ public class Label : Element, ITextElement
 				Vector2F wordSize = Graphics2D.GetTextSize(word, font, textSize);
 
 				if (workingRange.Width > 0 && (workingRange.Width + wordSize.W) > workingArea.W)
-					if (!pushWorkingRange())
+					if (!pushWorkingRange(text))
 						break;
 
 				workingRange.Width += wordSize.W;
@@ -316,7 +370,7 @@ public class Label : Element, ITextElement
 				Vector2F charSize = Graphics2D.GetTextSize(text.Slice(wordPos, 1), font, textSize);
 
 				if (workingRange.Width > 0 && (workingRange.Width + charSize.W) > workingArea.W)
-					if (!pushWorkingRange())
+					if (!pushWorkingRange(text))
 						break;
 
 				workingRange.Width += charSize.W;
@@ -327,9 +381,60 @@ public class Label : Element, ITextElement
 		}
 
 		if (workingRange.Length > 0)
-			pushWorkingRange(true);
+			pushWorkingRange(text, true);
 
 		textInvalid = false;
+	}
+
+	private void BuildTruncatedRanges(ReadOnlySpan<char> text, ReadOnlySpan<char> font, float textSize, float maxWidth) {
+		float lineHeight = Graphics2D.GetTextSize(" ", font, textSize).H;
+		bool byWord = textOverflowMode.TargetsWord();
+
+		int start = 0;
+		while (start <= text.Length) {
+			int newline = text.Slice(start).IndexOf('\n');
+			int end = newline < 0 ? text.Length : start + newline;
+			int visibleEnd = end;
+			while (visibleEnd > start && text[visibleEnd - 1] == '\r')
+				visibleEnd--;
+
+			ReadOnlySpan<char> line = text.Slice(start, visibleEnd - start);
+			TextRange range = new() { Start = start, End = visibleEnd, Height = lineHeight };
+			float width = line.IsEmpty ? 0 : Graphics2D.GetTextSize(line, font, textSize).W;
+
+			// unsized labels draw freely
+			if (width > maxWidth && maxWidth > 0) {
+				float ellipsis = Graphics2D.GetTextSize("...", font, textSize).W;
+				int low = 0, high = line.Length;
+				while (low < high) {
+					int mid = (low + high + 1) / 2;
+					if (Graphics2D.GetTextSize(line.Slice(0, mid), font, textSize).W + ellipsis <= maxWidth)
+						low = mid;
+					else
+						high = mid - 1;
+				}
+
+				int cut = low;
+				if (byWord) {
+					int space = line.Slice(0, cut).LastIndexOf(' ');
+					if (space > 0)
+						cut = space;
+				}
+
+				range.Truncate = true;
+				range.TruncateText = $"{line.Slice(0, cut).TrimEnd()}...";
+				width = Graphics2D.GetTextSize(range.TruncateText, font, textSize).W;
+			}
+
+			range.Width = width;
+			textRanges.Add(range);
+			fullTextSize.W = Math.Max(fullTextSize.W, width);
+			fullTextSize.H += lineHeight;
+
+			if (newline < 0)
+				break;
+			start = end + 1;
+		}
 	}
 
 	protected override void PerformLayout(float width, float height) {
@@ -344,18 +449,17 @@ public class Label : Element, ITextElement
 		ValidateText();
 
 		var textC = GetTextColor();
-		if (!IsMouseInputEnabled()) {
+		if (IsDisabled()) {
 			textC = textC.Adjust(0, 0, -0.5f);
 		}
 
 		Span<TextRange> ranges = textRanges.AsSpan();
 		Vector2F startDrawingPosition = GetTextAlignment().GetPositionGivenAlignment(RectangleF.FromPosAndSize(new(0), new(width, height)), __autosize ? GetTextPadding() / 2 : GetTextPadding());
 		TextAlignment vertical = GetTextAlignment().ToTextAlignment().Vertical;
-		TextAlignment horizontal = GetTextAlignment().ToTextAlignment().Horizontal;
 
 		Graphics2D.SetDrawColor(textC);
 
-		ReadOnlySpan<char> text = Text;
+		ReadOnlySpan<char> text = localize.Find(Text);
 		ReadOnlySpan<char> font = Font;
 		float textSize = GetRenderTextSize();
 
@@ -373,14 +477,10 @@ public class Label : Element, ITextElement
 		}
 
 		foreach (var range in ranges) {
-			ReadOnlySpan<char> subtext = range.Truncate ? range.TruncateText : Text[range.Start..range.End];
-			Vector2F drawPos = startDrawingPosition;
-			switch (horizontal) {
-				case TextAlignment.Center: drawPos.X = width / 2; break;
-				case TextAlignment.Right: drawPos.X = width; break;
-			}
-			Graphics2D.DrawText(drawPos, subtext, font, textSize, GetTextAlignment());
-			if (range.Truncate)
+			ReadOnlySpan<char> subtext = range.Truncate ? range.TruncateText : text[range.Start..range.End];
+			// startDrawingPosition already has the alignment and padding applied on X
+			Graphics2D.DrawText(startDrawingPosition, subtext, font, textSize, GetTextAlignment());
+			if (range.Truncate && textOverflowMode.IsWrap())
 				break;
 			startDrawingPosition.Y += range.Height;
 		}

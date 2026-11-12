@@ -1,14 +1,18 @@
 ﻿using Nucleus.Common.Graphics;
 using Nucleus.Common.Types;
+using Nucleus.Common.Util;
 using Nucleus.Extensions;
 using Nucleus.Files;
 using Nucleus.ManagedMemory;
 using Nucleus.Rendering;
 using Nucleus.Types;
 using Nucleus.UI;
+using Nucleus.Util;
 using Raylib_cs;
+using System.Buffers;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Nucleus.Core
@@ -108,12 +112,6 @@ namespace Nucleus.Core
 			return alpha;
 		}
 
-		/// <summary>
-		/// This should be done before starting EngineCore or loading a level.
-		/// </summary>
-		/// <param name="codepointsStr"></param>
-		public static void RegisterCodepoints(ReadOnlySpan<char> codepointsStr) => FontManager.RegisterCodepoints(codepointsStr);
-
 		public static Vector2F Offset => __offset;
 
 		/// <summary>
@@ -135,13 +133,105 @@ namespace Nucleus.Core
 		private static int offsetY(float input) => (int)(input + __offset.Y);
 
 		static void __SetOffset(Vector2F o) => __offset = o.Round(3);
-		public static void ResetDrawingOffset() => __offset = new Vector2F(0, 0);
+		public static void ResetDrawingOffset() {
+			__offset = new Vector2F(0, 0);
+			knownLineWidth = null;
+		}
 		public static void OffsetDrawing(Vector2F by) => __SetOffset(__offset + by);
 		public static void SetOffset(Vector2F offset) => __SetOffset(offset);
 
+		private static Vector2F __transformOrigin = Vector2F.Zero;
+		private static Vector2F __transformScale = Vector2F.One;
+		private static readonly Stack<(Vector2F Origin, Vector2F Scale, Vector2F? Offset)> SavedTransforms = [];
+
+		public static Vector2F TransformOrigin => __transformOrigin;
+		public static Vector2F TransformScale => __transformScale;
+		public static bool IsTransformed => __transformScale != Vector2F.One || __transformOrigin != Vector2F.Zero;
+
+		public static void PushTransform(Vector2F scale) {
+			SavedTransforms.Push((__transformOrigin, __transformScale, __offset));
+			__transformOrigin += __offset * __transformScale;
+			__transformScale *= scale;
+			__offset = Vector2F.Zero;
+			LoadTransformMatrix();
+		}
+
+		public static void PushIdentityTransform() {
+			bool wasTransformed = IsTransformed;
+			SavedTransforms.Push((__transformOrigin, __transformScale, null));
+			__transformOrigin = Vector2F.Zero;
+			__transformScale = Vector2F.One;
+			if (wasTransformed)
+				LoadTransformMatrix();
+		}
+
+		public static void PopTransform() {
+			if (SavedTransforms.Count == 0)
+				return;
+
+			bool wasTransformed = IsTransformed;
+			(__transformOrigin, __transformScale, Vector2F? offset) = SavedTransforms.Pop();
+			if (offset.HasValue)
+				__offset = offset.Value;
+			if (wasTransformed || IsTransformed)
+				LoadTransformMatrix();
+		}
+
+		public static void ClearTransformStack() {
+			SavedTransforms.Clear();
+			__transformOrigin = Vector2F.Zero;
+			__transformScale = Vector2F.One;
+		}
+
+		public static void LoadTransformMatrix() {
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.LoadIdentity();
+			Rlgl.MultMatrixf(Raymath.MatrixToFloatV(EngineCore.Window.ScreenScale));
+			MultTransformMatrix();
+		}
+
+		public static void MultTransformMatrix() {
+			if (!IsTransformed)
+				return;
+
+			Rlgl.Translatef(__transformOrigin.X, __transformOrigin.Y, 0);
+			Rlgl.Scalef(__transformScale.X, __transformScale.Y, 1);
+		}
+
+		public static Vector2F ToScreenSpace(Vector2F local) => __transformOrigin + (local + __offset) * __transformScale;
+
+		static Vector2 SnapToPixel(float x, float y) {
+			if (!IsTransformed)
+				return new(MathF.Round(x + __offset.X), MathF.Round(y + __offset.Y));
+
+			Vector2F screen = ToScreenSpace(new(x, y));
+			return new((MathF.Round(screen.X) - __transformOrigin.X) / __transformScale.X, (MathF.Round(screen.Y) - __transformOrigin.Y) / __transformScale.Y);
+		}
+		public static int QuantizeFontSize(float size) => Math.Max(1, (int)MathF.Round(size));
+
 		public static Vector2F GetTextSize(ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) {
-			var s = Raylib.MeasureTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, (int)fontSize, 0);
-			return new(s.X, s.Y);
+			int size = QuantizeFontSize(fontSize);
+			return FontManager[message, font, size].MeasureText(message, size, 0);
+		}
+
+		public readonly record struct TextMetrics(float LineHeight, float CapTop, float CapHeight);
+		static readonly Dictionary<(ulong FontHash, int Size), TextMetrics> s_metrics = [];
+
+		public static TextMetrics GetTextMetrics(ReadOnlySpan<char> font, float fontSize) {
+			int size = QuantizeFontSize(fontSize);
+			var key = (font.Hash(invariant: false), size);
+			if (s_metrics.TryGetValue(key, out var m))
+				return m;
+
+			FontState f = FontManager["H", font, size];
+			float scale = f.Size > 0 ? size / (float)f.Size : 1;
+			FontGlyph g = f.GetGlyph('H');
+
+			m = new TextMetrics(LineHeight: size, CapTop: g.OffsetY * scale, CapHeight: g.Rec.Height * scale);
+			if (m.CapHeight <= 0)
+				m = new TextMetrics(size, 0, size);
+			s_metrics[key] = m;
+			return m;
 		}
 		public static void DrawDottedLine(Vector2F start, Vector2F end, float segmentLength = 4) {
 			var dist = start.Distance(end);
@@ -154,31 +244,96 @@ namespace Nucleus.Core
 			}
 		}
 
-		public struct TextChunk
+		public readonly ref struct TextChunk
 		{
-			public string Text;
-			public string Font;
+			public readonly ReadOnlySpan<char> Text;
+			public readonly ReadOnlySpan<char> Font;
 			public TextChunk(ReadOnlySpan<char> text, ReadOnlySpan<char> font) {
-				Text = new(text);
-				Font = new(font);
+				Text = text;
+				Font = font;
 			}
+		}
+
+		public readonly ref struct TextChunks
+		{
+			private readonly ReadOnlySpan<char> data;
+			private readonly ReadOnlySpan<int> markers;
+
+			public TextChunks(ReadOnlySpan<char> data, ReadOnlySpan<int> markers) {
+				this.data = data;
+				this.markers = markers;
+			}
+
+			public int Length => markers.Length / 2;
+
+			public TextChunk this[int index] {
+				get {
+					int start = index == 0 ? 0 : markers[index * 2 - 1];
+					int textEnd = markers[index * 2];
+					return new(data[start..textEnd], data[textEnd..markers[index * 2 + 1]]);
+				}
+			}
+		}
+
+		public ref struct TextChunksWriter
+		{
+			private readonly Span<char> data;
+			private readonly Span<int> markers;
+			private int length;
+			private int markerCount;
+
+			public TextChunksWriter(Span<char> data, Span<int> markers) {
+				this.data = data;
+				this.markers = markers;
+			}
+
+			public void Add(ReadOnlySpan<char> text, ReadOnlySpan<char> font) {
+				text.CopyTo(data[length..]);
+				length += text.Length;
+				markers[markerCount++] = length;
+
+				font.CopyTo(data[length..]);
+				length += font.Length;
+				markers[markerCount++] = length;
+			}
+
+			public readonly TextChunks ToChunks() => new(data[..length], markers[..markerCount]);
 		}
 
 		public struct MappedText
 		{
-			public string Text;
-			public string Font;
+			public int Chunk;
 			public Vector2F RelativePos;
 		}
 
 		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize)
-			=> Raylib.DrawTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, AFV2ToSNV2(pos), (int)fontSize, 0, __drawColor);
-		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize)
-			=> Raylib.DrawTextEx(FontManager[message, font, (int)fontSize].GetFont(), message, new Vector2(offsetX(x), offsetY(y)), (int)fontSize, 0, __drawColor);
-		public static Vector2F DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical)
-			=> DrawText(x, y, [new(message, font)], 1, fontSize, horizontal, vertical);
+			=> DrawText(pos.X, pos.Y, message, font, fontSize);
+		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) {
+			float textScale = __transformScale.Y;
+			if (textScale == 1) {
+				int size = QuantizeFontSize(fontSize);
+				FontManager[message, font, size].DrawText(message, SnapToPixel(x, y), size, 0, __drawColor);
+				return;
+			}
+
+			int screenSize = QuantizeFontSize(fontSize * textScale);
+			FontManager[message, font, screenSize].DrawText(message, SnapToPixel(x, y), screenSize / textScale, 0, __drawColor);
+		}
+		public static Vector2F DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
+			int length = message.Length + font.Length;
+			char[]? rented = null;
+			Span<char> data = length <= 512 ? stackalloc char[512] : (rented = ArrayPool<char>.Shared.Rent(length));
+			TextChunksWriter writer = new(data, stackalloc int[2]);
+			writer.Add(message, font);
+
+			Vector2F combinedSize = DrawText(x, y, writer.ToChunks(), 1, fontSize, horizontal, vertical);
+
+			if (rented != null)
+				ArrayPool<char>.Shared.Return(rented);
+			return combinedSize;
+		}
 		public static Vector2F DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment)
-			=> DrawText(x, y, [new(message, font)], 1, fontSize, alignment.Horizontal, alignment.Vertical);
+			=> DrawText(x, y, message, font, fontSize, alignment.Horizontal, alignment.Vertical);
 		public static Vector2F DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical)
 			=> DrawText(pos.x, pos.y, message, font, fontSize, horizontal, vertical);
 		public static Vector2F DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment2D alignment)
@@ -187,43 +342,46 @@ namespace Nucleus.Core
 			=> DrawText(x, y, message, font, fontSize, drawingAnchor.ToTextAlignment());
 		public static Vector2F DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, Anchor drawingAnchor)
 			=> DrawText(pos.x, pos.y, message, font, fontSize, drawingAnchor);
-		public static Vector2F DrawText(Vector2F pos, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor)
+		public static Vector2F DrawText(Vector2F pos, TextChunks textsFontsMap, int chunkCount, float fontSize, Anchor drawAnchor)
 			=> DrawText(pos.x, pos.y, textsFontsMap, chunkCount, fontSize, drawAnchor.ToTextAlignment());
-		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, TextAlignment horizontal, TextAlignment vertical)
+		public static Vector2F DrawText(float x, float y, TextChunks textsFontsMap, int chunkCount, float fontSize, TextAlignment horizontal, TextAlignment vertical)
 			=> DrawText(x, y, textsFontsMap, chunkCount, 0, 0, fontSize, horizontal, vertical);
-		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, float fontSize, TextAlignment2D alignment)
+		public static Vector2F DrawText(float x, float y, TextChunks textsFontsMap, int chunkCount, float fontSize, TextAlignment2D alignment)
 			=> DrawText(x, y, textsFontsMap, chunkCount, 0, 0, fontSize, alignment.Horizontal, alignment.Vertical);
 
 
 		static readonly NeverShrinkingList<MappedText> mappedTextsCache = [];
 
-		public static Vector2F DrawText(float x, float y, Span<TextChunk> textsFontsMap, int chunkCount, int fontSpacing, int lineSpacing, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
+		public static Vector2F DrawText(float x, float y, TextChunks textsFontsMap, int chunkCount, int fontSpacing, int lineSpacing, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
+			float textScale = __transformScale.Y;
+			int size = QuantizeFontSize(fontSize * textScale);
+			float measureSize = textScale == 1 ? size : size / textScale;
 			Vector2F combinedSize = new();
 			mappedTextsCache.Clear();
+			float lineY = 0;
+			int lineCount = 0;
 
 			for (int i = 0; i < textsFontsMap.Length; i += chunkCount) {
-				Vector2F chunkedSize = new();
-				Span<TextChunk> chunk = textsFontsMap[i..Math.Min(i + chunkCount, textsFontsMap.Length)];
+				int lineEnd = Math.Min(i + chunkCount, textsFontsMap.Length);
+				float lineX = 0, lineH = 0;
 
-				for (int j = 0; j < chunk.Length; j++) {
-					ref TextChunk piece = ref chunk[j];
-					string textPart = piece.Text;
-					string fontName = piece.Font;
-					ref Font font = ref FontManager[textPart, fontName, (int)fontSize].GetFont();
-					Vector2F measuredSize = Raylib.MeasureTextEx(font, textPart, fontSize, fontSpacing).ToNucleus();
+				for (int j = i; j < lineEnd; j++) {
+					TextChunk piece = textsFontsMap[j];
+					Vector2F measuredSize = FontManager[piece.Text, piece.Font, size].MeasureText(piece.Text, measureSize, fontSpacing);
 
 					ref MappedText textPiece = ref mappedTextsCache.Add();
-					textPiece.Text = textPart;
-					textPiece.Font = fontName;
-					textPiece.RelativePos = chunkedSize;
+					textPiece.Chunk = j;
+					textPiece.RelativePos = new(lineX, lineY);
 
-					chunkedSize.X += measuredSize.X + fontSpacing;
-					chunkedSize.Y = Math.Max(chunkedSize.Y, measuredSize.Y);
+					lineX += measuredSize.X + (j < lineEnd - 1 ? fontSpacing : 0);
+					lineH = Math.Max(lineH, measuredSize.Y);
 				}
 
-				combinedSize.X = Math.Max(combinedSize.X, chunkedSize.X);
-				combinedSize.Y += chunkedSize.Y + lineSpacing;
+				combinedSize.X = Math.Max(combinedSize.X, lineX);
+				lineY += lineH + (i + chunkCount < textsFontsMap.Length ? lineSpacing : 0);
+				lineCount++;
 			}
+			combinedSize.Y = lineY;
 
 			switch (horizontal) {
 				case TextAlignment.Center:
@@ -235,7 +393,13 @@ namespace Nucleus.Core
 			}
 			switch (vertical) {
 				case TextAlignment.Center:
-					y += -combinedSize.Y / 2;
+					if (lineCount == 1 && textsFontsMap.Length > 0) {
+						// Optical center: center the cap-height, not the line box
+						var tm = GetTextMetrics(textsFontsMap[0].Font, size);
+						y -= (tm.CapTop + tm.CapHeight / 2f) / textScale;
+					}
+					else
+						y += -combinedSize.Y / 2;
 					break;
 				case TextAlignment.Bottom:
 					y += -combinedSize.Y;
@@ -245,7 +409,8 @@ namespace Nucleus.Core
 			for (int i = 0; i < mappedTextsCache.Count; i++) {
 				ref MappedText mappedText = ref mappedTextsCache[i];
 				Vector2F relativePos = mappedText.RelativePos;
-				DrawText(x + relativePos.X, y + relativePos.Y, mappedText.Text, mappedText.Font, fontSize);
+				TextChunk piece = textsFontsMap[mappedText.Chunk];
+				DrawText(x + relativePos.X, y + relativePos.Y, piece.Text, piece.Font, fontSize);
 			}
 
 			return combinedSize;
@@ -329,10 +494,14 @@ namespace Nucleus.Core
 		public static void DrawPixel(int x, int y) => Raylib.DrawPixel(offsetX(x), offsetY(x), __drawColor);
 		public static void DrawPixel(Vector2F pos) => Raylib.DrawPixelV(AFV2ToSNV2(pos), __drawColor);
 
+		// GetLineWidth is a synchronous glGetFloatv, only ask once per ResetDrawingOffset.
+		private static float? knownLineWidth;
 		static float potentialLineWidthFlush(float newWidth) {
-			if (MathF.Abs(Rlgl.GetLineWidth() - newWidth) > 0.01f) {
+			knownLineWidth ??= Rlgl.GetLineWidth();
+			if (MathF.Abs(knownLineWidth.Value - newWidth) > 0.01f) {
 				Rlgl.DrawRenderBatchActive();
 				Rlgl.SetLineWidth(newWidth);
+				knownLineWidth = newWidth;
 			}
 			return newWidth;
 		}
@@ -342,7 +511,9 @@ namespace Nucleus.Core
 		public static void DrawLine(int startX, int startY, int endX, int endY, float thick) => Raylib.DrawLineEx(new Vector2(offsetX(startX), offsetY(startY)), new Vector2(offsetX(endX), offsetY(endY)), thick, __drawColor);
 		public static void DrawLine(float startX, float startY, float endX, float endY, float thick) => Raylib.DrawLineEx(new Vector2(offsetXF(startX), offsetYF(startY)), new Vector2(offsetXF(endX), offsetYF(endY)), thick, __drawColor);
 		public static void DrawLine(Vector2F start, Vector2F end) => Raylib.DrawLineV(AFV2ToSNV2(start), AFV2ToSNV2(end), __drawColor);
-		public static void DrawLine(Vector2F start, Vector2F end, float width) => Raylib.DrawLineEx(AFV2ToSNV2(start), AFV2ToSNV2(end), potentialLineWidthFlush(width), __drawColor);
+		// DrawLineEx builds triangles at the given thickness; the GL line width doesn't apply, so there's no need to
+		// query/flush it (Rlgl.GetLineWidth is a synchronous glGetFloatv, which stalled every call).
+		public static void DrawLine(Vector2F start, Vector2F end, float width) => Raylib.DrawLineEx(AFV2ToSNV2(start), AFV2ToSNV2(end), width, __drawColor);
 
 		public static void DrawLine(Vector2F startPos, Color startColor, Vector2F endPos, Color endColor, float width = 1) {
 			var _startPos = AFV2ToSNV2(startPos.Round());
@@ -389,7 +560,7 @@ namespace Nucleus.Core
 		}
 
 		public static void DrawLineBezier(Vector2F start, Vector2F end, float width = 1f) => Raylib.DrawLineBezier(AFV2ToSNV2(start), AFV2ToSNV2(end), width, __drawColor);
-		public static void DrawCubicBezier(Vector2F p1, Vector2F c1, Vector2F c3, Vector2F p4, float width = 1f) => Raylib.DrawSplineSegmentBezierCubic(AFV2ToSNV2(p1), AFV2ToSNV2(p4), AFV2ToSNV2(c1), AFV2ToSNV2(c3), width, __drawColor);
+		public static void DrawCubicBezier(Vector2F p1, Vector2F c2, Vector2F c3, Vector2F p4, float width = 1f) => Raylib.DrawSplineSegmentBezierCubic(AFV2ToSNV2(p1), AFV2ToSNV2(c2), AFV2ToSNV2(c3), AFV2ToSNV2(c3), width, __drawColor);
 
 		public static void DrawCircle(int centerX, int centerY, float radius) => Raylib.DrawCircle(offsetX(centerX), offsetY(centerY), radius, __drawColor);
 		public static void DrawCircle(Vector2F pos, float radius) => Raylib.DrawCircleV(AFV2ToSNV2(pos), radius, __drawColor);
@@ -405,7 +576,6 @@ namespace Nucleus.Core
 		public static void DrawCircleSectorLines(Vector2F pos, float radius, float startAngle, float endAngle, int segments = 32) => Raylib.DrawCircleSectorLines(AFV2ToSNV2(pos), radius, startAngle, endAngle, segments, __drawColor);
 
 		//add draw circle gradient, if we ever need it
-
 		public static void DrawCircleLines(int centerX, int centerY, float radius) => Raylib.DrawCircleLines(offsetX(centerX), offsetY(centerY), radius, __drawColor);
 		//draw ellipse, draw ellipse lines, draw ring, draw ring lines need implementations later
 
@@ -447,26 +617,45 @@ namespace Nucleus.Core
 			Raylib.DrawEllipseLines((int)local.X, (int)local.Y, size.W, size.H, __drawColor);
 		}
 
+		class ScissorRectStack : Stack<RectangleF>, IPoolableObject
+		{
+			public void Init() => Clear();
+			public void Reset() => Clear();
+		}
+
 		private static RectangleF __scissorRect;
-		private static Stack<RectangleF> ScissorRects = [];
+		private static readonly ObjectPool<ScissorRectStack> ScissorRectPool = new();
+		private static ScissorRectStack ScissorRects = ScissorRectPool.Alloc();
+		private static readonly Stack<ScissorRectStack> SavedScissorStacks = [];
 
 		public static RectangleF ActiveScissorRect => ScissorRects.Count == 0 ? RectangleF.FromPosAndSize(new(0, 0), EngineCore.GetScreenSize()) : ScissorRects.Peek();
 
 		public static void ScissorRect() {
+			if (ScissorRects.Count > 0)
+				ScissorRects.Pop();
 			EngineCore.Window.EndScissorMode();
+
 			if (ScissorRects.Count > 0) {
-				var sR = ScissorRects.Pop();
-				__scissorRect = sR;
+				var top = ScissorRects.Peek();
+				EngineCore.Window.BeginScissorMode((int)top.X, (int)top.Y, (int)top.W, (int)top.H);
+				__scissorRect = top;
 			}
 			else {
 				__scissorRect = RectangleF.FromPosAndSize(new(0, 0), EngineCore.GetScreenSize());
 			}
 		}
 		public static void ScissorRect(RectangleF rect) {
-			var r = rect.FitInto(ActiveScissorRect);
+			if (IsTransformed)
+				rect = RectangleF.FromPosAndSize(__transformOrigin + rect.Pos * __transformScale, rect.Size * __transformScale);
+			float x0 = MathF.Floor(rect.X), y0 = MathF.Floor(rect.Y);
+			float x1 = MathF.Ceiling(rect.X + rect.W), y1 = MathF.Ceiling(rect.Y + rect.H);
+			var r = RectangleF.XYWH(x0, y0, x1 - x0, y1 - y0).FitInto(ActiveScissorRect);
+			r.W = MathF.Max(0, r.W);
+			r.H = MathF.Max(0, r.H);
+
 			ScissorRects.Push(r);
 			EngineCore.Window.BeginScissorMode((int)r.X, (int)r.Y, (int)r.W, (int)r.H);
-			__scissorRect = RectangleF.XYWH(r.X, r.Y, rect.W, r.H);
+			__scissorRect = r;
 		}
 		public static RectangleF GetScissorRect() => __scissorRect;
 
@@ -479,9 +668,17 @@ namespace Nucleus.Core
 
 		public static void DestroyRenderTarget(IRenderTexture target) => target.Dispose();
 
+
+
 		public static void BeginRenderTarget(IRenderTexture texture) {
 			// https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBlendFunc.xhtml
 			// https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBlendEquation.xhtml
+
+			if (ScissorRects.Count > 0)
+				EngineCore.Window.EndScissorMode();
+			SavedScissorStacks.Push(ScissorRects);
+			ScissorRects = ScissorRectPool.Alloc();
+			PushIdentityTransform();
 
 			texture.Begin();
 			Surface.Clear(0, 0, 0, 0);
@@ -492,9 +689,24 @@ namespace Nucleus.Core
 		public static void EndRenderTarget(IRenderTexture texture) {
 			texture.End();
 			SetBlendMode(BlendMode.Alpha);
+			PopTransform();
+
+			if (ScissorRects.Count > 0)
+				EngineCore.Window.EndScissorMode();
+			if (SavedScissorStacks.Count > 0) {
+				ScissorRectPool.Free(ScissorRects);
+				ScissorRects = SavedScissorStacks.Pop();
+			}
+			if (ScissorRects.Count > 0) {
+				var top = ScissorRects.Peek();
+				EngineCore.Window.BeginScissorMode((int)top.X, (int)top.Y, (int)top.W, (int)top.H);
+				__scissorRect = top;
+			}
+			else
+				__scissorRect = RectangleF.FromPosAndSize(new(0, 0), EngineCore.GetScreenSize());
 		}
 
-		public static void CalculateUVCoordinatesFromRects(ITexture tex, in RectangleF source, in RectangleF dest, out float sU, out float sV, out float eU, out float eV){
+		public static void CalculateUVCoordinatesFromRects(ITexture tex, in RectangleF source, in RectangleF dest, out float sU, out float sV, out float eU, out float eV) {
 			float texW = tex.GetWidth();
 			float texH = tex.GetHeight();
 
@@ -538,7 +750,7 @@ namespace Nucleus.Core
 			if (flipX) (eU, sU) = (sU, eU);
 			if (flipY) (eV, sV) = (sV, eV);
 
-			if (__textureFlippedY) 
+			if (__textureFlippedY)
 				(eV, sV) = (sV, eV);
 
 			x += __offset.X;
@@ -564,6 +776,37 @@ namespace Nucleus.Core
 			Rlgl.SetTexture(0);
 
 			Rlgl.PopMatrix();
+		}
+
+		public static void DrawTexturedStrip(ReadOnlySpan<Vector2F> top, ReadOnlySpan<Vector2F> bottom, ReadOnlySpan<float> u) {
+			int count = Math.Min(Math.Min(top.Length, bottom.Length), u.Length);
+			if (count < 2)
+				return;
+
+			float sV = 0, eV = 1;
+			if (__textureFlippedY)
+				(eV, sV) = (sV, eV);
+
+			Rlgl.DisableBackfaceCulling();
+			Rlgl.SetTexture(__texture.Id);
+			Rlgl.Begin(DrawMode.TRIANGLES);
+			Rlgl.Color4ub(__drawColor.R, __drawColor.G, __drawColor.B, __drawColor.A);
+			for (int i = 0; i < count - 1; i++) {
+				Vector2F t0 = top[i] + __offset, t1 = top[i + 1] + __offset;
+				Vector2F b0 = bottom[i] + __offset, b1 = bottom[i + 1] + __offset;
+
+				Rlgl.TexCoord2f(u[i], sV); Rlgl.Vertex2f(t0.X, t0.Y);
+				Rlgl.TexCoord2f(u[i], eV); Rlgl.Vertex2f(b0.X, b0.Y);
+				Rlgl.TexCoord2f(u[i + 1], eV); Rlgl.Vertex2f(b1.X, b1.Y);
+
+				Rlgl.TexCoord2f(u[i + 1], eV); Rlgl.Vertex2f(b1.X, b1.Y);
+				Rlgl.TexCoord2f(u[i + 1], sV); Rlgl.Vertex2f(t1.X, t1.Y);
+				Rlgl.TexCoord2f(u[i], sV); Rlgl.Vertex2f(t0.X, t0.Y);
+			}
+			Rlgl.End();
+			Rlgl.SetTexture(0);
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.EnableBackfaceCulling();
 		}
 		public static void DrawLoader(float x, float y, float inner = 14, float outer = 21, int segments = 16, bool useRealtime = false, double? time = null) {
 			for (float i = 0; i < segments; i++) {

@@ -6,6 +6,5 @@
         Png,
         Bmp,
         Tga,
-        Webp,
     }
 }

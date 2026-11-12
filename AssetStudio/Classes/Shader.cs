@@ -884,19 +884,24 @@ namespace AssetStudio
 
     public class Shader : NamedObject
     {
-        public byte[] m_Script;
+        public byte[] m_Script { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
         //5.3 - 5.4
-        public uint decompressedSize;
-        public byte[] m_SubProgramBlob;
+        public uint decompressedSize { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
+        public byte[] m_SubProgramBlob { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
         //5.5 and up
-        public SerializedShader m_ParsedForm;
-        public ShaderCompilerPlatform[] platforms;
-        public uint[][] offsets;
-        public uint[][] compressedLengths;
-        public uint[][] decompressedLengths;
-        public byte[] compressedBlob;
+        public SerializedShader m_ParsedForm { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
+        public ShaderCompilerPlatform[] platforms { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
+        public uint[][] offsets { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
+        public uint[][] compressedLengths { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
+        public uint[][] decompressedLengths { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
+        public byte[] compressedBlob { get { EnsureRead(); return field; } set { EnsureRead(); field = value; } }
 
         public Shader(ObjectReader reader) : base(reader)
+        {
+            ReadLater(reader, ReadBody);
+        }
+
+        private void ReadBody(ObjectReader reader)
         {
             if (version >= (5, 5)) //5.5 and up
             {

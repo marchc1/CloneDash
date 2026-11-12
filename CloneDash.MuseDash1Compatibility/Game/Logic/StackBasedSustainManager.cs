@@ -1,22 +1,27 @@
-﻿using CloneDash.Common.Gamemodes.MuseDash;
+﻿using CloneDash.Common.Game;
+using CloneDash.Common.Gamemodes.MuseDash;
 using CloneDash.Game.Entities;
 
 using Nucleus;
 
 namespace CloneDash.Game.Logic;
 
-public class StackBasedSustainManager : ISustainManager
+public class StackBasedSustainManager(GameEventManager events, InputComponent input, PathwaysComponent pathways, MuseDash1RulesComponent rules) : ISustainManager
 {
-	private Stack<SustainBeam> TopPathway = [];
-	private Stack<SustainBeam> BottomPathway = [];
+	private readonly Stack<SustainBeam>[] stacks = CreatePathwayStacks();
 
-	private Stack<SustainBeam> StackOf(PathwaySide side) => side == PathwaySide.Top ? TopPathway : BottomPathway;
-	private Stack<SustainBeam> StackOf(SustainBeam beam) => StackOf(beam.Pathway);
+	public static Stack<SustainBeam>[] CreatePathwayStacks() {
+		var ret = new Stack<SustainBeam>[PathwayLayout.MAX_PATHWAYS];
+		for (int i = 0; i < ret.Length; i++)
+			ret[i] = new();
+		return ret;
+	}
 
-	private void callbackToLevel(SustainBeam beam, int prevCount) {
-		var lvl = beam.GetGameLevel();
+	private Stack<SustainBeam> StackOf(SustainBeam beam) => stacks[pathways.PrimaryPathway(beam.Pathway).Index];
+
+	private void callbackToLevel(SustainBeam beam, int prevCount, bool completed = false) {
 		var c = StackOf(beam).Count;
-		lvl.OnSustainCallback(beam, beam.Pathway, prevCount > 0, c > 0, c);
+		events.Fire(new SustainStateChangedGameEvent(beam, pathways.PrimaryPathway(beam.Pathway), prevCount > 0, c > 0, c, completed));
 	}
 
 	public void StartSustainBeam(SustainBeam sustain) {
@@ -39,55 +44,32 @@ public class StackBasedSustainManager : ISustainManager
 		var stk = StackOf(sustain);
 		var prevCount = StackOf(sustain).Count;
 		stk.Pop();
-		callbackToLevel(sustain, prevCount);
+		callbackToLevel(sustain, prevCount, true);
 	}
 
-	public PathwaySide GetSustainState() {
-		bool topC = TopPathway.Count > 0;
-		bool bottomC = BottomPathway.Count > 0;
-
-		return topC && bottomC
-			? PathwaySide.Both
-			: topC
-				? PathwaySide.Top
-				: bottomC
-					? PathwaySide.Bottom
-					: PathwaySide.None;
+	public PathwaySet GetSustainState() {
+		uint bits = 0;
+		for (int i = 0; i < stacks.Length; i++)
+			if (stacks[i].Count > 0)
+				bits |= 1u << i;
+		return PathwaySet.FromBits(bits);
 	}
 
-	public IEnumerable<SustainBeam> GetSustainsActive(PathwaySide pathway) {
-		switch (pathway) {
-			case PathwaySide.Top: foreach (var sustain in TopPathway) yield return sustain; break;
-			case PathwaySide.Bottom: foreach (var sustain in BottomPathway) yield return sustain; break;
-			case PathwaySide.Both:
-				foreach (var sustain in TopPathway) yield return sustain;
-				foreach (var sustain in BottomPathway) yield return sustain;
-				break;
-			default: break;
-		}
-	}
+	public int GetSustainsActiveCount(PathwayId pathway) => stacks[pathway.Index].Count;
+	public SustainBeam? GetActiveSustain(PathwayId pathway) => stacks[pathway.Index].TryPeek(out var beam) ? beam : null;
 
-	public int GetSustainsActiveCount(PathwaySide pathway) {
-		switch (pathway) {
-			case PathwaySide.Top: return TopPathway.Count;
-			case PathwaySide.Bottom: return TopPathway.Count;
-			case PathwaySide.Both: return TopPathway.Count + BottomPathway.Count;
-			default: return 0;
-		}
-	}
 	public void ThinkSustainBeam(SustainBeam sustain) {
 		var stack = StackOf(sustain);
-		var lvl = sustain.GetGameLevel();
-		var pathwayCheck = lvl.GetPathway(sustain);
+		var pathwayAction = pathways.Layout[pathways.PrimaryPathway(sustain.Pathway)].Action;
 
 		var endTimeDist = sustain.GetJudgementTimeUntilEnd();
-		var sustainComplete = pathwayCheck.IsPressed() && endTimeDist <= 0;
-		var sustainEarlyButStillSuccess = !pathwayCheck.IsPressed() && NMath.InRange(endTimeDist, -0.05f, 0.05f);
+		var sustainComplete = input.State.IsHeld(pathwayAction) && endTimeDist <= 0;
+		var sustainEarlyButStillSuccess = !input.State.IsHeld(pathwayAction) && endTimeDist <= sustain.PostGreatRange;
 		if (sustainComplete || sustainEarlyButStillSuccess) {
-			sustain.Complete();
+			sustain.Complete(Math.Max(endTimeDist, 0));
 		}
 		// check if pathway being held
-		else if (!pathwayCheck.IsPressed() && lvl.NeedsToHoldSustains()) {
+		else if (!input.State.IsHeld(pathwayAction) && rules.NeedsToHoldSustains()) {
 			sustain.Fail();
 		}
 		else {
@@ -95,9 +77,15 @@ public class StackBasedSustainManager : ISustainManager
 		}
 	}
 
-	public int ActiveSustains(PathwaySide side) => side == PathwaySide.Top ? TopPathway.Count : BottomPathway.Count;
+	public int ActiveSustains() {
+		int count = 0;
+		for (int i = 0; i < stacks.Length; i++)
+			count += stacks[i].Count;
+		return count;
+	}
+
 	public void Reset() {
-		TopPathway.Clear();
-		BottomPathway.Clear();
+		foreach (var stack in stacks)
+			stack.Clear();
 	}
 }

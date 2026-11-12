@@ -1,4 +1,6 @@
-﻿using CloneDash.Common.Data;
+using CloneDash.Charts;
+using CloneDash.Common.Compatibility;
+using CloneDash.Common.Data;
 using CloneDash.Common.Gamemodes.MuseDash.V1.Data;
 using CloneDash.Compatibility.MDMC;
 using CloneDash.Compatibility.MuseDash;
@@ -10,11 +12,10 @@ using Nucleus.Audio;
 using Nucleus.Common.Audio;
 using Nucleus.Common.FileSystem;
 using Nucleus.Common.Graphics;
+using Nucleus.Common.Localization;
 using Nucleus.Core;
 using Nucleus.Files;
 using Raylib_cs;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.ColorSpaces;
 
 namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 {
@@ -74,11 +75,13 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 				AddBaseJSONInfo(new() {
 					Name = webChart.Title,
 					Author = webChart.Artist,
-				});
-				AddLocalizedJSONInfo(Common.HumanLanguage.English, webChart.TitleRomanized, null);
+				}, doNotLocalize: true);
+
+				AddLocalizedInfo(ILocalize.English, webChart.TitleRomanized, webChart.Artist);
 			}
 
-			public override ReadOnlySpan<char> GetUUID() => UsesWebChart ? $"song/musedash1customs/{WebChart.ID}" : $"song/musedash1customs/{Filepath}";
+			public override string GetID() => UsesWebChart ? WebChart.ID : Filepath ?? "";
+			public override ICloneDashModProvider GetProvider() => ChartMod.Instance.GetProviderByID(UsesWebChart ? "mdmc" : "musedash1customs")!;
 
 			public MD1_CustomChartsSong(string filepath) : base() {
 				Filepath = filepath;
@@ -204,7 +207,7 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 					AddBaseJSONInfo(new() {
 						Name = info.name,
 						Author = info.author
-					});
+					}, doNotLocalize: true);
 
 					MD1_SongInfo ret = new() {
 						BPM = info.bpm,
@@ -287,44 +290,54 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 
 			public MD1_SongChart LoadFromDiskBMS(string diskpath) {
 				Archive = new DiskSearchPath(Path.GetDirectoryName(diskpath)!);
-				var map = Archive.Open(Path.GetFileName(diskpath), FileAccess.Read, FileMode.Open);
+				var mapFile = Path.GetFileName(diskpath);
+				if (!Archive.CanRead(mapFile))
+					throw new Exception("Bad map difficulty.");
+
+				string name = Path.GetFileNameWithoutExtension(diskpath);
+				int.TryParse(name.StartsWith("map") ? name[3..] : "", out int difficulty);
+				return new MD1_CustomAlbumsChart(this, difficulty, mapFile);
+			}
+
+			private void loadChart(MD1_CustomAlbumsChart chart) {
+				var map = Archive?.Open(chart.mapFile, FileAccess.Read, FileMode.Open);
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (map == null)
 					throw new Exception("Bad map difficulty.");
 
-				return loadFromStream(map);
-			}
-
-			private MD1_CustomAlbumsChart loadFromStream(Stream map, int difficulty = 0) {
 				var bms = BmsLoader.Load(map, "", out var bpmChanges);
 				Interlude.Spin(submessage: "Reading Custom Albums chart...");
 				if (bms == null) throw new Exception("BMS parsing exception");
 				var stageInfo = BmsLoader.TransmuteData(bms);
-				stageInfo.mapName = FetchMetadata().Name;
-				stageInfo.difficulty = difficulty;
+				stageInfo.mapName = new(FetchMetadata().Name);
+				stageInfo.difficulty = (int)chart.Difficulty;
 				stageInfo.scene = bms.Info["GENRE"]?.GetValue<string>() ?? string.Empty;
 				stageInfo.bpm = bms.Bpm;
 
-				return new(this, difficulty, bpmChanges, bms, stageInfo);
+				chart.tempoChanges = bpmChanges;
+				chart.bms = bms;
+				chart.stageInfo = stageInfo;
 			}
 
 			protected override MD1_SongChart? ProduceSheet(int id) {
 				// DownloadOrPullFromCache();
-				var map = Archive.Open($"map{id}.bms", FileAccess.Read, FileMode.Open);
-				Interlude.Spin(submessage: "Reading Custom Albums chart...");
-				if (map == null)
+				var mapFile = $"map{id}.bms";
+				if (!Archive!.CanRead(mapFile))
 					return null;
 
-				return loadFromStream(map, id);
+				return new MD1_CustomAlbumsChart(this, id, mapFile);
 			}
 
 			public override MD1_GamemodeData? ProduceGamemodeData(MD1_SongChart chart, int mapID) {
 				if (chart is not MD1_CustomAlbumsChart caChart)
 					return null;
 
-				var bms = caChart.bms;
-				var bpmChanges = caChart.tempoChanges;
-				var stageInfo = caChart.stageInfo;
+				if (caChart.bms == null)
+					loadChart(caChart);
+
+				var bms = caChart.bms!;
+				var bpmChanges = caChart.tempoChanges!;
+				var stageInfo = caChart.stageInfo!;
 
 				double lastTime = 0;
 				double lastBeat = 0;
@@ -376,13 +389,12 @@ namespace CloneDash.CustomAlbumsCompatibility.CustomAlbums
 
 public class MD1_CustomAlbumsChart : MD1_SongChart
 {
-	internal readonly List<TempoChange>? tempoChanges;
-	internal readonly Bms bms;
-	internal readonly StageInfo stageInfo;
+	internal readonly string mapFile;
+	internal List<TempoChange>? tempoChanges;
+	internal Bms? bms;
+	internal StageInfo? stageInfo;
 
-	public MD1_CustomAlbumsChart(MD1_Song song, int difficultyID, List<TempoChange> tempoChanges, Bms bms, StageInfo stageInfo) : base(song, difficultyID) {
-		this.tempoChanges = tempoChanges;
-		this.bms = bms;
-		this.stageInfo = stageInfo;
+	public MD1_CustomAlbumsChart(MD1_Song song, int difficultyID, string mapFile) : base(song, difficultyID) {
+		this.mapFile = mapFile;
 	}
 }

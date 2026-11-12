@@ -94,6 +94,7 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 		};
 		worker.Start();
 
+		string? oldMessage = Interlude.GetCurrentMessage();
 		while (!progress.Done) {
 			Interlude.Spin(progress.Message, progress.SubMessage);
 			Thread.Sleep(16);
@@ -104,6 +105,8 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 
 		if (!HasAvcodec(cache))
 			throw new InvalidOperationException("FFmpeg download completed but no avcodec library was found in " + cache + ".");
+
+		Interlude.Spin(oldMessage, "Loaded FFmpeg");
 
 		FFmpegLoader.FFmpegPath = cache;
 		ffmpegReady = true;
@@ -209,7 +212,7 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 
 	public CinemaBackgroundGenerator(Stream stream, bool disposeStream = true) {
 		EnsureLoaded();
-		Interlude.Spin("Loading Cinema background...");
+		Interlude.Spin(submessage: "Loading Cinema background...");
 		var opts = new MediaOptions {
 			VideoPixelFormat = ImagePixelFormat.Rgba32,
 			StreamsToLoad = MediaMode.Video
@@ -268,7 +271,7 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 	long lastFrameIndex = -1;
 
 	public void Regenerate(ITextureCanvas canvas) {
-		IConductor conductor = EngineCore.Level.As<MuseDash1Game>().Conductor; // TODO: better modding api
+		IConductor conductor = EngineCore.Level.As<RhythmGameLevel>().Component<IConductor>(); // TODO: better modding api
 		GetFrame(TimeSpan.FromSeconds(Math.Max(conductor?.GetTime() ?? 0d, 0d)), canvas.Pixels);
 	}
 }

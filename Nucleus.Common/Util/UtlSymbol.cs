@@ -2,7 +2,7 @@
 
 namespace Nucleus.Util;
 
-public struct UtlSymbol
+public struct UtlSymbol : IEquatable<UtlSymbol>
 {
 	public static readonly UtlSymId_t UTL_INVAL_SYMBOL = UtlSymId_t.MaxValue;
 
@@ -79,6 +79,8 @@ public struct UtlSymbol
 	public static implicit operator ReadOnlySpan<char>(UtlSymbol symbol) => symbol.String();
 
 	public override readonly bool Equals(object? obj) => obj is UtlSymbol sym && sym.id == id;
+
+	public readonly bool Equals(UtlSymbol other) => other.id == id;
 
 	public override readonly int GetHashCode() => id.GetHashCode();
 }

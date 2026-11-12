@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Runtime.InteropServices;
 using Fmod5Sharp.FmodTypes;
 using Fmod5Sharp.Util;
 using NAudio.Wave;
@@ -31,11 +33,10 @@ namespace Fmod5Sharp.CodecRebuilders
             -1, -1, -1, -1, 2, 4, 6, 8,
         };
 
-        private static void ExpandNibble(MemoryStream stream, long byteOffset, int nibbleShift, ref int hist, ref int stepIndex)
+        private static void ExpandNibble(byte[] bytes, long byteOffset, int nibbleShift, ref int hist, ref int stepIndex)
         {
             //Read the raw nibble
-            stream.Seek(byteOffset, SeekOrigin.Begin);
-            var sampleNibble = (stream.ReadByte() >> nibbleShift) & 0xf;
+            var sampleNibble = ((byteOffset >= 0 && byteOffset < bytes.Length ? bytes[byteOffset] : -1) >> nibbleShift) & 0xf;
 
             //Initial value for the sample is the previous value
             var sampleDecoded = hist;
@@ -110,7 +111,7 @@ namespace Fmod5Sharp.CodecRebuilders
                         if (sampleNum < blockSamples)
                         {
                             //Apply the IMA algorithm to convert this nibble into a full byte of data.
-                            ExpandNibble(stream, byteOffset, nibbleShift, ref hist, ref stepIndex);
+                            ExpandNibble(sample.SampleBytes, byteOffset, nibbleShift, ref hist, ref stepIndex);
 
                             //Move to next sample
                             ret[sampleIndex] = ((short)hist);
@@ -168,7 +169,7 @@ namespace Fmod5Sharp.CodecRebuilders
                     if (sampleNum < SamplesPerFramePerChannel)
                     {
                         //Apply the IMA algorithm to convert this nibble into a full byte of data.
-                        ExpandNibble(stream, byteOffset, nibbleShift, ref hist, ref stepIndex);
+                        ExpandNibble(sample.SampleBytes, byteOffset, nibbleShift, ref hist, ref stepIndex);
 
                         //Move to next sample
                         ret[sampleIndex] = ((short)hist);
@@ -191,12 +192,12 @@ namespace Fmod5Sharp.CodecRebuilders
                 numChannels * 2,
                 16
             );
-            using var stream = new MemoryStream();
-            using var writer = new WaveFileWriter(stream, format);
-
             var pcmShorts = numChannels == 1 ? DecodeSamplesXboxIma(sample) : DecodeSamplesFsbIma(sample);
 
-            writer.WriteSamples(pcmShorts, 0, pcmShorts.Length);
+            using var stream = new MemoryStream(pcmShorts.Length * 2 + 64);
+            using var writer = new WaveFileWriter(stream, format);
+
+            writer.Write(MemoryMarshal.AsBytes(pcmShorts.AsSpan()));
 
             return stream.GetBuffer();
         }

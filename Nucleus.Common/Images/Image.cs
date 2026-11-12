@@ -3,6 +3,7 @@ using Nucleus.Common.Types;
 using Nucleus.Types;
 using StbImageResizeSharp;
 using StbImageSharp;
+using StbImageWriteSharp;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -90,14 +91,58 @@ public unsafe partial struct Image : IValidatable
 			Width = width,
 			Height = height,
 			Mipmaps = 1,
-			Format = (ColorComponents)comp switch {
-				ColorComponents.RedGreenBlue => ImageFormat.R8G8B8,
-				ColorComponents.RedGreenBlueAlpha => ImageFormat.R8G8B8A8,
-				ColorComponents.Grey => ImageFormat.Grayscale,
-				ColorComponents.GreyAlpha => ImageFormat.GrayAlpha,
+			Format = (StbImageSharp.ColorComponents)comp switch {
+				StbImageSharp.ColorComponents.RedGreenBlue => ImageFormat.R8G8B8,
+				StbImageSharp.ColorComponents.RedGreenBlueAlpha => ImageFormat.R8G8B8A8,
+				StbImageSharp.ColorComponents.Grey => ImageFormat.Grayscale,
+				StbImageSharp.ColorComponents.GreyAlpha => ImageFormat.GrayAlpha,
 				_ => throw new NotSupportedException()
 			}
 		};
+	}
+
+	public static bool ExportImage(Image image, ReadOnlySpan<char> fileName) {
+		using FileStream stream = File.Create(new string(fileName));
+		return ExportImageToStream(image, stream, Path.GetExtension(fileName));
+	}
+
+	public static unsafe bool ExportImageToStream(Image image, Stream stream, ReadOnlySpan<char> fileType) {
+		if ((image.Width == 0) || (image.Height == 0) || (image.Data == null)) return false;
+
+		void* data = image.Data;
+		bool allocatedData = false;
+		StbImageWriteSharp.ColorComponents components;
+
+		switch (image.Format) {
+			case ImageFormat.Grayscale: components = StbImageWriteSharp.ColorComponents.Grey; break;
+			case ImageFormat.GrayAlpha: components = StbImageWriteSharp.ColorComponents.GreyAlpha; break;
+			case ImageFormat.R8G8B8: components = StbImageWriteSharp.ColorComponents.RedGreenBlue; break;
+			case ImageFormat.R8G8B8A8: components = StbImageWriteSharp.ColorComponents.RedGreenBlueAlpha; break;
+			default:
+				data = LoadImageColors(image);
+				allocatedData = true;
+				components = StbImageWriteSharp.ColorComponents.RedGreenBlueAlpha;
+				break;
+		}
+
+		bool success = true;
+		ImageWriter writer = new();
+
+		try {
+			if (fileType.Equals(".png", StringComparison.OrdinalIgnoreCase)) writer.WritePng(data, image.Width, image.Height, components, stream);
+			else if (fileType.Equals(".bmp", StringComparison.OrdinalIgnoreCase)) writer.WriteBmp(data, image.Width, image.Height, components, stream);
+			else if (fileType.Equals(".tga", StringComparison.OrdinalIgnoreCase)) writer.WriteTga(data, image.Width, image.Height, components, stream);
+			else if (fileType.Equals(".jpg", StringComparison.OrdinalIgnoreCase) || fileType.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)) writer.WriteJpg(data, image.Width, image.Height, components, stream, 90);
+			else {
+				Logs.Warn($"Image.ExportImageToStream: File type '{fileType}' not supported");
+				success = false;
+			}
+		}
+		finally {
+			if (allocatedData) UnloadImageColors((Color*)data);
+		}
+
+		return success;
 	}
 
 	/// <summary>
@@ -633,6 +678,137 @@ public unsafe partial struct Image : IValidatable
 
 			Image.Reformat(ref image, format);  // Reformat 32bit RGBA image to original format
 		}
+	}
+
+	public static unsafe void ImageResizeNN(ref Image image, int newWidth, int newHeight) {
+		if ((image.Data == null) || (image.Width == 0) || (image.Height == 0)) return;
+
+		Color* pixels = LoadImageColors(image);
+		Color* output = (Color*)Marshal.AllocHGlobal(newWidth * newHeight * sizeof(Color));
+
+		int xRatio = (int)((image.Width << 16) / newWidth) + 1;
+		int yRatio = (int)((image.Height << 16) / newHeight) + 1;
+
+		for (int y = 0; y < newHeight; y++) {
+			for (int x = 0; x < newWidth; x++) {
+				int x2 = (x * xRatio) >> 16;
+				int y2 = (y * yRatio) >> 16;
+
+				output[(y * newWidth) + x] = pixels[(y2 * image.Width) + x2];
+			}
+		}
+
+		ImageFormat format = image.Format;
+
+		UnloadImageColors(pixels);
+		Marshal.FreeHGlobal((nint)image.Data);
+
+		image.Data = output;
+		image.Width = newWidth;
+		image.Height = newHeight;
+		image.Format = ImageFormat.R8G8B8A8;
+
+		Image.Reformat(ref image, format);
+	}
+
+	public static unsafe void ImageCrop(ref Image image, int x, int y, int width, int height) {
+		if ((image.Data == null) || (image.Width == 0) || (image.Height == 0)) return;
+
+		if (x < 0) { width += x; x = 0; }
+		if (y < 0) { height += y; y = 0; }
+		if ((x + width) > image.Width) width = image.Width - x;
+		if ((y + height) > image.Height) height = image.Height - y;
+
+		if ((x >= image.Width) || (y >= image.Height) || (width <= 0) || (height <= 0)) {
+			Logs.Warn("Image.ImageCrop: Crop rectangle out of bounds");
+			return;
+		}
+
+		if (image.Format >= ImageFormat.DXT1_RGB) {
+			Logs.Warn("Image.ImageCrop: Data format is compressed, can not be cropped");
+			return;
+		}
+
+		int bytesPerPixel = image.Format.GetBytesPerPixel();
+		int rowSize = width * bytesPerPixel;
+		byte* croppedData = (byte*)Marshal.AllocHGlobal(height * rowSize);
+
+		for (int row = 0; row < height; row++)
+			Buffer.MemoryCopy((byte*)image.Data + (((y + row) * image.Width) + x) * bytesPerPixel, croppedData + row * rowSize, rowSize, rowSize);
+
+		Marshal.FreeHGlobal((nint)image.Data);
+
+		image.Data = croppedData;
+		image.Width = width;
+		image.Height = height;
+		image.Mipmaps = 1;
+	}
+
+	public static unsafe void ImageFlipVertical(ref Image image) {
+		if ((image.Data == null) || (image.Width == 0) || (image.Height == 0)) return;
+
+		if (image.Format >= ImageFormat.DXT1_RGB) {
+			Logs.Warn("Image.ImageFlipVertical: Data format is compressed, can not be flipped");
+			return;
+		}
+
+		int rowSize = image.Width * image.Format.GetBytesPerPixel();
+		byte* flippedData = (byte*)Marshal.AllocHGlobal(image.Height * rowSize);
+
+		for (int i = image.Height - 1, offsetSize = 0; i >= 0; i--) {
+			Buffer.MemoryCopy((byte*)image.Data + i * rowSize, flippedData + offsetSize, rowSize, rowSize);
+			offsetSize += rowSize;
+		}
+
+		Marshal.FreeHGlobal((nint)image.Data);
+
+		image.Data = flippedData;
+		image.Mipmaps = 1;
+	}
+
+	public static unsafe void ImageFlipHorizontal(ref Image image) {
+		if ((image.Data == null) || (image.Width == 0) || (image.Height == 0)) return;
+
+		if (image.Format >= ImageFormat.DXT1_RGB) {
+			Logs.Warn("Image.ImageFlipHorizontal: Data format is compressed, can not be flipped");
+			return;
+		}
+
+		int bytesPerPixel = image.Format.GetBytesPerPixel();
+		byte* flippedData = (byte*)Marshal.AllocHGlobal(image.Width * image.Height * bytesPerPixel);
+
+		for (int y = 0; y < image.Height; y++) {
+			for (int x = 0; x < image.Width; x++)
+				Buffer.MemoryCopy((byte*)image.Data + ((y * image.Width) + (image.Width - 1 - x)) * bytesPerPixel, flippedData + ((y * image.Width) + x) * bytesPerPixel, bytesPerPixel, bytesPerPixel);
+		}
+
+		Marshal.FreeHGlobal((nint)image.Data);
+
+		image.Data = flippedData;
+		image.Mipmaps = 1;
+	}
+
+	public static unsafe void ImageRotateCCW(ref Image image) {
+		if ((image.Data == null) || (image.Width == 0) || (image.Height == 0)) return;
+
+		if (image.Format >= ImageFormat.DXT1_RGB) {
+			Logs.Warn("Image.ImageRotateCCW: Data format is compressed, can not be rotated");
+			return;
+		}
+
+		int bytesPerPixel = image.Format.GetBytesPerPixel();
+		byte* rotatedData = (byte*)Marshal.AllocHGlobal(image.Width * image.Height * bytesPerPixel);
+
+		for (int y = 0; y < image.Height; y++) {
+			for (int x = 0; x < image.Width; x++)
+				Buffer.MemoryCopy((byte*)image.Data + ((y * image.Width) + (image.Width - x - 1)) * bytesPerPixel, rotatedData + ((x * image.Height) + y) * bytesPerPixel, bytesPerPixel, bytesPerPixel);
+		}
+
+		Marshal.FreeHGlobal((nint)image.Data);
+
+		image.Data = rotatedData;
+		(image.Width, image.Height) = (image.Height, image.Width);
+		image.Mipmaps = 1;
 	}
 
 	public static unsafe Image GenImageColor(int width, int height, Color color) {

@@ -1,5 +1,7 @@
-﻿using CloneDash.Characters;
+using CloneDash.Characters;
 using CloneDash.Common;
+using CloneDash.Common.Systems;
+using CloneDash.Common.Systems.Discord;
 using CloneDash.Common.UI;
 using CloneDash.Common.UI.Binding;
 using CloneDash.Game;
@@ -45,7 +47,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 	private readonly Element _bottom;
 	private readonly Element _line;
-	private readonly CharacterSelectorScroller _scroller;
+	private readonly DescriptorSelectorScroller<ICharacterDescriptor> _scroller;
 
 	private ICharacterDescriptor? _lastCharacterSelected;
 
@@ -92,16 +94,16 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		_line.SetPaintBackgroundEnabled(true);
 		_line.SetBgColor(this.GetPrimaryColor(GetScheme()));
 
-		_scroller = new CharacterSelectorScroller(_bottom);
+		_scroller = new DescriptorSelectorScroller<ICharacterDescriptor>(_bottom, CharacterMod.Instance.GetAllDescriptors(), static character => character?.GetThumbnailTexture());
 		_scroller.Dock = Dock.Top;
 		_scroller.DockMargin = new RectangleF(20, 0, 0, 0);
 		_scroller.Size = new Vector2F(0, 100); // margin subtracts from size??
 		_scroller.BorderSize = 0;
-		_scroller.CharacterSelected += BackPanel_CharacterSelected;
+		_scroller.Selected += BackPanel_CharacterSelected;
 
-		ICharacterDescriptor? currentCharacter = CharacterMod.GetCharacterData();
+		ICharacterDescriptor? currentCharacter = CharacterMod.Instance.GetActive();
 		BackPanel_CharacterSelected(currentCharacter);
-		_scroller.SetCharacter(currentCharacter);
+		_scroller.SetSelected(currentCharacter);
 	}
 
 	public override void OnSchemeChanged(IScheme? prev, IScheme? now) {
@@ -120,8 +122,7 @@ public class CharacterSelector : Panel, IMainMenuPanel
 
 	private void SelectCharacter() {
 		if (_lastCharacterSelected == null) return;
-		ConVar cv = cvar.FindVar("character")!;
-		cv.SetValue(_lastCharacterSelected.GetUUID());
+		CharacterMod.character.SetValue(_lastCharacterSelected.GetUniqueID());
 		Character.PlayApplyExpression();
 	}
 
@@ -151,8 +152,6 @@ public class CharacterSelector : Panel, IMainMenuPanel
 		_lastCharacterSelected = ch;
 		Character.SetCharacter(ch);
 
-		HumanLanguage lang = HumanLanguage.GetCurrentLanguage();
-
 		if (ch == null) {
 			_nameLabel.Text = "<NULL>";
 			_costumeLabel.Text = "<NULL>";
@@ -163,18 +162,18 @@ public class CharacterSelector : Panel, IMainMenuPanel
 			_skill.Text = "<NULL>";
 		}
 		else {
-			_nameLabel.Text = $"{ch.GetCharacterName(lang, out _)}";
-			_costumeLabel.Text = $"{ch.GetCosplayName(lang, out _)}";
+			_nameLabel.Text = $"{ch.GetCharacterName()}";
+			_costumeLabel.Text = $"{ch.GetCosplayName()}";
 			_healthLabel.Text = "250"; // no clue how to get HP values
-			_voiceLabel.Text = $"{ch.GetAuthor(lang, out _)}";
+			_voiceLabel.Text = $"{ch.GetAuthor()}";
 			_artistLabel.Text = "???"; // needs to be added at some point
 
-			_skill.Text = ch.GetPerk(lang, out _).ToString();
+			_skill.Text = ch.GetPerk().ToString();
 		}
 	}
 
 	public bool OnTryClose() {
-		Character.SetCharacter(CharacterMod.GetCharacterData());
+		Character.SetCharacter(CharacterMod.Instance.GetActive());
 		return true;
 	}
 

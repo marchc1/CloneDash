@@ -1,39 +1,34 @@
 ﻿using CloneDash.Common.Compatibility.Valve;
-using CloneDash.Compatibility.Valve;
 
-using Microsoft.Win32;
+namespace CloneDash.Compatibility.MuseDash;
 
-namespace CloneDash.Compatibility.MuseDash
+public static partial class MuseDash1Compatibility
 {
-	public static partial class MuseDash1Compatibility
-	{
-		private static MD1CompatLayerInitResult INIT_WINDOWS() {
-			if (!OperatingSystem.IsWindows())
-				return MD1CompatLayerInitResult.OperatingSystemNotCompatible;
+	private static AppStatus INIT_WINDOWS() {
+		if (!OperatingSystem.IsWindows())
+			return AppStatus.OperatingSystemNotCompatible;
 
-			if (SteamGames.WhereIsSteamInstalled() == null) return MD1CompatLayerInitResult.SteamNotInstalled;
-			var musedash_installdir = SteamGames.WhereIsGameInstalled(MUSEDASH_APPID);
-			if (musedash_installdir == null) return MD1CompatLayerInitResult.MuseDashNotInstalled;
+		if (!SteamApps.WhereIsAppInstalled(MUSEDASH_APPID).IsOK(out string? installdir, out AppStatus err))
+			return err;
 
-			WhereIsMuseDashInstalled = musedash_installdir;
-			WhereIsMuseDashDataFolder = Path.Combine(musedash_installdir, "MuseDash_Data");
+		WhereIsMuseDashInstalled = installdir;
+		WhereIsMuseDashDataFolder = Path.Combine(installdir, "MuseDash_Data");
 
-			// If installed, load noteinfo.json for BMS references
-			// The bundle is named globalconfigs_assets_notedatamananger
+		// If installed, load noteinfo.json for BMS references
+		// The bundle is named globalconfigs_assets_notedatamananger
 
-			string platform = "StandaloneWindows64";
-			StandalonePlatform = platform;
+		string platform = "StandaloneWindows64";
+		StandalonePlatform = platform;
 
-			string musedash_streamingassets = musedash_installdir + $"\\MuseDash_Data\\StreamingAssets\\aa\\{platform}\\"; // TODO: support multiple platforms
-			if (!Directory.Exists(musedash_streamingassets))
-				return MD1CompatLayerInitResult.StreamingAssetsNotFound;
+		string streamingassets = installdir + $"\\MuseDash_Data\\StreamingAssets\\aa\\{platform}\\"; // TODO: support multiple platforms
+		if (!Directory.Exists(streamingassets))
+			return AppStatus.CriticalPathNotFound;
 
-			BuildTarget = musedash_streamingassets;
-			StreamingFiles = Directory.GetFiles(musedash_streamingassets);
+		BuildTarget = streamingassets;
+		StreamingFiles = Directory.GetFiles(streamingassets);
 
-			// The note data file would be loaded here from the assetbundle, then the notedata extracted
+		// The note data file would be loaded here from the assetbundle, then the notedata extracted
 
-			return MD1CompatLayerInitResult.OK;
-		}
+		return AppStatus.OK;
 	}
 }

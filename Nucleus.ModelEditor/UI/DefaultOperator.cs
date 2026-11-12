@@ -45,5 +45,18 @@ namespace Nucleus.ModelEditor
 		public virtual void GizmoRender(EditorPanel editorPanel, IEditorType target) { }
 
 		public virtual bool IsSelectable(IEditorType target) => true;
+
+		/// <summary>
+		/// true = the tool takes this click (and its drag/release) from selection
+		/// </summary>
+		public virtual bool ToolClick(EditorPanel editorPanel, Vector2F mouseScreen, bool ctrl) => false;
+		public virtual void ToolDrag(EditorPanel editorPanel, Vector2F mouseScreenStart, Vector2F mouseScreenNow) { }
+		public virtual void ToolRelease(EditorPanel editorPanel, Vector2F mouseScreenStart, Vector2F mouseScreenEnd,
+			bool dragged) { }
+		/// <summary>
+		/// Drawn over the viewport in panel space
+		/// </summary>
+		public virtual void PaintOverlay(EditorPanel editorPanel, float width, float height) { }
+		public virtual RectangleF? SelectionBox => null;
 	}
 }
