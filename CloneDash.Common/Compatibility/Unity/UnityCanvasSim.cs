@@ -101,6 +101,7 @@ public class CanvasNode
 	public Vector3? LocalPositionOverride;
 	public float LocalZ;
 	public bool Mask;
+	public Vector2 MaskOverflow;
 	public string Name = "";
 	public CanvasOutline? Outline;
 	public CanvasNode? Parent;
@@ -659,6 +660,10 @@ public class UnityCanvas
 
 		var min = node.RectMin;
 		var size = node.RectSize;
+		if (stencilOnly) {
+			min -= node.MaskOverflow;
+			size += node.MaskOverflow * 2;
+		}
 		var texture = image.Texture;
 		bool flipped = texture?.HasPublicFlags(PublicTextureFlags.RequiresFlippedV) ?? false;
 		float width = texture?.GetWidth() ?? 1, height = texture?.GetHeight() ?? 1;

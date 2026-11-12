@@ -511,6 +511,10 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	protected readonly List<TextImageRenderItem> ForegroundItems = [];
 
 	protected virtual Color ScoreColor => new(165, 254, 254);
+	protected virtual Color ScoreLabelColor => new(165, 254, 254);
+	protected virtual Vector2F ScoreLabelPosition => new(100, -96);
+	protected virtual string ScoreLabelTexture => "score_English";
+	protected virtual Vector2F ScoreNumberPosition => new(100, -16);
 
 	protected TextImageRenderItem? ScoreNumber = null;
 	protected TextImageRenderItem? ScoreLabel = null;
@@ -636,8 +640,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		StyledTextShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "styled_text.fs");
 		UIAlphatestShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "ui_alphatest.fs");
 
-		score_English = UnityAssetUtils.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>("score_English")!);
-		ScoreLabel = new(0, 0, new(0, 0), 0, new(1, 1), score_English, new(165, 254, 254), null);
+		score_English = UnityAssetUtils.ConvertTexture(EngineCore.Level, MuseDash1Compatibility.StreamingAssets.FindAssetByName<AssetStudio.Texture2D>(ScoreLabelTexture)!);
+		ScoreLabel = new(0, 0, new(0, 0), 0, new(1, 1), score_English, ScoreLabelColor, null);
 
 		LoadScoreAssets();
 		LoadMultiHitAssets();
@@ -1309,8 +1313,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		}
 		ComboNumber?.BorderSize = 4;
 
-		ScoreNumber?.StartPosition = new(100, -16);
-		ScoreLabel?.StartPosition = new(100, -96);
+		ScoreNumber?.StartPosition = ScoreNumberPosition;
+		ScoreLabel?.StartPosition = ScoreLabelPosition;
 		ScoreNumber?.borderColor = new Color(173, 173, 255) * new Color(200, 255);
 
 		ScoreNumber?.StartScale = new(1f);
@@ -1632,6 +1636,10 @@ public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, RhythmGameLe
 	protected ITexture? combo_normal_gc;
 
 	protected override MuseDash1ComboTextClips ComboTextClips => MuseDash1HudAnimations.ComboTextGrooveCoaster;
+	protected override Color ScoreLabelColor => new(255, 255, 255);
+	protected override Vector2F ScoreLabelPosition => new(104, -96);
+	protected override string ScoreLabelTexture => "score_English_GC";
+	protected override Vector2F ScoreNumberPosition => new(98, -61);
 
 	public override void SetupComboNumber() {
 		base.SetupComboNumber();

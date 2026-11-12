@@ -21,6 +21,7 @@ public class MuseDash1VictoryScreen
 
 	const string ACCURACY = "PnlVictory_3D/SongTittle/TxtAccurcacy/TxtValue";
 	const string ADVANCED_JUDGMENT = "PnlVictory_3D/DetailInfo/Other/AdvJudgment";
+	const string BACKGROUND = "PnlVictory_2D/Bg";
 	const string CHARACTER = "PnlVictory_2D/GirlShow/Point";
 	const string CONTINUE = "PnlVictory_2D/Buttons/BtnContinue";
 	const string DIFFICULTY = "PnlVictory_3D/SongTittle/ImgDifficulty/TxtDifficulty";
@@ -28,6 +29,7 @@ public class MuseDash1VictoryScreen
 	const string GREAT = "PnlVictory_3D/DetailInfo/Other/TxtGreat/TxtValue";
 	const string HIGH_SCORE = "PnlVictory_3D/TxtHighScore";
 	const string HIGH_SCORE_VALUE = "PnlVictory_3D/TxtHighScore/TxtValue";
+	const string INFO = "PnlVictory_2D/Info";
 	const string LATE = "PnlVictory_3D/DetailInfo/Other/AdvJudgment/TxtLate/TxtValue";
 	public const string LIKE_SOUND = "sfx_count_finish";
 	const string MAX_COMBO = "PnlVictory_3D/SongTittle/TxtMaxCombe/TxtValue";
@@ -181,6 +183,17 @@ public class MuseDash1VictoryScreen
 		SetText(SCORE, ((int)(score * progress)).ToString());
 		foreach (var marquee in assets.Behaviours.Marquees)
 			marquee.Update(deltaTime);
+		FillWideScreen();
+	}
+
+	void FillWideScreen() {
+		if (Canvas.Find(BACKGROUND) is not CanvasNode background || background.Parent == null)
+			return;
+
+		float overflow = MathF.Max(0, (Canvas.Size.X - background.Parent.RectSize.X) / 2);
+		background.SizeDelta = background.SizeDelta with { X = overflow * 2 };
+		if (Canvas.Find(INFO) is CanvasNode info)
+			info.MaskOverflow = new(overflow, 0);
 	}
 
 	static void DummyVictoryAutocomplete(ConCommandBase cmd, string argsStr, TokenizedCommand args, int curArgPos, ref string[] returns, ref string[]? returnHelp) {
