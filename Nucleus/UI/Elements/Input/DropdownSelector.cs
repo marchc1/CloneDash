@@ -70,8 +70,8 @@ public class DropdownSelector<T> : Button
 				}
 			});
 		}
-		m.MinimumWidth = GetRenderBounds().W;
-		m.Open(GetGlobalPosition() + new Vector2F(0, GetRenderBounds().H));
+		m.MinimumWidth = GetRenderBounds().W * GetEffectiveScale().X;
+		m.Open(ToScreenSpace(new Vector2F(0, GetRenderBounds().H)));
 		return true;
 	}
 

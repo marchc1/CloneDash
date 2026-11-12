@@ -26,6 +26,7 @@ using Nucleus.Extensions;
 using Nucleus.Input;
 using Nucleus.Types;
 using Nucleus.UI;
+using Nucleus.UI.Elements;
 
 using Raylib_cs;
 using System.Numerics;
@@ -41,6 +42,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	public Stack<Element> ActiveElements = [];
 	public MainMenuCharacter Character = null!;
 
+	private DrawSizePreservingFillContainer _scaledRoot = null!;
 	private Panel _header = null!;
 	private Label _headerText = null!;
 
@@ -220,7 +222,9 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		Character.Origin = Anchor.TopCenter;
 		Character.Size = new Vector2F(1f);
 
-		_header = new Panel(RootPanel);
+		_scaledRoot = new DrawSizePreservingFillContainer(RootPanel);
+
+		_header = new Panel(_scaledRoot);
 		_header.Position = new Vector2F(0);
 		_header.Size = new Vector2F(256, 64);
 		_header.Dock = Dock.Top;
@@ -232,13 +236,13 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		_headerText.TextSize = 32 * 1.4f;
 		_headerText.SetAutoSize(true);
 
-		Content = new Element(RootPanel);
+		Content = new Element(_scaledRoot);
 		Content.Dock = Dock.Fill;
 		Content.BorderSize = 0;
 		Content.DockPadding = new RectangleF(0, 0, 0, 48);
 		Content.SetPassthru(true);
 
-		_footer = new Panel(RootPanel);
+		_footer = new Panel(_scaledRoot);
 		_footer.Size = new Vector2F(256, 48);
 		_footer.Dock = Dock.Bottom;
 		_footer.BorderSize = 0;
@@ -263,7 +267,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 
 		Keybinds.AddKeybind([ButtonCode.KeyLeftControl, ButtonCode.KeyR], LevelTransitions.LoadMainMenu);
 
-		PushActiveElement(new MainMenuPanel(RootPanel));
+		PushActiveElement(new MainMenuPanel(_scaledRoot));
 
 		if (LevelTransitions.TakePendingError() is string error)
 			RootPanel.DialogOK("Couldn't load the chart", error);
@@ -284,13 +288,13 @@ public class MainMenuLevel : Level, IMainMenuLevel
 	public override ConsoleOverlaySettings GetConsoleOverlaySettings() {
 		return base.GetConsoleOverlaySettings() with {
 			TextSize = 11,
-			Position = new(4 + 6, (int)(_header.GetRenderBounds().H + 4))
+			Position = new(4 + 6, (int)(_header.GetRenderBounds().H * _header.GetEffectiveScale().Y + 4))
 		};
 	}
 
 	public override DeveloperOverlaySettings GetDeveloperOverlaySettings() {
 		return base.GetDeveloperOverlaySettings() with {
-			Offset = new(0, -_footer.GetRenderBounds().H + -8)
+			Offset = new(0, -_footer.GetRenderBounds().H * _footer.GetEffectiveScale().Y + -8)
 		};
 	}
 
@@ -521,7 +525,7 @@ public class MainMenuLevel : Level, IMainMenuLevel
 		var info = song.FetchMetadata();
 		selector.FlyAway = 1;
 
-		LevelSelectorPanel levelSelector = new LevelSelectorPanel(RootPanel, selector);
+		LevelSelectorPanel levelSelector = new LevelSelectorPanel(_scaledRoot, selector);
 		SelectedSong = levelSelector;
 		levelSelector.MakePopup();
 		levelSelector.MakeModal();

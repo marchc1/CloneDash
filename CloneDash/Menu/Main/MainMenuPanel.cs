@@ -180,7 +180,7 @@ public class MainMenuPanel : Panel, IMainMenuPanel
 		if (back.IsVisible())
 			left = MathF.Min(left, back.GetRenderBounds().X);
 
-		return GetGlobalPosition().X + left;
+		return ToScreenSpace(new Vector2F(left, 0)).X;
 	}
 
 	IMainMenuLevel mainMenu = null!;

@@ -189,6 +189,7 @@ public class Element : IValidatable
 	private float roundness = 0;
 
 	private Vector2F childRenderOffset = Vector2F.Zero;
+	private Vector2F childScale = Vector2F.One;
 	internal Element? Parent;
 	internal Element? ElementToPassMouseTo;
 	private double lastLayoutTime = 0;
@@ -272,6 +273,29 @@ public class Element : IValidatable
 		get => childRenderOffset;
 		set => childRenderOffset = value;
 	}
+
+	public Vector2F ChildScale {
+		get => childScale;
+		set {
+			if (childScale == value)
+				return;
+
+			childScale = value;
+			InvalidateChildren(recursive: true, self: true);
+		}
+	}
+
+	public Vector2F GetChildSpaceSize() => __renderbounds.Size / childScale;
+
+	public Vector2F GetEffectiveScale() {
+		Vector2F scale = Vector2F.One;
+		for (Element? p = Parent; p != null; p = p.Parent)
+			scale *= p.childScale;
+		return scale;
+	}
+
+	public Vector2F ToScreenSpace(Vector2F local) => GetGlobalPosition() + local * GetEffectiveScale();
+	public Vector2F ToLocalSpace(Vector2F screen) => (screen - GetGlobalPosition()) / GetEffectiveScale();
 
 	public Vector2F RenderOffset { get; set; } = Vector2F.Zero;
 
@@ -884,7 +908,7 @@ public class Element : IValidatable
 			return;
 		Vector2F layoutPos = _position, layoutSize = _size;
 		if (_dynamicallySized && Parent != null)
-			layoutSize = _size * Parent.__renderbounds.Size;
+			layoutSize = _size * Parent.GetChildSpaceSize();
 
 		__renderbounds.X = layoutPos.X;
 		__renderbounds.Y = layoutPos.Y;
@@ -928,7 +952,8 @@ public class Element : IValidatable
 			DoCentering();
 		// Perform the internal layout based on our size
 		AddFlag(ElementFlags.InPerformLayout);
-		PerformLayout(__renderbounds.W, __renderbounds.H);
+		Vector2F childSpace = GetChildSpaceSize();
+		PerformLayout(childSpace.W, childSpace.H);
 		RemoveFlag(ElementFlags.InPerformLayout);
 		if (Dock == Dock.None)
 			FlushRenderBounds();
@@ -943,7 +968,8 @@ public class Element : IValidatable
 
 	private void CommitFitToParent() {
 		if (_fitToParent) {
-			var parentBounds = GetParent()?.GetRenderBounds() ?? UI.GetRenderBounds();
+			var parentElement = GetParent() ?? UI;
+			var parentBounds = RectangleF.FromPosAndSize(parentElement.GetRenderBounds().Pos, parentElement.GetChildSpaceSize());
 			var overflow = parentBounds.GetOverflow(__renderbounds, fitPadding);
 			__renderbounds.Pos += overflow;
 			_fitToParent = false;
@@ -977,8 +1003,8 @@ public class Element : IValidatable
 		if (parent == null)
 			return;
 
-		var parentBounds = parent.GetRenderBounds();
-		var pb2 = new Vector2F(parentBounds.Width / 2, parentBounds.Height / 2);
+		var parentBounds = parent.GetChildSpaceSize();
+		var pb2 = new Vector2F(parentBounds.W / 2, parentBounds.H / 2);
 		var tb2 = new Vector2F(__renderbounds.Width / 2, __renderbounds.Height / 2);
 		var centered = pb2 - tb2;
 		_position = centered;
@@ -990,7 +1016,7 @@ public class Element : IValidatable
 		Element? parent = GetParent();
 		if (Dock == Dock.None && IValidatable.IsValid(parent) && (Origin != Anchor.TopLeft || Anchor != Anchor.TopLeft)) {
 			var np = Origin.CalculatePosition(_position, __renderbounds.Size, true);
-			var npO = Anchor.CalculatePosition(new(0, 0), parent.__renderbounds.Size, false);
+			var npO = Anchor.CalculatePosition(new(0, 0), parent.GetChildSpaceSize(), false);
 			__renderbounds.Pos = npO + np;
 			if (FORCE_ROUNDED_RENDERBOUNDS)
 				SnapRect(ref __renderbounds);
@@ -1005,7 +1031,7 @@ public class Element : IValidatable
 	}
 
 	private void DoChildDocking() {
-		RectangleF availableSpace = RectangleF.FromPosAndSize(Vector2F.Zero, __renderbounds.Size);
+		RectangleF availableSpace = RectangleF.FromPosAndSize(Vector2F.Zero, GetChildSpaceSize());
 
 		// Shrink available space by dock padding
 		if (!_dockPadding.IsZero) {
@@ -1268,7 +1294,7 @@ public class Element : IValidatable
 	public float GetReferenceSize(DynamicSizeReference referenceValue) => referenceValue switch {
 		DynamicSizeReference.None => 1f,
 		DynamicSizeReference.WindowHeight => EngineCore.GetWindowHeight() / 900f,
-		DynamicSizeReference.ParentHeight => GetParent() == null ? 1 : GetParent()!.GetRenderBounds().Height / 20f,
+		DynamicSizeReference.ParentHeight => GetParent() == null ? 1 : GetParent()!.GetChildSpaceSize().H / 20f,
 		DynamicSizeReference.SelfHeight => GetRenderBounds().Height / 20f,
 		_ => throw new NotImplementedException()
 	};
@@ -1480,8 +1506,11 @@ public class Element : IValidatable
 
 	public Vector2F GetGlobalPosition() {
 		Vector2F ret = GetVisualPosition();
-		for (Element? p = Parent; p != null && p != p.UI; p = p.Parent)
-			ret += p.GetVisualPosition() + p.ChildRenderOffset.Round();
+		Element? p = Parent;
+		for (; p != null && p != p.UI; p = p.Parent)
+			ret = p.GetVisualPosition() + (p.ChildRenderOffset.Round() + ret) * p.childScale;
+		if (p != null)
+			ret *= p.childScale;
 		return ret;
 	}
 
@@ -1493,8 +1522,8 @@ public class Element : IValidatable
 	/// </summary>
 	public Level Level { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => EngineCore.Level; }
 	// TODO: what the hell is the difference???
-	public Vector2F CursorPos() => Level.FrameState.Mouse.MousePos - GetGlobalPosition();
-	public Vector2F GetMousePos() => EngineCore.MousePos - this.GetGlobalPosition();
+	public Vector2F CursorPos() => ToLocalSpace(Level.FrameState.Mouse.MousePos);
+	public Vector2F GetMousePos() => ToLocalSpace(EngineCore.MousePos);
 
 	public void SizeToChildren(bool sizeW = true, bool sizeH = true) {
 		var host = GetAddParent();
@@ -1511,6 +1540,7 @@ public class Element : IValidatable
 
 		var pad = host.DockPadding;
 		ext += new Vector2F(pad.Right, pad.Bottom);
+		ext *= host.childScale;
 		if (host != this) {
 			Vector2F hostOffset = Vector2F.Zero;
 			for (Element? e = host; e != null && e != this; e = e.Parent)
@@ -1518,6 +1548,7 @@ public class Element : IValidatable
 			ext += hostOffset;
 			if (host.Dock != Dock.None)
 				ext += new Vector2F(host.DockMargin.Right, host.DockMargin.Bottom);
+			ext *= childScale;
 		}
 
 		Size = new(sizeW ? ext.X : Size.W, sizeH ? ext.Y : Size.H);
@@ -1681,7 +1712,7 @@ public class Element : IValidatable
 				bool exclusive = TooltipPositioningMode >= TooltipPositioningMode.AnchorExclusiveTopLeft;
 				Anchor anchor = exclusive ? (Anchor)((int)TooltipPositioningMode - 9) : (Anchor)(TooltipPositioningMode);
 
-				RectangleF renderBounds = GetRenderBounds();
+				Vector2F renderBounds = GetRenderBounds().Size * GetEffectiveScale();
 				Vector2F elementPosition = GetGlobalPosition();
 				var t2d = anchor.ToTextAlignment();
 
@@ -1727,7 +1758,7 @@ public class Element : IValidatable
 		if (!clipping) return true;
 		// otherwise, make sure rect in rect
 
-		RectangleF parent = GetRenderBounds();
+		Vector2F parent = GetChildSpaceSize();
 		RectangleF childRect = child.GetRenderBounds();
 
 		childRect.Pos = child.GetVisualPosition() + ChildRenderOffset;

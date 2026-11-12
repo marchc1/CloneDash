@@ -156,8 +156,8 @@ public class ColorSelectorDialog : Panel
 		Picker.ColorChanged += (_, c) => Selector.SelectedColor = c;
 
 		Size = new(ColorPicker.PreferredSize.W + 16, ColorPicker.PreferredSize.H + 16);
-		var anchor = selector.GetGlobalPosition();
-		Position = new(anchor.X, anchor.Y + selector.GetRenderBounds().H + 4);
+		var anchor = selector.ToScreenSpace(new Vector2F(0, selector.GetRenderBounds().H));
+		Position = new(anchor.X, anchor.Y + 4);
 		MakePopup();
 		MoveToFront();
 		FitToParent(8);

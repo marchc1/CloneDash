@@ -75,7 +75,7 @@ public class ElementInputSystem
 
 		Vector2F mousePos = frameState.Mouse.MousePos;
 		RectangleF unbounded = RectangleF.FromPosAndSize(new(-1e9f, -1e9f), new(2e9f, 2e9f));
-		state.Hovered = SolveTraverse(element, ref state, frameState, element.GetRenderBounds(), unbounded, mousePos)?.GetMouseElement();
+		state.Hovered = SolveTraverse(element, ref state, frameState, element.GetRenderBounds(), unbounded, mousePos, Vector2F.One)?.GetMouseElement();
 		// Logs.Info($"{mousePos}, {state.Hovered}");
 	}
 
@@ -87,12 +87,14 @@ public class ElementInputSystem
 		return RectangleF.FromPosAndSize(new(x1, y1), new(Math.Max(0, x2 - x1), Math.Max(0, y2 - y1)));
 	}
 
-	private Element? SolveTraverse(Element? element, ref ElementSolveState state, FrameState frameState, RectangleF globalSpaceBounds, RectangleF clipBounds, Vector2F mousePos) {
+	private Element? SolveTraverse(Element? element, ref ElementSolveState state, FrameState frameState, RectangleF globalSpaceBounds, RectangleF clipBounds, Vector2F mousePos, Vector2F scale) {
 		if (!IValidatable.IsValid(element)) return null;
 
 		bool selfHovered = element.HoverTest(globalSpaceBounds, mousePos) && clipBounds.ContainsPoint(mousePos);
 		if (element.IsVisible()) {
 			RectangleF childClip = element.Clipping ? IntersectRects(clipBounds, globalSpaceBounds) : clipBounds;
+			Vector2F childScale = scale * element.ChildScale;
+			Vector2F childOffset = element.ChildRenderOffset.Round();
 
 			using var children = element.GetChildren();
 			// If this element contains a modal, only process that modal.
@@ -103,9 +105,9 @@ public class ElementInputSystem
 
 				if (modal || popup) {
 					// Modals/popups escape ancestor clipping, so they get an unbounded clip.
-					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetVisualPosition() + element.ChildRenderOffset.Round(), child.GetRenderBounds().Size);
+					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + (child.GetVisualPosition() + childOffset) * childScale, child.GetRenderBounds().Size * childScale);
 					RectangleF popupClip = RectangleF.FromPosAndSize(new(-1e9f, -1e9f), new(2e9f, 2e9f));
-					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, popupClip, mousePos);
+					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, popupClip, mousePos, childScale);
 
 					if (modal) {
 						if (!IValidatable.IsValid(subElementHovered))
@@ -124,8 +126,8 @@ public class ElementInputSystem
 				Element child = children[i];
 				bool modal = child.IsModal(), popup = child.IsPopup();
 				if (!modal && !popup) {
-					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + child.GetVisualPosition() + element.ChildRenderOffset.Round(), child.GetRenderBounds().Size);
-					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, childClip, mousePos);
+					RectangleF childGlobalBounds = RectangleF.FromPosAndSize(globalSpaceBounds.Pos + (child.GetVisualPosition() + childOffset) * childScale, child.GetRenderBounds().Size * childScale);
+					Element? subElementHovered = SolveTraverse(child, ref state, frameState, childGlobalBounds, childClip, mousePos, childScale);
 					if (IValidatable.IsValid(subElementHovered))
 						return subElementHovered;
 				}
@@ -162,7 +164,7 @@ public class ElementInputSystem
 			for (ButtonCode i = ButtonCode.MouseFirst; i < ButtonCode.MouseLast + 1; i++) {
 				ref Element? depressed = ref solveState.Depressed[i - ButtonCode.MouseFirst];
 				if (IValidatable.IsValid(depressed) && depressed.IsMouseInputEnabled())
-					depressed.MouseDragOccur(frameState, mouse.MouseDelta);
+					depressed.MouseDragOccur(frameState, mouse.MouseDelta / depressed.GetEffectiveScale());
 			}
 		}
 
@@ -286,8 +288,17 @@ public class ElementPaintSystem
 				if (element is UserInterface ui)
 					foreach (var popup in ui.PopupsInZOrder()) {
 						var parent = popup.GetParent()!;
-						Graphics2D.SetOffset(parent == element ? Vector2F.Zero : parent.GetGlobalPosition() + parent.ChildRenderOffset.Round());
+						Vector2F parentScale = parent.GetEffectiveScale() * parent.ChildScale;
+						if (parentScale == Vector2F.One) {
+							Graphics2D.SetOffset(parent == element ? Vector2F.Zero : parent.GetGlobalPosition() + parent.ChildRenderOffset.Round());
+							Paint(popup, ref state, ElementPaintPopupMode.DontCare);
+							continue;
+						}
+
+						Graphics2D.SetOffset(parent.GetGlobalPosition() + parent.ChildRenderOffset.Round() * parentScale);
+						Graphics2D.PushTransform(parentScale);
 						Paint(popup, ref state, ElementPaintPopupMode.DontCare);
+						Graphics2D.PopTransform();
 					}
 				break;
 		}
@@ -315,7 +326,7 @@ public class ElementPaintSystem
 		if (element.BackdropAlpha > 0) {
 			if (IValidatable.IsValid(parent)) {
 				// The drawing offset is already at the parent's origin (plus its child offset); cover the parent from there.
-				RectangleF size = parent.GetRenderBounds();
+				Vector2F size = parent.GetChildSpaceSize();
 				Vector2F parentOrigin = -parent.ChildRenderOffset.Round();
 				Graphics2D.SetDrawColor(0, 0, 0, (int)float.Lerp(0, 100, (float)element.BackdropAlpha));
 				Graphics2D.DrawRectangle(parentOrigin.X, parentOrigin.Y, size.W, size.H);
@@ -343,11 +354,13 @@ public class ElementPaintSystem
 						{
 							element.PreRenderRT();
 							if (element.HasPaintRenderTargetOverride) {
-								var globalBounds = RectangleF.FromPosAndSize(element.GetGlobalPosition(), renderBounds.Size);
+								var globalBounds = RectangleF.FromPosAndSize(element.GetGlobalPosition(), renderBounds.Size * element.GetEffectiveScale());
 								var savedOffset = Graphics2D.Offset;
+								Graphics2D.PushIdentityTransform();
 								Graphics2D.ResetDrawingOffset();
 								element.InvokePaintRenderTargetOverride(rt, globalBounds);
-								Graphics2D.OffsetDrawing(savedOffset);
+								Graphics2D.PopTransform();
+								Graphics2D.SetOffset(savedOffset);
 							}
 							else {
 								var t = (byte)Math.Clamp(element.Opacity * 255, 0, 255);
@@ -409,6 +422,9 @@ public class ElementPaintSystem
 					element.PaintBorder(w, h);
 
 				Vector2F childOffset = element.ChildRenderOffset.Round();
+				bool scaleChildren = element.ChildScale != Vector2F.One;
+				if (scaleChildren)
+					Graphics2D.PushTransform(element.ChildScale);
 				Graphics2D.OffsetDrawing(childOffset);
 				using (var children = element.GetChildren()) {
 					int startIndex = element.GetPaintChildStartIndex();
@@ -420,6 +436,8 @@ public class ElementPaintSystem
 					}
 				}
 				Graphics2D.OffsetDrawing(-childOffset);
+				if (scaleChildren)
+					Graphics2D.PopTransform();
 
 				if (element.IsPostChildPaintEnabled())
 					element.PostChildPaint();

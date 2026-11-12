@@ -102,8 +102,8 @@ public class TabView : Panel
 
 			// Where the active tab sits, clipped to the visible part of the strip
 			var strip = view.TabSelectorContainer;
-			float stripX = strip.GetGlobalPosition().X - GetGlobalPosition().X;
-			float x0 = active.GetGlobalPosition().X - GetGlobalPosition().X;
+			float stripX = ToLocalSpace(strip.GetGlobalPosition()).X;
+			float x0 = ToLocalSpace(active.GetGlobalPosition()).X;
 			float x1 = x0 + active.GetRenderBounds().W;
 			x0 = Math.Clamp(x0, stripX, stripX + strip.GetRenderBounds().W);
 			x1 = Math.Clamp(x1, stripX, stripX + strip.GetRenderBounds().W);

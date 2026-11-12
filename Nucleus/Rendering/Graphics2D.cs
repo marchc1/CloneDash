@@ -140,7 +140,73 @@ namespace Nucleus.Core
 		public static void OffsetDrawing(Vector2F by) => __SetOffset(__offset + by);
 		public static void SetOffset(Vector2F offset) => __SetOffset(offset);
 
-		static Vector2 SnapToPixel(float x, float y) => new(MathF.Round(x + __offset.X), MathF.Round(y + __offset.Y));
+		private static Vector2F __transformOrigin = Vector2F.Zero;
+		private static Vector2F __transformScale = Vector2F.One;
+		private static readonly Stack<(Vector2F Origin, Vector2F Scale, Vector2F? Offset)> SavedTransforms = [];
+
+		public static Vector2F TransformOrigin => __transformOrigin;
+		public static Vector2F TransformScale => __transformScale;
+		public static bool IsTransformed => __transformScale != Vector2F.One || __transformOrigin != Vector2F.Zero;
+
+		public static void PushTransform(Vector2F scale) {
+			SavedTransforms.Push((__transformOrigin, __transformScale, __offset));
+			__transformOrigin += __offset * __transformScale;
+			__transformScale *= scale;
+			__offset = Vector2F.Zero;
+			LoadTransformMatrix();
+		}
+
+		public static void PushIdentityTransform() {
+			bool wasTransformed = IsTransformed;
+			SavedTransforms.Push((__transformOrigin, __transformScale, null));
+			__transformOrigin = Vector2F.Zero;
+			__transformScale = Vector2F.One;
+			if (wasTransformed)
+				LoadTransformMatrix();
+		}
+
+		public static void PopTransform() {
+			if (SavedTransforms.Count == 0)
+				return;
+
+			bool wasTransformed = IsTransformed;
+			(__transformOrigin, __transformScale, Vector2F? offset) = SavedTransforms.Pop();
+			if (offset.HasValue)
+				__offset = offset.Value;
+			if (wasTransformed || IsTransformed)
+				LoadTransformMatrix();
+		}
+
+		public static void ClearTransformStack() {
+			SavedTransforms.Clear();
+			__transformOrigin = Vector2F.Zero;
+			__transformScale = Vector2F.One;
+		}
+
+		public static void LoadTransformMatrix() {
+			Rlgl.DrawRenderBatchActive();
+			Rlgl.LoadIdentity();
+			Rlgl.MultMatrixf(Raymath.MatrixToFloatV(EngineCore.Window.ScreenScale));
+			MultTransformMatrix();
+		}
+
+		public static void MultTransformMatrix() {
+			if (!IsTransformed)
+				return;
+
+			Rlgl.Translatef(__transformOrigin.X, __transformOrigin.Y, 0);
+			Rlgl.Scalef(__transformScale.X, __transformScale.Y, 1);
+		}
+
+		public static Vector2F ToScreenSpace(Vector2F local) => __transformOrigin + (local + __offset) * __transformScale;
+
+		static Vector2 SnapToPixel(float x, float y) {
+			if (!IsTransformed)
+				return new(MathF.Round(x + __offset.X), MathF.Round(y + __offset.Y));
+
+			Vector2F screen = ToScreenSpace(new(x, y));
+			return new((MathF.Round(screen.X) - __transformOrigin.X) / __transformScale.X, (MathF.Round(screen.Y) - __transformOrigin.Y) / __transformScale.Y);
+		}
 		public static int QuantizeFontSize(float size) => Math.Max(1, (int)MathF.Round(size));
 
 		public static Vector2F GetTextSize(ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) {
@@ -243,8 +309,15 @@ namespace Nucleus.Core
 		public static void DrawText(Vector2F pos, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize)
 			=> DrawText(pos.X, pos.Y, message, font, fontSize);
 		public static void DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize) {
-			int size = QuantizeFontSize(fontSize);
-			FontManager[message, font, size].DrawText(message, SnapToPixel(x, y), size, 0, __drawColor);
+			float textScale = __transformScale.Y;
+			if (textScale == 1) {
+				int size = QuantizeFontSize(fontSize);
+				FontManager[message, font, size].DrawText(message, SnapToPixel(x, y), size, 0, __drawColor);
+				return;
+			}
+
+			int screenSize = QuantizeFontSize(fontSize * textScale);
+			FontManager[message, font, screenSize].DrawText(message, SnapToPixel(x, y), screenSize / textScale, 0, __drawColor);
 		}
 		public static Vector2F DrawText(float x, float y, ReadOnlySpan<char> message, ReadOnlySpan<char> font, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
 			int length = message.Length + font.Length;
@@ -280,7 +353,9 @@ namespace Nucleus.Core
 		static readonly NeverShrinkingList<MappedText> mappedTextsCache = [];
 
 		public static Vector2F DrawText(float x, float y, TextChunks textsFontsMap, int chunkCount, int fontSpacing, int lineSpacing, float fontSize, TextAlignment horizontal, TextAlignment vertical) {
-			int size = QuantizeFontSize(fontSize);
+			float textScale = __transformScale.Y;
+			int size = QuantizeFontSize(fontSize * textScale);
+			float measureSize = textScale == 1 ? size : size / textScale;
 			Vector2F combinedSize = new();
 			mappedTextsCache.Clear();
 			float lineY = 0;
@@ -292,7 +367,7 @@ namespace Nucleus.Core
 
 				for (int j = i; j < lineEnd; j++) {
 					TextChunk piece = textsFontsMap[j];
-					Vector2F measuredSize = FontManager[piece.Text, piece.Font, size].MeasureText(piece.Text, size, fontSpacing);
+					Vector2F measuredSize = FontManager[piece.Text, piece.Font, size].MeasureText(piece.Text, measureSize, fontSpacing);
 
 					ref MappedText textPiece = ref mappedTextsCache.Add();
 					textPiece.Chunk = j;
@@ -321,7 +396,7 @@ namespace Nucleus.Core
 					if (lineCount == 1 && textsFontsMap.Length > 0) {
 						// Optical center: center the cap-height, not the line box
 						var tm = GetTextMetrics(textsFontsMap[0].Font, size);
-						y -= tm.CapTop + tm.CapHeight / 2f;
+						y -= (tm.CapTop + tm.CapHeight / 2f) / textScale;
 					}
 					else
 						y += -combinedSize.Y / 2;
@@ -570,6 +645,8 @@ namespace Nucleus.Core
 			}
 		}
 		public static void ScissorRect(RectangleF rect) {
+			if (IsTransformed)
+				rect = RectangleF.FromPosAndSize(__transformOrigin + rect.Pos * __transformScale, rect.Size * __transformScale);
 			float x0 = MathF.Floor(rect.X), y0 = MathF.Floor(rect.Y);
 			float x1 = MathF.Ceiling(rect.X + rect.W), y1 = MathF.Ceiling(rect.Y + rect.H);
 			var r = RectangleF.XYWH(x0, y0, x1 - x0, y1 - y0).FitInto(ActiveScissorRect);
@@ -601,6 +678,7 @@ namespace Nucleus.Core
 				EngineCore.Window.EndScissorMode();
 			SavedScissorStacks.Push(ScissorRects);
 			ScissorRects = ScissorRectPool.Alloc();
+			PushIdentityTransform();
 
 			texture.Begin();
 			Surface.Clear(0, 0, 0, 0);
@@ -611,6 +689,7 @@ namespace Nucleus.Core
 		public static void EndRenderTarget(IRenderTexture texture) {
 			texture.End();
 			SetBlendMode(BlendMode.Alpha);
+			PopTransform();
 
 			if (ScissorRects.Count > 0)
 				EngineCore.Window.EndScissorMode();

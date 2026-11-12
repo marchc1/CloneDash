@@ -306,7 +306,7 @@ public class Window : Element
 		}
 
 		protected override bool MouseDrag(Element self, FrameState state, Vector2F delta) {
-			Vector2F d = EngineCore.MousePos - grabMouse;
+			Vector2F d = (EngineCore.MousePos - grabMouse) / window.GetEffectiveScale();
 			switch (anchor) {
 				case Anchor.TopLeft:
 					window.Size = grabSize - d;

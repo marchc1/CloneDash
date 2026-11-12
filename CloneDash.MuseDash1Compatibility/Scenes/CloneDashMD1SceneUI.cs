@@ -224,6 +224,8 @@ public static class UITextAnimationFns
 
 public delegate void RenderTextAnimationFn(TextImageRenderItem self, double curtime);
 
+public readonly record struct MuseDash1TextGlow(Color Top, Color Bottom, Color Color, float Offset, float Inner, float Outer, float Power);
+
 public class TextImageRenderItem
 {
 	public double StartTime;
@@ -242,6 +244,7 @@ public class TextImageRenderItem
 	public Vector2F Scale = new(1, 1);
 	public Color Color = new(255, 255, 255, 255);
 	public Color? borderColor;
+	public MuseDash1TextGlow? Glow;
 
 	public string? Text;
 	public string? Font;
@@ -338,12 +341,14 @@ public class TextImageRenderItem
 			Graphics2D.DestroyRenderTarget(rt);
 		freeTextRTs.Clear();
 	}
-	float FontResolution = 90;
+	public float FontResolution = 90;
 	public float BorderSize = 2.6f;
 	public float DarkenAmount = 0.3f;
 	public float DesaturateAmount = 0.35f;
 	public float SplitY = 0.55f;
-	int RTPadding => (int)MathF.Ceiling(BorderSize) + 2;
+	float GlowReach => Glow is MuseDash1TextGlow glow ? (glow.Offset + glow.Outer) * FontResolution : 0;
+	public int Padding => RTPadding;
+	int RTPadding => (int)MathF.Ceiling(MathF.Max(BorderSize, GlowReach)) + 2;
 	public void Render(double curtime, IShader? styledTextShader) {
 		if (Fn != null)
 			Fn(this, curtime);
@@ -451,7 +456,11 @@ public class TextImageRenderItem
 			Rlgl.Scalef(scale.x, scale.y, 1);
 
 		Color borderC = borderColor ?? color.Multiply(0.5f);
-		if (shader != null) {
+		if (shader != null && Glow is MuseDash1TextGlow glow) {
+			SetGlowUniforms(shader, glow, rtW, rtH, alpha);
+			shader.Activate();
+		}
+		else if (shader != null) {
 			shader.SetUniform("uTexelSize", new System.Numerics.Vector2(1.0f / rtW, 1.0f / rtH));
 			shader.SetUniform("uTextColor", new System.Numerics.Vector3(color.R / 255f, color.G / 255f, color.B / 255f));
 			shader.SetUniform("uBorderColor", new System.Numerics.Vector3(borderC.R / 255f, borderC.G / 255f, borderC.B / 255f));
@@ -466,7 +475,11 @@ public class TextImageRenderItem
 			Graphics2D.SetDrawColor(color);
 		}
 		float drawX, drawY;
-		if (TopLeftAligned) {
+		if (TopLeftAligned && Glow != null) {
+			drawX = -RTPadding;
+			drawY = -RTPadding;
+		}
+		else if (TopLeftAligned) {
 			drawX = 0;
 			drawY = 0;
 		}
@@ -486,6 +499,26 @@ public class TextImageRenderItem
 
 		Rlgl.DrawRenderBatchActive();
 		Rlgl.PopMatrix();
+	}
+
+	void SetGlowUniforms(IShader shader, MuseDash1TextGlow glow, int rtW, int rtH, float alpha) {
+		int size = Graphics2D.QuantizeFontSize(FontResolution);
+		var state = Graphics2D.FontManager["0", Font!, size];
+		var digit = state.GetGlyph('0');
+		float glyphScale = state.Size > 0 ? size / (float)state.Size : 1;
+		float top = RTPadding + digit.OffsetY * glyphScale;
+		float bottom = top + digit.Rec.Height * glyphScale;
+
+		shader.SetUniform("uTexelSize", new System.Numerics.Vector2(1.0f / rtW, 1.0f / rtH));
+		shader.SetUniform("uGradientRange", new System.Numerics.Vector2(1 - top / rtH, 1 - bottom / rtH));
+		shader.SetUniform("uTopColor", new System.Numerics.Vector3(glow.Top.R / 255f, glow.Top.G / 255f, glow.Top.B / 255f));
+		shader.SetUniform("uBottomColor", new System.Numerics.Vector3(glow.Bottom.R / 255f, glow.Bottom.G / 255f, glow.Bottom.B / 255f));
+		shader.SetUniform("uGlowColor", new System.Numerics.Vector3(glow.Color.R / 255f, glow.Color.G / 255f, glow.Color.B / 255f));
+		shader.SetUniform("uGlowOffset", glow.Offset * FontResolution);
+		shader.SetUniform("uGlowInner", glow.Inner * FontResolution);
+		shader.SetUniform("uGlowOuter", glow.Outer * FontResolution);
+		shader.SetUniform("uGlowPower", glow.Power);
+		shader.SetUniform("uAlpha", alpha);
 	}
 
 	static Vector2F RotatePoint(Vector2F p, float angle) {
@@ -515,6 +548,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 	protected virtual Vector2F ScoreLabelPosition => new(100, -96);
 	protected virtual string ScoreLabelTexture => "score_English";
 	protected virtual Vector2F ScoreNumberPosition => new(100, -16);
+	protected virtual float ScoreNumberScale => 0.9f;
+	protected virtual IShader? ScoreNumberShader => StyledTextShader;
 
 	protected TextImageRenderItem? ScoreNumber = null;
 	protected TextImageRenderItem? ScoreLabel = null;
@@ -1247,7 +1282,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		}
 	}
 	public virtual void RenderScore() {
-		ScoreNumber?.Render(Time, StyledTextShader);
+		ScoreNumber?.Render(Time, ScoreNumberShader);
 		ScoreLabel?.Render(Time, StyledTextShader);
 		RenderApIcon();
 	}
@@ -1257,6 +1292,8 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 			return;
 
 		float textWidth = ScoreNumber.GetTextSize().X * ScoreNumber.StartScale.X;
+		if (ScoreNumber.Glow != null)
+			textWidth -= ScoreNumber.Padding * 2 * ScoreNumber.StartScale.X;
 		Graphics2D.SetDrawColor(255, 255, 255, 255);
 		Graphics2D.SetTexture(icon_ap);
 		Graphics2D.DrawTexturedRectangle(new Vector2F(ScoreNumber.StartPosition.X + textWidth, -ScoreNumber.StartPosition.Y), new Vector2F(68, 66));
@@ -1318,7 +1355,7 @@ public class MD1SceneUI(IMuseDash1SceneInstance scene, RhythmGameLevel game) : I
 		ScoreNumber?.borderColor = new Color(173, 173, 255) * new Color(200, 255);
 
 		ScoreNumber?.StartScale = new(1f);
-		ScoreNumber?.StartScale = new(0.9f);
+		ScoreNumber?.StartScale = new(ScoreNumberScale);
 		ScoreNumber?.DetermineRenderTexture();
 		ComboNumber?.DetermineRenderTexture();
 	}
@@ -1631,15 +1668,21 @@ public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, RhythmGameLe
 	const float COMBO_FONT_SCALE = 95f / 110f;
 	const float COMBO_LABEL_OFFSET = 96.6f;
 	const float COMBO_NUMBER_Y = 146;
+	const float SCORE_FONT_SIZE = 48;
+
+	static readonly MuseDash1TextGlow ScoreGlow = new(new(16, 186, 255), new(181, 247, 255), new(138, 240, 255), 0.036f, 0.204f, 0.123f, 0.185f);
 
 	protected ITexture? combo_high_gc;
 	protected ITexture? combo_normal_gc;
+	protected IShader? GlowTextShader;
 
 	protected override MuseDash1ComboTextClips ComboTextClips => MuseDash1HudAnimations.ComboTextGrooveCoaster;
 	protected override Color ScoreLabelColor => new(255, 255, 255);
 	protected override Vector2F ScoreLabelPosition => new(104, -96);
 	protected override string ScoreLabelTexture => "score_English_GC";
-	protected override Vector2F ScoreNumberPosition => new(98, -61);
+	protected override Vector2F ScoreNumberPosition => new(102, -36);
+	protected override float ScoreNumberScale => SCORE_FONT_SIZE / (ScoreNumber?.FontResolution ?? 90);
+	protected override IShader? ScoreNumberShader => GlowTextShader;
 
 	public override void SetupComboNumber() {
 		base.SetupComboNumber();
@@ -1649,6 +1692,8 @@ public class MD1SceneUIGrooveCoaster(IMuseDash1SceneInstance scene, RhythmGameLe
 	public override void SetupScoreNumber() {
 		base.SetupScoreNumber();
 		ScoreNumber?.Font = "Infinity Font";
+		ScoreNumber?.Glow = ScoreGlow;
+		GlowTextShader = EngineCore.Level.Shaders.LoadFragmentShaderFromFile("shaders", "glow_text.fs");
 	}
 
 	public override void LoadScoreAssets() {

@@ -43,7 +43,7 @@ public class MainMenuButton : Button
 		base.OnThink();
 
 		RenderOffset = new Vector2F(
-			sos.Update(Offscreen != 0 ? EngineCore.GetWindowWidth() / 2 * Offscreen : IsHovered() ? -HoverOffset : 0), 0
+			sos.Update(Offscreen != 0 ? GetParent()!.GetChildSpaceSize().W / 2 * Offscreen : IsHovered() ? -HoverOffset : 0), 0
 		);
 	}
 

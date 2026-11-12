@@ -643,6 +643,7 @@ public static class EngineCore
 
 		MouseCursor_Frame = MouseCursor.MOUSE_CURSOR_DEFAULT;
 
+		Graphics2D.ClearTransformStack();
 		Rlgl.LoadIdentity();
 		unsafe {
 			var c = Raymath.MatrixToFloatV(Window.ScreenScale);
