@@ -16,6 +16,7 @@ public class MuseDash1BarrageText
 
 public class MuseDash1SongNameMarquee
 {
+	const float GAP = 100;
 	const float START_DELAY = 1f;
 
 	CanvasImage? maskImage;
@@ -49,9 +50,11 @@ public class MuseDash1SongNameMarquee
 		foreach (var node in new[] { Simple, Backup, LeftMask, RightMask })
 			if (node != null)
 				node.Active = Scrolling;
-		maskImage ??= Mask.Image;
-		Mask.Mask = Scrolling;
-		Mask.Image = Scrolling ? maskImage : null;
+		if (LeftMask != null && RightMask != null) {
+			maskImage ??= Mask.Image;
+			Mask.Mask = Scrolling;
+			Mask.Image = Scrolling ? maskImage : null;
+		}
 		Place();
 	}
 
@@ -61,7 +64,7 @@ public class MuseDash1SongNameMarquee
 
 		time += deltaTime;
 		if (time > START_DELAY && width > 0)
-			offset = (offset + Speed * deltaTime) % width;
+			offset = (offset + Speed * deltaTime) % (width + GAP);
 		Place();
 	}
 
@@ -72,7 +75,7 @@ public class MuseDash1SongNameMarquee
 		}
 		if (Backup != null) {
 			Backup.SizeDelta = Backup.SizeDelta with { X = width };
-			Backup.AnchoredPosition = Backup.AnchoredPosition with { X = width - offset };
+			Backup.AnchoredPosition = Backup.AnchoredPosition with { X = width + GAP - offset };
 		}
 	}
 }

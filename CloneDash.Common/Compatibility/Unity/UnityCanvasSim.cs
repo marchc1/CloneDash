@@ -59,6 +59,7 @@ public class CanvasText
 	public string? FontSource;
 	public int FontSize;
 	public float LineSpacing = 1;
+	public bool Localized;
 	public string Text = "";
 }
 

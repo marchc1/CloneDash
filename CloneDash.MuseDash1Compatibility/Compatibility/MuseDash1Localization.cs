@@ -45,7 +45,10 @@ public static class MuseDash1Localization
 		var value = chosen.Value;
 		switch (source) {
 			case "TextSource":
-				if (target.Text != null && value.FirstOrDefault(token => token.Value is string).Value is string text) {
+				if (target.Text == null)
+					return true;
+				target.Text.Localized = true;
+				if (value.FirstOrDefault(token => token.Value is string).Value is string text) {
 					target.Text.Text = text;
 					node.Notes.Add($"localized ({language}) text of {target.Path} = \"{text}\"");
 				}
@@ -138,7 +141,7 @@ public static class MuseDash1Localization
 	}
 
 	static void ReplaceFonts(CanvasNode node, HashSet<string> replaceable, AssetStudio.Font font, string language) {
-		if (node.Text is CanvasText text && text.FontSource != null && replaceable.Contains(text.FontSource) && text.FontSource != UnityCanvas.Describe(font)) {
+		if (node.Text is CanvasText text && text.Localized && text.FontSource != null && replaceable.Contains(text.FontSource) && text.FontSource != UnityCanvas.Describe(font)) {
 			node.Notes.Add($"localized ({language}) global font {text.Font} -> {font.m_Name}");
 			UnityCanvas.SetFont(text, font);
 		}
