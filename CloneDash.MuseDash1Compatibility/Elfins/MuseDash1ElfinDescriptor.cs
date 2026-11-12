@@ -63,6 +63,7 @@ public class MuseDash1ElfinDescriptor(ElfinConfigData configData, ICloneDashModP
 	public ModelData GetBattleModel(Level level, bool uploadTextures = true) => MuseDash1CharacterDescriptor.PullModelDataFromGameObject(level, ConfigData.Prefab, uploadTextures);
 	public float GetBattleScale() => MuseDash1CharacterDescriptor.GetSkeletonScale(ConfigData.Prefab);
 	public ModelData GetMainShowModel(Level level) => MuseDash1CharacterDescriptor.PullModelDataFromGameObject(level, ConfigData.MainShow);
+	public float GetMainShowScale() => MuseDash1CharacterDescriptor.GetSkeletonScale(ConfigData.MainShow);
 
 	public IElfinMainMenuInstance CreateMainMenu() => new MuseDash1ElfinMainMenuInstance(this);
 
