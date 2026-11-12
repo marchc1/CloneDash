@@ -23,7 +23,7 @@ public static partial class MuseDash1Compatibility
 
 		string streamingassets = Path.Combine(WhereIsMuseDashDataFolder, "StreamingAssets", "aa", platform);
 		if (!Directory.Exists(streamingassets))
-			return MD1CompatLayerInitResult.StreamingAssetsNotFound;
+			return AppStatus.CriticalPathNotFound;
 
 		BuildTarget = streamingassets;
 		StreamingFiles = Directory.GetFiles(streamingassets);
