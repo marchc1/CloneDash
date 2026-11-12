@@ -46,6 +46,24 @@ public class MuseDash1GhostMotion
 	readonly Dictionary<string, State> states = [];
 
 	public MuseDash1GhostMotion(AnimatorController controller) {
+		foreach (var (name, decoded) in DecodeStates(controller)) {
+			var height = FindPosition(decoded, 1);
+			if (height != null)
+				states[name] = new(height, decoded.StopTime);
+		}
+
+		ground = states.TryGetValue(ActionKeys.RUN, out var run) ? DecodedClip.Eval(run.Height, 0) : 0;
+		air = states.TryGetValue(ActionKeys.JUMP_ATTACK_UP, out var upHit) ? upHit.Height.Max(x => x.value) : ground + 1;
+	}
+
+	public float GetHeight(string? action, double time) {
+		if (action == null || !states.TryGetValue(action, out var state) || time > state.StopTime)
+			return 0;
+
+		return (DecodedClip.Eval(state.Height, (float)time) - ground) / (air - ground);
+	}
+
+	internal static IEnumerable<(string name, DecodedClip clip)> DecodeStates(AnimatorController controller) {
 		var names = new Dictionary<uint, string>();
 		foreach (var pair in controller.m_TOS)
 			names[pair.Key] = pair.Value;
@@ -59,30 +77,17 @@ public class MuseDash1GhostMotion
 				if (clipID >= controller.m_AnimationClips.Count || !controller.m_AnimationClips[clipID].TryGet(out var clip))
 					continue;
 
-				var decoded = DecodedClip.Decode(clip);
-				var height = FindHeight(decoded);
-				if (height != null)
-					states[name] = new(height, decoded.StopTime);
+				yield return (name, DecodedClip.Decode(clip));
 			}
-
-		ground = states.TryGetValue(ActionKeys.RUN, out var run) ? DecodedClip.Eval(run.Height, 0) : 0;
-		air = states.TryGetValue(ActionKeys.JUMP_ATTACK_UP, out var upHit) ? upHit.Height.Max(x => x.value) : ground + 1;
 	}
 
-	public float GetHeight(string? action, double time) {
-		if (action == null || !states.TryGetValue(action, out var state) || time > state.StopTime)
-			return 0;
-
-		return (DecodedClip.Eval(state.Height, (float)time) - ground) / (air - ground);
-	}
-
-	static List<(float time, float value, float inSlope, float outSlope)>? FindHeight(DecodedClip clip) {
+	internal static List<(float time, float value, float inSlope, float outSlope)>? FindPosition(DecodedClip clip, int axis) {
 		int component = 0;
 		foreach (var curve in clip.Curves) {
 			if (curve.Binding.typeID != ClassIDType.Transform || curve.Binding.attribute != 1 || curve.Binding.path != 0)
 				continue;
 
-			if (component++ == 1)
+			if (component++ == axis)
 				return curve.Keys;
 		}
 

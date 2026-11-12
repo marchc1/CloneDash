@@ -314,14 +314,11 @@ public class MuseDash1CharacterComponent : IRhythmGameComponent, IRhythmGameThin
 
 		var playerY = yoff ?? GetPlayerY(false);
 
-		float conductorInTime = Conductor.PreStartTime <= 0 ? 1 : (float)NMath.Remap(Conductor.Time, -Conductor.PreStartTime, -Conductor.PreStartTime / 1.5f, 0, 1, clampInput: true);
-		conductorInTime = 1 - NMath.Ease.OutQuad(conductorInTime);
-
 		// This sucks... todo, figure out how to get this proper
 		var leftPlayer = Scenes.GetCenterPosition().X;
 
 		Character.GetPrimary().SetPos(new Vector2F(
-			(leftPlayer - 1) - (conductorInTime * 1),
+			(leftPlayer - 1),
 			-(YOffsetSOS?.Update(playerY) ?? playerY)
 		));
 		Character.GetPrimary().SetScale(new(PlayerScale));

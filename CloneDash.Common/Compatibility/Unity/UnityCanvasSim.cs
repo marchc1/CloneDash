@@ -563,21 +563,22 @@ public class UnityCanvas
 	static string RegisterFont(AssetStudio.Font font) => MainThread.Invoke(() => RegisterFontOnGameThread(font));
 
 	static string RegisterFontOnGameThread(AssetStudio.Font font) {
-		if (!fontEmScales.ContainsKey(font.m_Name) && font.m_FontData != null)
-			fontEmScales[font.m_Name] = ReadEmScale(font.m_FontData);
+		string name = $"{font.m_Name}_{font.assetsFile.fileName}_{font.m_PathID}";
+		if (!fontEmScales.ContainsKey(name) && font.m_FontData != null)
+			fontEmScales[name] = ReadEmScale(font.m_FontData);
 
-		var key = font.m_Name.AsSpan().Hash(invariant: false);
+		var key = name.AsSpan().Hash(invariant: false);
 		if (Graphics2D.FontManager.FontNameToFilepath.ContainsKey(key))
-			return font.m_Name;
+			return name;
 
 		if (fontSearchPath == null) {
 			fontSearchPath = new MemorySearchPath();
 			filesystem.AddSearchPath("fonts", fontSearchPath);
 		}
-		using (var writer = fontSearchPath.Open(font.m_Name, FileAccess.Write, FileMode.Create))
+		using (var writer = fontSearchPath.Open(name, FileAccess.Write, FileMode.Create))
 			writer!.Write(font.m_FontData);
-		Graphics2D.FontManager.FontNameToFilepath[key] = new(font.m_Name, "fonts");
-		return font.m_Name;
+		Graphics2D.FontManager.FontNameToFilepath[key] = new(name, "fonts");
+		return name;
 	}
 
 	static void SetStencil(int reference, int pass) {

@@ -79,6 +79,7 @@ public class StatisticsPanel : Panel
 		}
 
 		BorderSize = 0;
+		DockPadding = RectangleF.Zero;
 		SetPaintBackgroundEnabled(false);
 	}
 	void Restart() {

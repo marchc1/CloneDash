@@ -10,6 +10,7 @@ using Nucleus.Commands;
 using Nucleus.Common.Audio;
 using Nucleus.Common.Commands;
 using Nucleus.Common.Input;
+using Nucleus.Types;
 using Nucleus.UI;
 
 namespace CloneDash.Scenes;
@@ -63,6 +64,7 @@ public class MuseDash1FailScreen : Panel
 		title = chart == null ? "" : chart.GetSong().FetchMetadata().Name.ToString();
 
 		BorderSize = 0;
+		DockPadding = RectangleF.Zero;
 		SetPaintBackgroundEnabled(false);
 		Size = new(1, 1);
 		DynamicallySized = true;

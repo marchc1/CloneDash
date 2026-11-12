@@ -22,6 +22,7 @@ public class MuseDash1CharacterIndividual(MuseDash1CharacterInstance instance, R
 	public MD1_SpineActionController PlayerController = null!;
 	bool LastAnimationWasAir;
 
+	double ComeInTime = double.NegativeInfinity;
 	double LastAnimationTime = -20000000;
 	double LastAnimationDuration = 0;
 
@@ -41,6 +42,9 @@ public class MuseDash1CharacterIndividual(MuseDash1CharacterInstance instance, R
 				break;
 		}
 
+		if (type == CharacterAnimationType.In)
+			ComeInTime = game.Curtime;
+
 		// Set last animation fields
 		LastAnimationTime = game.Curtime;
 		var entry = (Player.Animations.Channels[0].CurrentEntry ?? (Player.Animations.Channels[0].QueuedEntries.TryPeek(out var e) ? e : null));
@@ -50,7 +54,7 @@ public class MuseDash1CharacterIndividual(MuseDash1CharacterInstance instance, R
 
 	public float? GetAnimatedHeight() => instance.GetHologramHeight(this);
 
-	public void SetPos(Vector2F pos) => Player.Position = pos;
+	public void SetPos(Vector2F pos) => Player.Position = new(pos.X + instance.GetComeInOffset(this, game.Curtime - ComeInTime), pos.Y);
 	public void SetScale(Vector2F scale) => Player.Scale = scale;
 	public double GetAnimationDuration() {
 		var anims = Player.Animations;
@@ -81,6 +85,7 @@ public class MuseDash1CharacterIndividual(MuseDash1CharacterInstance instance, R
 
 	internal void Reset() {
 		LastAnimationWasAir = false;
+		ComeInTime = double.NegativeInfinity;
 		LastAnimationTime = -20000000;
 		LastAnimationDuration = 0;
 		PlayAnimation(CharacterAnimationType.Run);
@@ -128,6 +133,8 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 		preparedModel = descriptor.GetPlayModel(game, uploadTextures: false);
 		descriptor.GetPlayGhostMaterial();
 		descriptor.GetPlayAnimationData();
+		descriptor.GetPlayComeInMotion(false);
+		descriptor.GetPlayComeInMotion(true);
 	}
 
 	static ModelData? takePrepared(ref ModelData? prepared) {
@@ -177,6 +184,13 @@ public class MuseDash1CharacterInstance : IMuseDash1CharacterInstance
 
 	public double GetJumpDuration() {
 		return 0.5;
+	}
+
+	internal float GetComeInOffset(MuseDash1CharacterIndividual individual, double time) {
+		if (conductor.PreStartTime <= 0)
+			return 0;
+
+		return descriptor.GetPlayComeInMotion(individual.isSecondary)?.GetOffset(time) ?? 0;
 	}
 
 	CharacterAnimationType lastHologramAnimation;

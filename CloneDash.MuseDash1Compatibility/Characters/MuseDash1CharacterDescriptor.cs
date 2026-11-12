@@ -342,6 +342,10 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 	private static MD1_SpineActionControllerData? black_girl_battle;
 	private MD1_SpineActionControllerData? anims;
 	private MD1_SpineActionControllerData? ghostanims;
+	private MuseDash1ComeInMotion? comeInMotion;
+	private bool comeInResolved;
+	private MuseDash1ComeInMotion? ghostComeInMotion;
+	private bool ghostComeInResolved;
 	private MuseDash1GhostMaterial ghostMaterial = MuseDash1GhostMaterial.Default;
 	private MuseDash1GhostMotion? ghostMotion;
 	private string? ghostName;
@@ -378,6 +382,25 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 		}
 	}
 
+	private static MuseDash1ComeInMotion? convertComeIn(string name) {
+		var assets = MuseDash1Compatibility.StreamingAssets;
+		var girl = assets.FindAssetByName<GameObject>(name);
+		if (girl == null)
+			return null;
+
+		HashSet<SerializedFile> pinned = [];
+		try {
+			var animator = girl.GetFirstComponent<Animator>();
+			if (animator != null && resolvePinned(name, animator, animator.m_Controller, pinned, out var controller) && controller is AnimatorController animatorController)
+				return MuseDash1ComeInMotion.From(animatorController);
+			return null;
+		}
+		finally {
+			foreach (var file in pinned)
+				assets.Release(file);
+		}
+	}
+
 	private void convertGhost() {
 		if (ghostResolved)
 			return;
@@ -393,19 +416,13 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 			return;
 
 		HashSet<SerializedFile> pinned = [];
-		bool resolve<T>(AssetStudio.Object owner, PPtr<T> pointer, out T result) where T : AssetStudio.Object {
-			if (!pointer.TryGet(out result!) && pointer.m_FileID > 0 && pointer.m_FileID <= owner.assetsFile.m_Externals.Count)
-				assets.LoadDependenciesContaining(name, new HashSet<string> { Path.GetFileName(owner.assetsFile.m_Externals[pointer.m_FileID - 1].fileName) }, pinned);
-			return pointer.TryGet(out result!);
-		}
-
 		try {
 			var renderer = ghost.GetFirstComponent<MeshRenderer>();
-			if (renderer != null && renderer.m_Materials.Count > 0 && resolve(renderer, renderer.m_Materials[0], out var material))
+			if (renderer != null && renderer.m_Materials.Count > 0 && resolvePinned(name, renderer, renderer.m_Materials[0], pinned, out var material))
 				ghostMaterial = MuseDash1GhostMaterial.From(material);
 
 			var animator = ghost.GetFirstComponent<Animator>();
-			if (animator != null && resolve(animator, animator.m_Controller, out var controller) && controller is AnimatorController animatorController)
+			if (animator != null && resolvePinned(name, animator, animator.m_Controller, pinned, out var controller) && controller is AnimatorController animatorController)
 				ghostMotion = new(animatorController);
 		}
 		finally {
@@ -414,9 +431,32 @@ public class MuseDash1CharacterDescriptor(CharacterConfigData configData, IClone
 		}
 	}
 
+	private static bool resolvePinned<T>(string name, AssetStudio.Object owner, PPtr<T> pointer, HashSet<SerializedFile> pinned, out T result) where T : AssetStudio.Object {
+		if (!pointer.TryGet(out result!) && pointer.m_FileID > 0 && pointer.m_FileID <= owner.assetsFile.m_Externals.Count)
+			MuseDash1Compatibility.StreamingAssets.LoadDependenciesContaining(name, new HashSet<string> { Path.GetFileName(owner.assetsFile.m_Externals[pointer.m_FileID - 1].fileName) }, pinned);
+		return pointer.TryGet(out result!);
+	}
+
 	public MD1_SpineActionControllerData GetPlayAnimationData() {
 		convertAnimations();
 		return anims;
+	}
+
+	public MuseDash1ComeInMotion? GetPlayComeInMotion(bool ghost) {
+		if (!ghost) {
+			if (!comeInResolved) {
+				comeInResolved = true;
+				comeInMotion = convertComeIn(ConfigData.GetBattleShow().ToString());
+			}
+			return comeInMotion;
+		}
+
+		if (!ghostComeInResolved) {
+			ghostComeInResolved = true;
+			if (ConfigData.BattleShow.Contains(','))
+				ghostComeInMotion = convertComeIn(GetPlayGhostName());
+		}
+		return ghostComeInMotion;
 	}
 
 	public MD1_SpineActionControllerData GetPlayGhostAnimationData() {
