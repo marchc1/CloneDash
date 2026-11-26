@@ -271,7 +271,9 @@ public class CinemaBackgroundGenerator : ITextureRegenerator
 	long lastFrameIndex = -1;
 
 	public void Regenerate(ITextureCanvas canvas) {
-		IConductor conductor = EngineCore.Level.As<RhythmGameLevel>().Component<IConductor>(); // TODO: better modding api
+		if (EngineCore.Level == null || EngineCore.Level is not RhythmGameLevel rhythmGame)
+			return;
+		IConductor conductor = rhythmGame.Component<IConductor>(); // TODO: better modding api
 		GetFrame(TimeSpan.FromSeconds(Math.Max(conductor?.GetTime() ?? 0d, 0d)), canvas.Pixels);
 	}
 }
