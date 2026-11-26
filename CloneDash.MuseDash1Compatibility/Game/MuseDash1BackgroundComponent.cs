@@ -29,8 +29,8 @@ public class MuseDash1BackgroundComponent(MD1_GamemodeData data, ScreenEffectsCo
 				backgroundOverride.Download(); // call regenerator?
 				Graphics2D.SetTexture(backgroundOverride);
 				Graphics2D.SetDrawColor(255, 255, 255, (int)(255 * backgroundOverrideOpacity));
-				float texWidth = width * MuseDash1Gamemode.GlobalScale * 1.5f;
-				float texHeight = height * MuseDash1Gamemode.GlobalScale * 1.5f;
+				float texWidth = 1920 * MuseDash1Gamemode.GlobalScale * 1.5f;
+				float texHeight = 1080 * MuseDash1Gamemode.GlobalScale * 1.5f;
 				Graphics2D.DrawTexturedRectangle(texWidth / -2, texHeight / -2, texWidth, texHeight);
 			}
 			else if (scenes.HasActiveScene(out var scene))
